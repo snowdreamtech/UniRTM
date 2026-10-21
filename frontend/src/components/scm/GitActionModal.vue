@@ -26,7 +26,9 @@
 
         <!-- 1. Create Tag Form -->
         <div v-if="actionType === 'create-tag'" class="form-group">
-          <label class="form-label" for="input-tag-name">{{ t('scm.modal.tag_name') }} <span class="required">*</span></label>
+          <label class="form-label" for="input-tag-name"
+            >{{ t("scm.modal.tag_name") }} <span class="required">*</span></label
+          >
           <input
             id="input-tag-name"
             v-model="tagName"
@@ -37,7 +39,7 @@
             @keydown.enter="handleConfirm"
           />
 
-          <label class="form-label mt-3" for="input-tag-msg">{{ t('scm.modal.tag_message') }}</label>
+          <label class="form-label mt-3" for="input-tag-msg">{{ t("scm.modal.tag_message") }}</label>
           <textarea
             id="input-tag-msg"
             v-model="tagMessage"
@@ -49,7 +51,9 @@
 
         <!-- 2. Create Branch Form -->
         <div v-else-if="actionType === 'create-branch'" class="form-group">
-          <label class="form-label" for="input-branch-name">{{ t('scm.modal.branch_name') }} <span class="required">*</span></label>
+          <label class="form-label" for="input-branch-name"
+            >{{ t("scm.modal.branch_name") }} <span class="required">*</span></label
+          >
           <input
             id="input-branch-name"
             v-model="branchName"
@@ -62,13 +66,15 @@
 
           <label class="checkbox-label mt-3">
             <input v-model="checkoutBranch" type="checkbox" />
-            <span>{{ t('scm.modal.checkout_after_create') }}</span>
+            <span>{{ t("scm.modal.checkout_after_create") }}</span>
           </label>
         </div>
 
         <!-- 3. Rename Branch Form -->
         <div v-else-if="actionType === 'rename-branch'" class="form-group">
-          <label class="form-label" for="input-new-branch-name">{{ t('scm.modal.new_branch_name') }} <span class="required">*</span></label>
+          <label class="form-label" for="input-new-branch-name"
+            >{{ t("scm.modal.new_branch_name") }} <span class="required">*</span></label
+          >
           <input
             id="input-new-branch-name"
             v-model="newBranchName"
@@ -81,114 +87,118 @@
 
         <!-- 4. Delete Branch Confirm -->
         <div v-else-if="actionType === 'delete-branch'" class="form-group">
-          <p class="confirm-message">{{ t('scm.modal.delete_branch_confirm', { name: targetRefName || '' }) }}</p>
+          <p class="confirm-message">{{ t("scm.modal.delete_branch_confirm", { name: targetRefName || "" }) }}</p>
           <label class="checkbox-label mt-3">
             <input v-model="forceAction" type="checkbox" />
-            <span class="text-warning font-semibold">{{ t('scm.modal.force_delete') }}</span>
+            <span class="text-warning font-semibold">{{ t("scm.modal.force_delete") }}</span>
           </label>
         </div>
 
         <!-- 5. Merge Branch Confirm -->
         <div v-else-if="actionType === 'merge-branch'" class="form-group">
-          <p class="confirm-message">{{ t('scm.modal.merge_confirm', { branch: targetRefName || '', current: currentBranchName || '' }) }}</p>
+          <p class="confirm-message">
+            {{ t("scm.modal.merge_confirm", { branch: targetRefName || "", current: currentBranchName || "" }) }}
+          </p>
           <label class="checkbox-label mt-3">
             <input v-model="noFf" type="checkbox" />
-            <span>{{ t('scm.modal.no_ff') }}</span>
+            <span>{{ t("scm.modal.no_ff") }}</span>
           </label>
           <label class="checkbox-label mt-2">
             <input v-model="squash" type="checkbox" />
-            <span>{{ t('scm.modal.squash') }}</span>
+            <span>{{ t("scm.modal.squash") }}</span>
           </label>
         </div>
 
         <!-- 6. Rebase Branch Confirm -->
         <div v-else-if="actionType === 'rebase-branch'" class="form-group">
-          <p class="confirm-message">{{ t('scm.modal.rebase_confirm', { branch: targetRefName || '', current: currentBranchName || '' }) }}</p>
+          <p class="confirm-message">
+            {{ t("scm.modal.rebase_confirm", { branch: targetRefName || "", current: currentBranchName || "" }) }}
+          </p>
         </div>
 
         <!-- 7. Push Branch Confirm -->
         <div v-else-if="actionType === 'push-branch'" class="form-group">
-          <p class="confirm-message">{{ t('scm.modal.push_branch_confirm', { name: targetRefName || '' }) }}</p>
+          <p class="confirm-message">{{ t("scm.modal.push_branch_confirm", { name: targetRefName || "" }) }}</p>
           <label class="checkbox-label mt-3">
             <input v-model="setUpstream" type="checkbox" />
-            <span>{{ t('scm.modal.set_upstream') }}</span>
+            <span>{{ t("scm.modal.set_upstream") }}</span>
           </label>
           <label class="checkbox-label mt-2">
             <input v-model="forcePush" type="checkbox" />
-            <span class="text-warning">{{ t('scm.modal.force_push') }}</span>
+            <span class="text-warning">{{ t("scm.modal.force_push") }}</span>
           </label>
         </div>
 
         <!-- 8. Delete Tag Confirm -->
         <div v-else-if="actionType === 'delete-tag'" class="form-group">
-          <p class="confirm-message">{{ t('scm.modal.delete_tag_confirm', { name: targetRefName || '' }) }}</p>
+          <p class="confirm-message">{{ t("scm.modal.delete_tag_confirm", { name: targetRefName || "" }) }}</p>
         </div>
 
         <!-- 9. Push Tag Confirm -->
         <div v-else-if="actionType === 'push-tag'" class="form-group">
-          <p class="confirm-message">{{ t('scm.modal.push_tag_confirm', { name: targetRefName || '' }) }}</p>
+          <p class="confirm-message">{{ t("scm.modal.push_tag_confirm", { name: targetRefName || "" }) }}</p>
           <label class="checkbox-label mt-3">
             <input v-model="forcePush" type="checkbox" />
-            <span class="text-warning">{{ t('scm.modal.force_push') }}</span>
+            <span class="text-warning">{{ t("scm.modal.force_push") }}</span>
           </label>
         </div>
 
         <!-- 10. Reset To Commit Form -->
         <div v-else-if="actionType === 'reset'" class="form-group">
-          <p class="form-hint">{{ t('scm.modal.reset_mode_hint') }}</p>
+          <p class="form-hint">{{ t("scm.modal.reset_mode_hint") }}</p>
           <div class="radio-options">
             <label class="radio-card" :class="{ selected: resetMode === 'soft' }">
               <input v-model="resetMode" type="radio" value="soft" />
               <div class="radio-card-content">
-                <span class="radio-title">{{ t('scm.modal.reset_soft') }}</span>
-                <span class="radio-desc">{{ t('scm.modal.reset_soft_desc') }}</span>
+                <span class="radio-title">{{ t("scm.modal.reset_soft") }}</span>
+                <span class="radio-desc">{{ t("scm.modal.reset_soft_desc") }}</span>
               </div>
             </label>
 
             <label class="radio-card" :class="{ selected: resetMode === 'mixed' }">
               <input v-model="resetMode" type="radio" value="mixed" />
               <div class="radio-card-content">
-                <span class="radio-title">{{ t('scm.modal.reset_mixed') }}</span>
-                <span class="radio-desc">{{ t('scm.modal.reset_mixed_desc') }}</span>
+                <span class="radio-title">{{ t("scm.modal.reset_mixed") }}</span>
+                <span class="radio-desc">{{ t("scm.modal.reset_mixed_desc") }}</span>
               </div>
             </label>
 
             <label class="radio-card danger" :class="{ selected: resetMode === 'hard' }">
               <input v-model="resetMode" type="radio" value="hard" />
               <div class="radio-card-content">
-                <span class="radio-title">{{ t('scm.modal.reset_hard') }}</span>
-                <span class="radio-desc">{{ t('scm.modal.reset_hard_desc') }}</span>
+                <span class="radio-title">{{ t("scm.modal.reset_hard") }}</span>
+                <span class="radio-desc">{{ t("scm.modal.reset_hard_desc") }}</span>
               </div>
             </label>
           </div>
 
           <div v-if="resetMode === 'hard'" class="danger-alert">
             <span class="codicon codicon-warning"></span>
-            <span>{{ t('scm.modal.reset_hard_warning') }}</span>
+            <span>{{ t("scm.modal.reset_hard_warning") }}</span>
           </div>
         </div>
 
         <!-- 11. Revert Confirm -->
         <div v-else-if="actionType === 'revert'" class="confirm-message">
-          <p>{{ t('scm.modal.revert_confirm') }}</p>
-          <p class="text-muted text-sm mt-1">{{ t('scm.modal.revert_desc') }}</p>
+          <p>{{ t("scm.modal.revert_confirm") }}</p>
+          <p class="text-muted text-sm mt-1">{{ t("scm.modal.revert_desc") }}</p>
         </div>
 
         <!-- 12. Cherry Pick Confirm -->
         <div v-else-if="actionType === 'cherry-pick'" class="confirm-message">
-          <p>{{ t('scm.modal.cherry_pick_confirm') }}</p>
-          <p class="text-muted text-sm mt-1">{{ t('scm.modal.cherry_pick_desc') }}</p>
+          <p>{{ t("scm.modal.cherry_pick_confirm") }}</p>
+          <p class="text-muted text-sm mt-1">{{ t("scm.modal.cherry_pick_desc") }}</p>
         </div>
 
         <!-- 13. Checkout Confirm -->
         <div v-else-if="actionType === 'checkout'" class="confirm-message">
-          <p>{{ t('scm.modal.checkout_confirm', { hash: targetCommit?.shortHash ?? '' }) }}</p>
-          <p class="text-muted text-sm mt-1">{{ t('scm.modal.checkout_desc') }}</p>
+          <p>{{ t("scm.modal.checkout_confirm", { hash: targetCommit?.shortHash ?? "" }) }}</p>
+          <p class="text-muted text-sm mt-1">{{ t("scm.modal.checkout_desc") }}</p>
         </div>
 
         <!-- 14. Stash Uncommitted Changes Form -->
         <div v-else-if="actionType === 'stash-uncommitted'" class="form-group">
-          <label class="form-label" for="input-stash-msg">{{ t('scm.uncommitted.stash_msg_label') }}</label>
+          <label class="form-label" for="input-stash-msg">{{ t("scm.uncommitted.stash_msg_label") }}</label>
           <input
             id="input-stash-msg"
             v-model="stashMessage"
@@ -200,23 +210,23 @@
           />
           <label class="checkbox-label mt-3">
             <input v-model="includeUntracked" type="checkbox" />
-            <span>{{ t('scm.uncommitted.include_untracked') }}</span>
+            <span>{{ t("scm.uncommitted.include_untracked") }}</span>
           </label>
         </div>
 
         <!-- 15. Reset Uncommitted Changes Confirm -->
         <div v-else-if="actionType === 'reset-uncommitted'" class="confirm-message">
-          <p class="text-danger font-semibold">{{ t('scm.uncommitted.reset_confirm') }}</p>
+          <p class="text-danger font-semibold">{{ t("scm.uncommitted.reset_confirm") }}</p>
         </div>
 
         <!-- 16. Clean Untracked Files Confirm -->
         <div v-else-if="actionType === 'clean-uncommitted'" class="confirm-message">
-          <p class="text-danger font-semibold">{{ t('scm.uncommitted.clean_confirm') }}</p>
+          <p class="text-danger font-semibold">{{ t("scm.uncommitted.clean_confirm") }}</p>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="handleCancel">{{ t('scm.modal.cancel') }}</button>
+        <button class="btn btn-secondary" @click="handleCancel">{{ t("scm.modal.cancel") }}</button>
         <button
           class="btn"
           :class="isDangerAction ? 'btn-danger' : 'btn-primary'"

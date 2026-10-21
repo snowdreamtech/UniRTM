@@ -85,8 +85,8 @@ function normalizeNode(raw: any): FSNode {
       raw.is_dir !== undefined
         ? raw.is_dir
         : raw.IsDir !== undefined
-        ? raw.IsDir
-        : Array.isArray(rawChildren) && rawChildren.length > 0
+          ? raw.IsDir
+          : Array.isArray(rawChildren) && rawChildren.length > 0
     ),
     size: raw.size || raw.Size || 0,
     mod_time: raw.mod_time || raw.ModTime || "",
@@ -251,7 +251,10 @@ export function useFileTree() {
           throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
         const data = await res.json();
-        if (data && (data.entries || data.Entries || data.children || data.Children || data.data || data.name || data.Name)) {
+        if (
+          data &&
+          (data.entries || data.Entries || data.children || data.Children || data.data || data.name || data.Name)
+        ) {
           const rootRaw = data.data || data;
           const rootChildren = rootRaw.entries || rootRaw.Entries || rootRaw.children || rootRaw.Children || [];
           tree.value = {
@@ -302,7 +305,6 @@ export function useFileTree() {
   }
 
   function revealPath(path: string): FSNode | null {
-
     if (!path) return null;
     expandPath(path);
 
@@ -328,7 +330,6 @@ export function useFileTree() {
   }
 
   function collapseAll(): void {
-
     // Keep only root folder expanded so user sees the workspace container
     expandedPaths.value = new Set([""]);
   }

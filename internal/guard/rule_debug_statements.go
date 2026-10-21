@@ -72,7 +72,8 @@ func (r *DebugStatementsRule) Execute(ctx context.Context, files []string, opts 
 		norm := filepath.ToSlash(rel)
 		if strings.Contains(norm, "/tests/") || strings.Contains(norm, "/test/") ||
 			strings.Contains(norm, ".test.") || strings.Contains(norm, ".spec.") ||
-			strings.Contains(norm, "/mock/") || strings.Contains(norm, "/mocks/") {
+			strings.Contains(norm, "/mock/") || strings.Contains(norm, "/mocks/") ||
+			strings.HasSuffix(norm, "/logger.ts") || strings.HasSuffix(norm, "/logger.js") {
 			continue
 		}
 

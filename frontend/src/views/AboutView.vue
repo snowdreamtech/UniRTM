@@ -3,7 +3,7 @@
     <!-- Top Header Bar -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
           <TechIcon id="workbench:about" :size="20" />
           <span>{{ t("about.title") || "关于" }} (About UniRTM)</span>
         </h2>
@@ -27,11 +27,11 @@
           <span v-if="checking" class="spin-icon">
             <TechIcon id="workbench:sync" :size="14" />
           </span>
-          <span v-else-if="isLatestChecked" style="display: inline-flex; align-items: center; gap: 6px;">
+          <span v-else-if="isLatestChecked" style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:check" :size="14" />
             <span>{{ t("about.isLatest") || "已是最新版本" }}</span>
           </span>
-          <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
+          <span v-else style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:search" :size="14" />
             <span>{{ t("about.checkUpdate") || "检查更新" }}</span>
           </span>
@@ -43,16 +43,20 @@
           @click="handleRestartApp"
           :disabled="restarting"
         >
-          <span style="display: inline-flex; align-items: center; gap: 6px;">
+          <span style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:speed" :size="14" />
-            <span>{{ restarting ? t("about.restarting") || "正在重启..." : t("about.restartToApply") || "立即重启生效" }}</span>
+            <span>{{
+              restarting ? t("about.restarting") || "正在重启..." : t("about.restartToApply") || "立即重启生效"
+            }}</span>
           </span>
         </button>
 
         <button v-else class="about-action-btn update" @click="handlePerformUpdate" :disabled="updating">
-          <span style="display: inline-flex; align-items: center; gap: 6px;">
+          <span style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:tasks" :size="14" />
-            <span>{{ updating ? t("about.updating", { progress: updateProgress }) : t("about.updateTo", { tag: latestTag }) }}</span>
+            <span>{{
+              updating ? t("about.updating", { progress: updateProgress }) : t("about.updateTo", { tag: latestTag })
+            }}</span>
           </span>
         </button>
       </div>
@@ -121,7 +125,9 @@
 
       <div class="glass-card spec-card">
         <span class="spec-label">{{ t("about.environment") || "运行环境 (Platform)" }}</span>
-        <span class="spec-value font-mono">{{ appInfo.osArch || "Linux / Darwin / Windows" }} ({{ appInfo.goVersion || "Go 1.27+" }})</span>
+        <span class="spec-value font-mono"
+          >{{ appInfo.osArch || "Linux / Darwin / Windows" }} ({{ appInfo.goVersion || "Go 1.27+" }})</span
+        >
       </div>
     </div>
 
@@ -190,7 +196,10 @@
             </a>
           </div>
           <p>
-            {{ t("about.credits_codicons_desc") || "UniRTM 工作台标准产品操作与界面图标集。由 Microsoft 官方维护，遵循 CC-BY-4.0 商业可用许可，提供官方标准工作台交互视觉语言。" }}
+            {{
+              t("about.credits_codicons_desc") ||
+              "UniRTM 工作台标准产品操作与界面图标集。由 Microsoft 官方维护，遵循 CC-BY-4.0 商业可用许可，提供官方标准工作台交互视觉语言。"
+            }}
           </p>
         </div>
 
@@ -216,19 +225,17 @@
             </a>
           </div>
           <p>
-            {{ t("about.credits_seti_desc") || "UniRTM 默认文件与开发语言图标集。由 Jesse Weed 与 Visual Studio Code 团队维护，遵循 MIT 许可，精准映射文件扩展名与语言标识。" }}
+            {{
+              t("about.credits_seti_desc") ||
+              "UniRTM 默认文件与开发语言图标集。由 Jesse Weed 与 Visual Studio Code 团队维护，遵循 MIT 许可，精准映射文件扩展名与语言标识。"
+            }}
           </p>
         </div>
 
         <div class="credit-item">
           <div class="credit-item-title">
             <span class="codicon codicon-extensions"></span>
-            <a
-              href="https://open-vsx.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="credit-link"
-            >
+            <a href="https://open-vsx.org" target="_blank" rel="noopener noreferrer" class="credit-link">
               VS Code 主题扩展规范与 Open VSX ↗
             </a>
             <a
@@ -242,14 +249,35 @@
             </a>
           </div>
           <p>
-            {{ t("about.credits_themes_desc") || "原生兼容 VS Code 三大扩展主题维度：颜色主题 (contributes.themes)、文件图标 (contributes.iconThemes) 与界面产品图标 (contributes.productIconThemes)。" }}
+            {{
+              t("about.credits_themes_desc") ||
+              "原生兼容 VS Code 三大扩展主题维度：颜色主题 (contributes.themes)、文件图标 (contributes.iconThemes) 与界面产品图标 (contributes.productIconThemes)。"
+            }}
           </p>
-          <div class="manifest-links" style="margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap;">
-            <a href="https://code.visualstudio.com/api/extension-guides/color-theme" target="_blank" rel="noopener noreferrer" class="sub-link">颜色主题规范 ↗</a>
-            <span style="color: var(--text-muted); opacity: 0.5;">•</span>
-            <a href="https://code.visualstudio.com/api/extension-guides/file-icon-theme" target="_blank" rel="noopener noreferrer" class="sub-link">文件图标规范 ↗</a>
-            <span style="color: var(--text-muted); opacity: 0.5;">•</span>
-            <a href="https://code.visualstudio.com/api/extension-guides/product-icon-theme" target="_blank" rel="noopener noreferrer" class="sub-link">界面图标规范 ↗</a>
+          <div class="manifest-links" style="margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap">
+            <a
+              href="https://code.visualstudio.com/api/extension-guides/color-theme"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="sub-link"
+              >颜色主题规范 ↗</a
+            >
+            <span style="color: var(--text-muted); opacity: 0.5">•</span>
+            <a
+              href="https://code.visualstudio.com/api/extension-guides/file-icon-theme"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="sub-link"
+              >文件图标规范 ↗</a
+            >
+            <span style="color: var(--text-muted); opacity: 0.5">•</span>
+            <a
+              href="https://code.visualstudio.com/api/extension-guides/product-icon-theme"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="sub-link"
+              >界面图标规范 ↗</a
+            >
           </div>
         </div>
       </div>
@@ -982,8 +1010,12 @@ onMounted(async () => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ========================================================

@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
 )
 
 type MergeConflictRule struct{}
@@ -54,7 +53,10 @@ func (r *MergeConflictRule) Execute(ctx context.Context, files []string, opts Ex
 			continue
 		}
 
-		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
+		fullPath := rel
+		if !filepath.IsAbs(fullPath) {
+			fullPath = filepath.Join(opts.WorkspaceDir, rel)
+		}
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() > maxSize {
 			continue

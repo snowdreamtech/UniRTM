@@ -40,14 +40,17 @@ describe("useTerminal composable", () => {
 
     expect(result).toBe(true);
     expect(currentTerminalPath.value).toBe("/usr/bin/zsh");
-    expect(globalThis.fetch).toHaveBeenCalledWith("/api/config", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({
-        scope: "user",
-        key: "settings.terminal",
-        value: "/usr/bin/zsh",
-      }),
-    }));
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "/api/config",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          scope: "user",
+          key: "settings.terminal",
+          value: "/usr/bin/zsh",
+        }),
+      })
+    );
   });
 
   it("deduplicates redundant terminals and ensures exactly one default terminal", async () => {

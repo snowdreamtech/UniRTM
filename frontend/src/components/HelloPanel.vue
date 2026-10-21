@@ -12,7 +12,8 @@
         </h1>
         <p class="hero-subtitle">
           {{
-            t("app.template_desc") || "The fast, simple, cross-platform tool to manage your dev tools, environments, and tasks."
+            t("app.template_desc") ||
+            "The fast, simple, cross-platform tool to manage your dev tools, environments, and tasks."
           }}
         </p>
 

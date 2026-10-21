@@ -70,7 +70,9 @@ export function useThemeMarketplace() {
     await searchThemes(undefined, 1, size);
   };
 
-  const isExtensionInstalling = (item?: { namespace?: string; name?: string; displayName?: string } | null): boolean => {
+  const isExtensionInstalling = (
+    item?: { namespace?: string; name?: string; displayName?: string } | null
+  ): boolean => {
     if (!item) return false;
     if (item.namespace && item.name && installingMap[`${item.namespace}.${item.name}`]) return true;
     if (item.name && installingMap[item.name]) return true;
@@ -167,4 +169,3 @@ export function useThemeMarketplace() {
     clearActiveDetail,
   };
 }
-

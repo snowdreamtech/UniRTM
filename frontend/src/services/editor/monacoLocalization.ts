@@ -6,9 +6,9 @@ import { currentLocale } from "../../i18n";
 const MONACO_LABEL_TRANSLATIONS: Record<string, Record<string, string>> = {
   "zh-CN": {
     "Change All Occurrences": "更改所有匹配项",
-    "Cut": "剪切",
-    "Copy": "复制",
-    "Paste": "粘贴",
+    Cut: "剪切",
+    Copy: "复制",
+    Paste: "粘贴",
     "Command Palette": "命令面板...",
     "Command Palette...": "命令面板...",
     "Format Document": "格式化文档",
@@ -25,10 +25,10 @@ const MONACO_LABEL_TRANSLATIONS: Record<string, Record<string, string>> = {
     "Go to Type Definition": "转到类型定义",
     "Peek Type Definition": "查看类型定义",
     "Find All References": "查找所有引用",
-    "Share": "共享",
+    Share: "共享",
     "Select All": "全选",
-    "Undo": "撤销",
-    "Redo": "恢复",
+    Undo: "撤销",
+    Redo: "恢复",
     "Cut Line": "剪切行",
     "Copy Line Up": "向上复制行",
     "Copy Line Down": "向下复制行",
@@ -37,8 +37,8 @@ const MONACO_LABEL_TRANSLATIONS: Record<string, Record<string, string>> = {
     "Delete Line": "删除行",
     "Toggle Line Comment": "切换行注释",
     "Toggle Block Comment": "切换块注释",
-    "Fold": "折叠",
-    "Unfold": "展开",
+    Fold: "折叠",
+    Unfold: "展开",
     "Fold All": "全部折叠",
     "Unfold All": "全部展开",
     "Quick Fix...": "快速修复...",
@@ -47,9 +47,9 @@ const MONACO_LABEL_TRANSLATIONS: Record<string, Record<string, string>> = {
   },
   "zh-TW": {
     "Change All Occurrences": "變更所有相符項",
-    "Cut": "剪下",
-    "Copy": "複製",
-    "Paste": "貼上",
+    Cut: "剪下",
+    Copy: "複製",
+    Paste: "貼上",
     "Command Palette": "命令選擇區...",
     "Command Palette...": "命令選擇區...",
     "Format Document": "格式化文件",
@@ -66,10 +66,10 @@ const MONACO_LABEL_TRANSLATIONS: Record<string, Record<string, string>> = {
     "Go to Type Definition": "前往類型定義",
     "Peek Type Definition": "預覽類型定義",
     "Find All References": "尋找所有參考",
-    "Share": "共用",
+    Share: "共用",
     "Select All": "全選",
-    "Undo": "復原",
-    "Redo": "取消復原",
+    Undo: "復原",
+    Redo: "取消復原",
     "Cut Line": "剪下行",
     "Copy Line Up": "向上複製行",
     "Copy Line Down": "向下複製行",
@@ -78,8 +78,8 @@ const MONACO_LABEL_TRANSLATIONS: Record<string, Record<string, string>> = {
     "Delete Line": "刪除行",
     "Toggle Line Comment": "切換行註解",
     "Toggle Block Comment": "切換區塊註解",
-    "Fold": "摺疊",
-    "Unfold": "展開",
+    Fold: "摺疊",
+    Unfold: "展開",
     "Fold All": "全部摺疊",
     "Unfold All": "全部展開",
     "Quick Fix...": "快速修正...",
@@ -90,7 +90,9 @@ const MONACO_LABEL_TRANSLATIONS: Record<string, Record<string, string>> = {
 
 export function translateMonacoLabel(label: string, lang?: string): string {
   const currentLang = lang || currentLocale.value || "en-US";
-  const dict = MONACO_LABEL_TRANSLATIONS[currentLang] || (currentLang.startsWith("zh") ? MONACO_LABEL_TRANSLATIONS["zh-CN"] : null);
+  const dict =
+    MONACO_LABEL_TRANSLATIONS[currentLang] ||
+    (currentLang.startsWith("zh") ? MONACO_LABEL_TRANSLATIONS["zh-CN"] : null);
   if (!dict) return label;
   const trimmed = label.trim();
   return dict[trimmed] || label;

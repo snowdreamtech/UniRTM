@@ -20,11 +20,7 @@
         </div>
 
         <div v-else class="snapshot-list">
-          <div
-            v-for="(item, index) in snapshots"
-            :key="item.id"
-            class="snapshot-item"
-          >
+          <div v-for="(item, index) in snapshots" :key="item.id" class="snapshot-item">
             <div class="snapshot-info">
               <div class="snapshot-time-row">
                 <span class="snapshot-index">#{{ snapshots.length - index }}</span>
@@ -39,11 +35,7 @@
             </div>
 
             <div class="snapshot-actions">
-              <button
-                class="action-btn diff-btn"
-                title="在主编辑器中与当前版本差异比对"
-                @click="handleCompare(item)"
-              >
+              <button class="action-btn diff-btn" title="在主编辑器中与当前版本差异比对" @click="handleCompare(item)">
                 <span class="codicon codicon-diff"></span>
                 对比差异
               </button>

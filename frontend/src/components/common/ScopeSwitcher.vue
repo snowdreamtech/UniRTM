@@ -57,12 +57,8 @@ const { activeScope, setScope, toggleScope } = useAppScope();
 const workspaceLabel = computed(() => t("settings.scope_workspace") || "工作区");
 const userLabel = computed(() => t("settings.scope_user") || "用户");
 
-const workspaceTooltip = computed(
-  () => "工作区环境：配置当前项目专属环境 (.unirtm.toml)"
-);
-const userTooltip = computed(
-  () => "用户全局环境：配置当前用户所有项目共用的默认兜底环境 (~/.unirtm)"
-);
+const workspaceTooltip = computed(() => "工作区环境：配置当前项目专属环境 (.unirtm.toml)");
+const userTooltip = computed(() => "用户全局环境：配置当前用户所有项目共用的默认兜底环境 (~/.unirtm)");
 const shortcutTitle = computed(
   () => `当前作用域: ${activeScope.value === "user" ? userLabel.value : workspaceLabel.value} (按 Alt+S 快速切换)`
 );
@@ -130,7 +126,9 @@ onUnmounted(() => {
   background: var(--card-bg, #1e1e1e);
   color: var(--accent-cyan, #0284c7);
   font-weight: 600;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18), 0 0 0 1px var(--card-border, rgba(255, 255, 255, 0.1));
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.18),
+    0 0 0 1px var(--card-border, rgba(255, 255, 255, 0.1));
 }
 
 .scope-icon {

@@ -8,7 +8,7 @@ export interface ParsedTerminalLink {
   type: "url" | "file";
   text: string;
   startIndex: number; // 0-indexed in line
-  endIndex: number;   // 0-indexed exclusive
+  endIndex: number; // 0-indexed exclusive
   url?: string;
   filePath?: string;
   line?: number;
@@ -23,7 +23,8 @@ const PYTHON_STACK_REGEX = /File\s+"([^"]+)",\s+line\s+(\d+)/gi;
 
 // 匹配标准文件路径以及附带的行号/列号 (如 src/App.vue:42:15, ./main.go:88, /home/user/project/file.ts:10)
 // 支持常见扩展名
-const FILE_PATH_EXT_REGEX = /(?:^|[\s([`'"<>=])((?:[a-zA-Z]:[\\/]|(?:\.{1,2}[\\/])|(?:[\w.-]+[\\/]))*[\w.-]+\.(?:ts|js|vue|jsx|tsx|json|md|html|css|scss|sh|go|py|rs|yaml|yml|toml|sql|txt|c|cpp|h|java|php|rb|xml|env))(?::(\d+))?(?::(\d+))?/gi;
+const FILE_PATH_EXT_REGEX =
+  /(?:^|[\s([`'"<>=])((?:[a-zA-Z]:[\\/]|(?:\.{1,2}[\\/])|(?:[\w.-]+[\\/]))*[\w.-]+\.(?:ts|js|vue|jsx|tsx|json|md|html|css|scss|sh|go|py|rs|yaml|yml|toml|sql|txt|c|cpp|h|java|php|rb|xml|env))(?::(\d+))?(?::(\d+))?/gi;
 
 /**
  * 解析终端单行字符中的所有可点击超链接（URL 与 文件路径/堆栈）
@@ -96,7 +97,8 @@ export function parseTerminalLine(lineText: string): ParsedTerminalLink[] {
     // 计算实际匹配文本在 lineText 中的起始索引（因为前导可能有空白或括号字符）
     const offset = fullMatchedStr.indexOf(rawFilePath);
     const startIndex = fileMatch.index + offset;
-    const matchedTokenLen = rawFilePath.length + (lineStr ? `:${lineStr}`.length : 0) + (colStr ? `:${colStr}`.length : 0);
+    const matchedTokenLen =
+      rawFilePath.length + (lineStr ? `:${lineStr}`.length : 0) + (colStr ? `:${colStr}`.length : 0);
     const endIndex = startIndex + matchedTokenLen;
 
     if (!isOverlapping(startIndex, endIndex)) {
@@ -125,10 +127,7 @@ export interface TerminalLinkProviderOptions {
 /**
  * 为 xterm 实例构建并注册自定义超链接提供者
  */
-export function createTerminalLinkProvider(
-  term: Terminal,
-  options?: TerminalLinkProviderOptions
-): ILinkProvider {
+export function createTerminalLinkProvider(term: Terminal, options?: TerminalLinkProviderOptions): ILinkProvider {
   const { openInEditor } = useWorkspaceBus();
 
   return {

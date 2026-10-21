@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
 )
 
 // LockfileCoexistenceRule ensures only one Node.js package manager lockfile exists per folder
@@ -137,7 +136,10 @@ func (r *LockfileConflictsRule) Execute(ctx context.Context, files []string, opt
 			continue
 		}
 
-		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
+		fullPath := rel
+		if !filepath.IsAbs(fullPath) {
+			fullPath = filepath.Join(opts.WorkspaceDir, rel)
+		}
 		f, err := os.Open(fullPath)
 		if err != nil {
 			continue

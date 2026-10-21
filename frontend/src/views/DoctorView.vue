@@ -3,20 +3,18 @@
     <!-- View Header -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
           <TechIcon id="workbench:doctor" :size="20" />
           {{ t("doctor.title") }}
         </h2>
-        <p class="view-desc">
-          主动排查工具冲突、锁文件漂移、网络阻塞及权限隐患，确保项目始终能够“跑得通、编译顺”。
-        </p>
+        <p class="view-desc">主动排查工具冲突、锁文件漂移、网络阻塞及权限隐患，确保项目始终能够“跑得通、编译顺”。</p>
       </div>
       <div class="view-actions">
         <button class="doctor-action-btn primary" :disabled="isRunningCheck" @click="runFullDiagnostic">
           <span v-if="isRunningCheck" class="spin-icon">
             <TechIcon id="workbench:sync" :size="14" />
           </span>
-          <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
+          <span v-else style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:doctor" :size="14" :colored="false" />
             重新全面体检
           </span>
@@ -28,25 +26,19 @@
     <div class="glass-card score-banner">
       <div class="score-left">
         <div class="score-circle">
-          <span class="score-number">{{ isRunningCheck ? '...' : '100' }}</span>
+          <span class="score-number">{{ isRunningCheck ? "..." : "100" }}</span>
           <span class="score-unit">/100</span>
         </div>
         <div class="score-text">
-          <h3 class="score-title">{{ isRunningCheck ? '正在检查全景环境...' : t("doctor.healthy") }}</h3>
-          <p class="score-sub">
-            所有核心运行时、版本锁定、网络代理及 Git 提交前钩子均符合生产级标准。
-          </p>
+          <h3 class="score-title">{{ isRunningCheck ? "正在检查全景环境..." : t("doctor.healthy") }}</h3>
+          <p class="score-sub">所有核心运行时、版本锁定、网络代理及 Git 提交前钩子均符合生产级标准。</p>
         </div>
       </div>
     </div>
 
     <!-- Diagnostic Checks Grid -->
     <div class="checks-grid">
-      <div
-        v-for="item in checkList"
-        :key="item.id"
-        class="glass-card check-card"
-      >
+      <div v-for="item in checkList" :key="item.id" class="glass-card check-card">
         <div class="check-card-header">
           <div class="check-icon-circle" :class="item.status">
             <TechIcon :id="item.icon" :size="16" />
@@ -75,7 +67,13 @@ import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
 
 const emit = defineEmits<{
-  (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, category?: "output" | "tasks" | "doctor"): void;
+  (
+    e: "log-event",
+    level: "INFO" | "SUCCESS" | "WARN" | "ERROR",
+    msg: string,
+    detail?: string,
+    category?: "output" | "tasks" | "doctor"
+  ): void;
   (e: "open-drawer", tab?: "output" | "tasks" | "doctor"): void;
 }>();
 
@@ -130,7 +128,13 @@ function runFullDiagnostic() {
   }, 400);
 
   setTimeout(() => {
-    emit("log-event", "SUCCESS", "UniRTM Doctor diagnostic completed: 4/4 checks passed (100% Score).", undefined, "doctor");
+    emit(
+      "log-event",
+      "SUCCESS",
+      "UniRTM Doctor diagnostic completed: 4/4 checks passed (100% Score).",
+      undefined,
+      "doctor"
+    );
     isRunningCheck.value = false;
   }, 1000);
 }

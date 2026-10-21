@@ -12,7 +12,12 @@
           class="settings-search-input"
           :placeholder="t('settings.search_placeholder') || '搜索设置 (Search settings)...'"
         />
-        <button v-if="searchQuery" class="btn btn-icon clear-search-btn" @click="searchQuery = ''" :title="t('common.clear') || '清除'">
+        <button
+          v-if="searchQuery"
+          class="btn btn-icon clear-search-btn"
+          @click="searchQuery = ''"
+          :title="t('common.clear') || '清除'"
+        >
           <TechIcon id="workbench:close" :size="12" />
         </button>
       </div>
@@ -21,33 +26,59 @@
       <div class="scope-switcher-group">
         <span
           class="active-scope-badge font-mono"
-          :title="activeScope === 'user' ? (configData?.user?.path || '~/.config/unirtm/unirtm.toml') : (configData?.workspace?.path || './.unirtm.toml')"
+          :title="
+            activeScope === 'user'
+              ? configData?.user?.path || '~/.config/unirtm/unirtm.toml'
+              : configData?.workspace?.path || './.unirtm.toml'
+          "
         >
-          <span style="font-weight: 600; color: var(--accent-cyan); margin-right: 6px;">
-            [{{ activeScope === 'user' ? (t('settings.scope_user') || '用户全局配置') : (t('settings.scope_workspace') || '工作区配置') }}]
+          <span style="font-weight: 600; color: var(--accent-cyan); margin-right: 6px">
+            [{{
+              activeScope === "user"
+                ? t("settings.scope_user") || "用户全局配置"
+                : t("settings.scope_workspace") || "工作区配置"
+            }}]
           </span>
-          {{ activeScope === 'user' ? (configData?.user?.path || '~/.config/unirtm/unirtm.toml') : (configData?.workspace?.path || './.unirtm.toml') }}
+          {{
+            activeScope === "user"
+              ? configData?.user?.path || "~/.config/unirtm/unirtm.toml"
+              : configData?.workspace?.path || "./.unirtm.toml"
+          }}
         </span>
       </div>
 
       <!-- Top Right Actions: Auto-save status & Open TOML -->
       <div class="settings-top-actions">
-        <span class="auto-save-pill" :class="[saveStatusType, { saving: isSaving }]" style="display: inline-flex; align-items: center; gap: 6px;">
+        <span
+          class="auto-save-pill"
+          :class="[saveStatusType, { saving: isSaving }]"
+          style="display: inline-flex; align-items: center; gap: 6px"
+        >
           <TechIcon
-            :id="saveStatusType === 'saving' ? 'workbench:sync' : saveStatusType === 'success' ? 'workbench:success' : saveStatusType === 'error' ? 'workbench:error' : 'workbench:speed'"
+            :id="
+              saveStatusType === 'saving'
+                ? 'workbench:sync'
+                : saveStatusType === 'success'
+                  ? 'workbench:success'
+                  : saveStatusType === 'error'
+                    ? 'workbench:error'
+                    : 'workbench:speed'
+            "
             :size="12"
             :class="{ spinning: saveStatusType === 'saving' }"
           />
-          <span>{{ saveStatusText || t('settings.realtime_save') || '修改已实时生效' }}</span>
+          <span>{{ saveStatusText || t("settings.realtime_save") || "修改已实时生效" }}</span>
         </span>
         <button
           class="btn-raw-toml"
           :class="{ active: showRawTomlModal }"
           @click="showRawTomlModal ? handleCloseTomlEditor() : handleOpenTomlEditor()"
-          :title="showRawTomlModal ? (t('settings.close_toml') || '关闭 TOML') : (t('settings.open_toml') || '打开 TOML')"
+          :title="showRawTomlModal ? t('settings.close_toml') || '关闭 TOML' : t('settings.open_toml') || '打开 TOML'"
         >
           <TechIcon id="workbench:edit" :size="14" />
-          <span>{{ showRawTomlModal ? (t('settings.close_toml') || '关闭 TOML') : (t('settings.open_toml') || '打开 TOML') }}</span>
+          <span>{{
+            showRawTomlModal ? t("settings.close_toml") || "关闭 TOML" : t("settings.open_toml") || "打开 TOML"
+          }}</span>
         </button>
       </div>
     </div>
@@ -64,10 +95,18 @@
                 <div class="file-desc">{{ activeTomlFilePath }}</div>
               </div>
               <span class="config-badge" :class="isTomlExists ? 'badge-active' : 'badge-draft'">
-                {{ isTomlExists ? (t('guard.config.active') || '已生效') : (t('guard.config.unconfigured') || '未创建 (保存将创建)') }}
+                {{
+                  isTomlExists
+                    ? t("guard.config.active") || "已生效"
+                    : t("guard.config.unconfigured") || "未创建 (保存将创建)"
+                }}
               </span>
               <span class="scope-tag font-mono">
-                [{{ activeScope === 'user' ? (t('settings.scope_user') || '用户全局配置') : (t('settings.scope_workspace') || '工作区配置') }}]
+                [{{
+                  activeScope === "user"
+                    ? t("settings.scope_user") || "用户全局配置"
+                    : t("settings.scope_workspace") || "工作区配置"
+                }}]
               </span>
             </div>
             <div class="header-actions">
@@ -77,7 +116,7 @@
                 :title="t('guard.config.open_in_explorer_title') || '在资源管理器以完整编辑器打开'"
               >
                 <span class="codicon codicon-screen-full"></span>
-                <span>{{ t('guard.config.open_in_explorer') || '全屏' }}</span>
+                <span>{{ t("guard.config.open_in_explorer") || "全屏" }}</span>
               </button>
               <button
                 class="modal-action-btn copy"
@@ -85,7 +124,7 @@
                 :title="t('settings.copy_content') || '复制内容'"
               >
                 <span class="codicon" :class="isCopied ? 'codicon-check' : 'codicon-copy'"></span>
-                <span>{{ isCopied ? (t('settings.copied') || '已复制') : (t('common.copy') || '复制') }}</span>
+                <span>{{ isCopied ? t("settings.copied") || "已复制" : t("common.copy") || "复制" }}</span>
               </button>
               <button class="modal-action-btn close" @click="handleCloseTomlEditor" title="关闭 (Esc)">
                 <span class="codicon codicon-close"></span>
@@ -96,24 +135,26 @@
           <div class="config-editor-body">
             <div v-if="isTomlLoading" class="editor-loading">
               <span class="codicon codicon-loading codicon-modifier-spin"></span>
-              <span>{{ t('guard.config.loading') || '正在加载配置文件...' }}</span>
+              <span>{{ t("guard.config.loading") || "正在加载配置文件..." }}</span>
             </div>
             <div ref="tomlMonacoContainer" class="config-monaco-host" v-show="!isTomlLoading"></div>
           </div>
 
           <div class="config-editor-footer">
             <div class="footer-status">
-              <span v-if="isTomlDirty" class="status-dirty">● {{ t('guard.config.unsaved_changes') || '有未保存的更改' }}</span>
-              <span v-else class="status-clean">✔ {{ t('guard.config.all_saved') || '已是最新内容' }}</span>
+              <span v-if="isTomlDirty" class="status-dirty"
+                >● {{ t("guard.config.unsaved_changes") || "有未保存的更改" }}</span
+              >
+              <span v-else class="status-clean">✔ {{ t("guard.config.all_saved") || "已是最新内容" }}</span>
             </div>
             <div class="footer-actions">
               <button class="modal-btn secondary" @click="handleCloseTomlEditor">
-                {{ t('common.close') || '关闭' }}
+                {{ t("common.close") || "关闭" }}
               </button>
               <button class="modal-btn primary" :disabled="isTomlSaving" @click="handleSaveToml">
                 <span v-if="isTomlSaving" class="codicon codicon-loading codicon-modifier-spin"></span>
                 <span v-else class="codicon codicon-save"></span>
-                <span>{{ t('common.save') || '保存' }}</span>
+                <span>{{ t("common.save") || "保存" }}</span>
               </button>
             </div>
           </div>
@@ -123,1685 +164,1854 @@
 
     <!-- Main Settings Body: Full-width Content Canvas -->
     <div class="settings-content-canvas" ref="canvasScrollRef">
+      <!-- 1. General Settings -->
+      <section v-show="isCategoryVisible('general')" id="section-general" class="settings-category-section glass-card">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-icon">
+              <TechIcon id="workbench:settings" :size="20" />
+            </span>
+            <div>
+              <h2>{{ t("settings.cat_general") || "常规" }}</h2>
+              <span class="section-sub">{{ t("settings.cat_general_sub") || "语言、主题、浏览器、缓存" }}</span>
+            </div>
+          </div>
+        </div>
 
-        <!-- 1. General Settings -->
-        <section
-          v-show="isCategoryVisible('general')"
-          id="section-general"
-          class="settings-category-section glass-card"
-        >
-          <div class="section-header">
-            <div class="section-title-wrap">
-              <span class="section-icon">
-                <TechIcon id="workbench:settings" :size="20" />
-              </span>
-              <div>
-                <h2>{{ t('settings.cat_general') || '常规' }}</h2>
-                <span class="section-sub">{{ t('settings.cat_general_sub') || '语言、主题、浏览器、缓存' }}</span>
+        <div class="settings-list">
+          <!-- Setting: Language -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('language') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.language") || "语言" }}</span>
+              <p class="setting-desc">{{ t("settings.language_desc") || "工作台界面的显示语言。" }}</p>
+            </div>
+            <div class="setting-control">
+              <CustomSelect :model-value="appLanguage" :options="languageSelectOptions" @change="onLanguageChange" />
+            </div>
+          </div>
+
+          <!-- Setting: Appearance Mode -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('appearance') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.appearance_mode") || "外观模式" }}</span>
+              <p class="setting-desc">
+                {{ t("settings.appearance_mode_desc") || "工作台界面的明暗模式，可跟随操作系统或手动指定。" }}
+              </p>
+            </div>
+            <div class="setting-control">
+              <div class="segmented-control" id="appearance-segmented-control">
+                <button
+                  type="button"
+                  class="segment-btn"
+                  :class="{ active: activeAppearance === 'system' }"
+                  @click="onAppearanceChange('system')"
+                  id="btn-appearance-system"
+                >
+                  <TechIcon id="workbench:dashboard" :size="14" :colored="false" />
+                  <span>{{ t("theme.system") || "跟随系统" }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  :class="{ active: activeAppearance === 'light' }"
+                  @click="onAppearanceChange('light')"
+                  id="btn-appearance-light"
+                >
+                  <TechIcon id="workbench:about" :size="14" :colored="false" />
+                  <span>{{ t("theme.light") || "浅色模式" }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  :class="{ active: activeAppearance === 'dark' }"
+                  @click="onAppearanceChange('dark')"
+                  id="btn-appearance-dark"
+                >
+                  <TechIcon id="workbench:terminal" :size="14" :colored="false" />
+                  <span>{{ t("theme.dark") || "深色模式" }}</span>
+                </button>
               </div>
             </div>
           </div>
 
-          <div class="settings-list">
-            <!-- Setting: Language -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('language') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.language') || '语言' }}</span>
-                <p class="setting-desc">{{ t('settings.language_desc') || '工作台界面的显示语言。' }}</p>
-              </div>
-              <div class="setting-control">
-                <CustomSelect
-                  :model-value="appLanguage"
-                  :options="languageSelectOptions"
-                  @change="onLanguageChange"
-                />
-              </div>
+          <!-- Setting: Color Theme -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('theme') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.color_theme") || "配色主题" }}</span>
+              <p class="setting-desc">
+                {{ t("settings.color_theme_desc") || "工作台界面配色主题，完全兼容 VS Code 主题标准。" }}
+              </p>
             </div>
+            <div class="setting-control">
+              <CustomSelect :model-value="activeColorTheme" :options="colorThemeOptions" @change="onColorThemeChange" />
+            </div>
+          </div>
 
-            <!-- Setting: Appearance Mode -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('appearance') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.appearance_mode') || '外观模式' }}</span>
-                <p class="setting-desc">{{ t('settings.appearance_mode_desc') || '工作台界面的明暗模式，可跟随操作系统或手动指定。' }}</p>
+          <!-- Setting: Icon Theme -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('icon') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.icon_theme") || "文件图标主题" }}</span>
+              <p class="setting-desc">
+                {{ t("settings.icon_theme_desc") || "工作台侧边栏与文件/工具列表图标集，100% 对齐 VS Code 标准结构。" }}
+              </p>
+            </div>
+            <div class="setting-control">
+              <CustomSelect :model-value="activeIconTheme" :options="iconThemeOptions" @change="onIconThemeChange" />
+            </div>
+          </div>
+
+          <!-- Setting: Product Icon Theme -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('product_icon') || matchesSearch('icon') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.product_icon_theme") || "界面图标主题" }}</span>
+              <p class="setting-desc">
+                {{
+                  t("settings.product_icon_theme_desc") ||
+                  "工作台按钮、操作与状态等界面产品图标主题，支持切换 Codicons 与第三方界面图标扩展。"
+                }}
+              </p>
+            </div>
+            <div class="setting-control">
+              <CustomSelect
+                :model-value="activeProductIconTheme"
+                :options="productIconThemeOptions"
+                @change="onProductIconThemeChange"
+              />
+            </div>
+          </div>
+
+          <!-- Setting: Theme Package Manager -->
+          <div class="setting-item theme-manager-item" :class="{ highlight: matchesSearch('vsix') }">
+            <div class="setting-meta full-width">
+              <div class="title-with-badge">
+                <span class="setting-title">{{ t("settings.theme_pkg_manager") || "VS Code 主题与图标扩展管理" }}</span>
+                <span class="badge-custom-pkg">VSIX / ZIP</span>
               </div>
-              <div class="setting-control">
-                <div class="segmented-control" id="appearance-segmented-control">
+              <p class="setting-desc">
+                {{
+                  t("settings.theme_pkg_desc") ||
+                  "导入本地官方 VS Code 扩展包（.vsix），纯静态解析，自动保存在用户本地目录。"
+                }}
+              </p>
+
+              <!-- Actions Toolbar -->
+              <div class="theme-actions-toolbar">
+                <button class="btn-jump-marketplace" @click="navigateToMarketplace('themes')">
+                  <span class="jump-icon">
+                    <TechIcon id="workbench:marketplace" :size="14" />
+                  </span>
+                  <span>前往扩展与主题市场挑选... ↗</span>
+                </button>
+
+                <div class="local-vsix-upload-wrap">
+                  <input
+                    ref="vsixInputRef"
+                    type="file"
+                    accept=".vsix,.zip"
+                    class="hidden-file-input"
+                    @change="onVsixFileSelected"
+                  />
                   <button
-                    type="button"
-                    class="segment-btn"
-                    :class="{ active: activeAppearance === 'system' }"
-                    @click="onAppearanceChange('system')"
-                    id="btn-appearance-system"
+                    class="btn-install-vsix"
+                    :disabled="isInstallingTheme"
+                    @trigger="triggerVsixUpload"
+                    @click="triggerVsixUpload"
                   >
-                    <TechIcon id="workbench:dashboard" :size="14" :colored="false" />
-                    <span>{{ t('theme.system') || '跟随系统' }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="segment-btn"
-                    :class="{ active: activeAppearance === 'light' }"
-                    @click="onAppearanceChange('light')"
-                    id="btn-appearance-light"
-                  >
-                    <TechIcon id="workbench:about" :size="14" :colored="false" />
-                    <span>{{ t('theme.light') || '浅色模式' }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="segment-btn"
-                    :class="{ active: activeAppearance === 'dark' }"
-                    @click="onAppearanceChange('dark')"
-                    id="btn-appearance-dark"
-                  >
-                    <TechIcon id="workbench:terminal" :size="14" :colored="false" />
-                    <span>{{ t('theme.dark') || '深色模式' }}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Setting: Color Theme -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('theme') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.color_theme') || '配色主题' }}</span>
-                <p class="setting-desc">{{ t('settings.color_theme_desc') || '工作台界面配色主题，完全兼容 VS Code 主题标准。' }}</p>
-              </div>
-              <div class="setting-control">
-                <CustomSelect
-                  :model-value="activeColorTheme"
-                  :options="colorThemeOptions"
-                  @change="onColorThemeChange"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: Icon Theme -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('icon') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.icon_theme') || '文件图标主题' }}</span>
-                <p class="setting-desc">{{ t('settings.icon_theme_desc') || '工作台侧边栏与文件/工具列表图标集，100% 对齐 VS Code 标准结构。' }}</p>
-              </div>
-              <div class="setting-control">
-                <CustomSelect
-                  :model-value="activeIconTheme"
-                  :options="iconThemeOptions"
-                  @change="onIconThemeChange"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: Product Icon Theme -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('product_icon') || matchesSearch('icon') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.product_icon_theme') || '界面图标主题' }}</span>
-                <p class="setting-desc">{{ t('settings.product_icon_theme_desc') || '工作台按钮、操作与状态等界面产品图标主题，支持切换 Codicons 与第三方界面图标扩展。' }}</p>
-              </div>
-              <div class="setting-control">
-                <CustomSelect
-                  :model-value="activeProductIconTheme"
-                  :options="productIconThemeOptions"
-                  @change="onProductIconThemeChange"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: Theme Package Manager -->
-            <div class="setting-item theme-manager-item" :class="{ highlight: matchesSearch('vsix') }">
-              <div class="setting-meta full-width">
-                <div class="title-with-badge">
-                  <span class="setting-title">{{ t('settings.theme_pkg_manager') || 'VS Code 主题与图标扩展管理' }}</span>
-                  <span class="badge-custom-pkg">VSIX / ZIP</span>
-                </div>
-                <p class="setting-desc">{{ t('settings.theme_pkg_desc') || '导入本地官方 VS Code 扩展包（.vsix），纯静态解析，自动保存在用户本地目录。' }}</p>
-
-                <!-- Actions Toolbar -->
-                <div class="theme-actions-toolbar">
-                  <button class="btn-jump-marketplace" @click="navigateToMarketplace('themes')">
-                    <span class="jump-icon">
-                      <TechIcon id="workbench:marketplace" :size="14" />
+                    <span v-if="isInstallingTheme" class="spinner-small"></span>
+                    <span v-else class="btn-icon">
+                      <TechIcon id="workbench:folder" :size="14" />
                     </span>
-                    <span>前往扩展与主题市场挑选... ↗</span>
+                    <span>{{
+                      isInstallingTheme
+                        ? t("settings.installing") || "正在解析安装..."
+                        : t("settings.install_vsix") || "手动导入本地 .vsix 包"
+                    }}</span>
                   </button>
+                </div>
+              </div>
 
-                  <div class="local-vsix-upload-wrap">
-                    <input
-                      ref="vsixInputRef"
-                      type="file"
-                      accept=".vsix,.zip"
-                      class="hidden-file-input"
-                      @change="onVsixFileSelected"
-                    />
+              <!-- Feedback Alert in Installed Tab -->
+              <div v-if="themeInstallMsg" class="install-feedback-banner" :class="{ error: themeInstallError }">
+                <span>{{ themeInstallMsg }}</span>
+                <button
+                  class="btn btn-icon btn-close-msg"
+                  @click="themeInstallMsg = ''"
+                  :title="t('common.close') || '关闭'"
+                >
+                  <TechIcon id="workbench:close" :size="12" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting: Browser (User Scope Only) -->
+          <div
+            v-if="activeScope === 'user'"
+            class="setting-item browser-setting-item"
+            :class="{
+              highlight: matchesSearch('browser'),
+            }"
+          >
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.browser_title") || "浏览器" }}</span>
+              <p class="setting-desc">
+                {{ t("settings.browser_desc") || "启动工作台时调用的浏览器。" }}
+              </p>
+            </div>
+
+            <!-- Browser Controls -->
+            <div class="setting-control">
+              <div class="browser-input-box">
+                <CustomSelect
+                  :model-value="selectedBrowserPreset"
+                  :options="browserPresetOptions"
+                  @change="onBrowserPresetChange"
+                />
+                <div v-if="selectedBrowserPreset === 'custom'" class="custom-browser-field">
+                  <input
+                    v-model="customBrowserPath"
+                    type="text"
+                    class="setting-text-input font-mono"
+                    :placeholder="
+                      t('settings.browser_custom_placeholder') || '/usr/bin/google-chrome-stable 或自定义路径'
+                    "
+                    @change="saveSetting('settings.browser', customBrowserPath)"
+                    @blur="saveSetting('settings.browser', customBrowserPath)"
+                    @keydown.enter="saveSetting('settings.browser', customBrowserPath)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting: Integrated Terminal (User Scope Only) -->
+          <div
+            v-if="activeScope === 'user'"
+            class="setting-item terminal-setting-item"
+            :class="{
+              highlight: matchesSearch('terminal') || matchesSearch('shell') || matchesSearch('终端'),
+            }"
+          >
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("terminal.title") || "集成终端 Shell (Terminal)" }}</span>
+              <p class="setting-desc">
+                {{
+                  t("terminal.desc") ||
+                  "配置 UniRTM 底栏集成终端与任务执行所调用的默认 Shell 环境。遵循本机个人环境，仅在用户全局生效。"
+                }}
+              </p>
+              <div
+                v-if="terminals.length > 0"
+                class="terminal-detected-chips"
+                style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap"
+              >
+                <button
+                  v-for="tItem in terminals"
+                  :key="tItem.path"
+                  type="button"
+                  class="preset-chip-btn font-mono"
+                  :class="{ active: currentTerminal?.path === tItem.path }"
+                  @click="onSelectTerminalSetting(tItem.path)"
+                  :title="tItem.path"
+                >
+                  {{ tItem.name }}
+                  <span v-if="tItem.is_default" class="chip-badge">{{
+                    t("terminal.default_badge") || "系统默认"
+                  }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Terminal Controls -->
+            <div class="setting-control">
+              <div class="terminal-input-box">
+                <CustomSelect
+                  :model-value="selectedTerminalPath"
+                  :options="terminalPresetOptions"
+                  @change="onTerminalSelectChange"
+                />
+                <div v-if="selectedTerminalPath === 'custom'" class="custom-terminal-field" style="margin-top: 6px">
+                  <input
+                    v-model="customTerminalPath"
+                    type="text"
+                    class="setting-text-input font-mono"
+                    :placeholder="'/bin/bash 或自定义 Shell 路径'"
+                    @change="saveSetting('settings.terminal', customTerminalPath)"
+                    @blur="saveSetting('settings.terminal', customTerminalPath)"
+                    @keydown.enter="saveSetting('settings.terminal', customTerminalPath)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting: Preferred Editor (User Scope Only) -->
+          <div v-if="activeScope === 'user'" class="setting-item" :class="{ highlight: matchesSearch('editor') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.editor") || "默认文本编辑器 (Editor)" }}</span>
+              <p class="setting-desc">
+                {{
+                  t("settings.editor_desc") ||
+                  "通过命令行或快捷动作调用外部编辑器查看文件时的首选程序。遵循本机个人环境，仅在用户全局生效。"
+                }}
+              </p>
+              <div
+                class="release-age-presets-row"
+                style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap"
+              >
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: editor === 'code' }"
+                  @click="applyEditorPreset('code')"
+                >
+                  <span>VS Code (code)</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: editor === 'cursor' }"
+                  @click="applyEditorPreset('cursor')"
+                >
+                  <span>Cursor</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: editor === 'nvim' }"
+                  @click="applyEditorPreset('nvim')"
+                >
+                  <span>Neovim</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: editor === 'vim' }"
+                  @click="applyEditorPreset('vim')"
+                >
+                  <span>Vim</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: editor === 'nano' }"
+                  @click="applyEditorPreset('nano')"
+                >
+                  <span>Nano</span>
+                </button>
+              </div>
+            </div>
+            <div class="setting-control">
+              <input
+                v-model="editor"
+                type="text"
+                class="setting-text-input font-mono"
+                :placeholder="t('settings.editor_placeholder') || 'code 或 /usr/bin/nvim'"
+                @change="onEditorChange"
+                @blur="onEditorChange"
+                @keydown.enter="onEditorChange"
+              />
+            </div>
+          </div>
+
+          <!-- Setting: Minimum Required UniRTM Version (Workspace Scope Only) -->
+          <div
+            v-if="activeScope === 'workspace'"
+            class="setting-item"
+            :class="{ highlight: matchesSearch('min_version') || matchesSearch('version') }"
+          >
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.min_version") || "最低版本要求 (min_version)" }}</span>
+              <p class="setting-desc">
+                {{
+                  t("settings.min_version_desc") ||
+                  "项目团队协作所需的 UniRTM CLI 最低版本要求，保障多开发者开发环境一致性。仅在工作区生效。"
+                }}
+              </p>
+              <div
+                v-if="currentCliVersion"
+                class="release-age-presets-row"
+                style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap"
+              >
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: minVersion === currentCliVersion }"
+                  @click="applyMinVersionCurrent"
+                >
+                  <span>{{ t("settings.set_current_version") || "设为当前版本" }} (v{{ currentCliVersion }})</span>
+                </button>
+                <button v-if="minVersion" type="button" class="preset-chip-btn" @click="clearMinVersion">
+                  <span>{{ t("settings.clear_min_version") || "移除限制" }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="setting-control">
+              <input
+                v-model="minVersion"
+                type="text"
+                class="setting-text-input font-mono"
+                :placeholder="t('settings.min_version_placeholder') || '例如 0.35.0 (留空以移除限制)'"
+                @change="onMinVersionChange"
+                @blur="onMinVersionChange"
+                @keydown.enter="onMinVersionChange"
+              />
+            </div>
+          </div>
+
+          <!-- Setting: Cache TTL -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('cache_ttl') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.cache_ttl") || "缓存周期" }}</span>
+              <p class="setting-desc">{{ t("settings.cache_ttl_desc") || "工具清单与索引的本地缓存有效时间。" }}</p>
+            </div>
+            <div class="setting-control">
+              <input
+                v-model="cacheTtl"
+                type="text"
+                class="setting-text-input font-mono"
+                placeholder="24h"
+                @change="saveSetting('settings.cache_ttl', cacheTtl)"
+                @blur="saveSetting('settings.cache_ttl', cacheTtl)"
+                @keydown.enter="saveSetting('settings.cache_ttl', cacheTtl)"
+              />
+            </div>
+          </div>
+
+          <!-- Setting: Always Keep Download Archives -->
+          <div
+            class="setting-item"
+            :class="{
+              highlight: matchesSearch('keep') || matchesSearch('download') || matchesSearch('always_keep_download'),
+            }"
+          >
+            <div class="setting-meta">
+              <span class="setting-title">{{
+                t("settings.always_keep_download") || "保留下载安装包缓存 (Keep Downloads)"
+              }}</span>
+              <p class="setting-desc">
+                {{
+                  t("settings.always_keep_download_desc") ||
+                  "安装工具完成后，是否持久保留原始下载的归档安装包（.tar.gz / .zip）。启用可加快重新安装并节省重复下载流量，禁用可节省本地磁盘空间。"
+                }}
+              </p>
+            </div>
+            <div class="setting-control">
+              <label class="toggle-switch-label">
+                <input type="checkbox" :checked="alwaysKeepDownload" @change="onAlwaysKeepDownloadToggle" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Setting: Concurrency (Jobs) -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('jobs') || matchesSearch('concurrency') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.jobs") || "并发线程数 (Jobs)" }}</span>
+              <p class="setting-desc">
+                {{
+                  t("settings.jobs_desc") ||
+                  "工具并发下载及任务并行执行的线程数量上限。设为 0 表示自适应系统 CPU 核心数。"
+                }}
+              </p>
+            </div>
+            <div class="setting-control">
+              <input
+                v-model.number="jobs"
+                type="number"
+                min="0"
+                class="setting-text-input font-mono"
+                :placeholder="t('settings.jobs_auto') || '0 (自动调度)'"
+                @change="onJobsChange"
+                @blur="onJobsChange"
+                @keydown.enter="onJobsChange"
+              />
+            </div>
+          </div>
+
+          <!-- Setting: Auto Install Missing Tools -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('auto_install') || matchesSearch('install') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.auto_install") || "自动补齐工具 (Auto Install)" }}</span>
+              <p class="setting-desc">
+                {{
+                  t("settings.auto_install_desc") ||
+                  "执行任务遇到未安装的环境依赖工具时，是否自动在后台静默拉取并安装。"
+                }}
+              </p>
+            </div>
+            <div class="setting-control">
+              <label class="toggle-switch-label">
+                <input type="checkbox" :checked="autoInstall" @change="onAutoInstallToggle" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Setting: Task Timeout -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('timeout') || matchesSearch('task_timeout') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.task_timeout") || "任务超时时长 (Task Timeout)" }}</span>
+              <p class="setting-desc">
+                {{
+                  t("settings.task_timeout_desc") ||
+                  "任务运行的全局超时时间上限（例如 10m、30m 或 600s）。未设置或留空表示遵循任务自身定义。"
+                }}
+              </p>
+            </div>
+            <div class="setting-control">
+              <input
+                v-model="taskTimeout"
+                type="text"
+                class="setting-text-input font-mono"
+                placeholder="例如: 10m, 600"
+                @change="onTaskTimeoutChange"
+                @blur="onTaskTimeoutChange"
+                @keydown.enter="onTaskTimeoutChange"
+              />
+            </div>
+          </div>
+
+          <!-- Setting: HTTP Request Timeout -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('http_timeout') || matchesSearch('http') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.http_timeout") || "网络请求超时 (HTTP Timeout)" }}</span>
+              <p class="setting-desc">
+                {{
+                  t("settings.http_timeout_desc") || "工具包下载与远程清单网络请求的超时时限（例如 30s、60s 或 2m）。"
+                }}
+              </p>
+              <div
+                class="release-age-presets-row"
+                style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap"
+              >
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: (httpTimeout || '30s') === '15s' }"
+                  @click="applyHttpTimeoutPreset('15s')"
+                >
+                  <span>⚡ 15s</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: (httpTimeout || '30s') === '30s' }"
+                  @click="applyHttpTimeoutPreset('30s')"
+                >
+                  <span>🌐 30s (默认)</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: (httpTimeout || '30s') === '60s' }"
+                  @click="applyHttpTimeoutPreset('60s')"
+                >
+                  <span>⏱️ 60s</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: (httpTimeout || '30s') === '120s' }"
+                  @click="applyHttpTimeoutPreset('120s')"
+                >
+                  <span>📦 120s (大文件)</span>
+                </button>
+              </div>
+            </div>
+            <div class="setting-control">
+              <input
+                v-model="httpTimeout"
+                type="text"
+                class="setting-text-input font-mono"
+                :placeholder="t('settings.http_timeout_placeholder') || '30s (默认)'"
+                @change="onHttpTimeoutChange"
+                @blur="onHttpTimeoutChange"
+                @keydown.enter="onHttpTimeoutChange"
+              />
+            </div>
+          </div>
+
+          <!-- Setting: Task Output Mode -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('output') || matchesSearch('task_output') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.task_output") || "任务日志输出模式 (Task Output)" }}</span>
+              <p class="setting-desc">
+                {{ t("settings.task_output_desc") || "多任务并发执行时的控制台日志汇总与渲染风格。" }}
+              </p>
+            </div>
+            <div class="setting-control">
+              <CustomSelect :model-value="taskOutput" :options="taskOutputOptions" @change="onTaskOutputChange" />
+            </div>
+          </div>
+
+          <!-- Setting: Shell (Task Shell) -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('shell') }">
+            <div class="setting-meta">
+              <span class="setting-title">{{ t("settings.shell") || "任务默认 Shell (Shell)" }}</span>
+              <p class="setting-desc">
+                {{
+                  t("settings.shell_desc") ||
+                  "执行工程任务及生命周期钩子脚本时的默认解释器。留空表示遵循系统默认 Shell。"
+                }}
+              </p>
+            </div>
+            <div class="setting-control">
+              <div style="display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px">
+                <CustomSelect
+                  :model-value="selectedShellPreset"
+                  :options="shellPresetOptions"
+                  @change="onShellPresetChange"
+                />
+                <input
+                  v-if="selectedShellPreset === 'custom'"
+                  v-model="customShellPath"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  :placeholder="t('settings.shell_custom_placeholder') || '/bin/bash 或自定义可执行路径'"
+                  @change="saveSetting('settings.shell', customShellPath)"
+                  @blur="saveSetting('settings.shell', customShellPath)"
+                  @keydown.enter="saveSetting('settings.shell', customShellPath)"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Setting: Minimum Release Age -->
+          <div
+            class="setting-item"
+            :class="{
+              highlight: matchesSearch('age') || matchesSearch('minimum_release_age') || matchesSearch('security'),
+            }"
+          >
+            <div class="setting-meta">
+              <div class="title-with-badge">
+                <span class="setting-title">{{
+                  t("settings.minimum_release_age") || "发布安全冷却时间 (Release Age)"
+                }}</span>
+                <span
+                  class="badge-custom-pkg"
+                  style="background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.25)"
+                >
+                  🛡️ 安全防护
+                </span>
+              </div>
+              <p class="setting-desc">
+                {{
+                  t("settings.minimum_release_age_desc") ||
+                  "防范供应链投毒与零日漏洞。系统默认遵循 7 天安全冷却期（7d），延迟接纳刚发布的新版本。输入 0 可关闭冷却以立即获取绝对最新版本。"
+                }}
+              </p>
+              <div
+                class="release-age-presets-row"
+                style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap"
+              >
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: (minimumReleaseAge || '7d') === '7d' }"
+                  @click="applyReleaseAgePreset('7d')"
+                >
+                  <span>🛡️ {{ t("settings.release_age_preset_7d") || "7d (推荐默认)" }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: minimumReleaseAge === '14d' }"
+                  @click="applyReleaseAgePreset('14d')"
+                >
+                  <span>🔒 {{ t("settings.release_age_preset_14d") || "14d (严格保守)" }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  :class="{ active: minimumReleaseAge === '0' }"
+                  @click="applyReleaseAgePreset('0')"
+                >
+                  <span>⚡ {{ t("settings.release_age_preset_0") || "0 (即刻获取)" }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="setting-control">
+              <input
+                v-model="minimumReleaseAge"
+                type="text"
+                class="setting-text-input font-mono"
+                :placeholder="t('settings.minimum_release_age_placeholder') || '7d (系统默认推荐)'"
+                @change="onMinimumReleaseAgeChange"
+                @blur="onMinimumReleaseAgeChange"
+                @keydown.enter="onMinimumReleaseAgeChange"
+              />
+            </div>
+          </div>
+
+          <!-- Setting: Experimental Features -->
+          <div class="setting-item" :class="{ highlight: matchesSearch('experimental') }">
+            <div class="setting-meta">
+              <div class="title-with-badge">
+                <span class="setting-title">{{ t("settings.experimental") || "实验性预览特性 (Experimental)" }}</span>
+                <span
+                  class="badge-custom-pkg"
+                  style="background: rgba(245, 158, 11, 0.12); color: #d97706; border-color: rgba(245, 158, 11, 0.25)"
+                >
+                  🧪 预览阶段
+                </span>
+              </div>
+              <p class="setting-desc">
+                {{ t("settings.experimental_desc") || "启用 UniRTM 处于早期开发预览阶段的实验性功能与架构能力。" }}
+              </p>
+            </div>
+            <div class="setting-control">
+              <label class="toggle-switch-label">
+                <input type="checkbox" :checked="experimental" @change="onExperimentalToggle" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Git & Lifecycle Hooks (Workspace Only) -->
+      <section
+        v-if="activeScope !== 'user'"
+        v-show="isCategoryVisible('hooks')"
+        id="section-hooks"
+        class="settings-category-section glass-card"
+      >
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-icon">
+              <TechIcon id="workbench:git" :size="20" />
+            </span>
+            <div>
+              <h2>{{ t("settings.cat_hooks") || "生命周期与 Git 钩子 (Hooks)" }}</h2>
+              <span class="section-sub">{{
+                t("settings.cat_hooks_sub") || "Git 提交与操作生命周期自动化事件脚本"
+              }}</span>
+            </div>
+          </div>
+          <div class="hooks-header-actions" style="display: flex; gap: 8px; align-items: center">
+            <button
+              type="button"
+              class="btn-bridge-install"
+              :disabled="isInstallingBridges"
+              @click="installAllGitBridges"
+              :title="t('settings.hooks_install_bridges_tip') || '自动将 UniRTM 路由脚本注入到工作区 .git/hooks 目录'"
+            >
+              <TechIcon id="workbench:sync" :size="13" :class="{ spinning: isInstallingBridges }" />
+              <span>{{
+                isInstallingBridges
+                  ? t("settings.hooks_installing_bridges") || "正在注入 Git 桥接..."
+                  : t("settings.hooks_install_bridges") || "注入 Git 桥接"
+              }}</span>
+            </button>
+            <button type="button" class="btn-add-hook" @click="openAddHookModal()">
+              <TechIcon id="workbench:add" :size="13" />
+              <span>{{ t("settings.hooks_add_btn") || "添加钩子" }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hooks Content List or Empty State -->
+        <div class="hooks-container">
+          <div v-if="isLoadingHooks" class="hooks-loading">
+            <span class="spinner-small"></span>
+            <span>{{ t("settings.hooks_loading") || "正在加载生命周期钩子..." }}</span>
+          </div>
+
+          <div v-else-if="hooksList.length === 0" class="hooks-empty-state">
+            <div class="empty-icon-wrap">
+              <TechIcon id="workbench:git" :size="32" />
+            </div>
+            <h4>{{ t("settings.hooks_empty_title") || "尚未配置任何生命周期钩子" }}</h4>
+            <p>
+              {{
+                t("settings.hooks_empty_desc") ||
+                "配置 Git 钩子可在提交、推送或分支检出前后自动执行代码格式化、质量检查与测试。"
+              }}
+            </p>
+            <div class="hooks-preset-recommendations">
+              <span class="preset-label">{{ t("settings.hooks_recommended_label") || "常用推荐:" }}</span>
+              <button type="button" class="preset-chip-btn" @click="openAddHookModal('pre-commit', 'npm test')">
+                <span>⚡ pre-commit (测试与质检)</span>
+              </button>
+              <button
+                type="button"
+                class="preset-chip-btn"
+                @click="openAddHookModal('commit-msg', 'npx commitlint --edit $1')"
+              >
+                <span>📝 commit-msg (提交信息规范)</span>
+              </button>
+              <button
+                type="button"
+                class="preset-chip-btn"
+                @click="openAddHookModal('pre-push', 'npm run lint && npm test')"
+              >
+                <span>🛡️ pre-push (推送前全量校验)</span>
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="hooks-grid">
+            <div
+              v-for="hook in hooksList"
+              :key="hook.name"
+              class="hook-card"
+              :class="{ highlight: matchesSearch(hook.name) || matchesSearch(hook.command) }"
+            >
+              <div class="hook-card-header">
+                <div class="hook-name-group">
+                  <span class="hook-badge-icon">
+                    <TechIcon id="workbench:git" :size="14" />
+                  </span>
+                  <span class="hook-name font-mono">{{ hook.name }}</span>
+                  <span class="hook-bridge-badge" :class="hook.installed ? 'installed' : 'not-installed'">
+                    {{
+                      hook.installed
+                        ? "✓ " + (t("settings.hooks_badge_bridged") || "Git 已桥接")
+                        : "⚠ " + (t("settings.hooks_badge_unbridged") || "未注入桥接")
+                    }}
+                  </span>
+                </div>
+                <div class="hook-card-actions">
+                  <button
+                    type="button"
+                    class="btn-icon-action"
+                    :title="t('settings.hooks_run_tip') || '测试执行该钩子'"
+                    @click="runHookTest(hook.name)"
+                  >
+                    <TechIcon id="workbench:tasks" :size="14" />
+                    <span>{{ t("settings.hooks_run_btn") || "测试" }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-icon-action"
+                    :title="t('settings.hooks_edit_tip') || '编辑脚本命令'"
+                    @click="openEditHookModal(hook)"
+                  >
+                    <TechIcon id="workbench:edit" :size="14" />
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-icon-action danger"
+                    :title="t('settings.hooks_delete_tip') || '删除此钩子'"
+                    @click="deleteHook(hook.name)"
+                  >
+                    <TechIcon id="workbench:error" :size="14" />
+                  </button>
+                </div>
+              </div>
+
+              <div class="hook-command-wrap">
+                <div class="hook-command-code font-mono">
+                  <code>{{ hook.command }}</code>
+                </div>
+                <button
+                  type="button"
+                  class="btn-copy-code"
+                  :title="t('settings.copy_command') || '复制命令'"
+                  @click="copyCommand(hook.command)"
+                >
+                  <TechIcon id="workbench:edit" :size="12" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Tool Version Aliases -->
+      <section v-show="isCategoryVisible('aliases')" id="section-aliases" class="settings-category-section glass-card">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-icon">
+              <TechIcon id="workbench:tag" :size="20" />
+            </span>
+            <div>
+              <h2>{{ t("settings.cat_aliases") || "工具版本别名 (Aliases)" }}</h2>
+              <span class="section-sub">{{
+                t("settings.cat_aliases_sub") ||
+                "为常用工具定义语义化版本快捷映射 (如 node.lts -> 20, python.stable -> 3.12)"
+              }}</span>
+            </div>
+          </div>
+          <div class="aliases-header-actions" style="display: flex; gap: 8px; align-items: center">
+            <button type="button" class="btn-add-alias" @click="openAddAliasModal()">
+              <TechIcon id="workbench:add" :size="13" />
+              <span>{{ t("settings.aliases_add_btn") || "添加别名" }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Aliases Container -->
+        <div class="aliases-container">
+          <div v-if="isLoadingAliases" class="aliases-loading">
+            <span class="spinner-small"></span>
+            <span>{{ t("settings.aliases_loading") || "正在加载工具版本别名..." }}</span>
+          </div>
+
+          <!-- Aliases List by Tool Group -->
+          <div v-else-if="toolNamesWithAliases.length > 0" class="aliases-groups-list">
+            <div
+              v-for="tool in toolNamesWithAliases"
+              :key="tool"
+              class="alias-tool-card"
+              :class="{ highlight: matchesSearch(tool) }"
+            >
+              <div class="alias-tool-header">
+                <div class="tool-info-left">
+                  <span class="tool-icon-wrapper">
+                    <TechIcon :id="tool" :size="18" />
+                  </span>
+                  <span class="tool-name font-mono">{{ tool }}</span>
+                  <span class="alias-count-badge">{{ Object.keys(aliasesData[tool] || {}).length }}</span>
+                </div>
+                <button
+                  type="button"
+                  class="btn-tool-add-alias"
+                  :title="t('settings.aliases_add_for_tool') || '为此工具添加别名'"
+                  @click="openAddAliasModal(tool)"
+                >
+                  <TechIcon id="workbench:add" :size="12" />
+                  <span>{{ t("settings.aliases_add_short") || "添加" }}</span>
+                </button>
+              </div>
+
+              <div class="alias-chips-grid">
+                <div
+                  v-for="(targetVersion, aliasName) in aliasesData[tool]"
+                  :key="aliasName"
+                  class="alias-chip-item"
+                  :class="{ highlight: matchesSearch(String(aliasName)) || matchesSearch(String(targetVersion)) }"
+                >
+                  <div class="alias-chip-main">
+                    <span class="alias-tag-name font-mono">{{ aliasName }}</span>
+                    <span class="alias-arrow">→</span>
+                    <span class="alias-target-version font-mono" :title="String(targetVersion)">{{
+                      targetVersion
+                    }}</span>
+                  </div>
+                  <div class="alias-chip-actions">
                     <button
-                      class="btn-install-vsix"
-                      :disabled="isInstallingTheme"
-                      @trigger="triggerVsixUpload"
-                      @click="triggerVsixUpload"
+                      type="button"
+                      class="btn-chip-action"
+                      :title="t('common.copy') || '复制目标版本'"
+                      @click="copyCommand(String(targetVersion))"
                     >
-                      <span v-if="isInstallingTheme" class="spinner-small"></span>
-                      <span v-else class="btn-icon">
-                        <TechIcon id="workbench:folder" :size="14" />
-                      </span>
-                      <span>{{ isInstallingTheme ? (t('settings.installing') || '正在解析安装...') : (t('settings.install_vsix') || '手动导入本地 .vsix 包') }}</span>
+                      <TechIcon id="workbench:edit" :size="11" />
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-chip-action"
+                      :title="t('common.edit') || '编辑别名'"
+                      @click="openEditAliasModal(tool, String(aliasName), String(targetVersion))"
+                    >
+                      <TechIcon id="workbench:edit" :size="11" />
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-chip-action action-delete"
+                      :title="t('common.delete') || '删除别名'"
+                      @click="deleteAlias(tool, String(aliasName))"
+                    >
+                      <TechIcon id="workbench:close" :size="11" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else class="aliases-empty-state">
+            <div class="empty-icon-wrap">
+              <TechIcon id="workbench:tag" :size="24" />
+            </div>
+            <h4>{{ t("settings.aliases_empty_title") || "暂无工具版本别名" }}</h4>
+            <p style="margin: 0">
+              {{
+                t("settings.aliases_empty_desc") ||
+                "通过版本别名，您可以为常用工具设置语义化版本映射，例如将 lts 映射到 20 或 stable 映射到 3.12。"
+              }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Network & Mirrors -->
+      <section v-show="isCategoryVisible('network')" id="section-network" class="settings-category-section glass-card">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-icon">
+              <TechIcon id="workbench:runtimes" :size="20" />
+            </span>
+            <div>
+              <h2>{{ t("settings.cat_network") || "网络" }}</h2>
+              <span class="section-sub">{{ t("settings.cat_network_sub") || "镜像加速与网络代理" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section A: Network Proxy (Default strictly disabled, empty, no 3rd-party github proxies) -->
+        <div class="network-subsection">
+          <div class="subsection-title-bar">
+            <span class="sub-icon">
+              <TechIcon id="workbench:lock" :size="16" />
+            </span>
+            <h3>{{ t("network.tab_proxy") || "网络代理" }}</h3>
+            <span class="proxy-badge" :class="networkStatus?.proxy?.enabled ? 'badge-on' : 'badge-off'">
+              {{
+                networkStatus?.proxy?.enabled
+                  ? t("network.proxy_enabled") || "已启用"
+                  : t("network.proxy_disabled") || "直连模式 (已关闭)"
+              }}
+            </span>
+          </div>
+
+          <div class="proxy-form-grid" v-if="networkStatus">
+            <div class="proxy-toggle-row">
+              <label class="toggle-switch-label">
+                <input type="checkbox" v-model="networkStatus.proxy.enabled" @change="handleSaveProxy" />
+                <span class="slider round"></span>
+              </label>
+              <span class="toggle-text">{{
+                networkStatus.proxy.enabled
+                  ? t("network.proxy_enabled") || "全局代理已开启"
+                  : t("network.proxy_disabled") || "全局代理已关闭 (直连)"
+              }}</span>
+
+              <button
+                type="button"
+                class="btn-test-proxy"
+                :disabled="
+                  isTestingProxy ||
+                  !networkStatus.proxy.enabled ||
+                  (!networkStatus.proxy.http && !networkStatus.proxy.socks5)
+                "
+                @click="handleTestProxy"
+                title="发起真实网络连接检测该代理是否可用"
+              >
+                <span v-if="isTestingProxy" style="display: inline-flex; align-items: center; gap: 4px">
+                  <TechIcon id="workbench:sync" :size="13" class="spinning" />
+                  <span>检测中...</span>
+                </span>
+                <span v-else style="display: inline-flex; align-items: center; gap: 4px">
+                  <TechIcon id="workbench:speed" :size="13" />
+                  <span>连通性检测</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-detect-proxy"
+                :disabled="isDetectingProxy"
+                @click="handleDetectProxy(true)"
+                title="自动探测宿主机运行中的代理客户端 (sing-box, Clash 等)"
+              >
+                <span v-if="isDetectingProxy" style="display: inline-flex; align-items: center; gap: 4px">
+                  <TechIcon id="workbench:sync" :size="13" class="spinning" />
+                  <span>探测中...</span>
+                </span>
+                <span v-else style="display: inline-flex; align-items: center; gap: 4px">
+                  <TechIcon id="workbench:search" :size="13" />
+                  <span>自动探测宿主代理</span>
+                </span>
+              </button>
+            </div>
+
+            <!-- Detected Proxy Banner -->
+            <div v-if="detectedProxy?.detected" class="detected-proxy-banner">
+              <div class="detected-banner-left">
+                <span class="detected-pill">{{ detectedProxy.type.toUpperCase() }}</span>
+                <span class="detected-desc">{{ detectedProxy.description }}</span>
+              </div>
+              <button type="button" class="btn-apply-detected" @click="applyDetectedProxy">
+                <span style="display: inline-flex; align-items: center; gap: 4px">
+                  <TechIcon id="workbench:speed" :size="13" />
+                  <span>一键导入</span>
+                </span>
+              </button>
+            </div>
+
+            <!-- Proxy Test Result Status Banner -->
+            <div
+              v-if="proxyTestResult"
+              class="proxy-test-status-banner"
+              :class="{ 'status-ok': proxyTestResult.success, 'status-fail': !proxyTestResult.success }"
+            >
+              <div class="test-status-left">
+                <span class="status-icon">
+                  <TechIcon :id="proxyTestResult.success ? 'workbench:success' : 'workbench:error'" :size="14" />
+                </span>
+                <span class="status-message">{{ proxyTestResult.message || proxyTestResult.error }}</span>
+              </div>
+              <div
+                v-if="proxyTestResult.success && proxyTestResult.rtt_ms"
+                class="test-rtt-tag"
+                style="display: inline-flex; align-items: center; gap: 4px"
+              >
+                <TechIcon id="workbench:speed" :size="12" />
+                <span>延迟 {{ proxyTestResult.rtt_ms }}ms</span>
+              </div>
+            </div>
+
+            <div class="proxy-fields" :class="{ 'fields-disabled': !networkStatus.proxy.enabled }">
+              <div class="proxy-field-item">
+                <label>{{ t("network.proxy_http") || "HTTP / HTTPS 代理地址" }}</label>
+                <input
+                  v-model="networkStatus.proxy.http"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  placeholder="http://127.0.0.1:7890 (留空为不使用)"
+                  :disabled="!networkStatus.proxy.enabled"
+                  @change="handleSaveProxy"
+                  @blur="handleSaveProxy"
+                  @keydown.enter="handleSaveProxy"
+                />
+              </div>
+
+              <div class="proxy-field-item">
+                <label>{{ t("network.proxy_socks5") || "SOCKS5 代理地址" }}</label>
+                <input
+                  v-model="networkStatus.proxy.socks5"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  placeholder="socks5://127.0.0.1:10808 (可选)"
+                  :disabled="!networkStatus.proxy.enabled"
+                  @change="handleSaveProxy"
+                  @blur="handleSaveProxy"
+                  @keydown.enter="handleSaveProxy"
+                />
+              </div>
+
+              <div class="proxy-field-item full-width">
+                <label>{{ t("network.proxy_noproxy") || "直连白名单 (NO_PROXY)" }}</label>
+                <input
+                  v-model="networkStatus.proxy.no_proxy"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  placeholder="localhost,127.0.0.1,::1,*.local,*.internal"
+                  :disabled="!networkStatus.proxy.enabled"
+                  @change="handleSaveProxy"
+                  @blur="handleSaveProxy"
+                  @keydown.enter="handleSaveProxy"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section B: Profiles and Mirrors Matrix -->
+        <div class="network-subsection">
+          <div class="subsection-title-bar">
+            <span class="sub-icon">
+              <TechIcon id="workbench:package" :size="16" />
+            </span>
+            <h3>{{ t("network.tab_mirrors") || "镜像源矩阵" }}</h3>
+            <button
+              class="btn-batch-test"
+              :disabled="isProbing"
+              @click="handleRunProbeAll"
+              title="并发测试当前镜像源矩阵中所有生态的延迟"
+            >
+              <span v-if="isProbing" style="display: inline-flex; align-items: center; gap: 4px">
+                <TechIcon id="workbench:sync" :size="13" class="spinning" />
+                <span>测速中...</span>
+              </span>
+              <span v-else style="display: inline-flex; align-items: center; gap: 4px">
+                <TechIcon id="workbench:speed" :size="13" />
+                <span>一键测速</span>
+              </span>
+            </button>
+
+            <div class="profile-actions-bar">
+              <div class="profile-scroll-nav" v-if="orderedProfiles.length > 3">
+                <button class="btn-scroll-arrow" @click="scrollProfiles('left')" title="向左滚动">‹</button>
+                <button class="btn-scroll-arrow" @click="scrollProfiles('right')" title="向右滚动">›</button>
+              </div>
+              <button
+                class="btn-profile-action"
+                @click="showCreateProfileModal = true"
+                :title="t('network.create_profile') || '新建档案'"
+              >
+                <TechIcon id="workbench:tools" :size="12" />
+                <span>{{ t("network.create_profile") || "新建档案" }}</span>
+              </button>
+              <button
+                class="btn-profile-action"
+                @click="openAddEcoModal()"
+                :title="t('network.add_ecosystem') || '添加生态'"
+              >
+                <TechIcon id="workbench:runtimes" :size="12" />
+                <span>{{ t("network.add_ecosystem") || "添加生态" }}</span>
+              </button>
+              <button
+                class="btn-profile-action secondary"
+                @click="handleResetAllEcosystems()"
+                :title="t('network.reset_all_ecosystems') || '恢复默认生态'"
+              >
+                <TechIcon id="workbench:sync" :size="12" />
+                <span>{{ t("network.reset_all_ecosystems") || "恢复默认生态" }}</span>
+              </button>
+              <button
+                v-if="networkStatus?.active_profile?.builtin"
+                class="btn-profile-action secondary"
+                @click="handleResetBuiltinProfile(networkStatus.active_profile_id)"
+                :title="t('network.reset_factory') || '恢复出厂默认值'"
+              >
+                <TechIcon id="workbench:sync" :size="12" />
+                <span>{{ t("network.reset_factory") || "恢复出厂默认值" }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Profile Cards Track -->
+          <div class="profile-cards-wrapper" v-if="networkStatus">
+            <div ref="profileTrackRef" class="profile-cards-track" @wheel="onProfileTrackWheel">
+              <div
+                v-for="{ id: pId, profile: p } in orderedProfiles"
+                :key="pId"
+                class="profile-card"
+                :class="{ active: pId === networkStatus.active_profile_id, builtin: p.builtin }"
+                @click="handleUseProfile(String(pId))"
+              >
+                <div class="profile-card-header">
+                  <span class="profile-name">{{ getProfileDisplayName(String(pId), p.name) }}</span>
+                  <span v-if="pId === networkStatus.active_profile_id" class="active-tag"
+                    >✔ {{ t("network.active_tag") }}</span
+                  >
+                </div>
+                <p class="profile-desc">{{ getProfileDisplayDesc(String(pId), p.description) }}</p>
+                <div class="profile-footer">
+                  <span class="profile-id font-mono">id: {{ pId }}</span>
+                  <span v-if="p.builtin" class="pill-builtin">{{ t("network.tag_builtin") }}</span>
+                  <span v-else class="pill-custom">{{ t("network.tag_custom") }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Create/Save Profile Modal Dialog -->
+          <div v-if="showCreateProfileModal" class="modal-backdrop" @click.self="showCreateProfileModal = false">
+            <div class="modal-dialog glass-card">
+              <div class="modal-header">
+                <div class="modal-title-group">
+                  <span class="modal-icon">
+                    <TechIcon id="workbench:config" :size="20" />
+                  </span>
+                  <div>
+                    <h4>{{ t("network.create_profile") || "新建网络预设档案" }}</h4>
+                    <span class="modal-subtitle">将当前网络与各生态镜像配置保存为独立的 Profile 方案</span>
+                  </div>
+                </div>
+                <button
+                  class="btn btn-icon btn-modal-close"
+                  @click="showCreateProfileModal = false"
+                  :title="t('common.close') || '关闭'"
+                >
+                  <TechIcon id="workbench:close" :size="14" />
+                </button>
+              </div>
+
+              <div class="modal-body">
+                <div class="modal-field">
+                  <label>档案标识 (ID) <span class="text-danger">*</span></label>
+                  <input
+                    v-model="newProfileId"
+                    type="text"
+                    class="setting-text-input font-mono"
+                    placeholder="例如: company-internal 或 fast-mirror"
+                    autofocus
+                  />
+                  <span class="field-hint">用于 CLI 命令行切换，仅允许英文字母、数字、短横线与下划线</span>
+                </div>
+
+                <div class="modal-field">
+                  <label>显示名称</label>
+                  <input
+                    v-model="newProfileName"
+                    type="text"
+                    class="setting-text-input"
+                    placeholder="例如: 公司专线加速"
+                  />
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn-modal-cancel" @click="showCreateProfileModal = false">取消</button>
+                <button
+                  class="btn-modal-confirm"
+                  :disabled="!newProfileId.trim() || isSavingProfile"
+                  @click="handleSaveAsProfile"
+                >
+                  <span v-if="isSavingProfile">正在创建...</span>
+                  <span v-else>创建并激活</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Ecosystem Modal Dialog -->
+          <div v-if="showAddEcoModal" class="modal-backdrop" @click.self="showAddEcoModal = false">
+            <div class="modal-dialog glass-card">
+              <div class="modal-header">
+                <div class="modal-title-group">
+                  <span class="modal-icon">
+                    <TechIcon id="workbench:runtimes" :size="20" />
+                  </span>
+                  <div>
+                    <h4>{{ t("network.add_ecosystem_title") || "添加语言生态镜像源" }}</h4>
+                    <span class="modal-subtitle">{{
+                      t("network.add_ecosystem_desc") || "选择常用语言生态预设或输入自定义生态标识与镜像地址"
+                    }}</span>
+                  </div>
+                </div>
+                <button
+                  class="btn btn-icon btn-modal-close"
+                  @click="showAddEcoModal = false"
+                  :title="t('common.close') || '关闭'"
+                >
+                  <TechIcon id="workbench:close" :size="14" />
+                </button>
+              </div>
+
+              <div class="modal-body">
+                <div class="modal-field">
+                  <label>{{ t("network.quick_templates") || "快速选择预设生态" }}</label>
+                  <div class="quick-templates-grid">
+                    <button
+                      v-for="tpl in commonEcoTemplates"
+                      :key="tpl.id"
+                      type="button"
+                      class="btn-template-chip"
+                      :class="{ active: newEcoId === tpl.id }"
+                      @click="applyEcoTemplate(tpl)"
+                    >
+                      {{ tpl.label }}
                     </button>
                   </div>
                 </div>
 
-                <!-- Feedback Alert in Installed Tab -->
-                <div v-if="themeInstallMsg" class="install-feedback-banner" :class="{ error: themeInstallError }">
-                  <span>{{ themeInstallMsg }}</span>
-                  <button class="btn btn-icon btn-close-msg" @click="themeInstallMsg = ''" :title="t('common.close') || '关闭'">
-                    <TechIcon id="workbench:close" :size="12" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Setting: Browser (User Scope Only) -->
-            <div
-              v-if="activeScope === 'user'"
-              class="setting-item browser-setting-item"
-              :class="{
-                highlight: matchesSearch('browser')
-              }"
-            >
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.browser_title') || '浏览器' }}</span>
-                <p class="setting-desc">
-                  {{ t('settings.browser_desc') || '启动工作台时调用的浏览器。' }}
-                </p>
-              </div>
-
-              <!-- Browser Controls -->
-              <div class="setting-control">
-                <div class="browser-input-box">
-                  <CustomSelect
-                    :model-value="selectedBrowserPreset"
-                    :options="browserPresetOptions"
-                    @change="onBrowserPresetChange"
-                  />
-                  <div v-if="selectedBrowserPreset === 'custom'" class="custom-browser-field">
-                    <input
-                      v-model="customBrowserPath"
-                      type="text"
-                      class="setting-text-input font-mono"
-                      :placeholder="t('settings.browser_custom_placeholder') || '/usr/bin/google-chrome-stable 或自定义路径'"
-                      @change="saveSetting('settings.browser', customBrowserPath)"
-                      @blur="saveSetting('settings.browser', customBrowserPath)"
-                      @keydown.enter="saveSetting('settings.browser', customBrowserPath)"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Setting: Integrated Terminal (User Scope Only) -->
-            <div
-              v-if="activeScope === 'user'"
-              class="setting-item terminal-setting-item"
-              :class="{
-                highlight: matchesSearch('terminal') || matchesSearch('shell') || matchesSearch('终端')
-              }"
-            >
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('terminal.title') || '集成终端 Shell (Terminal)' }}</span>
-                <p class="setting-desc">
-                  {{ t('terminal.desc') || '配置 UniRTM 底栏集成终端与任务执行所调用的默认 Shell 环境。遵循本机个人环境，仅在用户全局生效。' }}
-                </p>
-                <div v-if="terminals.length > 0" class="terminal-detected-chips" style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap;">
-                  <button
-                    v-for="tItem in terminals"
-                    :key="tItem.path"
-                    type="button"
-                    class="preset-chip-btn font-mono"
-                    :class="{ active: currentTerminal?.path === tItem.path }"
-                    @click="onSelectTerminalSetting(tItem.path)"
-                    :title="tItem.path"
-                  >
-                    {{ tItem.name }}
-                    <span v-if="tItem.is_default" class="chip-badge">{{ t('terminal.default_badge') || '系统默认' }}</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Terminal Controls -->
-              <div class="setting-control">
-                <div class="terminal-input-box">
-                  <CustomSelect
-                    :model-value="selectedTerminalPath"
-                    :options="terminalPresetOptions"
-                    @change="onTerminalSelectChange"
-                  />
-                  <div v-if="selectedTerminalPath === 'custom'" class="custom-terminal-field" style="margin-top: 6px;">
-                    <input
-                      v-model="customTerminalPath"
-                      type="text"
-                      class="setting-text-input font-mono"
-                      :placeholder="'/bin/bash 或自定义 Shell 路径'"
-                      @change="saveSetting('settings.terminal', customTerminalPath)"
-                      @blur="saveSetting('settings.terminal', customTerminalPath)"
-                      @keydown.enter="saveSetting('settings.terminal', customTerminalPath)"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Setting: Preferred Editor (User Scope Only) -->
-            <div
-              v-if="activeScope === 'user'"
-              class="setting-item"
-              :class="{ highlight: matchesSearch('editor') }"
-            >
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.editor') || '默认文本编辑器 (Editor)' }}</span>
-                <p class="setting-desc">{{ t('settings.editor_desc') || '通过命令行或快捷动作调用外部编辑器查看文件时的首选程序。遵循本机个人环境，仅在用户全局生效。' }}</p>
-                <div class="release-age-presets-row" style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap;">
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: editor === 'code' }"
-                    @click="applyEditorPreset('code')"
-                  >
-                    <span>VS Code (code)</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: editor === 'cursor' }"
-                    @click="applyEditorPreset('cursor')"
-                  >
-                    <span>Cursor</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: editor === 'nvim' }"
-                    @click="applyEditorPreset('nvim')"
-                  >
-                    <span>Neovim</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: editor === 'vim' }"
-                    @click="applyEditorPreset('vim')"
-                  >
-                    <span>Vim</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: editor === 'nano' }"
-                    @click="applyEditorPreset('nano')"
-                  >
-                    <span>Nano</span>
-                  </button>
-                </div>
-              </div>
-              <div class="setting-control">
-                <input
-                  v-model="editor"
-                  type="text"
-                  class="setting-text-input font-mono"
-                  :placeholder="t('settings.editor_placeholder') || 'code 或 /usr/bin/nvim'"
-                  @change="onEditorChange"
-                  @blur="onEditorChange"
-                  @keydown.enter="onEditorChange"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: Minimum Required UniRTM Version (Workspace Scope Only) -->
-            <div
-              v-if="activeScope === 'workspace'"
-              class="setting-item"
-              :class="{ highlight: matchesSearch('min_version') || matchesSearch('version') }"
-            >
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.min_version') || '最低版本要求 (min_version)' }}</span>
-                <p class="setting-desc">{{ t('settings.min_version_desc') || '项目团队协作所需的 UniRTM CLI 最低版本要求，保障多开发者开发环境一致性。仅在工作区生效。' }}</p>
-                <div v-if="currentCliVersion" class="release-age-presets-row" style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap;">
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: minVersion === currentCliVersion }"
-                    @click="applyMinVersionCurrent"
-                  >
-                    <span>{{ t('settings.set_current_version') || '设为当前版本' }} (v{{ currentCliVersion }})</span>
-                  </button>
-                  <button
-                    v-if="minVersion"
-                    type="button"
-                    class="preset-chip-btn"
-                    @click="clearMinVersion"
-                  >
-                    <span>{{ t('settings.clear_min_version') || '移除限制' }}</span>
-                  </button>
-                </div>
-              </div>
-              <div class="setting-control">
-                <input
-                  v-model="minVersion"
-                  type="text"
-                  class="setting-text-input font-mono"
-                  :placeholder="t('settings.min_version_placeholder') || '例如 0.35.0 (留空以移除限制)'"
-                  @change="onMinVersionChange"
-                  @blur="onMinVersionChange"
-                  @keydown.enter="onMinVersionChange"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: Cache TTL -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('cache_ttl') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.cache_ttl') || '缓存周期' }}</span>
-                <p class="setting-desc">{{ t('settings.cache_ttl_desc') || '工具清单与索引的本地缓存有效时间。' }}</p>
-              </div>
-              <div class="setting-control">
-                <input
-                  v-model="cacheTtl"
-                  type="text"
-                  class="setting-text-input font-mono"
-                  placeholder="24h"
-                  @change="saveSetting('settings.cache_ttl', cacheTtl)"
-                  @blur="saveSetting('settings.cache_ttl', cacheTtl)"
-                  @keydown.enter="saveSetting('settings.cache_ttl', cacheTtl)"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: Always Keep Download Archives -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('keep') || matchesSearch('download') || matchesSearch('always_keep_download') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.always_keep_download') || '保留下载安装包缓存 (Keep Downloads)' }}</span>
-                <p class="setting-desc">{{ t('settings.always_keep_download_desc') || '安装工具完成后，是否持久保留原始下载的归档安装包（.tar.gz / .zip）。启用可加快重新安装并节省重复下载流量，禁用可节省本地磁盘空间。' }}</p>
-              </div>
-              <div class="setting-control">
-                <label class="toggle-switch-label">
+                <div class="modal-field">
+                  <label>{{ t("network.eco_identifier") || "生态标识 (ID)" }} <span class="text-danger">*</span></label>
                   <input
-                    type="checkbox"
-                    :checked="alwaysKeepDownload"
-                    @change="onAlwaysKeepDownloadToggle"
-                  />
-                  <span class="slider round"></span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Setting: Concurrency (Jobs) -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('jobs') || matchesSearch('concurrency') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.jobs') || '并发线程数 (Jobs)' }}</span>
-                <p class="setting-desc">{{ t('settings.jobs_desc') || '工具并发下载及任务并行执行的线程数量上限。设为 0 表示自适应系统 CPU 核心数。' }}</p>
-              </div>
-              <div class="setting-control">
-                <input
-                  v-model.number="jobs"
-                  type="number"
-                  min="0"
-                  class="setting-text-input font-mono"
-                  :placeholder="t('settings.jobs_auto') || '0 (自动调度)'"
-                  @change="onJobsChange"
-                  @blur="onJobsChange"
-                  @keydown.enter="onJobsChange"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: Auto Install Missing Tools -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('auto_install') || matchesSearch('install') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.auto_install') || '自动补齐工具 (Auto Install)' }}</span>
-                <p class="setting-desc">{{ t('settings.auto_install_desc') || '执行任务遇到未安装的环境依赖工具时，是否自动在后台静默拉取并安装。' }}</p>
-              </div>
-              <div class="setting-control">
-                <label class="toggle-switch-label">
-                  <input
-                    type="checkbox"
-                    :checked="autoInstall"
-                    @change="onAutoInstallToggle"
-                  />
-                  <span class="slider round"></span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Setting: Task Timeout -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('timeout') || matchesSearch('task_timeout') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.task_timeout') || '任务超时时长 (Task Timeout)' }}</span>
-                <p class="setting-desc">{{ t('settings.task_timeout_desc') || '任务运行的全局超时时间上限（例如 10m、30m 或 600s）。未设置或留空表示遵循任务自身定义。' }}</p>
-              </div>
-              <div class="setting-control">
-                <input
-                  v-model="taskTimeout"
-                  type="text"
-                  class="setting-text-input font-mono"
-                  placeholder="例如: 10m, 600"
-                  @change="onTaskTimeoutChange"
-                  @blur="onTaskTimeoutChange"
-                  @keydown.enter="onTaskTimeoutChange"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: HTTP Request Timeout -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('http_timeout') || matchesSearch('http') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.http_timeout') || '网络请求超时 (HTTP Timeout)' }}</span>
-                <p class="setting-desc">{{ t('settings.http_timeout_desc') || '工具包下载与远程清单网络请求的超时时限（例如 30s、60s 或 2m）。' }}</p>
-                <div class="release-age-presets-row" style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap;">
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: (httpTimeout || '30s') === '15s' }"
-                    @click="applyHttpTimeoutPreset('15s')"
-                  >
-                    <span>⚡ 15s</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: (httpTimeout || '30s') === '30s' }"
-                    @click="applyHttpTimeoutPreset('30s')"
-                  >
-                    <span>🌐 30s (默认)</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: (httpTimeout || '30s') === '60s' }"
-                    @click="applyHttpTimeoutPreset('60s')"
-                  >
-                    <span>⏱️ 60s</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: (httpTimeout || '30s') === '120s' }"
-                    @click="applyHttpTimeoutPreset('120s')"
-                  >
-                    <span>📦 120s (大文件)</span>
-                  </button>
-                </div>
-              </div>
-              <div class="setting-control">
-                <input
-                  v-model="httpTimeout"
-                  type="text"
-                  class="setting-text-input font-mono"
-                  :placeholder="t('settings.http_timeout_placeholder') || '30s (默认)'"
-                  @change="onHttpTimeoutChange"
-                  @blur="onHttpTimeoutChange"
-                  @keydown.enter="onHttpTimeoutChange"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: Task Output Mode -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('output') || matchesSearch('task_output') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.task_output') || '任务日志输出模式 (Task Output)' }}</span>
-                <p class="setting-desc">{{ t('settings.task_output_desc') || '多任务并发执行时的控制台日志汇总与渲染风格。' }}</p>
-              </div>
-              <div class="setting-control">
-                <CustomSelect
-                  :model-value="taskOutput"
-                  :options="taskOutputOptions"
-                  @change="onTaskOutputChange"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: Shell (Task Shell) -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('shell') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.shell') || '任务默认 Shell (Shell)' }}</span>
-                <p class="setting-desc">{{ t('settings.shell_desc') || '执行工程任务及生命周期钩子脚本时的默认解释器。留空表示遵循系统默认 Shell。' }}</p>
-              </div>
-              <div class="setting-control">
-                <div style="display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px;">
-                  <CustomSelect
-                    :model-value="selectedShellPreset"
-                    :options="shellPresetOptions"
-                    @change="onShellPresetChange"
-                  />
-                  <input
-                    v-if="selectedShellPreset === 'custom'"
-                    v-model="customShellPath"
+                    v-model="newEcoId"
                     type="text"
                     class="setting-text-input font-mono"
-                    :placeholder="t('settings.shell_custom_placeholder') || '/bin/bash 或自定义可执行路径'"
-                    @change="saveSetting('settings.shell', customShellPath)"
-                    @blur="saveSetting('settings.shell', customShellPath)"
-                    @keydown.enter="saveSetting('settings.shell', customShellPath)"
+                    placeholder="例如: composer, maven, docker, nuget 等"
+                    autofocus
                   />
+                  <span class="field-hint">小写字母、数字或短横线，如 composer、maven、docker 等</span>
                 </div>
-              </div>
-            </div>
 
-            <!-- Setting: Minimum Release Age -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('age') || matchesSearch('minimum_release_age') || matchesSearch('security') }">
-              <div class="setting-meta">
-                <div class="title-with-badge">
-                  <span class="setting-title">{{ t('settings.minimum_release_age') || '发布安全冷却时间 (Release Age)' }}</span>
-                  <span class="badge-custom-pkg" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.25);">
-                    🛡️ 安全防护
-                  </span>
-                </div>
-                <p class="setting-desc">{{ t('settings.minimum_release_age_desc') || '防范供应链投毒与零日漏洞。系统默认遵循 7 天安全冷却期（7d），延迟接纳刚发布的新版本。输入 0 可关闭冷却以立即获取绝对最新版本。' }}</p>
-                <div class="release-age-presets-row" style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap;">
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: (minimumReleaseAge || '7d') === '7d' }"
-                    @click="applyReleaseAgePreset('7d')"
+                <div class="modal-field">
+                  <label
+                    >{{ t("network.eco_registry_url") || "镜像源地址 (URL)" }} <span class="text-danger">*</span></label
                   >
-                    <span>🛡️ {{ t('settings.release_age_preset_7d') || '7d (推荐默认)' }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: minimumReleaseAge === '14d' }"
-                    @click="applyReleaseAgePreset('14d')"
-                  >
-                    <span>🔒 {{ t('settings.release_age_preset_14d') || '14d (严格保守)' }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-chip-btn"
-                    :class="{ active: minimumReleaseAge === '0' }"
-                    @click="applyReleaseAgePreset('0')"
-                  >
-                    <span>⚡ {{ t('settings.release_age_preset_0') || '0 (即刻获取)' }}</span>
-                  </button>
-                </div>
-              </div>
-              <div class="setting-control">
-                <input
-                  v-model="minimumReleaseAge"
-                  type="text"
-                  class="setting-text-input font-mono"
-                  :placeholder="t('settings.minimum_release_age_placeholder') || '7d (系统默认推荐)'"
-                  @change="onMinimumReleaseAgeChange"
-                  @blur="onMinimumReleaseAgeChange"
-                  @keydown.enter="onMinimumReleaseAgeChange"
-                />
-              </div>
-            </div>
-
-            <!-- Setting: Experimental Features -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('experimental') }">
-              <div class="setting-meta">
-                <div class="title-with-badge">
-                  <span class="setting-title">{{ t('settings.experimental') || '实验性预览特性 (Experimental)' }}</span>
-                  <span class="badge-custom-pkg" style="background: rgba(245, 158, 11, 0.12); color: #d97706; border-color: rgba(245, 158, 11, 0.25);">
-                    🧪 预览阶段
-                  </span>
-                </div>
-                <p class="setting-desc">{{ t('settings.experimental_desc') || '启用 UniRTM 处于早期开发预览阶段的实验性功能与架构能力。' }}</p>
-              </div>
-              <div class="setting-control">
-                <label class="toggle-switch-label">
                   <input
-                    type="checkbox"
-                    :checked="experimental"
-                    @change="onExperimentalToggle"
+                    v-model="newEcoUrl"
+                    type="text"
+                    class="setting-text-input font-mono"
+                    placeholder="例如: https://repo.packagist.org"
                   />
-                  <span class="slider round"></span>
-                </label>
+                </div>
+              </div>
+
+              <div class="modal-footer">
+                <button class="btn-modal-cancel" @click="showAddEcoModal = false">取消</button>
+                <button
+                  class="btn-modal-confirm"
+                  :disabled="!newEcoId.trim() || !newEcoUrl.trim() || isAddingEco"
+                  @click="handleAddEcosystem"
+                >
+                  <span v-if="isAddingEco">正在添加...</span>
+                  <span v-else>添加并保存</span>
+                </button>
               </div>
             </div>
           </div>
-        </section>
 
-        <!-- 2. Git & Lifecycle Hooks (Workspace Only) -->
-        <section
-          v-if="activeScope !== 'user'"
-          v-show="isCategoryVisible('hooks')"
-          id="section-hooks"
-          class="settings-category-section glass-card"
-        >
-          <div class="section-header">
-            <div class="section-title-wrap">
-              <span class="section-icon">
+          <!-- Ecosystem Registries Matrix Table -->
+          <div class="registries-matrix" v-if="networkStatus">
+            <div v-for="eco in orderedEffectiveEcosystems" :key="eco" class="registry-matrix-row">
+              <div class="row-eco-info">
+                <span class="eco-badge font-mono">{{ eco.toUpperCase() }}</span>
+                <span class="status-indicator-badge" :class="getEcoBadgeClass(eco)" :title="getEcoBadgeTitle(eco)">
+                  {{ getEcoBadgeLabel(eco) }}
+                </span>
+              </div>
+
+              <div class="row-controls">
+                <div class="preset-dropdown-wrap" v-if="recommendedMirrors[eco] && recommendedMirrors[eco].length">
+                  <select
+                    class="preset-select"
+                    :value="getPresetSelectValue(eco)"
+                    @change="handleSelectMirrorPreset(eco, ($event.target as HTMLSelectElement).value)"
+                  >
+                    <option v-for="m in recommendedMirrors[eco]" :key="m.url" :value="m.url">
+                      {{ m.name }}
+                    </option>
+                    <option
+                      v-if="!isUrlInPresets(eco, networkStatus?.effective?.[eco]?.url)"
+                      :value="networkStatus?.effective?.[eco]?.url"
+                    >
+                      {{ t("network.custom_source") || "自定义镜像源" }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Text input for registry URL -->
+                <input
+                  type="text"
+                  class="setting-text-input font-mono registry-url-input"
+                  :value="networkStatus.effective[eco]?.url"
+                  @change="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
+                  @blur="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
+                  @keydown.enter="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
+                />
+
+                <!-- Dynamic Ping / Latency Badge for this ecosystem -->
+                <button
+                  class="btn-eco-ping"
+                  :class="getEcoPingClass(eco)"
+                  :disabled="ecoPingStatus[eco]?.loading"
+                  :title="getEcoPingTitle(eco)"
+                  @click="handlePingSingle(eco)"
+                >
+                  <span v-if="ecoPingStatus[eco]?.loading" class="ping-icon spinning">
+                    <TechIcon id="workbench:sync" :size="12" />
+                  </span>
+                  <span
+                    v-else-if="ecoPingStatus[eco]?.status === 'fast'"
+                    class="ping-text ping-fast"
+                    style="display: inline-flex; align-items: center; gap: 4px"
+                  >
+                    <TechIcon id="workbench:speed" :size="11" />
+                    <span>{{ ecoPingStatus[eco]?.rtt_ms ?? 0 }}ms</span>
+                  </span>
+                  <span
+                    v-else-if="ecoPingStatus[eco]?.status === 'normal'"
+                    class="ping-text ping-normal"
+                    style="display: inline-flex; align-items: center; gap: 4px"
+                  >
+                    <TechIcon id="workbench:speed" :size="11" />
+                    <span>{{ ecoPingStatus[eco]?.rtt_ms ?? 0 }}ms</span>
+                  </span>
+                  <span
+                    v-else-if="ecoPingStatus[eco]?.status === 'slow'"
+                    class="ping-text ping-slow"
+                    style="display: inline-flex; align-items: center; gap: 4px"
+                  >
+                    <TechIcon id="workbench:speed" :size="11" />
+                    <span>{{ ecoPingStatus[eco]?.rtt_ms ?? 0 }}ms</span>
+                  </span>
+                  <span
+                    v-else-if="ecoPingStatus[eco]?.status === 'timeout'"
+                    class="ping-text ping-timeout"
+                    style="display: inline-flex; align-items: center; gap: 4px"
+                  >
+                    <TechIcon id="workbench:warning" :size="11" />
+                    <span>超时</span>
+                  </span>
+                  <span
+                    v-else-if="ecoPingStatus[eco]?.status === 'error'"
+                    class="ping-text ping-error"
+                    style="display: inline-flex; align-items: center; gap: 4px"
+                  >
+                    <TechIcon id="workbench:warning" :size="11" />
+                    <span>失败</span>
+                  </span>
+                  <span v-else class="ping-text ping-idle" style="display: inline-flex; align-items: center; gap: 4px">
+                    <TechIcon id="workbench:speed" :size="11" />
+                    <span>测速</span>
+                  </span>
+                </button>
+
+                <!-- Reset Override Button if Overridden -->
+                <button
+                  v-if="networkStatus.effective[eco]?.is_overridden"
+                  class="btn-reset-override"
+                  :title="t('network.restore_inherited') || '恢复预设'"
+                  @click="handleResetRegistry(eco)"
+                >
+                  <TechIcon id="workbench:sync" :size="12" />
+                </button>
+
+                <!-- Delete Ecosystem Button -->
+                <button
+                  class="btn-delete-eco"
+                  :title="t('network.delete_ecosystem') || '从矩阵中移除'"
+                  @click="handleDeleteEcosystem(eco)"
+                >
+                  <TechIcon id="workbench:delete" :size="13" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Plugins & Extensions -->
+      <section v-show="isCategoryVisible('plugins')" id="section-plugins" class="settings-category-section glass-card">
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-icon">
+              <TechIcon id="workbench:marketplace" :size="20" />
+            </span>
+            <div>
+              <h2>{{ t("settings.cat_plugins") || "扩展" }}</h2>
+              <span class="section-sub">{{ t("settings.cat_plugins_sub") || "插件配置与隔离" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-list">
+          <!-- Explanation banner -->
+          <div class="plugin-isolation-banner">
+            <span class="banner-icon">
+              <TechIcon id="workbench:lock" :size="16" />
+            </span>
+            <div class="banner-text">
+              <strong>{{ t("settings.plugin_isolation_title") || "三层命名空间隔离准则" }}</strong>
+              <p>
+                {{
+                  t("settings.plugin_isolation_desc") ||
+                  "所有第三方扩展配置严格隔离于 plugins.{plugin-id}.* 区域，严禁侵入核心保留表。"
+                }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Configured plugins list -->
+          <div v-if="configuredPlugins.length > 0" class="configured-plugins-list">
+            <div v-for="p in configuredPlugins" :key="p.id" class="plugin-config-card">
+              <div class="plugin-card-header">
+                <div class="plugin-identity">
+                  <span class="plugin-icon">
+                    <TechIcon id="workbench:marketplace" :size="16" />
+                  </span>
+                  <span class="plugin-id font-mono">{{ p.id }}</span>
+                  <span class="plugin-version-tag">v{{ p.version || "latest" }}</span>
+                </div>
+                <span class="plugin-keys-count">{{ Object.keys(p.config || {}).length }}</span>
+              </div>
+
+              <div class="plugin-params-table">
+                <div v-for="(val, key) in p.config" :key="key" class="param-row">
+                  <span class="param-key font-mono">plugins.{{ p.id }}.config.{{ key }}</span>
+                  <span class="param-val font-mono">{{ val }}</span>
+                </div>
+                <div v-if="!p.config || Object.keys(p.config).length === 0" class="empty-param-hint">
+                  {{ t("settings.empty_toml") || "暂无配置项" }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="no-plugins-card">
+            <span class="empty-icon">
+              <TechIcon id="workbench:marketplace" :size="32" />
+            </span>
+            <span>{{
+              t("settings.no_plugins") || "当前尚未声明第三方插件配置。可通过扩展市场或配置文件添加扩展。"
+            }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Security & Namespace -->
+      <section
+        v-show="isCategoryVisible('security')"
+        id="section-security"
+        class="settings-category-section glass-card"
+      >
+        <div class="section-header">
+          <div class="section-title-wrap">
+            <span class="section-icon">
+              <TechIcon id="workbench:lock" :size="20" />
+            </span>
+            <div>
+              <h2>{{ t("settings.cat_security") || "安全" }}</h2>
+              <span class="section-sub">{{ t("settings.cat_security_sub") || "保留表与文件排他锁" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="security-architecture-grid">
+          <div class="sec-card">
+            <div class="sec-badge green">{{ t("settings.status_protected") || "已受保护" }}</div>
+            <h3>{{ t("settings.sec_core_title") || "核心保留命名空间" }}</h3>
+            <p>
+              {{
+                t("settings.sec_core_desc") ||
+                "严格保留 [tools], [tasks], [format], [env], [settings]，任何第三方插件写入非法顶级字段均会被拦截。"
+              }}
+            </p>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-badge cyan">{{ t("settings.status_active") || "活跃生效" }}</div>
+            <h3>{{ t("settings.sec_lock_title") || "并发文件排他锁" }}</h3>
+            <p>{{ t("settings.sec_lock_desc") || "写入配置时自动获取排他锁，防止多进程或编辑器并发保存损坏数据。" }}</p>
+          </div>
+
+          <div class="sec-card">
+            <div class="sec-badge purple">{{ t("settings.status_ast_safe") || "格式安全" }}</div>
+            <h3>{{ t("settings.sec_ast_title") || "AST 注释与格式保留" }}</h3>
+            <p>
+              {{
+                t("settings.sec_ast_desc") ||
+                "采用语法树精准注入算法，更新配置绝不破坏原配置文件中的手工注释与空行排版。"
+              }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Add/Edit Hook Modal Dialog -->
+      <div v-if="showHookModal" class="modal-backdrop" @click.self="showHookModal = false">
+        <div class="modal-dialog glass-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="modal-icon">
                 <TechIcon id="workbench:git" :size="20" />
               </span>
               <div>
-                <h2>{{ t('settings.cat_hooks') || '生命周期与 Git 钩子 (Hooks)' }}</h2>
-                <span class="section-sub">{{ t('settings.cat_hooks_sub') || 'Git 提交与操作生命周期自动化事件脚本' }}</span>
+                <h4>
+                  {{
+                    isEditingHook
+                      ? t("settings.hooks_modal_edit_title") || "编辑生命周期钩子"
+                      : t("settings.hooks_modal_add_title") || "添加生命周期钩子"
+                  }}
+                </h4>
+                <span class="modal-subtitle">{{
+                  t("settings.hooks_modal_sub") || "指定 Git 触发阶段与待执行的 Shell 脚本或任务命令"
+                }}</span>
               </div>
             </div>
-            <div class="hooks-header-actions" style="display: flex; gap: 8px; align-items: center;">
-              <button
-                type="button"
-                class="btn-bridge-install"
-                :disabled="isInstallingBridges"
-                @click="installAllGitBridges"
-                :title="t('settings.hooks_install_bridges_tip') || '自动将 UniRTM 路由脚本注入到工作区 .git/hooks 目录'"
-              >
-                <TechIcon id="workbench:sync" :size="13" :class="{ spinning: isInstallingBridges }" />
-                <span>{{ isInstallingBridges ? (t('settings.hooks_installing_bridges') || '正在注入 Git 桥接...') : (t('settings.hooks_install_bridges') || '注入 Git 桥接') }}</span>
-              </button>
-              <button
-                type="button"
-                class="btn-add-hook"
-                @click="openAddHookModal()"
-              >
-                <TechIcon id="workbench:add" :size="13" />
-                <span>{{ t('settings.hooks_add_btn') || '添加钩子' }}</span>
-              </button>
+            <button
+              class="btn btn-icon btn-modal-close"
+              @click="showHookModal = false"
+              :title="t('common.close') || '关闭'"
+            >
+              <TechIcon id="workbench:close" :size="14" />
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="modal-field">
+              <label class="modal-label">{{ t("settings.hooks_form_stage") || "Git 触发阶段 (Hook Stage)" }}</label>
+              <CustomSelect
+                v-if="!isEditingHook"
+                :model-value="hookFormName"
+                :options="standardHookPresets"
+                @change="(val) => (hookFormName = val)"
+              />
+              <input
+                v-if="hookFormName === 'custom' || isEditingHook"
+                v-model="hookFormCustomName"
+                type="text"
+                class="modal-input font-mono"
+                style="margin-top: 6px"
+                :placeholder="t('settings.hooks_form_name_placeholder') || '输入钩子名称 (例如 pre-commit, commit-msg)'"
+                :disabled="isEditingHook"
+              />
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label">{{ t("settings.hooks_form_cmd") || "执行命令 / 脚本 (Command)" }}</label>
+              <textarea
+                v-model="hookFormCommand"
+                class="modal-textarea font-mono"
+                rows="3"
+                :placeholder="t('settings.hooks_form_cmd_placeholder') || '例如: npm test 或 unirtm run check'"
+              ></textarea>
+            </div>
+
+            <div v-if="activeScope !== 'user'" class="modal-field-checkbox">
+              <label class="modal-checkbox-row" for="hook-auto-bridge">
+                <input type="checkbox" id="hook-auto-bridge" v-model="hookFormAutoBridge" />
+                <span>{{
+                  t("settings.hooks_form_auto_bridge") || "同时自动将 UniRTM 路由脚本注入到 .git/hooks/"
+                }}</span>
+              </label>
             </div>
           </div>
-
-          <!-- Hooks Content List or Empty State -->
-          <div class="hooks-container">
-            <div v-if="isLoadingHooks" class="hooks-loading">
-              <span class="spinner-small"></span>
-              <span>{{ t('settings.hooks_loading') || '正在加载生命周期钩子...' }}</span>
-            </div>
-
-            <div v-else-if="hooksList.length === 0" class="hooks-empty-state">
-              <div class="empty-icon-wrap">
-                <TechIcon id="workbench:git" :size="32" />
-              </div>
-              <h4>{{ t('settings.hooks_empty_title') || '尚未配置任何生命周期钩子' }}</h4>
-              <p>{{ t('settings.hooks_empty_desc') || '配置 Git 钩子可在提交、推送或分支检出前后自动执行代码格式化、质量检查与测试。' }}</p>
-              <div class="hooks-preset-recommendations">
-                <span class="preset-label">{{ t('settings.hooks_recommended_label') || '常用推荐:' }}</span>
-                <button
-                  type="button"
-                  class="preset-chip-btn"
-                  @click="openAddHookModal('pre-commit', 'npm test')"
-                >
-                  <span>⚡ pre-commit (测试与质检)</span>
-                </button>
-                <button
-                  type="button"
-                  class="preset-chip-btn"
-                  @click="openAddHookModal('commit-msg', 'npx commitlint --edit $1')"
-                >
-                  <span>📝 commit-msg (提交信息规范)</span>
-                </button>
-                <button
-                  type="button"
-                  class="preset-chip-btn"
-                  @click="openAddHookModal('pre-push', 'npm run lint && npm test')"
-                >
-                  <span>🛡️ pre-push (推送前全量校验)</span>
-                </button>
-              </div>
-            </div>
-
-            <div v-else class="hooks-grid">
-              <div
-                v-for="hook in hooksList"
-                :key="hook.name"
-                class="hook-card"
-                :class="{ 'highlight': matchesSearch(hook.name) || matchesSearch(hook.command) }"
-              >
-                <div class="hook-card-header">
-                  <div class="hook-name-group">
-                    <span class="hook-badge-icon">
-                      <TechIcon id="workbench:git" :size="14" />
-                    </span>
-                    <span class="hook-name font-mono">{{ hook.name }}</span>
-                    <span class="hook-bridge-badge" :class="hook.installed ? 'installed' : 'not-installed'">
-                      {{ hook.installed ? ('✓ ' + (t('settings.hooks_badge_bridged') || 'Git 已桥接')) : ('⚠ ' + (t('settings.hooks_badge_unbridged') || '未注入桥接')) }}
-                    </span>
-                  </div>
-                  <div class="hook-card-actions">
-                    <button
-                      type="button"
-                      class="btn-icon-action"
-                      :title="t('settings.hooks_run_tip') || '测试执行该钩子'"
-                      @click="runHookTest(hook.name)"
-                    >
-                      <TechIcon id="workbench:tasks" :size="14" />
-                      <span>{{ t('settings.hooks_run_btn') || '测试' }}</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="btn-icon-action"
-                      :title="t('settings.hooks_edit_tip') || '编辑脚本命令'"
-                      @click="openEditHookModal(hook)"
-                    >
-                      <TechIcon id="workbench:edit" :size="14" />
-                    </button>
-                    <button
-                      type="button"
-                      class="btn-icon-action danger"
-                      :title="t('settings.hooks_delete_tip') || '删除此钩子'"
-                      @click="deleteHook(hook.name)"
-                    >
-                      <TechIcon id="workbench:error" :size="14" />
-                    </button>
-                  </div>
-                </div>
-
-                <div class="hook-command-wrap">
-                  <div class="hook-command-code font-mono">
-                    <code>{{ hook.command }}</code>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn-copy-code"
-                    :title="t('settings.copy_command') || '复制命令'"
-                    @click="copyCommand(hook.command)"
-                  >
-                    <TechIcon id="workbench:edit" :size="12" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 3. Tool Version Aliases -->
-        <section
-          v-show="isCategoryVisible('aliases')"
-          id="section-aliases"
-          class="settings-category-section glass-card"
-        >
-          <div class="section-header">
-            <div class="section-title-wrap">
-              <span class="section-icon">
-                <TechIcon id="workbench:tag" :size="20" />
-              </span>
-              <div>
-                <h2>{{ t('settings.cat_aliases') || '工具版本别名 (Aliases)' }}</h2>
-                <span class="section-sub">{{ t('settings.cat_aliases_sub') || '为常用工具定义语义化版本快捷映射 (如 node.lts -> 20, python.stable -> 3.12)' }}</span>
-              </div>
-            </div>
-            <div class="aliases-header-actions" style="display: flex; gap: 8px; align-items: center;">
-              <button
-                type="button"
-                class="btn-add-alias"
-                @click="openAddAliasModal()"
-              >
-                <TechIcon id="workbench:add" :size="13" />
-                <span>{{ t('settings.aliases_add_btn') || '添加别名' }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Aliases Container -->
-          <div class="aliases-container">
-            <div v-if="isLoadingAliases" class="aliases-loading">
-              <span class="spinner-small"></span>
-              <span>{{ t('settings.aliases_loading') || '正在加载工具版本别名...' }}</span>
-            </div>
-
-            <!-- Aliases List by Tool Group -->
-            <div v-else-if="toolNamesWithAliases.length > 0" class="aliases-groups-list">
-              <div
-                v-for="tool in toolNamesWithAliases"
-                :key="tool"
-                class="alias-tool-card"
-                :class="{ 'highlight': matchesSearch(tool) }"
-              >
-                <div class="alias-tool-header">
-                  <div class="tool-info-left">
-                    <span class="tool-icon-wrapper">
-                      <TechIcon :id="tool" :size="18" />
-                    </span>
-                    <span class="tool-name font-mono">{{ tool }}</span>
-                    <span class="alias-count-badge">{{ Object.keys(aliasesData[tool] || {}).length }}</span>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn-tool-add-alias"
-                    :title="t('settings.aliases_add_for_tool') || '为此工具添加别名'"
-                    @click="openAddAliasModal(tool)"
-                  >
-                    <TechIcon id="workbench:add" :size="12" />
-                    <span>{{ t('settings.aliases_add_short') || '添加' }}</span>
-                  </button>
-                </div>
-
-                <div class="alias-chips-grid">
-                  <div
-                    v-for="(targetVersion, aliasName) in aliasesData[tool]"
-                    :key="aliasName"
-                    class="alias-chip-item"
-                    :class="{ 'highlight': matchesSearch(String(aliasName)) || matchesSearch(String(targetVersion)) }"
-                  >
-                    <div class="alias-chip-main">
-                      <span class="alias-tag-name font-mono">{{ aliasName }}</span>
-                      <span class="alias-arrow">→</span>
-                      <span class="alias-target-version font-mono" :title="String(targetVersion)">{{ targetVersion }}</span>
-                    </div>
-                    <div class="alias-chip-actions">
-                      <button
-                        type="button"
-                        class="btn-chip-action"
-                        :title="t('common.copy') || '复制目标版本'"
-                        @click="copyCommand(String(targetVersion))"
-                      >
-                        <TechIcon id="workbench:edit" :size="11" />
-                      </button>
-                      <button
-                        type="button"
-                        class="btn-chip-action"
-                        :title="t('common.edit') || '编辑别名'"
-                        @click="openEditAliasModal(tool, String(aliasName), String(targetVersion))"
-                      >
-                        <TechIcon id="workbench:edit" :size="11" />
-                      </button>
-                      <button
-                        type="button"
-                        class="btn-chip-action action-delete"
-                        :title="t('common.delete') || '删除别名'"
-                        @click="deleteAlias(tool, String(aliasName))"
-                      >
-                        <TechIcon id="workbench:close" :size="11" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Empty State -->
-            <div v-else class="aliases-empty-state">
-              <div class="empty-icon-wrap">
-                <TechIcon id="workbench:tag" :size="24" />
-              </div>
-              <h4>{{ t('settings.aliases_empty_title') || '暂无工具版本别名' }}</h4>
-              <p style="margin: 0;">{{ t('settings.aliases_empty_desc') || '通过版本别名，您可以为常用工具设置语义化版本映射，例如将 lts 映射到 20 或 stable 映射到 3.12。' }}</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- 4. Network & Mirrors -->
-        <section
-          v-show="isCategoryVisible('network')"
-          id="section-network"
-          class="settings-category-section glass-card"
-        >
-          <div class="section-header">
-            <div class="section-title-wrap">
-              <span class="section-icon">
-                <TechIcon id="workbench:runtimes" :size="20" />
-              </span>
-              <div>
-                <h2>{{ t('settings.cat_network') || '网络' }}</h2>
-                <span class="section-sub">{{ t('settings.cat_network_sub') || '镜像加速与网络代理' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section A: Network Proxy (Default strictly disabled, empty, no 3rd-party github proxies) -->
-          <div class="network-subsection">
-            <div class="subsection-title-bar">
-              <span class="sub-icon">
-                <TechIcon id="workbench:lock" :size="16" />
-              </span>
-              <h3>{{ t('network.tab_proxy') || '网络代理' }}</h3>
-              <span class="proxy-badge" :class="networkStatus?.proxy?.enabled ? 'badge-on' : 'badge-off'">
-                {{ networkStatus?.proxy?.enabled ? (t('network.proxy_enabled') || '已启用') : (t('network.proxy_disabled') || '直连模式 (已关闭)') }}
-              </span>
-            </div>
-
-
-            <div class="proxy-form-grid" v-if="networkStatus">
-              <div class="proxy-toggle-row">
-                <label class="toggle-switch-label">
-                  <input
-                    type="checkbox"
-                    v-model="networkStatus.proxy.enabled"
-                    @change="handleSaveProxy"
-                  />
-                  <span class="slider round"></span>
-                </label>
-                <span class="toggle-text">{{ networkStatus.proxy.enabled ? (t('network.proxy_enabled') || '全局代理已开启') : (t('network.proxy_disabled') || '全局代理已关闭 (直连)') }}</span>
-
-                <button
-                  type="button"
-                  class="btn-test-proxy"
-                  :disabled="isTestingProxy || !networkStatus.proxy.enabled || (!networkStatus.proxy.http && !networkStatus.proxy.socks5)"
-                  @click="handleTestProxy"
-                  title="发起真实网络连接检测该代理是否可用"
-                >
-                  <span v-if="isTestingProxy" style="display: inline-flex; align-items: center; gap: 4px;">
-                    <TechIcon id="workbench:sync" :size="13" class="spinning" />
-                    <span>检测中...</span>
-                  </span>
-                  <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
-                    <TechIcon id="workbench:speed" :size="13" />
-                    <span>连通性检测</span>
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  class="btn-detect-proxy"
-                  :disabled="isDetectingProxy"
-                  @click="handleDetectProxy(true)"
-                  title="自动探测宿主机运行中的代理客户端 (sing-box, Clash 等)"
-                >
-                  <span v-if="isDetectingProxy" style="display: inline-flex; align-items: center; gap: 4px;">
-                    <TechIcon id="workbench:sync" :size="13" class="spinning" />
-                    <span>探测中...</span>
-                  </span>
-                  <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
-                    <TechIcon id="workbench:search" :size="13" />
-                    <span>自动探测宿主代理</span>
-                  </span>
-                </button>
-              </div>
-
-              <!-- Detected Proxy Banner -->
-              <div v-if="detectedProxy?.detected" class="detected-proxy-banner">
-                <div class="detected-banner-left">
-                  <span class="detected-pill">{{ detectedProxy.type.toUpperCase() }}</span>
-                  <span class="detected-desc">{{ detectedProxy.description }}</span>
-                </div>
-                <button
-                  type="button"
-                  class="btn-apply-detected"
-                  @click="applyDetectedProxy"
-                >
-                  <span style="display: inline-flex; align-items: center; gap: 4px;">
-                    <TechIcon id="workbench:speed" :size="13" />
-                    <span>一键导入</span>
-                  </span>
-                </button>
-              </div>
-
-              <!-- Proxy Test Result Status Banner -->
-              <div
-                v-if="proxyTestResult"
-                class="proxy-test-status-banner"
-                :class="{ 'status-ok': proxyTestResult.success, 'status-fail': !proxyTestResult.success }"
-              >
-                <div class="test-status-left">
-                  <span class="status-icon">
-                    <TechIcon :id="proxyTestResult.success ? 'workbench:success' : 'workbench:error'" :size="14" />
-                  </span>
-                  <span class="status-message">{{ proxyTestResult.message || proxyTestResult.error }}</span>
-                </div>
-                <div v-if="proxyTestResult.success && proxyTestResult.rtt_ms" class="test-rtt-tag" style="display: inline-flex; align-items: center; gap: 4px;">
-                  <TechIcon id="workbench:speed" :size="12" />
-                  <span>延迟 {{ proxyTestResult.rtt_ms }}ms</span>
-                </div>
-              </div>
-
-              <div class="proxy-fields" :class="{ 'fields-disabled': !networkStatus.proxy.enabled }">
-                <div class="proxy-field-item">
-                  <label>{{ t('network.proxy_http') || 'HTTP / HTTPS 代理地址' }}</label>
-                  <input
-                    v-model="networkStatus.proxy.http"
-                    type="text"
-                    class="setting-text-input font-mono"
-                    placeholder="http://127.0.0.1:7890 (留空为不使用)"
-                    :disabled="!networkStatus.proxy.enabled"
-                    @change="handleSaveProxy"
-                    @blur="handleSaveProxy"
-                    @keydown.enter="handleSaveProxy"
-                  />
-                </div>
-
-                <div class="proxy-field-item">
-                  <label>{{ t('network.proxy_socks5') || 'SOCKS5 代理地址' }}</label>
-                  <input
-                    v-model="networkStatus.proxy.socks5"
-                    type="text"
-                    class="setting-text-input font-mono"
-                    placeholder="socks5://127.0.0.1:10808 (可选)"
-                    :disabled="!networkStatus.proxy.enabled"
-                    @change="handleSaveProxy"
-                    @blur="handleSaveProxy"
-                    @keydown.enter="handleSaveProxy"
-                  />
-                </div>
-
-                <div class="proxy-field-item full-width">
-                  <label>{{ t('network.proxy_noproxy') || '直连白名单 (NO_PROXY)' }}</label>
-                  <input
-                    v-model="networkStatus.proxy.no_proxy"
-                    type="text"
-                    class="setting-text-input font-mono"
-                    placeholder="localhost,127.0.0.1,::1,*.local,*.internal"
-                    :disabled="!networkStatus.proxy.enabled"
-                    @change="handleSaveProxy"
-                    @blur="handleSaveProxy"
-                    @keydown.enter="handleSaveProxy"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section B: Profiles and Mirrors Matrix -->
-          <div class="network-subsection">
-            <div class="subsection-title-bar">
-              <span class="sub-icon">
-                <TechIcon id="workbench:package" :size="16" />
-              </span>
-              <h3>{{ t('network.tab_mirrors') || '镜像源矩阵' }}</h3>
-              <button
-                class="btn-batch-test"
-                :disabled="isProbing"
-                @click="handleRunProbeAll"
-                title="并发测试当前镜像源矩阵中所有生态的延迟"
-              >
-                <span v-if="isProbing" style="display: inline-flex; align-items: center; gap: 4px;">
-                  <TechIcon id="workbench:sync" :size="13" class="spinning" />
-                  <span>测速中...</span>
-                </span>
-                <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
-                  <TechIcon id="workbench:speed" :size="13" />
-                  <span>一键测速</span>
-                </span>
-              </button>
-
-              <div class="profile-actions-bar">
-                <div class="profile-scroll-nav" v-if="orderedProfiles.length > 3">
-                  <button class="btn-scroll-arrow" @click="scrollProfiles('left')" title="向左滚动">‹</button>
-                  <button class="btn-scroll-arrow" @click="scrollProfiles('right')" title="向右滚动">›</button>
-                </div>
-                <button
-                  class="btn-profile-action"
-                  @click="showCreateProfileModal = true"
-                  :title="t('network.create_profile') || '新建档案'"
-                >
-                  <TechIcon id="workbench:tools" :size="12" />
-                  <span>{{ t('network.create_profile') || '新建档案' }}</span>
-                </button>
-                <button
-                  class="btn-profile-action"
-                  @click="openAddEcoModal()"
-                  :title="t('network.add_ecosystem') || '添加生态'"
-                >
-                  <TechIcon id="workbench:runtimes" :size="12" />
-                  <span>{{ t('network.add_ecosystem') || '添加生态' }}</span>
-                </button>
-                <button
-                  class="btn-profile-action secondary"
-                  @click="handleResetAllEcosystems()"
-                  :title="t('network.reset_all_ecosystems') || '恢复默认生态'"
-                >
-                  <TechIcon id="workbench:sync" :size="12" />
-                  <span>{{ t('network.reset_all_ecosystems') || '恢复默认生态' }}</span>
-                </button>
-                <button
-                  v-if="networkStatus?.active_profile?.builtin"
-                  class="btn-profile-action secondary"
-                  @click="handleResetBuiltinProfile(networkStatus.active_profile_id)"
-                  :title="t('network.reset_factory') || '恢复出厂默认值'"
-                >
-                  <TechIcon id="workbench:sync" :size="12" />
-                  <span>{{ t('network.reset_factory') || '恢复出厂默认值' }}</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Profile Cards Track -->
-            <div class="profile-cards-wrapper" v-if="networkStatus">
-              <div
-                ref="profileTrackRef"
-                class="profile-cards-track"
-                @wheel="onProfileTrackWheel"
-              >
-                <div
-                  v-for="{ id: pId, profile: p } in orderedProfiles"
-                  :key="pId"
-                  class="profile-card"
-                  :class="{ active: pId === networkStatus.active_profile_id, builtin: p.builtin }"
-                  @click="handleUseProfile(String(pId))"
-                >
-                  <div class="profile-card-header">
-                    <span class="profile-name">{{ getProfileDisplayName(String(pId), p.name) }}</span>
-                    <span v-if="pId === networkStatus.active_profile_id" class="active-tag">✔ {{ t('network.active_tag') }}</span>
-                  </div>
-                  <p class="profile-desc">{{ getProfileDisplayDesc(String(pId), p.description) }}</p>
-                  <div class="profile-footer">
-                    <span class="profile-id font-mono">id: {{ pId }}</span>
-                    <span v-if="p.builtin" class="pill-builtin">{{ t('network.tag_builtin') }}</span>
-                    <span v-else class="pill-custom">{{ t('network.tag_custom') }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Create/Save Profile Modal Dialog -->
-            <div v-if="showCreateProfileModal" class="modal-backdrop" @click.self="showCreateProfileModal = false">
-              <div class="modal-dialog glass-card">
-                <div class="modal-header">
-                  <div class="modal-title-group">
-                    <span class="modal-icon">
-                      <TechIcon id="workbench:config" :size="20" />
-                    </span>
-                    <div>
-                      <h4>{{ t('network.create_profile') || '新建网络预设档案' }}</h4>
-                      <span class="modal-subtitle">将当前网络与各生态镜像配置保存为独立的 Profile 方案</span>
-                    </div>
-                  </div>
-                  <button class="btn btn-icon btn-modal-close" @click="showCreateProfileModal = false" :title="t('common.close') || '关闭'">
-                    <TechIcon id="workbench:close" :size="14" />
-                  </button>
-                </div>
-
-                <div class="modal-body">
-                  <div class="modal-field">
-                    <label>档案标识 (ID) <span class="text-danger">*</span></label>
-                    <input
-                      v-model="newProfileId"
-                      type="text"
-                      class="setting-text-input font-mono"
-                      placeholder="例如: company-internal 或 fast-mirror"
-                      autofocus
-                    />
-                    <span class="field-hint">用于 CLI 命令行切换，仅允许英文字母、数字、短横线与下划线</span>
-                  </div>
-
-                  <div class="modal-field">
-                    <label>显示名称</label>
-                    <input
-                      v-model="newProfileName"
-                      type="text"
-                      class="setting-text-input"
-                      placeholder="例如: 公司专线加速"
-                    />
-                  </div>
-                </div>
-
-                <div class="modal-footer">
-                  <button class="btn-modal-cancel" @click="showCreateProfileModal = false">取消</button>
-                  <button
-                    class="btn-modal-confirm"
-                    :disabled="!newProfileId.trim() || isSavingProfile"
-                    @click="handleSaveAsProfile"
-                  >
-                    <span v-if="isSavingProfile">正在创建...</span>
-                    <span v-else>创建并激活</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Add Ecosystem Modal Dialog -->
-            <div v-if="showAddEcoModal" class="modal-backdrop" @click.self="showAddEcoModal = false">
-              <div class="modal-dialog glass-card">
-                <div class="modal-header">
-                  <div class="modal-title-group">
-                    <span class="modal-icon">
-                      <TechIcon id="workbench:runtimes" :size="20" />
-                    </span>
-                    <div>
-                      <h4>{{ t('network.add_ecosystem_title') || '添加语言生态镜像源' }}</h4>
-                      <span class="modal-subtitle">{{ t('network.add_ecosystem_desc') || '选择常用语言生态预设或输入自定义生态标识与镜像地址' }}</span>
-                    </div>
-                  </div>
-                  <button class="btn btn-icon btn-modal-close" @click="showAddEcoModal = false" :title="t('common.close') || '关闭'">
-                    <TechIcon id="workbench:close" :size="14" />
-                  </button>
-                </div>
-
-                <div class="modal-body">
-                  <div class="modal-field">
-                    <label>{{ t('network.quick_templates') || '快速选择预设生态' }}</label>
-                    <div class="quick-templates-grid">
-                      <button
-                        v-for="tpl in commonEcoTemplates"
-                        :key="tpl.id"
-                        type="button"
-                        class="btn-template-chip"
-                        :class="{ active: newEcoId === tpl.id }"
-                        @click="applyEcoTemplate(tpl)"
-                      >
-                        {{ tpl.label }}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="modal-field">
-                    <label>{{ t('network.eco_identifier') || '生态标识 (ID)' }} <span class="text-danger">*</span></label>
-                    <input
-                      v-model="newEcoId"
-                      type="text"
-                      class="setting-text-input font-mono"
-                      placeholder="例如: composer, maven, docker, nuget 等"
-                      autofocus
-                    />
-                    <span class="field-hint">小写字母、数字或短横线，如 composer、maven、docker 等</span>
-                  </div>
-
-                  <div class="modal-field">
-                    <label>{{ t('network.eco_registry_url') || '镜像源地址 (URL)' }} <span class="text-danger">*</span></label>
-                    <input
-                      v-model="newEcoUrl"
-                      type="text"
-                      class="setting-text-input font-mono"
-                      placeholder="例如: https://repo.packagist.org"
-                    />
-                  </div>
-                </div>
-
-                <div class="modal-footer">
-                  <button class="btn-modal-cancel" @click="showAddEcoModal = false">取消</button>
-                  <button
-                    class="btn-modal-confirm"
-                    :disabled="!newEcoId.trim() || !newEcoUrl.trim() || isAddingEco"
-                    @click="handleAddEcosystem"
-                  >
-                    <span v-if="isAddingEco">正在添加...</span>
-                    <span v-else>添加并保存</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Ecosystem Registries Matrix Table -->
-            <div class="registries-matrix" v-if="networkStatus">
-              <div
-                v-for="eco in orderedEffectiveEcosystems"
-                :key="eco"
-                class="registry-matrix-row"
-              >
-                <div class="row-eco-info">
-                  <span class="eco-badge font-mono">{{ eco.toUpperCase() }}</span>
-                  <span
-                    class="status-indicator-badge"
-                    :class="getEcoBadgeClass(eco)"
-                    :title="getEcoBadgeTitle(eco)"
-                  >
-                    {{ getEcoBadgeLabel(eco) }}
-                  </span>
-                </div>
-
-                <div class="row-controls">
-                  <div class="preset-dropdown-wrap" v-if="recommendedMirrors[eco] && recommendedMirrors[eco].length">
-                    <select
-                      class="preset-select"
-                      :value="getPresetSelectValue(eco)"
-                      @change="handleSelectMirrorPreset(eco, ($event.target as HTMLSelectElement).value)"
-                    >
-                      <option
-                        v-for="m in recommendedMirrors[eco]"
-                        :key="m.url"
-                        :value="m.url"
-                      >
-                        {{ m.name }}
-                      </option>
-                      <option
-                        v-if="!isUrlInPresets(eco, networkStatus?.effective?.[eco]?.url)"
-                        :value="networkStatus?.effective?.[eco]?.url"
-                      >
-                        {{ t('network.custom_source') || '自定义镜像源' }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <!-- Text input for registry URL -->
-                  <input
-                    type="text"
-                    class="setting-text-input font-mono registry-url-input"
-                    :value="networkStatus.effective[eco]?.url"
-                    @change="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
-                    @blur="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
-                    @keydown.enter="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
-                  />
-
-                  <!-- Dynamic Ping / Latency Badge for this ecosystem -->
-                  <button
-                    class="btn-eco-ping"
-                    :class="getEcoPingClass(eco)"
-                    :disabled="ecoPingStatus[eco]?.loading"
-                    :title="getEcoPingTitle(eco)"
-                    @click="handlePingSingle(eco)"
-                  >
-                    <span v-if="ecoPingStatus[eco]?.loading" class="ping-icon spinning">
-                      <TechIcon id="workbench:sync" :size="12" />
-                    </span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'fast'" class="ping-text ping-fast" style="display: inline-flex; align-items: center; gap: 4px;">
-                      <TechIcon id="workbench:speed" :size="11" />
-                      <span>{{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
-                    </span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'normal'" class="ping-text ping-normal" style="display: inline-flex; align-items: center; gap: 4px;">
-                      <TechIcon id="workbench:speed" :size="11" />
-                      <span>{{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
-                    </span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'slow'" class="ping-text ping-slow" style="display: inline-flex; align-items: center; gap: 4px;">
-                      <TechIcon id="workbench:speed" :size="11" />
-                      <span>{{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
-                    </span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'timeout'" class="ping-text ping-timeout" style="display: inline-flex; align-items: center; gap: 4px;">
-                      <TechIcon id="workbench:warning" :size="11" />
-                      <span>超时</span>
-                    </span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'error'" class="ping-text ping-error" style="display: inline-flex; align-items: center; gap: 4px;">
-                      <TechIcon id="workbench:warning" :size="11" />
-                      <span>失败</span>
-                    </span>
-                    <span v-else class="ping-text ping-idle" style="display: inline-flex; align-items: center; gap: 4px;">
-                      <TechIcon id="workbench:speed" :size="11" />
-                      <span>测速</span>
-                    </span>
-                  </button>
-
-                  <!-- Reset Override Button if Overridden -->
-                  <button
-                    v-if="networkStatus.effective[eco]?.is_overridden"
-                    class="btn-reset-override"
-                    :title="t('network.restore_inherited') || '恢复预设'"
-                    @click="handleResetRegistry(eco)"
-                  >
-                    <TechIcon id="workbench:sync" :size="12" />
-                  </button>
-
-                  <!-- Delete Ecosystem Button -->
-                  <button
-                    class="btn-delete-eco"
-                    :title="t('network.delete_ecosystem') || '从矩阵中移除'"
-                    @click="handleDeleteEcosystem(eco)"
-                  >
-                    <TechIcon id="workbench:delete" :size="13" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 4. Plugins & Extensions -->
-        <section
-          v-show="isCategoryVisible('plugins')"
-          id="section-plugins"
-          class="settings-category-section glass-card"
-        >
-          <div class="section-header">
-            <div class="section-title-wrap">
-              <span class="section-icon">
-                <TechIcon id="workbench:marketplace" :size="20" />
-              </span>
-              <div>
-                <h2>{{ t('settings.cat_plugins') || '扩展' }}</h2>
-                <span class="section-sub">{{ t('settings.cat_plugins_sub') || '插件配置与隔离' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-list">
-            <!-- Explanation banner -->
-            <div class="plugin-isolation-banner">
-              <span class="banner-icon">
-                <TechIcon id="workbench:lock" :size="16" />
-              </span>
-              <div class="banner-text">
-                <strong>{{ t('settings.plugin_isolation_title') || '三层命名空间隔离准则' }}</strong>
-                <p>
-                  {{ t('settings.plugin_isolation_desc') || '所有第三方扩展配置严格隔离于 plugins.<plugin-id>.* 区域，严禁侵入核心保留表。' }}
-                </p>
-              </div>
-            </div>
-
-            <!-- Configured plugins list -->
-            <div v-if="configuredPlugins.length > 0" class="configured-plugins-list">
-              <div
-                v-for="p in configuredPlugins"
-                :key="p.id"
-                class="plugin-config-card"
-              >
-                <div class="plugin-card-header">
-                  <div class="plugin-identity">
-                    <span class="plugin-icon">
-                      <TechIcon id="workbench:marketplace" :size="16" />
-                    </span>
-                    <span class="plugin-id font-mono">{{ p.id }}</span>
-                    <span class="plugin-version-tag">v{{ p.version || 'latest' }}</span>
-                  </div>
-                  <span class="plugin-keys-count">{{ Object.keys(p.config || {}).length }}</span>
-                </div>
-
-                <div class="plugin-params-table">
-                  <div
-                    v-for="(val, key) in p.config"
-                    :key="key"
-                    class="param-row"
-                  >
-                    <span class="param-key font-mono">plugins.{{ p.id }}.config.{{ key }}</span>
-                    <span class="param-val font-mono">{{ val }}</span>
-                  </div>
-                  <div v-if="!p.config || Object.keys(p.config).length === 0" class="empty-param-hint">
-                    {{ t('settings.empty_toml') || '暂无配置项' }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div v-else class="no-plugins-card">
-              <span class="empty-icon">
-                <TechIcon id="workbench:marketplace" :size="32" />
-              </span>
-              <span>{{ t('settings.no_plugins') || '当前尚未声明第三方插件配置。可通过扩展市场或配置文件添加扩展。' }}</span>
-            </div>
-          </div>
-        </section>
-
-        <!-- 5. Security & Namespace -->
-        <section
-          v-show="isCategoryVisible('security')"
-          id="section-security"
-          class="settings-category-section glass-card"
-        >
-          <div class="section-header">
-            <div class="section-title-wrap">
-              <span class="section-icon">
-                <TechIcon id="workbench:lock" :size="20" />
-              </span>
-              <div>
-                <h2>{{ t('settings.cat_security') || '安全' }}</h2>
-                <span class="section-sub">{{ t('settings.cat_security_sub') || '保留表与文件排他锁' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="security-architecture-grid">
-            <div class="sec-card">
-              <div class="sec-badge green">{{ t('settings.status_protected') || '已受保护' }}</div>
-              <h3>{{ t('settings.sec_core_title') || '核心保留命名空间' }}</h3>
-              <p>{{ t('settings.sec_core_desc') || '严格保留 [tools], [tasks], [format], [env], [settings]，任何第三方插件写入非法顶级字段均会被拦截。' }}</p>
-            </div>
-
-            <div class="sec-card">
-              <div class="sec-badge cyan">{{ t('settings.status_active') || '活跃生效' }}</div>
-              <h3>{{ t('settings.sec_lock_title') || '并发文件排他锁' }}</h3>
-              <p>{{ t('settings.sec_lock_desc') || '写入配置时自动获取排他锁，防止多进程或编辑器并发保存损坏数据。' }}</p>
-            </div>
-
-            <div class="sec-card">
-              <div class="sec-badge purple">{{ t('settings.status_ast_safe') || '格式安全' }}</div>
-              <h3>{{ t('settings.sec_ast_title') || 'AST 注释与格式保留' }}</h3>
-              <p>{{ t('settings.sec_ast_desc') || '采用语法树精准注入算法，更新配置绝不破坏原配置文件中的手工注释与空行排版。' }}</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- Add/Edit Hook Modal Dialog -->
-        <div v-if="showHookModal" class="modal-backdrop" @click.self="showHookModal = false">
-          <div class="modal-dialog glass-card">
-            <div class="modal-header">
-              <div class="modal-title-group">
-                <span class="modal-icon">
-                  <TechIcon id="workbench:git" :size="20" />
-                </span>
-                <div>
-                  <h4>{{ isEditingHook ? (t('settings.hooks_modal_edit_title') || '编辑生命周期钩子') : (t('settings.hooks_modal_add_title') || '添加生命周期钩子') }}</h4>
-                  <span class="modal-subtitle">{{ t('settings.hooks_modal_sub') || '指定 Git 触发阶段与待执行的 Shell 脚本或任务命令' }}</span>
-                </div>
-              </div>
-              <button class="btn btn-icon btn-modal-close" @click="showHookModal = false" :title="t('common.close') || '关闭'">
-                <TechIcon id="workbench:close" :size="14" />
-              </button>
-            </div>
-            <div class="modal-body">
-              <div class="modal-field">
-                <label class="modal-label">{{ t('settings.hooks_form_stage') || 'Git 触发阶段 (Hook Stage)' }}</label>
-                <CustomSelect
-                  v-if="!isEditingHook"
-                  :model-value="hookFormName"
-                  :options="standardHookPresets"
-                  @change="(val) => hookFormName = val"
-                />
-                <input
-                  v-if="hookFormName === 'custom' || isEditingHook"
-                  v-model="hookFormCustomName"
-                  type="text"
-                  class="modal-input font-mono"
-                  style="margin-top: 6px;"
-                  :placeholder="t('settings.hooks_form_name_placeholder') || '输入钩子名称 (例如 pre-commit, commit-msg)'"
-                  :disabled="isEditingHook"
-                />
-              </div>
-
-              <div class="modal-field">
-                <label class="modal-label">{{ t('settings.hooks_form_cmd') || '执行命令 / 脚本 (Command)' }}</label>
-                <textarea
-                  v-model="hookFormCommand"
-                  class="modal-textarea font-mono"
-                  rows="3"
-                  :placeholder="t('settings.hooks_form_cmd_placeholder') || '例如: npm test 或 unirtm run check'"
-                ></textarea>
-              </div>
-
-              <div v-if="activeScope !== 'user'" class="modal-field-checkbox">
-                <label class="modal-checkbox-row" for="hook-auto-bridge">
-                  <input
-                    type="checkbox"
-                    id="hook-auto-bridge"
-                    v-model="hookFormAutoBridge"
-                  />
-                  <span>{{ t('settings.hooks_form_auto_bridge') || '同时自动将 UniRTM 路由脚本注入到 .git/hooks/' }}</span>
-                </label>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn-modal-cancel" @click="showHookModal = false">{{ t('common.cancel') || '取消' }}</button>
-              <button
-                class="btn-modal-confirm"
-                :disabled="isSavingHook"
-                @click="saveHook"
-              >
-                <span v-if="isSavingHook" class="spinner-small"></span>
-                <span>{{ isSavingHook ? (t('common.saving') || '保存中...') : (t('common.save') || '保存钩子') }}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Hook Test Run Modal Dialog -->
-        <div v-if="showHookRunModal" class="modal-backdrop" @click.self="showHookRunModal = false">
-          <div class="modal-dialog glass-card" style="max-width: 600px;">
-            <div class="modal-header">
-              <div class="modal-title-group">
-                <span class="modal-icon">
-                  <TechIcon id="workbench:tasks" :size="20" />
-                </span>
-                <div>
-                  <h4>{{ t('settings.hooks_run_modal_title') || '测试执行生命周期钩子' }}: <span class="font-mono text-cyan">{{ runningHookName }}</span></h4>
-                  <span class="modal-subtitle">{{ t('settings.hooks_run_modal_sub') || '在当前工作区环境下通过 UniRTM Multi-Engine 调度运行' }}</span>
-                </div>
-              </div>
-              <button class="btn btn-icon btn-modal-close" @click="showHookRunModal = false" :title="t('common.close') || '关闭'">
-                <TechIcon id="workbench:close" :size="14" />
-              </button>
-            </div>
-            <div class="modal-body">
-              <div v-if="isRunningHook" class="hook-run-loading" style="display: flex; align-items: center; gap: 10px; padding: 24px; justify-content: center; color: var(--text-muted);">
-                <span class="spinner-small"></span>
-                <span>{{ t('settings.hooks_running') || '正在执行钩子脚本，请稍候...' }}</span>
-              </div>
-              <div v-else-if="hookRunResult" class="hook-run-result">
-                <div class="run-status-bar" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
-                  <span class="run-status-badge" :style="{ color: hookRunResult.success ? '#10b981' : '#ef4444', fontWeight: '600' }">
-                    {{ hookRunResult.success ? '✓ 执行成功 (Exit Code 0)' : `✕ 执行失败 (Exit Code ${hookRunResult.exit_code})` }}
-                  </span>
-                </div>
-                <div class="terminal-output-box" style="background: #090d16; border: 1px solid var(--card-border); border-radius: 6px; padding: 12px; font-family: monospace; font-size: 0.85rem; max-height: 300px; overflow-y: auto; color: #e2e8f0; white-space: pre-wrap;">{{ hookRunResult.output || '(无标准输出)' }}</div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn-modal-confirm" @click="showHookRunModal = false">{{ t('common.close') || '关闭' }}</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Alias Add/Edit Modal Dialog -->
-        <div v-if="showAliasModal" class="modal-backdrop" @click.self="showAliasModal = false">
-          <div class="modal-dialog glass-card">
-            <div class="modal-header">
-              <div class="modal-title-group">
-                <span class="modal-icon">
-                  <TechIcon id="workbench:tag" :size="20" />
-                </span>
-                <div>
-                  <h4>{{ isEditingAlias ? (t('settings.aliases_modal_edit_title') || '编辑版本别名') : (t('settings.aliases_modal_add_title') || '添加版本别名') }}</h4>
-                  <span class="modal-subtitle">{{ t('settings.aliases_modal_sub') || '指定工具、别名标识及指向的目标版本' }}</span>
-                </div>
-              </div>
-              <button class="btn btn-icon btn-modal-close" @click="showAliasModal = false" :title="t('common.close') || '关闭'">
-                <TechIcon id="workbench:close" :size="14" />
-              </button>
-            </div>
-            <div class="modal-body">
-              <div class="modal-field">
-                <label class="modal-label">{{ t('settings.aliases_form_tool') || '工具名称 (Tool)' }}</label>
-                <CustomSelect
-                  v-if="!isEditingAlias"
-                  :model-value="aliasFormTool"
-                  :options="standardToolPresets"
-                  @change="(val) => aliasFormTool = val"
-                />
-                <input
-                  v-if="aliasFormTool === 'custom' || isEditingAlias"
-                  v-model="aliasFormCustomTool"
-                  type="text"
-                  class="modal-input font-mono"
-                  style="margin-top: 6px;"
-                  :placeholder="t('settings.aliases_form_tool_placeholder') || '输入工具名称 (例如 node, python, go)'"
-                  :disabled="isEditingAlias"
-                />
-              </div>
-
-              <div class="modal-field">
-                <label class="modal-label">{{ t('settings.aliases_form_name') || '别名名称 (Alias Name)' }}</label>
-                <input
-                  v-model="aliasFormName"
-                  type="text"
-                  class="modal-input font-mono"
-                  :placeholder="t('settings.aliases_form_name_placeholder') || '例如: lts, stable, latest, nightly'"
-                  :disabled="isEditingAlias"
-                />
-              </div>
-
-              <div class="modal-field">
-                <label class="modal-label">{{ t('settings.aliases_form_version') || '目标版本 (Target Version)' }}</label>
-                <input
-                  v-model="aliasFormVersion"
-                  type="text"
-                  class="modal-input font-mono"
-                  :placeholder="t('settings.aliases_form_version_placeholder') || '例如: 20, 3.12, 1.22.0'"
-                  @keydown.enter="saveAlias"
-                />
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn-modal-cancel" @click="showAliasModal = false">{{ t('common.cancel') || '取消' }}</button>
-              <button
-                class="btn-modal-confirm"
-                :disabled="isSavingAlias"
-                @click="saveAlias"
-              >
-                <span v-if="isSavingAlias" class="spinner-small"></span>
-                <span>{{ isSavingAlias ? (t('common.saving') || '保存中...') : (t('common.save') || '保存别名') }}</span>
-              </button>
-            </div>
+          <div class="modal-footer">
+            <button class="btn-modal-cancel" @click="showHookModal = false">{{ t("common.cancel") || "取消" }}</button>
+            <button class="btn-modal-confirm" :disabled="isSavingHook" @click="saveHook">
+              <span v-if="isSavingHook" class="spinner-small"></span>
+              <span>{{ isSavingHook ? t("common.saving") || "保存中..." : t("common.save") || "保存钩子" }}</span>
+            </button>
           </div>
         </div>
       </div>
+
+      <!-- Hook Test Run Modal Dialog -->
+      <div v-if="showHookRunModal" class="modal-backdrop" @click.self="showHookRunModal = false">
+        <div class="modal-dialog glass-card" style="max-width: 600px">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="modal-icon">
+                <TechIcon id="workbench:tasks" :size="20" />
+              </span>
+              <div>
+                <h4>
+                  {{ t("settings.hooks_run_modal_title") || "测试执行生命周期钩子" }}:
+                  <span class="font-mono text-cyan">{{ runningHookName }}</span>
+                </h4>
+                <span class="modal-subtitle">{{
+                  t("settings.hooks_run_modal_sub") || "在当前工作区环境下通过 UniRTM Multi-Engine 调度运行"
+                }}</span>
+              </div>
+            </div>
+            <button
+              class="btn btn-icon btn-modal-close"
+              @click="showHookRunModal = false"
+              :title="t('common.close') || '关闭'"
+            >
+              <TechIcon id="workbench:close" :size="14" />
+            </button>
+          </div>
+          <div class="modal-body">
+            <div
+              v-if="isRunningHook"
+              class="hook-run-loading"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 24px;
+                justify-content: center;
+                color: var(--text-muted);
+              "
+            >
+              <span class="spinner-small"></span>
+              <span>{{ t("settings.hooks_running") || "正在执行钩子脚本，请稍候..." }}</span>
+            </div>
+            <div v-else-if="hookRunResult" class="hook-run-result">
+              <div
+                class="run-status-bar"
+                style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between"
+              >
+                <span
+                  class="run-status-badge"
+                  :style="{ color: hookRunResult.success ? '#10b981' : '#ef4444', fontWeight: '600' }"
+                >
+                  {{
+                    hookRunResult.success
+                      ? "✓ 执行成功 (Exit Code 0)"
+                      : `✕ 执行失败 (Exit Code ${hookRunResult.exit_code})`
+                  }}
+                </span>
+              </div>
+              <div
+                class="terminal-output-box"
+                style="
+                  background: #090d16;
+                  border: 1px solid var(--card-border);
+                  border-radius: 6px;
+                  padding: 12px;
+                  font-family: monospace;
+                  font-size: 0.85rem;
+                  max-height: 300px;
+                  overflow-y: auto;
+                  color: #e2e8f0;
+                  white-space: pre-wrap;
+                "
+              >
+                {{ hookRunResult.output || "(无标准输出)" }}
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-modal-confirm" @click="showHookRunModal = false">
+              {{ t("common.close") || "关闭" }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alias Add/Edit Modal Dialog -->
+      <div v-if="showAliasModal" class="modal-backdrop" @click.self="showAliasModal = false">
+        <div class="modal-dialog glass-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="modal-icon">
+                <TechIcon id="workbench:tag" :size="20" />
+              </span>
+              <div>
+                <h4>
+                  {{
+                    isEditingAlias
+                      ? t("settings.aliases_modal_edit_title") || "编辑版本别名"
+                      : t("settings.aliases_modal_add_title") || "添加版本别名"
+                  }}
+                </h4>
+                <span class="modal-subtitle">{{
+                  t("settings.aliases_modal_sub") || "指定工具、别名标识及指向的目标版本"
+                }}</span>
+              </div>
+            </div>
+            <button
+              class="btn btn-icon btn-modal-close"
+              @click="showAliasModal = false"
+              :title="t('common.close') || '关闭'"
+            >
+              <TechIcon id="workbench:close" :size="14" />
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="modal-field">
+              <label class="modal-label">{{ t("settings.aliases_form_tool") || "工具名称 (Tool)" }}</label>
+              <CustomSelect
+                v-if="!isEditingAlias"
+                :model-value="aliasFormTool"
+                :options="standardToolPresets"
+                @change="(val) => (aliasFormTool = val)"
+              />
+              <input
+                v-if="aliasFormTool === 'custom' || isEditingAlias"
+                v-model="aliasFormCustomTool"
+                type="text"
+                class="modal-input font-mono"
+                style="margin-top: 6px"
+                :placeholder="t('settings.aliases_form_tool_placeholder') || '输入工具名称 (例如 node, python, go)'"
+                :disabled="isEditingAlias"
+              />
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label">{{ t("settings.aliases_form_name") || "别名名称 (Alias Name)" }}</label>
+              <input
+                v-model="aliasFormName"
+                type="text"
+                class="modal-input font-mono"
+                :placeholder="t('settings.aliases_form_name_placeholder') || '例如: lts, stable, latest, nightly'"
+                :disabled="isEditingAlias"
+              />
+            </div>
+
+            <div class="modal-field">
+              <label class="modal-label">{{ t("settings.aliases_form_version") || "目标版本 (Target Version)" }}</label>
+              <input
+                v-model="aliasFormVersion"
+                type="text"
+                class="modal-input font-mono"
+                :placeholder="t('settings.aliases_form_version_placeholder') || '例如: 20, 3.12, 1.22.0'"
+                @keydown.enter="saveAlias"
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-modal-cancel" @click="showAliasModal = false">{{ t("common.cancel") || "取消" }}</button>
+            <button class="btn-modal-confirm" :disabled="isSavingAlias" @click="saveAlias">
+              <span v-if="isSavingAlias" class="spinner-small"></span>
+              <span>{{ isSavingAlias ? t("common.saving") || "保存中..." : t("common.save") || "保存别名" }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1918,7 +2128,7 @@ function openAddHookModal(presetName?: string, presetCmd?: string) {
 
 function openEditHookModal(hook: HookItem) {
   isEditingHook.value = true;
-  const isStandard = standardHookPresets.some(p => p.value === hook.name && p.value !== "custom");
+  const isStandard = standardHookPresets.some((p) => p.value === hook.name && p.value !== "custom");
   if (isStandard) {
     hookFormName.value = hook.name;
     hookFormCustomName.value = "";
@@ -2066,7 +2276,7 @@ const standardToolPresets = [
 ];
 
 const toolNamesWithAliases = computed(() => {
-  return Object.keys(aliasesData.value || {}).filter(k => {
+  return Object.keys(aliasesData.value || {}).filter((k) => {
     const group = aliasesData.value[k];
     return group && Object.keys(group).length > 0;
   });
@@ -2090,7 +2300,7 @@ async function fetchAliasesList() {
 function openAddAliasModal(toolName?: string) {
   isEditingAlias.value = false;
   if (toolName) {
-    const isStandard = standardToolPresets.some(p => p.value === toolName && p.value !== "custom");
+    const isStandard = standardToolPresets.some((p) => p.value === toolName && p.value !== "custom");
     if (isStandard) {
       aliasFormTool.value = toolName;
       aliasFormCustomTool.value = "";
@@ -2109,7 +2319,7 @@ function openAddAliasModal(toolName?: string) {
 
 function openEditAliasModal(tool: string, alias: string, version: string) {
   isEditingAlias.value = true;
-  const isStandard = standardToolPresets.some(p => p.value === tool && p.value !== "custom");
+  const isStandard = standardToolPresets.some((p) => p.value === tool && p.value !== "custom");
   if (isStandard) {
     aliasFormTool.value = tool;
     aliasFormCustomTool.value = tool;
@@ -2123,7 +2333,9 @@ function openEditAliasModal(tool: string, alias: string, version: string) {
 }
 
 async function saveAlias() {
-  const finalTool = (aliasFormTool.value === "custom" ? aliasFormCustomTool.value : aliasFormTool.value).trim().toLowerCase();
+  const finalTool = (aliasFormTool.value === "custom" ? aliasFormCustomTool.value : aliasFormTool.value)
+    .trim()
+    .toLowerCase();
   const finalName = aliasFormName.value.trim().toLowerCase();
   const finalVer = aliasFormVersion.value.trim();
 
@@ -2176,9 +2388,12 @@ async function deleteAlias(tool: string, alias: string) {
   if (!confirmed) return;
 
   try {
-    const res = await fetch(`/api/aliases?tool=${encodeURIComponent(tool)}&alias=${encodeURIComponent(alias)}&scope=${activeScope.value}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(
+      `/api/aliases?tool=${encodeURIComponent(tool)}&alias=${encodeURIComponent(alias)}&scope=${activeScope.value}`,
+      {
+        method: "DELETE",
+      }
+    );
     if (res.ok) {
       showToast(t("settings.aliases_delete_success") || "别名删除成功", "success");
       await fetchAliasesList();
@@ -2245,12 +2460,7 @@ const defaultShell = ref("");
 const selectedShellPreset = ref("");
 const customShellPath = ref("");
 
-const {
-  terminals,
-  currentTerminal,
-  fetchTerminals,
-  setPreferredTerminal,
-} = useTerminal();
+const { terminals, currentTerminal, fetchTerminals, setPreferredTerminal } = useTerminal();
 const customTerminalPath = ref("");
 
 const selectedTerminalPath = computed(() => {
@@ -2312,7 +2522,6 @@ const taskOutputOptions = computed(() => [
   { value: "quiet", label: t("settings.task_output_quiet") || "静默模式 (Quiet)" },
 ]);
 
-
 // Network matrix and profile state
 const isSavingProfile = ref(false);
 const showCreateProfileModal = ref(false);
@@ -2330,7 +2539,7 @@ const proxyTestResult = ref<{
 } | null>(null);
 interface EcoPingResult {
   rtt_ms?: number;
-  status: 'idle' | 'loading' | 'fast' | 'normal' | 'slow' | 'timeout' | 'error';
+  status: "idle" | "loading" | "fast" | "normal" | "slow" | "timeout" | "error";
   loading?: boolean;
   error?: string;
 }
@@ -2487,7 +2696,8 @@ const networkStatus = ref<any>({
     http: "",
     https: "",
     socks5: "",
-    no_proxy: "localhost,127.0.0.1,::1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16,*.local,*.internal,*.lan,*.cluster.local",
+    no_proxy:
+      "localhost,127.0.0.1,::1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16,*.local,*.internal,*.lan,*.cluster.local",
   },
   effective: {
     npm: { ecosystem: "npm", url: "https://registry.npmjs.org", source: "profile", is_overridden: false },
@@ -2502,7 +2712,12 @@ const networkStatus = ref<any>({
     dart: { ecosystem: "dart", url: "https://pub.dev", source: "profile", is_overridden: false },
     cocoapods: { ecosystem: "cocoapods", url: "https://cdn.cocoapods.org", source: "profile", is_overridden: false },
     conda: { ecosystem: "conda", url: "https://repo.anaconda.com/pkgs/main", source: "profile", is_overridden: false },
-    homebrew: { ecosystem: "homebrew", url: "https://ghcr.io/v2/homebrew/core", source: "profile", is_overridden: false },
+    homebrew: {
+      ecosystem: "homebrew",
+      url: "https://ghcr.io/v2/homebrew/core",
+      source: "profile",
+      is_overridden: false,
+    },
   },
   profiles: {
     official: {
@@ -2574,18 +2789,21 @@ function getProfileDisplayDesc(id: string, fallbackDesc?: string): string {
 
 const profileTrackRef = ref<HTMLElement | null>(null);
 
-function scrollProfiles(direction: 'left' | 'right') {
+function scrollProfiles(direction: "left" | "right") {
   if (!profileTrackRef.value) return;
   const scrollAmount = 280;
   profileTrackRef.value.scrollBy({
-    left: direction === 'left' ? -scrollAmount : scrollAmount,
-    behavior: 'smooth',
+    left: direction === "left" ? -scrollAmount : scrollAmount,
+    behavior: "smooth",
   });
 }
 
 function onProfileTrackWheel(e: WheelEvent) {
   if (!profileTrackRef.value) return;
-  if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && profileTrackRef.value.scrollWidth > profileTrackRef.value.clientWidth) {
+  if (
+    Math.abs(e.deltaY) > Math.abs(e.deltaX) &&
+    profileTrackRef.value.scrollWidth > profileTrackRef.value.clientWidth
+  ) {
     e.preventDefault();
     profileTrackRef.value.scrollLeft += e.deltaY;
   }
@@ -2594,8 +2812,19 @@ function onProfileTrackWheel(e: WheelEvent) {
 const orderedEffectiveEcosystems = computed(() => {
   if (!networkStatus.value?.effective) return [];
   const baseOrder = [
-    "npm", "go", "python", "rust", "ruby", "composer", "maven", "nuget", "docker",
-    "dart", "cocoapods", "conda", "homebrew"
+    "npm",
+    "go",
+    "python",
+    "rust",
+    "ruby",
+    "composer",
+    "maven",
+    "nuget",
+    "docker",
+    "dart",
+    "cocoapods",
+    "conda",
+    "homebrew",
   ];
   const effKeys = Object.keys(networkStatus.value.effective);
   const ordered: string[] = [];
@@ -2610,22 +2839,22 @@ const orderedEffectiveEcosystems = computed(() => {
 
 function getEcoBadgeClass(eco: string): string {
   const eff = networkStatus.value?.effective?.[eco];
-  if (eff?.is_overridden) return 'badge-override';
-  return 'badge-inherited';
+  if (eff?.is_overridden) return "badge-override";
+  return "badge-inherited";
 }
 
 function getEcoBadgeLabel(eco: string): string {
   const eff = networkStatus.value?.effective?.[eco];
-  if (eff?.is_overridden) return t('network.badge_overridden') || '自定义';
-  return t('network.badge_inherited') || '预设';
+  if (eff?.is_overridden) return t("network.badge_overridden") || "自定义";
+  return t("network.badge_inherited") || "预设";
 }
 
 function getEcoBadgeTitle(eco: string): string {
   const eff = networkStatus.value?.effective?.[eco];
-  if (eff?.source?.startsWith('fallback_')) {
-    return t('network.badge_fallback_cn_tip') || '当前专线未收录该生态，已自动回退到中国镜像加速矩阵补齐';
+  if (eff?.source?.startsWith("fallback_")) {
+    return t("network.badge_fallback_cn_tip") || "当前专线未收录该生态，已自动回退到中国镜像加速矩阵补齐";
   }
-  return '';
+  return "";
 }
 
 function openAddEcoModal() {
@@ -2718,7 +2947,6 @@ async function handleDeleteEcosystem(eco: string) {
 // Full config from API
 const configData = ref<any>(null);
 
-
 const languageSelectOptions = computed(() => [
   { value: "auto", label: t("common.autoDetect") || "自动检测" },
   ...SUPPORTED_LANGUAGES.map((item) => ({
@@ -2779,7 +3007,6 @@ const productIconThemeOptions = computed(() => {
     };
   });
 });
-
 
 interface DetectedBrowser {
   id: string;
@@ -2862,9 +3089,7 @@ const browserPresetOptions = computed(() => {
 
 const currentRawToml = computed(() => {
   if (!configData.value) return "";
-  return activeScope.value === "user"
-    ? configData.value?.user?.raw || ""
-    : configData.value?.workspace?.raw || "";
+  return activeScope.value === "user" ? configData.value?.user?.raw || "" : configData.value?.workspace?.raw || "";
 });
 
 const configuredPlugins = computed(() => {
@@ -2877,7 +3102,6 @@ const configuredPlugins = computed(() => {
     config: pluginsObj[id]?.config || {},
   }));
 });
-
 
 function matchesSearch(keyword: string) {
   if (!searchQuery.value) return false;
@@ -2939,20 +3163,12 @@ function isCategoryVisible(catId: string) {
     return true;
   if (
     catId === "plugins" &&
-    (q.includes("plugin") ||
-      q.includes("ext") ||
-      q.includes("docker") ||
-      q.includes("插件") ||
-      q.includes("扩展"))
+    (q.includes("plugin") || q.includes("ext") || q.includes("docker") || q.includes("插件") || q.includes("扩展"))
   )
     return true;
   if (
     catId === "aliases" &&
-    (q.includes("alias") ||
-      q.includes("version") ||
-      q.includes("别名") ||
-      q.includes("映射") ||
-      q.includes("版本"))
+    (q.includes("alias") || q.includes("version") || q.includes("别名") || q.includes("映射") || q.includes("版本"))
   )
     return true;
   if (
@@ -3015,7 +3231,8 @@ function syncFieldsFromConfig() {
   autoInstall.value = s.auto_install !== false;
   taskTimeout.value = s.task_timeout !== undefined ? String(s.task_timeout) : "";
   taskOutput.value = s.task_output || "interleaved";
-  minimumReleaseAge.value = s.minimum_release_age !== undefined && s.minimum_release_age !== "" ? s.minimum_release_age : "7d";
+  minimumReleaseAge.value =
+    s.minimum_release_age !== undefined && s.minimum_release_age !== "" ? s.minimum_release_age : "7d";
   experimental.value = Boolean(s.experimental);
 
   alwaysKeepDownload.value = Boolean(s.always_keep_download);
@@ -3034,8 +3251,21 @@ function syncFieldsFromConfig() {
   if (activeScope.value === "user") {
     editor.value = s.editor || "";
     const b = s.browser || "";
-    const knownIds = ["chrome", "firefox", "msedge", "safari", "brave", "chromium", "arc", "opera", "vivaldi", "epiphany", ""];
-    const isDetectedOrKnown = knownIds.includes(b.toLowerCase()) || detectedBrowsers.value.some(d => d.id === b.toLowerCase());
+    const knownIds = [
+      "chrome",
+      "firefox",
+      "msedge",
+      "safari",
+      "brave",
+      "chromium",
+      "arc",
+      "opera",
+      "vivaldi",
+      "epiphany",
+      "",
+    ];
+    const isDetectedOrKnown =
+      knownIds.includes(b.toLowerCase()) || detectedBrowsers.value.some((d) => d.id === b.toLowerCase());
     if (isDetectedOrKnown) {
       selectedBrowserPreset.value = b;
       customBrowserPath.value = "";
@@ -3263,11 +3493,7 @@ async function onAppearanceChange(mode: "system" | "light" | "dark") {
     saveStatusText.value = "已自动保存";
     await loadConfigData();
     showToast(
-      mode === "system"
-        ? "已设置为跟随系统外观"
-        : mode === "light"
-        ? "已切换为浅色模式"
-        : "已切换为深色模式",
+      mode === "system" ? "已设置为跟随系统外观" : mode === "light" ? "已切换为浅色模式" : "已切换为深色模式",
       "info"
     );
     setTimeout(() => {
@@ -3355,14 +3581,12 @@ async function onProductIconThemeChange(val: string) {
   }
 }
 
-
 function onBrowserPresetChange(val: string) {
   selectedBrowserPreset.value = val;
   if (val !== "custom") {
     saveSetting("settings.browser", val);
   }
 }
-
 
 const tomlMonacoContainer = ref<HTMLDivElement | null>(null);
 let tomlMonacoEditor: any = null;
@@ -3378,14 +3602,12 @@ const activeTomlFileName = computed(() => {
 
 const activeTomlFilePath = computed(() => {
   return activeScope.value === "user"
-    ? (configData.value?.user?.path || "~/.config/unirtm/unirtm.toml")
-    : (configData.value?.workspace?.path || "./.unirtm.toml");
+    ? configData.value?.user?.path || "~/.config/unirtm/unirtm.toml"
+    : configData.value?.workspace?.path || "./.unirtm.toml";
 });
 
 const isTomlExists = computed(() => {
-  return activeScope.value === "user"
-    ? !!configData.value?.user?.exists
-    : !!configData.value?.workspace?.exists;
+  return activeScope.value === "user" ? !!configData.value?.user?.exists : !!configData.value?.workspace?.exists;
 });
 
 async function handleOpenTomlEditor() {
@@ -3468,7 +3690,7 @@ async function handleSaveToml() {
       showToast(t("settings.save_toml_success") || "已成功保存配置文件", "success");
       await loadConfigData();
     } else {
-      showToast(data.error || (t("settings.save_toml_failed") || "保存配置文件失败"), "error");
+      showToast(data.error || t("settings.save_toml_failed") || "保存配置文件失败", "error");
     }
   } catch (err: any) {
     showToast(`保存失败: ${err.message}`, "error");
@@ -3508,14 +3730,16 @@ function handleOpenInExplorer(fileName: string) {
   showRawTomlModal.value = false;
   isTomlDirty.value = false;
 
-  router.push({
-    name: "explorer",
-    query: {
-      from: "settings",
-      file: fileName,
-      scope: activeScope.value,
-    },
-  }).catch(() => {});
+  router
+    .push({
+      name: "explorer",
+      query: {
+        from: "settings",
+        file: fileName,
+        scope: activeScope.value,
+      },
+    })
+    .catch(() => {});
   showToast(`已在代码编辑器中打开 ${fileName}`, "info");
 }
 
@@ -3885,17 +4109,17 @@ async function handleTestProxy() {
 
 function getEcoPingClass(eco: string) {
   const p = ecoPingStatus.value[eco];
-  if (!p || p.status === 'idle') return 'ping-idle';
-  if (p.loading) return 'ping-loading';
+  if (!p || p.status === "idle") return "ping-idle";
+  if (p.loading) return "ping-loading";
   return `ping-${p.status}`;
 }
 
 function getEcoPingTitle(eco: string) {
   const p = ecoPingStatus.value[eco];
-  if (!p) return '点击测试此镜像延迟';
-  if (p.loading) return '正在测速...';
-  if (p.status === 'timeout') return '连接超时';
-  if (p.status === 'error') return p.error || '连接失败';
+  if (!p) return "点击测试此镜像延迟";
+  if (p.loading) return "正在测速...";
+  if (p.status === "timeout") return "连接超时";
+  if (p.status === "error") return p.error || "连接失败";
   return `延迟: ${p.rtt_ms}ms (${p.status})`;
 }
 
@@ -3906,14 +4130,14 @@ async function handlePingSingle(eco: string) {
   ecoPingStatus.value[eco] = {
     ...ecoPingStatus.value[eco],
     loading: true,
-    status: 'loading'
+    status: "loading",
   };
 
   try {
     const res = await fetch("/api/network/ping", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ecosystem: eco, url })
+      body: JSON.stringify({ ecosystem: eco, url }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -3923,14 +4147,14 @@ async function handlePingSingle(eco: string) {
           rtt_ms: item.rtt_ms ?? item.latency_ms ?? 0,
           status: item.status,
           loading: false,
-          error: item.error
+          error: item.error,
         };
       }
     } else {
-      ecoPingStatus.value[eco] = { status: 'error', loading: false, error: '请求失败' };
+      ecoPingStatus.value[eco] = { status: "error", loading: false, error: "请求失败" };
     }
   } catch (err: any) {
-    ecoPingStatus.value[eco] = { status: 'error', loading: false, error: err?.message || '网络异常' };
+    ecoPingStatus.value[eco] = { status: "error", loading: false, error: err?.message || "网络异常" };
   }
 }
 
@@ -3939,18 +4163,18 @@ async function handleRunProbeAll() {
   isProbing.value = true;
 
   const targets = orderedEffectiveEcosystems.value
-    .map(eco => ({
+    .map((eco) => ({
       ecosystem: eco,
       name: eco,
-      url: networkStatus.value?.effective?.[eco]?.url || ''
+      url: networkStatus.value?.effective?.[eco]?.url || "",
     }))
-    .filter(t => t.url);
+    .filter((t) => t.url);
 
-  targets.forEach(t => {
+  targets.forEach((t) => {
     ecoPingStatus.value[t.ecosystem] = {
       ...ecoPingStatus.value[t.ecosystem],
       loading: true,
-      status: 'loading'
+      status: "loading",
     };
   });
 
@@ -3958,18 +4182,18 @@ async function handleRunProbeAll() {
     const res = await fetch("/api/network/ping", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ targets })
+      body: JSON.stringify({ targets }),
     });
     if (res.ok) {
       const data = await res.json();
       const results: any[] = data.results || [];
-      results.forEach(r => {
+      results.forEach((r) => {
         if (r.ecosystem) {
           ecoPingStatus.value[r.ecosystem] = {
             rtt_ms: r.rtt_ms ?? r.latency_ms ?? 0,
             status: r.status,
             loading: false,
-            error: r.error
+            error: r.error,
           };
         }
       });
@@ -3978,7 +4202,7 @@ async function handleRunProbeAll() {
     console.error(err);
   } finally {
     isProbing.value = false;
-    Object.keys(ecoPingStatus.value).forEach(k => {
+    Object.keys(ecoPingStatus.value).forEach((k) => {
       if (ecoPingStatus.value[k]?.loading) {
         ecoPingStatus.value[k].loading = false;
       }
@@ -4100,7 +4324,9 @@ watch(
   color: var(--text-main);
   font-size: 0.88rem;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .settings-search-input:focus {
@@ -4221,7 +4447,9 @@ watch(
   text-overflow: ellipsis;
   white-space: nowrap;
   user-select: all;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .active-scope-badge:hover {
@@ -5066,7 +5294,6 @@ watch(
   border: 1px solid var(--card-border);
 }
 
-
 .proxy-toggle-row {
   display: flex;
   align-items: center;
@@ -5496,7 +5723,8 @@ input:checked + .slider:before {
   color: var(--text-muted);
 }
 
-.pill-builtin, .pill-custom {
+.pill-builtin,
+.pill-custom {
   font-size: 0.65rem;
   padding: 1px 5px;
   border-radius: 3px;
@@ -5840,7 +6068,8 @@ input:checked + .slider:before {
   transition: all 0.2s;
 }
 
-.btn-template-chip:hover, .btn-template-chip.active {
+.btn-template-chip:hover,
+.btn-template-chip.active {
   background: rgba(59, 130, 246, 0.15);
   border-color: #3b82f6;
   color: #60a5fa;
@@ -5922,8 +6151,12 @@ input:checked + .slider:before {
 }
 
 @keyframes eco-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Theme Management Styles */
@@ -6021,7 +6254,9 @@ input:checked + .slider:before {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .install-feedback-msg {
@@ -6874,4 +7109,3 @@ input:checked + .slider:before {
   color: #0f172a;
 }
 </style>
-

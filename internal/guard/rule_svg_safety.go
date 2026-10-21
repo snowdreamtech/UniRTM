@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	svgScriptTagRegex  = regexp.MustCompile(`(?i)<\s*script[\s>]`)
+	svgScriptTagRegex   = regexp.MustCompile(`(?i)<\s*script[\s>]`)
 	svgInlineEventRegex = regexp.MustCompile(`(?i)\son\w+\s*=`)
 	svgJavascriptUri    = regexp.MustCompile(`(?i)(href|xlink:href)\s*=\s*["']\s*javascript:`)
 )

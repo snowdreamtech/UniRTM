@@ -1,8 +1,8 @@
 # Implementation Plan: Plugin & Extension Configuration Namespace Isolation
 
-**Feature Branch**: `027-plugin-config-isolation`  
-**Spec**: [spec.md](./spec.md)  
-**Status**: Draft  
+**Feature Branch**: `027-plugin-config-isolation`
+**Spec**: [spec.md](./spec.md)
+**Status**: Draft
 
 ---
 

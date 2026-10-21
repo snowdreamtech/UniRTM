@@ -28,8 +28,10 @@ export function recognizePortService(
     if (fw.includes("next") || fw.includes("react")) icon = "react";
     else if (fw.includes("vue") || fw.includes("nuxt")) icon = "vue";
     else if (fw.includes("vite")) icon = "vite";
-    else if (fw.includes("postgres") || fw.includes("mysql") || fw.includes("redis") || fw.includes("mongo")) icon = "database";
-    else if (fw.includes("python") || fw.includes("fastapi") || fw.includes("flask") || fw.includes("django")) icon = "python";
+    else if (fw.includes("postgres") || fw.includes("mysql") || fw.includes("redis") || fw.includes("mongo"))
+      icon = "database";
+    else if (fw.includes("python") || fw.includes("fastapi") || fw.includes("flask") || fw.includes("django"))
+      icon = "python";
     else if (fw.includes("node") || fw.includes("express")) icon = "node";
 
     return {
@@ -49,7 +51,12 @@ export function recognizePortService(
     let icon = "terminal";
     let serviceType = "backend";
 
-    if (detLower.includes("fastapi") || detLower.includes("uvicorn") || detLower.includes("flask") || detLower.includes("gunicorn")) {
+    if (
+      detLower.includes("fastapi") ||
+      detLower.includes("uvicorn") ||
+      detLower.includes("flask") ||
+      detLower.includes("gunicorn")
+    ) {
       icon = "python";
       serviceType = "backend";
     } else if (detLower.includes("next")) {
@@ -375,7 +382,7 @@ export function assessPortRisk(
     port === 8086 || // InfluxDB
     port === 2375 || // Docker Daemon (unencrypted)
     port === 2376 || // Docker Daemon (TLS)
-    port === 22 ||   // SSH
+    port === 22 || // SSH
     port === 2379 || // etcd
     sType === "database" ||
     lbl.includes("redis") ||
@@ -412,4 +419,3 @@ export function assessPortRisk(
     recommendation: "如仅需临时联调或演示，可在调试完成后一键重置为私有。",
   };
 }
-

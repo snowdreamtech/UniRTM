@@ -12,9 +12,10 @@ export interface CommitMessageValidation {
   fixedMessage?: string;
 }
 
-const CONVENTIONAL_REGEX = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(([a-zA-Z0-9_.\-/]+)\))?(!)?: (.+)$/;
-const SPECIAL_PREFIXES = ['Merge ', 'Revert ', 'fixup! ', 'squash! ', 'amend! '];
-const VALID_TYPES = ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'build', 'ci', 'chore', 'revert'];
+const CONVENTIONAL_REGEX =
+  /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(([a-zA-Z0-9_.\-/]+)\))?(!)?: (.+)$/;
+const SPECIAL_PREFIXES = ["Merge ", "Revert ", "fixup! ", "squash! ", "amend! "];
+const VALID_TYPES = ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore", "revert"];
 
 /**
  * Validates a commit message against Conventional Commits specification.
@@ -37,13 +38,13 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
   const firstLine = lines[0];
 
   // 2. Multi-line blank line check
-  if (lines.length > 1 && lines[1].trim() !== '') {
-    const fixedLines = [lines[0], '', ...lines.slice(1)];
+  if (lines.length > 1 && lines[1].trim() !== "") {
+    const fixedLines = [lines[0], "", ...lines.slice(1)];
     return {
       isValid: false,
-      warning: '多行提交信息的正文前需保留一个空行 (Second line must be empty)',
+      warning: "多行提交信息的正文前需保留一个空行 (Second line must be empty)",
       canAutoFix: true,
-      fixedMessage: fixedLines.join('\n'),
+      fixedMessage: fixedLines.join("\n"),
     };
   }
 
@@ -53,10 +54,10 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
     const prefix = missingSpaceMatch[1];
     const rest = missingSpaceMatch[4];
     const fixedFirstLine = `${prefix}: ${rest}`;
-    const fixed = [fixedFirstLine, ...lines.slice(1)].join('\n');
+    const fixed = [fixedFirstLine, ...lines.slice(1)].join("\n");
     return {
       isValid: false,
-      warning: '冒号后应保留一个空格 (Missing space after colon)',
+      warning: "冒号后应保留一个空格 (Missing space after colon)",
       canAutoFix: true,
       fixedMessage: fixed,
     };
@@ -82,17 +83,17 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
   }
 
   const [, type, , scope, , description] = match;
-  const isBreaking = match[0].includes('!:');
+  const isBreaking = match[0].includes("!:");
 
   // 5. Ending period check on first line
-  if (description.endsWith('.') || description.endsWith('。')) {
+  if (description.endsWith(".") || description.endsWith("。")) {
     const cleanDesc = description.slice(0, -1);
-    const prefix = scope ? `${type}(${scope})${isBreaking ? '!' : ''}: ` : `${type}${isBreaking ? '!' : ''}: `;
+    const prefix = scope ? `${type}(${scope})${isBreaking ? "!" : ""}: ` : `${type}${isBreaking ? "!" : ""}: `;
     const fixedFirstLine = prefix + cleanDesc;
-    const fixed = [fixedFirstLine, ...lines.slice(1)].join('\n');
+    const fixed = [fixedFirstLine, ...lines.slice(1)].join("\n");
     return {
       isValid: false,
-      warning: '首行末尾不应包含句号或点 (Subject should not end with a period)',
+      warning: "首行末尾不应包含句号或点 (Subject should not end with a period)",
       canAutoFix: true,
       fixedMessage: fixed,
     };
@@ -106,7 +107,7 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
       scope,
       isBreaking,
       description,
-      warning: '首行超过 120 字符上限 (Header exceeds 120 characters limit)',
+      warning: "首行超过 120 字符上限 (Header exceeds 120 characters limit)",
       canAutoFix: false,
     };
   }
@@ -119,7 +120,7 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
       scope,
       isBreaking,
       description,
-      warning: '首行超过 72 字符，建议精简摘要 (Subject exceeds 72 chars)',
+      warning: "首行超过 72 字符，建议精简摘要 (Subject exceeds 72 chars)",
     };
   }
 

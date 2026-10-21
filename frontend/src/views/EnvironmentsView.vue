@@ -3,18 +3,26 @@
     <!-- View Header -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
           <TechIcon id="workbench:environments" :size="20" />
           <span>{{ t("environments.title") || "环境变量管理" }}</span>
         </h2>
         <p class="view-desc">
-          {{ t("environments.desc") || "统一管理工作区 (.unirtm.toml) 与用户全局 (~/.config/unirtm/unirtm.toml) 配置文件中的 [env] 环境变量。敏感密钥默认脱密遮蔽。" }}
+          {{
+            t("environments.desc") ||
+            "统一管理工作区 (.unirtm.toml) 与用户全局 (~/.config/unirtm/unirtm.toml) 配置文件中的 [env] 环境变量。敏感密钥默认脱密遮蔽。"
+          }}
         </p>
       </div>
-      <div class="view-actions" style="display: flex; gap: 8px; align-items: center;">
-        <button class="tool-action-btn secondary" @click="fetchEnvVars" :disabled="loading" :title="t('common.refresh') || '刷新'">
+      <div class="view-actions" style="display: flex; gap: 8px; align-items: center">
+        <button
+          class="tool-action-btn secondary"
+          @click="fetchEnvVars"
+          :disabled="loading"
+          :title="t('common.refresh') || '刷新'"
+        >
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': loading }" />
-          <span>{{ loading ? (t("common.refreshing") || "刷新中...") : (t("common.refresh") || "刷新") }}</span>
+          <span>{{ loading ? t("common.refreshing") || "刷新中..." : t("common.refresh") || "刷新" }}</span>
         </button>
       </div>
     </div>
@@ -23,18 +31,31 @@
     <div class="scope-selection-bar glass-card" id="environments-scope-bar">
       <div class="scope-context-pill">
         <span class="scope-badge" :class="activeScope">
-          <TechIcon :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'" :size="13" :colored="false" />
-          {{ activeScope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
+          <TechIcon
+            :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'"
+            :size="13"
+            :colored="false"
+          />
+          {{
+            activeScope === "user"
+              ? t("environments.scope_user") || "用户"
+              : t("environments.scope_workspace") || "工作区"
+          }}
         </span>
         <span class="scope-hint-text">
-          {{ activeScope === 'user'
-              ? (t("environments.scope_user_desc") || "定义在用户全局 ~/.config/unirtm/unirtm.toml 的 [env] 配置块中")
-              : (t("environments.scope_workspace_desc") || "定义在当前项目 .unirtm.toml 的 [env] 配置块中") }}
+          {{
+            activeScope === "user"
+              ? t("environments.scope_user_desc") || "定义在用户全局 ~/.config/unirtm/unirtm.toml 的 [env] 配置块中"
+              : t("environments.scope_workspace_desc") || "定义在当前项目 .unirtm.toml 的 [env] 配置块中"
+          }}
         </span>
       </div>
-      <div class="scope-context-config font-mono" :title="activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml'">
+      <div
+        class="scope-context-config font-mono"
+        :title="activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml'"
+      >
         <span class="file-icon">📄</span>
-        <span>{{ activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }}</span>
+        <span>{{ activeScope === "user" ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml" }}</span>
       </div>
     </div>
 
@@ -53,12 +74,7 @@
         </button>
 
         <!-- User Defined Profiles -->
-        <div
-          v-for="p in profilesList"
-          :key="p"
-          class="profile-tab-item"
-          :class="{ active: activeProfile === p }"
-        >
+        <div v-for="p in profilesList" :key="p" class="profile-tab-item" :class="{ active: activeProfile === p }">
           <button
             type="button"
             class="profile-tab-btn profile-custom"
@@ -94,16 +110,14 @@
 
       <!-- Active Profile Context Indicator -->
       <div v-if="activeProfile" class="active-profile-hint">
-        <span class="profile-current-tag">
-          {{ getProfileIcon(activeProfile) }} {{ activeProfile }}
-        </span>
+        <span class="profile-current-tag"> {{ getProfileIcon(activeProfile) }} {{ activeProfile }} </span>
         <button
           type="button"
           class="filter-toggle-btn"
           :class="{ active: showOnlyOverrides }"
           @click="showOnlyOverrides = !showOnlyOverrides"
         >
-          <span>{{ showOnlyOverrides ? '● 仅看特有与覆盖项' : '全部生效变量' }}</span>
+          <span>{{ showOnlyOverrides ? "● 仅看特有与覆盖项" : "全部生效变量" }}</span>
         </button>
       </div>
     </div>
@@ -122,12 +136,15 @@
         />
       </div>
 
-
       <div class="env-stats-badges">
         <span class="stat-badge">
           <b>{{ filteredEnvList.length }}</b> {{ t("environments.count_suffix") || "个变量" }}
         </span>
-        <span v-if="sensitiveCount > 0" class="stat-badge sensitive-stat" :title="t('environments.sensitive_hint') || '已自动启用默认脱密保护'">
+        <span
+          v-if="sensitiveCount > 0"
+          class="stat-badge sensitive-stat"
+          :title="t('environments.sensitive_hint') || '已自动启用默认脱密保护'"
+        >
           <TechIcon id="workbench:lock" :size="12" />
           <b>{{ sensitiveCount }}</b> {{ t("environments.sensitive_count_suffix") || "个敏感" }}
         </span>
@@ -170,21 +187,31 @@
       <!-- Loading State -->
       <div v-if="loading && envList.length === 0" class="env-empty-box">
         <TechIcon id="workbench:sync" :size="24" class="spin-icon" />
-        <span style="font-size: 0.85rem; color: var(--text-muted);">{{ t("environments.loading") || "正在读取 [env] 配置..." }}</span>
+        <span style="font-size: 0.85rem; color: var(--text-muted)">{{
+          t("environments.loading") || "正在读取 [env] 配置..."
+        }}</span>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="filteredEnvList.length === 0" class="env-empty-box">
         <TechIcon id="workbench:environments" :size="32" :colored="false" />
         <div class="empty-title">
-          {{ searchKey ? (t("environments.empty_search", { query: searchKey }) || `未找到匹配 "${searchKey}" 的环境变量`) : (t("environments.empty_title") || "暂未配置任何环境变量") }}
+          {{
+            searchKey
+              ? t("environments.empty_search", { query: searchKey }) || `未找到匹配 "${searchKey}" 的环境变量`
+              : t("environments.empty_title") || "暂未配置任何环境变量"
+          }}
         </div>
         <p class="empty-desc">
-          {{ activeScope === 'user'
-              ? (t("environments.empty_user_desc") || '可在用户全局配置 (~/.config/unirtm/unirtm.toml) 中添加 [env] 区块，为全局所有开发环境提供兜底环境变量。')
-              : (t("environments.empty_workspace_desc") || '可在当前项目根目录的 .unirtm.toml 中添加 [env] 区块，锁定当前项目的专属环境变量与服务端口。') }}
+          {{
+            activeScope === "user"
+              ? t("environments.empty_user_desc") ||
+                "可在用户全局配置 (~/.config/unirtm/unirtm.toml) 中添加 [env] 区块，为全局所有开发环境提供兜底环境变量。"
+              : t("environments.empty_workspace_desc") ||
+                "可在当前项目根目录的 .unirtm.toml 中添加 [env] 区块，锁定当前项目的专属环境变量与服务端口。"
+          }}
         </p>
-        <button v-if="!searchKey" class="tool-action-btn primary" style="margin-top: 0.75rem;" @click="openCreateModal">
+        <button v-if="!searchKey" class="tool-action-btn primary" style="margin-top: 0.75rem" @click="openCreateModal">
           <TechIcon id="workbench:edit" :size="14" />
           <span>{{ t("environments.create_first") || "创建第一个环境变量" }}</span>
         </button>
@@ -211,24 +238,36 @@
               <span
                 class="sec-tag"
                 :class="item.is_sensitive ? 'sensitive' : 'public'"
-                :title="item.is_sensitive ? (t('environments.sensitive_badge') || '敏感密钥') : (t('environments.public_badge') || '公开变量')"
+                :title="
+                  item.is_sensitive
+                    ? t('environments.sensitive_badge') || '敏感密钥'
+                    : t('environments.public_badge') || '公开变量'
+                "
               >
                 <TechIcon :id="item.is_sensitive ? 'workbench:lock' : 'workbench:globe'" :size="11" />
-                <span>{{ item.is_sensitive ? (t('environments.sensitive_badge') || '敏感密钥') : (t('environments.public_badge') || '公开变量') }}</span>
+                <span>{{
+                  item.is_sensitive
+                    ? t("environments.sensitive_badge") || "敏感密钥"
+                    : t("environments.public_badge") || "公开变量"
+                }}</span>
               </span>
               <!-- Profile Override Badges -->
               <span v-if="item.is_override" class="sec-tag override" :title="'基准默认值: ' + item.base_value">
-                <span>🔄 {{ t('environments.badge_override') || '已覆盖' }}</span>
+                <span>🔄 {{ t("environments.badge_override") || "已覆盖" }}</span>
               </span>
               <span v-else-if="item.is_profile_only" class="sec-tag profile-only">
-                <span>🌱 {{ t('environments.badge_profile_only') || '环境专属' }}</span>
+                <span>🌱 {{ t("environments.badge_profile_only") || "环境专属" }}</span>
               </span>
               <span v-else-if="item.is_inherited && activeProfile" class="sec-tag inherited">
-                <span>⚡ {{ t('environments.badge_inherited') || '继承基准' }}</span>
+                <span>⚡ {{ t("environments.badge_inherited") || "继承基准" }}</span>
               </span>
 
               <span class="scope-tag" :class="item.scope">
-                {{ item.scope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
+                {{
+                  item.scope === "user"
+                    ? t("environments.scope_user") || "用户"
+                    : t("environments.scope_workspace") || "工作区"
+                }}
               </span>
             </div>
 
@@ -262,9 +301,7 @@
           <!-- Value Display Row with Mask & Eye Toggle -->
           <div class="env-card-value-row">
             <div class="value-display-box font-mono" :class="{ masked: item.is_sensitive && !item.isRevealed }">
-              <span v-if="item.is_sensitive && !item.isRevealed" class="masked-dots">
-                ••••••••••••••••
-              </span>
+              <span v-if="item.is_sensitive && !item.isRevealed" class="masked-dots"> •••••••••••••••• </span>
               <span v-else class="revealed-text">
                 {{ item.value }}
               </span>
@@ -277,10 +314,14 @@
                 class="value-btn eye-btn"
                 :class="{ active: item.isRevealed }"
                 @click="toggleReveal(item)"
-                :title="item.isRevealed ? (t('environments.conceal') || '脱密隐藏') : (t('environments.reveal') || '显示明文')"
+                :title="
+                  item.isRevealed ? t('environments.conceal') || '脱密隐藏' : t('environments.reveal') || '显示明文'
+                "
               >
                 <TechIcon :id="item.isRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="14" />
-                <span class="btn-text-sm">{{ item.isRevealed ? (t('environments.conceal_short') || '密文') : (t('environments.reveal_short') || '明文') }}</span>
+                <span class="btn-text-sm">{{
+                  item.isRevealed ? t("environments.conceal_short") || "密文" : t("environments.reveal_short") || "明文"
+                }}</span>
               </button>
 
               <!-- One-click Copy Button -->
@@ -291,7 +332,9 @@
               >
                 <TechIcon v-if="copiedKey === item.name" id="workbench:success" :size="13" class="copy-check" />
                 <TechIcon v-else id="workbench:copy" :size="13" />
-                <span class="btn-text-sm">{{ copiedKey === item.name ? (t('common.copied') || '已复制') : (t('common.copy') || '复制') }}</span>
+                <span class="btn-text-sm">{{
+                  copiedKey === item.name ? t("common.copied") || "已复制" : t("common.copy") || "复制"
+                }}</span>
               </button>
             </div>
           </div>
@@ -332,17 +375,17 @@
                     :title="t('environments.sensitive_badge') || '敏感密钥'"
                   >
                     <TechIcon id="workbench:lock" :size="10" />
-                    <span>{{ t('environments.sensitive_badge') || '敏感' }}</span>
+                    <span>{{ t("environments.sensitive_badge") || "敏感" }}</span>
                   </span>
                   <!-- Profile Override Badges in Table View -->
                   <span v-if="item.is_override" class="sec-tag override mini" :title="'基准默认值: ' + item.base_value">
-                    <span>🔄 {{ t('environments.badge_override') || '已覆盖' }}</span>
+                    <span>🔄 {{ t("environments.badge_override") || "已覆盖" }}</span>
                   </span>
                   <span v-else-if="item.is_profile_only" class="sec-tag profile-only mini">
-                    <span>🌱 {{ t('environments.badge_profile_only') || '环境专属' }}</span>
+                    <span>🌱 {{ t("environments.badge_profile_only") || "环境专属" }}</span>
                   </span>
                   <span v-else-if="item.is_inherited && activeProfile" class="sec-tag inherited mini">
-                    <span>⚡ {{ t('environments.badge_inherited') || '继承基准' }}</span>
+                    <span>⚡ {{ t("environments.badge_inherited") || "继承基准" }}</span>
                   </span>
                 </div>
               </td>
@@ -350,7 +393,11 @@
               <!-- Col: Scope -->
               <td class="td-scope">
                 <span class="scope-tag" :class="item.scope">
-                  {{ item.scope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
+                  {{
+                    item.scope === "user"
+                      ? t("environments.scope_user") || "用户"
+                      : t("environments.scope_workspace") || "工作区"
+                  }}
                 </span>
               </td>
 
@@ -358,9 +405,7 @@
               <td class="td-value font-mono">
                 <div class="table-value-cell">
                   <div class="table-value-text" :class="{ masked: item.is_sensitive && !item.isRevealed }">
-                    <span v-if="item.is_sensitive && !item.isRevealed" class="masked-dots">
-                      ••••••••••••••••
-                    </span>
+                    <span v-if="item.is_sensitive && !item.isRevealed" class="masked-dots"> •••••••••••••••• </span>
                     <span v-else class="revealed-text">
                       {{ item.value }}
                     </span>
@@ -371,7 +416,11 @@
                       class="value-btn eye-btn mini"
                       :class="{ active: item.isRevealed }"
                       @click="toggleReveal(item)"
-                      :title="item.isRevealed ? (t('environments.conceal') || '脱密隐藏') : (t('environments.reveal') || '显示明文')"
+                      :title="
+                        item.isRevealed
+                          ? t('environments.conceal') || '脱密隐藏'
+                          : t('environments.reveal') || '显示明文'
+                      "
                     >
                       <TechIcon :id="item.isRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="13" />
                     </button>
@@ -420,7 +469,6 @@
       </div>
     </div>
 
-
     <!-- Create / Edit Environment Modal -->
     <EnvironmentModal
       :is-open="isModalOpen"
@@ -434,24 +482,27 @@
 
     <!-- Create Profile Modal -->
     <div v-if="isNewProfileModalOpen" class="confirm-overlay" @click.self="isNewProfileModalOpen = false">
-      <div class="confirm-modal glass-card" style="max-width: 440px;">
+      <div class="confirm-modal glass-card" style="max-width: 440px">
         <div class="confirm-header">
           <TechIcon id="workbench:environments" :size="20" />
           <h4>{{ t("environments.create_profile_title") || "新建环境 Profile" }}</h4>
         </div>
         <p class="confirm-desc">
-          {{ t("environments.create_profile_desc") || "为特定场景（如本地开发、CI 检查、测试环境）定义差异化环境变量覆盖。" }}
+          {{
+            t("environments.create_profile_desc") ||
+            "为特定场景（如本地开发、CI 检查、测试环境）定义差异化环境变量覆盖。"
+          }}
         </p>
-        <div class="profile-modal-body" style="display: flex; flex-direction: column; gap: 10px; margin: 12px 0;">
+        <div class="profile-modal-body" style="display: flex; flex-direction: column; gap: 10px; margin: 12px 0">
           <input
             v-model="newProfileName"
             type="text"
             class="env-search-input font-mono"
-            style="width: 100%; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 6px;"
+            style="width: 100%; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 6px"
             :placeholder="t('environments.profile_name_placeholder') || '例如 development, ci, staging'"
             @keydown.enter="executeCreateProfile"
           />
-          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap">
             <button
               v-for="p in ['development', 'ci', 'staging', 'production', 'testing']"
               :key="p"
@@ -503,10 +554,16 @@
           <h4>{{ t("environments.delete_title") || "确认删除环境变量" }}</h4>
         </div>
         <p class="confirm-desc">
-          {{ t("environments.delete_warning", {
-            key: deleteConfirmKey,
-            scope: activeScope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区")
-          }) || `确定要从 ${activeScope === 'user' ? '用户全局配置' : '当前工作区配置'} 中彻底删除环境变量 ${deleteConfirmKey} 吗？删除后将不可恢复。` }}
+          {{
+            t("environments.delete_warning", {
+              key: deleteConfirmKey,
+              scope:
+                activeScope === "user"
+                  ? t("environments.scope_user") || "用户"
+                  : t("environments.scope_workspace") || "工作区",
+            }) ||
+            `确定要从 ${activeScope === "user" ? "用户全局配置" : "当前工作区配置"} 中彻底删除环境变量 ${deleteConfirmKey} 吗？删除后将不可恢复。`
+          }}
         </p>
         <div class="confirm-actions">
           <button class="tool-action-btn secondary" @click="deleteConfirmKey = ''" :disabled="isDeleting">
@@ -514,7 +571,7 @@
           </button>
           <button class="tool-action-btn danger" @click="executeDelete(deleteConfirmKey)" :disabled="isDeleting">
             <TechIcon v-if="isDeleting" id="workbench:sync" :size="14" class="spin-icon" />
-            <span>{{ isDeleting ? (t("common.deleting") || "删除中...") : (t("common.delete") || "删除") }}</span>
+            <span>{{ isDeleting ? t("common.deleting") || "删除中..." : t("common.delete") || "删除" }}</span>
           </button>
         </div>
       </div>
@@ -583,7 +640,7 @@ function getProfileIcon(p: string) {
 
 function getProfileOverrideCount(p: string) {
   if (p === activeProfile.value) {
-    return envList.value.filter(e => e.is_override || e.is_profile_only).length;
+    return envList.value.filter((e) => e.is_override || e.is_profile_only).length;
   }
   return 0;
 }
@@ -653,9 +710,12 @@ async function executeDeleteProfile(p: string) {
 async function restoreBaseValue(key: string) {
   if (!activeProfile.value) return;
   try {
-    const res = await fetch(`/api/env?key=${encodeURIComponent(key)}&scope=workspace&profile=${encodeURIComponent(activeProfile.value)}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(
+      `/api/env?key=${encodeURIComponent(key)}&scope=workspace&profile=${encodeURIComponent(activeProfile.value)}`,
+      {
+        method: "DELETE",
+      }
+    );
     if (res.ok) {
       showToast(`✓ 已恢复 ${key} 为默认基准值`);
       await fetchEnvVars();
@@ -705,7 +765,10 @@ watch(
 async function fetchEnvVars() {
   loading.value = true;
   try {
-    const pParam = activeScope.value === "workspace" && activeProfile.value ? `&profile=${encodeURIComponent(activeProfile.value)}` : "";
+    const pParam =
+      activeScope.value === "workspace" && activeProfile.value
+        ? `&profile=${encodeURIComponent(activeProfile.value)}`
+        : "";
     const res = await fetch(`/api/env?scope=${activeScope.value}${pParam}`);
     if (res.ok) {
       const data = await res.json();
@@ -741,9 +804,7 @@ const filteredEnvList = computed(() => {
   }
   if (!searchKey.value) return list;
   const q = searchKey.value.toLowerCase().trim();
-  return list.filter(
-    (e) => e.name.toLowerCase().includes(q) || e.value.toLowerCase().includes(q)
-  );
+  return list.filter((e) => e.name.toLowerCase().includes(q) || e.value.toLowerCase().includes(q));
 });
 
 const sensitiveCount = computed(() => {
@@ -767,7 +828,9 @@ async function copyValue(item: EnvItem) {
       document.body.removeChild(input);
     }
     copiedKey.value = item.name;
-    showToast(`✓ ${t("environments.copied_to_clipboard", { key: item.name }) || ('已复制 ' + item.name + ' 真实值到剪贴板')}`);
+    showToast(
+      `✓ ${t("environments.copied_to_clipboard", { key: item.name }) || "已复制 " + item.name + " 真实值到剪贴板"}`
+    );
     setTimeout(() => {
       if (copiedKey.value === item.name) {
         copiedKey.value = "";
@@ -811,8 +874,8 @@ async function handleSaveEnv(payload: {
       isModalOpen.value = false;
       showToast(
         modalMode.value === "create"
-          ? `✓ ${t("environments.create_success", { key: payload.key }) || ('成功创建环境变量 ' + payload.key)}`
-          : `✓ ${t("environments.update_success", { key: payload.key }) || ('成功更新环境变量 ' + payload.key)}`
+          ? `✓ ${t("environments.create_success", { key: payload.key }) || "成功创建环境变量 " + payload.key}`
+          : `✓ ${t("environments.update_success", { key: payload.key }) || "成功更新环境变量 " + payload.key}`
       );
       await fetchEnvVars();
     } else {
@@ -831,13 +894,16 @@ function confirmDelete(name: string) {
 async function executeDelete(name: string) {
   isDeleting.value = true;
   try {
-    const pParam = activeScope.value === "workspace" && activeProfile.value ? `&profile=${encodeURIComponent(activeProfile.value)}` : "";
+    const pParam =
+      activeScope.value === "workspace" && activeProfile.value
+        ? `&profile=${encodeURIComponent(activeProfile.value)}`
+        : "";
     const res = await fetch(`/api/env?key=${encodeURIComponent(name)}&scope=${activeScope.value}${pParam}`, {
       method: "DELETE",
     });
     if (res.ok) {
       deleteConfirmKey.value = "";
-      showToast(`✓ ${t("environments.delete_success", { key: name }) || ('已成功删除环境变量 ' + name)}`);
+      showToast(`✓ ${t("environments.delete_success", { key: name }) || "已成功删除环境变量 " + name}`);
       await fetchEnvVars();
     } else {
       const err = await res.json();

@@ -55,18 +55,12 @@ export interface GraphLayoutOptions {
 /**
  * Computes topological lanes and SVG paths for Git Graph DAG commits.
  */
-export function layoutGitGraph(
-  commits: GitGraphCommit[],
-  options: GraphLayoutOptions = {}
-): GraphLayoutResult {
+export function layoutGitGraph(commits: GitGraphCommit[], options: GraphLayoutOptions = {}): GraphLayoutResult {
   const rowHeight = options.rowHeight ?? 34;
   const laneWidth = options.laneWidth ?? 18;
   const startX = options.startX ?? 16;
   const expandedIndex = options.expandedIndex;
-  const expandedHeight =
-    expandedIndex !== undefined && expandedIndex >= 0
-      ? options.expandedHeight ?? 280
-      : 0;
+  const expandedHeight = expandedIndex !== undefined && expandedIndex >= 0 ? (options.expandedHeight ?? 280) : 0;
 
   function getRowTop(idx: number): number {
     if (expandedIndex === undefined || expandedIndex < 0 || idx <= expandedIndex) {

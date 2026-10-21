@@ -30,4 +30,3 @@
 - [x] 5.2 自动同步词条到全 53 国语言字典，确保 `i18n.test.ts` 0 报错
 - [x] 5.3 运行全量 `npm run test` 与 `npm run build`，确保类型检查与生产构建 100% 成功
 - [x] 5.4 **执行提交 5**：`feat(i18n): sync multi-language keys and finalize credential broker validation`
-

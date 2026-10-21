@@ -1,8 +1,8 @@
 # Feature Specification: Plugin & Extension Configuration Namespace Isolation
 
-**Feature Branch**: `027-plugin-config-isolation`  
-**Created**: 2026-10-13  
-**Status**: Draft  
+**Feature Branch**: `027-plugin-config-isolation`
+**Created**: 2026-10-13
+**Status**: Draft
 **Input**: "要保证后续第三方插件（Plugins）和扩展（Extensions）能够安全扩展配置，且绝不互相覆盖、不污染核心、不发生键名冲突，建立一套严格的配置命名空间体系与写入准则（涵盖核心保留区、插件隔离区、轻量行内与外置 Sidecar 分片、写权限沙箱与并发写锁、Plugin Manifest Schema 强类型校验）。"
 
 ---
@@ -25,7 +25,7 @@ Inspired by best practices from VS Code (`contributes.configuration`), Rust Carg
 
 As a developer using multiple third-party UniRTM plugins (e.g. `snowdreamtech/docker` and `community/deploy`), I want their configurations in `.unirtm.toml` to be strictly isolated under dedicated namespaces, so that one plugin cannot overwrite, read, or tamper with another plugin's configuration.
 
-**Why this priority**: Core prerequisite for launching the plugin ecosystem safely.  
+**Why this priority**: Core prerequisite for launching the plugin ecosystem safely.
 **Independent Test**: Configure two plugins in `.unirtm.toml`, verify through `unirtm config get` and programmatic API that each plugin's settings are completely segregated under `[plugins."<id>".config]`.
 
 **Acceptance Scenarios**:
@@ -38,7 +38,7 @@ As a developer using multiple third-party UniRTM plugins (e.g. `snowdreamtech/do
 
 As a team lead managing a project with complex plugin setups, I want heavy plugin configurations to optionally live in `.unirtm/plugins/<plugin-id>.toml` rather than cluttering the root `.unirtm.toml`, so that the main project config stays lightweight and Git history remains clean.
 
-**Why this priority**: Prevents `.unirtm.toml` bloat and avoids merge conflicts on team repositories.  
+**Why this priority**: Prevents `.unirtm.toml` bloat and avoids merge conflicts on team repositories.
 **Independent Test**: Create `.unirtm/plugins/snowdreamtech-docker.toml`, run `unirtm config get plugins."snowdreamtech/docker".config`, and verify UniRTM automatically merges it into the active runtime configuration view.
 
 **Acceptance Scenarios**:
@@ -51,7 +51,7 @@ As a team lead managing a project with complex plugin setups, I want heavy plugi
 
 As a plugin developer or CI runner, I want configuration writes to be atomic, thread-safe, comment-preserving, and sandboxed, so that concurrent operations never corrupt `.unirtm.toml` or erase human-written comments.
 
-**Why this priority**: Guarantees data integrity and prevents race conditions.  
+**Why this priority**: Guarantees data integrity and prevents race conditions.
 **Independent Test**: Run parallel `unirtm config set` commands targeting different plugin keys and verify that no keys are lost and file syntax remains valid.
 
 **Acceptance Scenarios**:
@@ -65,7 +65,7 @@ As a plugin developer or CI runner, I want configuration writes to be atomic, th
 
 As a developer configuring a plugin, I want immediate feedback if I enter an invalid configuration value (e.g. string instead of boolean), so that configuration mistakes are caught before runtime execution.
 
-**Why this priority**: Eliminates silent configuration bugs and improves developer ergonomics.  
+**Why this priority**: Eliminates silent configuration bugs and improves developer ergonomics.
 **Independent Test**: Set an invalid type against a plugin that provides a schema in its manifest, and verify the CLI warns or errors immediately.
 
 ---

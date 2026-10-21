@@ -1301,4 +1301,3 @@ func RemoveEnvironmentProfile(content, profile string) (string, bool) {
 	}
 	return strings.Join(newLines, "\n"), true
 }
-

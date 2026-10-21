@@ -13,7 +13,9 @@
             <span
               class="codicon"
               :class="pendingRequest.type === 'gpg' ? 'codicon-shield' : 'codicon-key'"
-              :style="{ color: pendingRequest.type === 'gpg' ? 'var(--accent-purple, #a855f7)' : 'var(--accent-cyan, #00e5ff)' }"
+              :style="{
+                color: pendingRequest.type === 'gpg' ? 'var(--accent-purple, #a855f7)' : 'var(--accent-cyan, #00e5ff)',
+              }"
             ></span>
             <h3 class="modal-title">{{ modalTitle }}</h3>
           </div>
@@ -42,7 +44,11 @@
           <!-- Password Input -->
           <div class="form-group">
             <label class="form-label" for="passphrase-input">
-              {{ pendingRequest.type === 'gpg' ? (t('credential.gpg_passphrase_label') || 'GPG 签名私钥密码') : (t('credential.passphrase_label') || '私钥密码 (Passphrase)') }}
+              {{
+                pendingRequest.type === "gpg"
+                  ? t("credential.gpg_passphrase_label") || "GPG 签名私钥密码"
+                  : t("credential.passphrase_label") || "私钥密码 (Passphrase)"
+              }}
               <span class="required">*</span>
             </label>
             <div class="input-password-wrapper">
@@ -52,7 +58,11 @@
                 v-model="passphrase"
                 :type="showPassword ? 'text' : 'password'"
                 class="form-input font-mono"
-                :placeholder="pendingRequest.type === 'gpg' ? (t('credential.gpg_placeholder') || '输入 GPG 密码短语...') : (t('credential.ssh_placeholder') || '输入 SSH 私钥密码短语...')"
+                :placeholder="
+                  pendingRequest.type === 'gpg'
+                    ? t('credential.gpg_placeholder') || '输入 GPG 密码短语...'
+                    : t('credential.ssh_placeholder') || '输入 SSH 私钥密码短语...'
+                "
                 autocomplete="off"
                 spellcheck="false"
                 @keydown.enter="handleConfirm"
@@ -61,7 +71,7 @@
               <button
                 type="button"
                 class="toggle-eye-btn"
-                :title="showPassword ? (t('common.hide') || '隐藏密码') : (t('common.show') || '显示密码')"
+                :title="showPassword ? t('common.hide') || '隐藏密码' : t('common.show') || '显示密码'"
                 @click="showPassword = !showPassword"
               >
                 <span class="codicon" :class="showPassword ? 'codicon-eye' : 'codicon-eye-closed'"></span>
@@ -71,7 +81,7 @@
             <!-- Caps Lock Indicator -->
             <div v-if="capsLockOn" class="caps-lock-warning">
               <span class="codicon codicon-warning"></span>
-              <span>{{ t('credential.caps_lock') || '大写锁定已开启 (Caps Lock On)' }}</span>
+              <span>{{ t("credential.caps_lock") || "大写锁定已开启 (Caps Lock On)" }}</span>
             </div>
           </div>
 
@@ -79,9 +89,11 @@
           <div class="form-checkbox-row">
             <label class="checkbox-label">
               <input v-model="rememberSession" type="checkbox" class="form-checkbox" />
-              <span>{{ t('credential.remember_session') || '在当前工作区会话期间记住此密码 (Session Cache)' }}</span>
+              <span>{{ t("credential.remember_session") || "在当前工作区会话期间记住此密码 (Session Cache)" }}</span>
             </label>
-            <span class="checkbox-hint">{{ t('credential.remember_hint') || '仅在当前运行的内存中临时安全保留，退出或重载后失效' }}</span>
+            <span class="checkbox-hint">{{
+              t("credential.remember_hint") || "仅在当前运行的内存中临时安全保留，退出或重载后失效"
+            }}</span>
           </div>
 
           <!-- Error Alert Banner -->
@@ -94,16 +106,15 @@
         <!-- Modal Footer Actions -->
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" :disabled="isSubmitting" @click="handleCancel">
-            {{ t('common.cancel') || '取消 (Esc)' }}
+            {{ t("common.cancel") || "取消 (Esc)" }}
           </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            :disabled="!passphrase || isSubmitting"
-            @click="handleConfirm"
-          >
+          <button type="button" class="btn btn-primary" :disabled="!passphrase || isSubmitting" @click="handleConfirm">
             <span v-if="isSubmitting" class="codicon codicon-loading codicon-modifier-spin"></span>
-            <span>{{ isSubmitting ? (t('credential.validating_btn') || '验证中...') : (t('credential.unlock_btn') || '解锁并继续 (Enter)') }}</span>
+            <span>{{
+              isSubmitting
+                ? t("credential.validating_btn") || "验证中..."
+                : t("credential.unlock_btn") || "解锁并继续 (Enter)"
+            }}</span>
           </button>
         </div>
       </div>
@@ -116,14 +127,8 @@ import { ref, computed, watch, nextTick } from "vue";
 import { t } from "../../i18n";
 import { useCredentialBroker } from "../../composables/useCredentialBroker";
 
-const {
-  pendingRequest,
-  isPromptOpen,
-  isSubmitting,
-  lastError,
-  respondCredential,
-  cancelCredential,
-} = useCredentialBroker();
+const { pendingRequest, isPromptOpen, isSubmitting, lastError, respondCredential, cancelCredential } =
+  useCredentialBroker();
 
 const passphrase = ref("");
 const rememberSession = ref(true);
@@ -160,11 +165,7 @@ function handleKeyUp(e: KeyboardEvent) {
 
 async function handleConfirm() {
   if (!pendingRequest.value || !passphrase.value || isSubmitting.value) return;
-  await respondCredential(
-    pendingRequest.value.id,
-    passphrase.value,
-    rememberSession.value
-  );
+  await respondCredential(pendingRequest.value.id, passphrase.value, rememberSession.value);
 }
 
 function handleCancel() {
@@ -193,7 +194,9 @@ function handleCancel() {
   background: var(--card-bg, #111827);
   border: 1px solid var(--card-border, #1f2937);
   border-radius: 8px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.5),
+    0 10px 10px -5px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -311,7 +314,9 @@ function handleCancel() {
   border-radius: 4px;
   color: var(--text-main, #f3f4f6);
   font-size: 0.8rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .form-input:focus {
@@ -431,12 +436,22 @@ function handleCancel() {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleUp {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>

@@ -218,7 +218,6 @@ html {
   scrollbar-gutter: stable;
 }
 
-
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
@@ -633,7 +632,9 @@ html[dir="rtl"] .opt-check {
   padding: 0 4px !important;
   outline: none !important;
   border: none !important;
-  transition: background-color 0.12s ease, color 0.12s ease !important;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease !important;
 }
 
 .context-view .monaco-menu .monaco-action-bar.vertical .action-label {
@@ -653,7 +654,9 @@ html[dir="rtl"] .opt-check {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border: 1px solid #cbd5e1 !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.2),
+    0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
 }
 
 .context-view .monaco-menu .action-menu-item {
@@ -703,7 +706,9 @@ html[dir="rtl"] .opt-check {
   background-color: #1e1e1e !important;
   color: #f1f5f9 !important;
   border: 1px solid #334155 !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.5),
+    0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
 }
 
 :root[data-theme="light"] .context-view .monaco-menu .action-menu-item,
@@ -761,7 +766,9 @@ html[dir="rtl"] .opt-check {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border: 1px solid #cbd5e1 !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.2),
+    0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
 }
 
 :root[data-theme="dark"] .context-view .monaco-menu .action-menu-item,
@@ -915,7 +922,9 @@ html[dir="rtl"] .opt-check {
   white-space: nowrap !important;
   outline: none !important;
   border: none !important;
-  transition: background-color 0.12s ease, color 0.12s ease !important;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease !important;
 }
 
 /* Action Label: Left-aligned, flexible width, ellipsis, strictly nowrap */
@@ -987,5 +996,3 @@ html[dir="rtl"] .opt-check {
 [data-theme="light"] .tab-submenu-independent .action-separator {
   background-color: rgba(255, 255, 255, 0.12) !important;
 }
-
-

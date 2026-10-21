@@ -6,11 +6,25 @@
         <div class="header-title">
           <TechIcon id="workbench:environments" :size="20" />
           <div>
-            <h3>{{ isEdit ? (t("environments.edit_title") || "编辑环境变量") : (t("environments.create_title") || "新建环境变量") }}</h3>
+            <h3>
+              {{
+                isEdit
+                  ? t("environments.edit_title") || "编辑环境变量"
+                  : t("environments.create_title") || "新建环境变量"
+              }}
+            </h3>
             <span class="sub-title">
-              {{ form.scope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
-              <span v-if="activeProfile && form.scope === 'workspace'" class="scope-file-tag font-mono">🌱 {{ activeProfile }} ([environments.{{ activeProfile }}.env])</span>
-              <span v-else class="scope-file-tag font-mono">{{ form.scope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }}</span>
+              {{
+                form.scope === "user"
+                  ? t("environments.scope_user") || "用户"
+                  : t("environments.scope_workspace") || "工作区"
+              }}
+              <span v-if="activeProfile && form.scope === 'workspace'" class="scope-file-tag font-mono"
+                >🌱 {{ activeProfile }} ([environments.{{ activeProfile }}.env])</span
+              >
+              <span v-else class="scope-file-tag font-mono">{{
+                form.scope === "user" ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml"
+              }}</span>
             </span>
           </div>
         </div>
@@ -22,7 +36,6 @@
       <!-- Modal Body -->
       <div class="modal-body">
         <form @submit.prevent="handleSubmit">
-
           <!-- Variable Key -->
           <div class="form-group">
             <label class="form-label required">
@@ -66,7 +79,10 @@
             <!-- Sensitive Detection Hint -->
             <div v-if="isSensitiveKey" class="sensitive-detected-banner">
               <span class="sec-icon"><TechIcon id="workbench:lock" :size="14" /></span>
-              <span>{{ t("environments.sensitive_hint") || "系统已自动判定为敏感密钥，保存后默认脱密遮罩显示，需点击眼睛图标方可查看明文。" }}</span>
+              <span>{{
+                t("environments.sensitive_hint") ||
+                "系统已自动判定为敏感密钥，保存后默认脱密遮罩显示，需点击眼睛图标方可查看明文。"
+              }}</span>
             </div>
           </div>
 
@@ -74,7 +90,9 @@
           <div class="form-group">
             <label class="form-label required">
               <span>{{ t("environments.value_label") || "变量值 (Value)" }}</span>
-              <span v-if="isSensitiveKey" class="label-hint">{{ t("environments.sensitive_field_hint") || "（敏感密钥默认脱密，可点击眼睛查看）" }}</span>
+              <span v-if="isSensitiveKey" class="label-hint">{{
+                t("environments.sensitive_field_hint") || "（敏感密钥默认脱密，可点击眼睛查看）"
+              }}</span>
             </label>
             <div class="value-input-wrapper">
               <input
@@ -91,7 +109,9 @@
                 type="button"
                 class="btn btn-icon btn-eye-toggle"
                 @click="isValueRevealed = !isValueRevealed"
-                :title="isValueRevealed ? (t('environments.conceal') || '脱密隐藏') : (t('environments.reveal') || '显示明文')"
+                :title="
+                  isValueRevealed ? t('environments.conceal') || '脱密隐藏' : t('environments.reveal') || '显示明文'
+                "
               >
                 <TechIcon :id="isValueRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="15" />
               </button>
@@ -100,21 +120,18 @@
 
           <!-- Modal Footer Actions -->
           <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-secondary btn-cancel"
-              @click="$emit('close')"
-              :disabled="saving"
-            >
+            <button type="button" class="btn btn-secondary btn-cancel" @click="$emit('close')" :disabled="saving">
               {{ t("common.cancel") || "取消" }}
             </button>
-            <button
-              type="submit"
-              class="btn btn-primary btn-submit"
-              :disabled="saving || !form.key.trim()"
-            >
+            <button type="submit" class="btn btn-primary btn-submit" :disabled="saving || !form.key.trim()">
               <TechIcon v-if="saving" id="workbench:sync" :size="14" class="spin-icon" />
-              <span>{{ saving ? (t("common.saving") || "保存中...") : (isEdit ? (t("common.save_changes") || "保存修改") : (t("common.create") || "新建")) }}</span>
+              <span>{{
+                saving
+                  ? t("common.saving") || "保存中..."
+                  : isEdit
+                    ? t("common.save_changes") || "保存修改"
+                    : t("common.create") || "新建"
+              }}</span>
             </button>
           </div>
         </form>
@@ -339,7 +356,6 @@ function handleSubmit() {
   font-weight: normal;
   color: var(--text-muted);
 }
-
 
 .input-with-action {
   position: relative;

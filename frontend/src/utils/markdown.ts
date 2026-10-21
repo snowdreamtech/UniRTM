@@ -162,7 +162,8 @@ export function renderMarkdown(markdown: string): string {
   };
 
   // Block-level HTML tags that should NOT be wrapped in <p>
-  const blockHtmlRegex = /^<\/?(details|summary|p|div|section|article|h[1-6]|ul|ol|li|table|thead|tbody|tr|th|td|blockquote|pre|br|hr)\b/i;
+  const blockHtmlRegex =
+    /^<\/?(details|summary|p|div|section|article|h[1-6]|ul|ol|li|table|thead|tbody|tr|th|td|blockquote|pre|br|hr)\b/i;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -178,9 +179,7 @@ export function renderMarkdown(markdown: string): string {
       } else {
         inCodeBlock = false;
         const codeContent = escapeHtml(codeBuffer.join("\n"));
-        out.push(
-          `<pre class="md-code-block" data-lang="${escapeHtml(codeLang)}"><code>${codeContent}</code></pre>`
-        );
+        out.push(`<pre class="md-code-block" data-lang="${escapeHtml(codeLang)}"><code>${codeContent}</code></pre>`);
         codeBuffer = [];
       }
       continue;

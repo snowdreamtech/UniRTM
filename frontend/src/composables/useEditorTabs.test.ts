@@ -184,15 +184,8 @@ describe("useEditorTabs", () => {
       json: async () => ({ content: "" }),
     } as any);
 
-    const {
-      tabs,
-      openTab,
-      updateContent,
-      closeTabsToRight,
-      closeSavedTabs,
-      closeAllTabs,
-      togglePinTab,
-    } = useEditorTabs();
+    const { tabs, openTab, updateContent, closeTabsToRight, closeSavedTabs, closeAllTabs, togglePinTab } =
+      useEditorTabs();
 
     await openTab({ path: "1.js", name: "1.js" });
     await openTab({ path: "2.js", name: "2.js" });
@@ -361,5 +354,3 @@ describe("useEditorTabs", () => {
     expect(tabs.value[0].path).toBe("src/keep.ts");
   });
 });
-
-

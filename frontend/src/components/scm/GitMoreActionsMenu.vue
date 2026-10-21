@@ -6,15 +6,11 @@
       @click="handleOverlayClick"
       @contextmenu.prevent="handleOverlayClick"
     >
-      <div
-        class="git-more-menu"
-        :style="menuStyle"
-        @click.stop
-      >
+      <div class="git-more-menu" :style="menuStyle" @click.stop>
         <!-- 1. View Git Graph -->
         <div class="menu-item" @mouseenter="clearSubmenu" @click="triggerAction('view-graph')">
           <span class="codicon codicon-git-commit item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.view_graph') }}</span>
+          <span class="item-label">{{ t("scm.menu.view_graph") }}</span>
         </div>
 
         <div class="menu-separator"></div>
@@ -22,23 +18,23 @@
         <!-- 2. Primary Top-level Actions -->
         <div class="menu-item" @mouseenter="clearSubmenu" @click="triggerAction('pull')">
           <span class="codicon codicon-arrow-down item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.pull') }}</span>
+          <span class="item-label">{{ t("scm.menu.pull") }}</span>
         </div>
         <div class="menu-item" @mouseenter="clearSubmenu" @click="triggerAction('push')">
           <span class="codicon codicon-arrow-up item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.push') }}</span>
+          <span class="item-label">{{ t("scm.menu.push") }}</span>
         </div>
         <div class="menu-item" @mouseenter="clearSubmenu" @click="triggerAction('clone')">
           <span class="codicon codicon-repo-clone item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.clone') }}</span>
+          <span class="item-label">{{ t("scm.menu.clone") }}</span>
         </div>
         <div class="menu-item" @mouseenter="clearSubmenu" @click="triggerAction('checkout')">
           <span class="codicon codicon-git-branch item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.checkout') }}</span>
+          <span class="item-label">{{ t("scm.menu.checkout") }}</span>
         </div>
         <div class="menu-item" @mouseenter="clearSubmenu" @click="triggerAction('fetch')">
           <span class="codicon codicon-sync item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.fetch') }}</span>
+          <span class="item-label">{{ t("scm.menu.fetch") }}</span>
         </div>
 
         <div class="menu-separator"></div>
@@ -50,7 +46,7 @@
           @mouseenter="openSubmenu('commit', $event)"
         >
           <span class="codicon codicon-check item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.commit') }}</span>
+          <span class="item-label">{{ t("scm.menu.commit") }}</span>
           <span class="codicon codicon-chevron-right submenu-arrow"></span>
         </div>
 
@@ -61,7 +57,7 @@
           @mouseenter="openSubmenu('changes', $event)"
         >
           <span class="codicon codicon-diff-modified item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.changes') }}</span>
+          <span class="item-label">{{ t("scm.menu.changes") }}</span>
           <span class="codicon codicon-chevron-right submenu-arrow"></span>
         </div>
 
@@ -72,7 +68,7 @@
           @mouseenter="openSubmenu('pull-push', $event)"
         >
           <span class="codicon codicon-sync item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.pull_push') }}</span>
+          <span class="item-label">{{ t("scm.menu.pull_push") }}</span>
           <span class="codicon codicon-chevron-right submenu-arrow"></span>
         </div>
 
@@ -83,7 +79,7 @@
           @mouseenter="openSubmenu('branch', $event)"
         >
           <span class="codicon codicon-git-branch item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.branch') }}</span>
+          <span class="item-label">{{ t("scm.menu.branch") }}</span>
           <span class="codicon codicon-chevron-right submenu-arrow"></span>
         </div>
 
@@ -94,7 +90,7 @@
           @mouseenter="openSubmenu('remote', $event)"
         >
           <span class="codicon codicon-cloud item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.remote') }}</span>
+          <span class="item-label">{{ t("scm.menu.remote") }}</span>
           <span class="codicon codicon-chevron-right submenu-arrow"></span>
         </div>
 
@@ -105,7 +101,7 @@
           @mouseenter="openSubmenu('stash', $event)"
         >
           <span class="codicon codicon-archive item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.stash') }}</span>
+          <span class="item-label">{{ t("scm.menu.stash") }}</span>
           <span class="codicon codicon-chevron-right submenu-arrow"></span>
         </div>
 
@@ -116,7 +112,7 @@
           @mouseenter="openSubmenu('tags', $event)"
         >
           <span class="codicon codicon-tag item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.tags') }}</span>
+          <span class="item-label">{{ t("scm.menu.tags") }}</span>
           <span class="codicon codicon-chevron-right submenu-arrow"></span>
         </div>
 
@@ -125,133 +121,128 @@
         <!-- 10. Show Git Output -->
         <div class="menu-item" @mouseenter="clearSubmenu" @click="triggerAction('show-output')">
           <span class="codicon codicon-output item-icon"></span>
-          <span class="item-label">{{ t('scm.menu.show_output') }}</span>
+          <span class="item-label">{{ t("scm.menu.show_output") }}</span>
         </div>
       </div>
 
       <!-- Nested Submenu Layer -->
-      <div
-        v-if="activeSubmenu"
-        class="git-more-submenu"
-        :style="submenuStyle"
-        @click.stop
-      >
+      <div v-if="activeSubmenu" class="git-more-submenu" :style="submenuStyle" @click.stop>
         <!-- Commit Submenu -->
         <template v-if="activeSubmenu === 'commit'">
           <div class="menu-item" @click="triggerAction('commit')">
-            {{ t('scm.menu.commit') }}
+            {{ t("scm.menu.commit") }}
           </div>
           <div class="menu-item" @click="triggerAction('commit-amend')">
-            {{ t('scm.menu.commit_amend') }}
+            {{ t("scm.menu.commit_amend") }}
           </div>
           <div class="menu-item" @click="triggerAction('commit-staged')">
-            {{ t('scm.menu.commit_staged') }}
+            {{ t("scm.menu.commit_staged") }}
           </div>
           <div class="menu-item" @click="triggerAction('commit-all')">
-            {{ t('scm.menu.commit_all') }}
+            {{ t("scm.menu.commit_all") }}
           </div>
         </template>
 
         <!-- Changes Submenu -->
         <template v-else-if="activeSubmenu === 'changes'">
           <div class="menu-item" @click="triggerAction('stage-all')">
-            {{ t('scm.menu.stage_all') }}
+            {{ t("scm.menu.stage_all") }}
           </div>
           <div class="menu-item" @click="triggerAction('unstage-all')">
-            {{ t('scm.menu.unstage_all') }}
+            {{ t("scm.menu.unstage_all") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item danger" @click="triggerAction('discard-all')">
-            {{ t('scm.menu.discard_all') }}
+            {{ t("scm.menu.discard_all") }}
           </div>
         </template>
 
         <!-- Pull, Push Submenu -->
         <template v-else-if="activeSubmenu === 'pull-push'">
           <div class="menu-item" @click="triggerAction('sync')">
-            {{ t('scm.menu.sync') }}
+            {{ t("scm.menu.sync") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="triggerAction('pull')">
-            {{ t('scm.menu.pull') }}
+            {{ t("scm.menu.pull") }}
           </div>
           <div class="menu-item" @click="triggerAction('pull-rebase')">
-            {{ t('scm.menu.pull_rebase') }}
+            {{ t("scm.menu.pull_rebase") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="triggerAction('push')">
-            {{ t('scm.menu.push') }}
+            {{ t("scm.menu.push") }}
           </div>
           <div class="menu-item danger" @click="triggerAction('push-force')">
-            {{ t('scm.menu.push_force') }}
+            {{ t("scm.menu.push_force") }}
           </div>
         </template>
 
         <!-- Branch Submenu -->
         <template v-else-if="activeSubmenu === 'branch'">
           <div class="menu-item" @click="triggerAction('create-branch')">
-            {{ t('scm.menu.create_branch') }}
+            {{ t("scm.menu.create_branch") }}
           </div>
           <div class="menu-item" @click="triggerAction('checkout')">
-            {{ t('scm.menu.checkout') }}
+            {{ t("scm.menu.checkout") }}
           </div>
           <div class="menu-item" @click="triggerAction('rename-branch')">
-            {{ t('scm.menu.rename_branch') }}
+            {{ t("scm.menu.rename_branch") }}
           </div>
           <div class="menu-item danger" @click="triggerAction('delete-branch')">
-            {{ t('scm.menu.delete_branch') }}
+            {{ t("scm.menu.delete_branch") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="triggerAction('merge-branch')">
-            {{ t('scm.menu.merge_branch') }}
+            {{ t("scm.menu.merge_branch") }}
           </div>
           <div class="menu-item" @click="triggerAction('rebase-branch')">
-            {{ t('scm.menu.rebase_branch') }}
+            {{ t("scm.menu.rebase_branch") }}
           </div>
         </template>
 
         <!-- Remote Submenu -->
         <template v-else-if="activeSubmenu === 'remote'">
           <div class="menu-item" @click="triggerAction('fetch')">
-            {{ t('scm.menu.fetch_all') }}
+            {{ t("scm.menu.fetch_all") }}
           </div>
           <div class="menu-item" @click="triggerAction('push')">
-            {{ t('scm.menu.push_remote') }}
+            {{ t("scm.menu.push_remote") }}
           </div>
         </template>
 
         <!-- Stash Submenu -->
         <template v-else-if="activeSubmenu === 'stash'">
           <div class="menu-item" @click="triggerAction('stash')">
-            {{ t('scm.menu.stash_changes') }}
+            {{ t("scm.menu.stash_changes") }}
           </div>
           <div class="menu-item" @click="triggerAction('stash-untracked')">
-            {{ t('scm.menu.stash_include_untracked') }}
+            {{ t("scm.menu.stash_include_untracked") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item danger" @click="triggerAction('reset-uncommitted')">
-            {{ t('scm.menu.reset_uncommitted') }}
+            {{ t("scm.menu.reset_uncommitted") }}
           </div>
           <div class="menu-item danger" @click="triggerAction('clean-untracked')">
-            {{ t('scm.menu.clean_untracked') }}
+            {{ t("scm.menu.clean_untracked") }}
           </div>
         </template>
 
         <!-- Tags Submenu -->
         <template v-else-if="activeSubmenu === 'tags'">
           <div class="menu-item" @click="triggerAction('create-tag')">
-            {{ t('scm.menu.create_tag') }}
+            {{ t("scm.menu.create_tag") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="triggerAction('push-tags')">
-            {{ t('scm.menu.push_tags') }}
+            {{ t("scm.menu.push_tags") }}
           </div>
           <div class="menu-item danger" @click="triggerAction('push-tags-force')">
-            {{ t('scm.menu.push_tags_force') }}
+            {{ t("scm.menu.push_tags_force") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item danger" @click="triggerAction('delete-tag')">
-            {{ t('scm.menu.delete_tag') }}
+            {{ t("scm.menu.delete_tag") }}
           </div>
         </template>
       </div>

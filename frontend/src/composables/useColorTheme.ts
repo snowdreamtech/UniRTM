@@ -42,8 +42,8 @@ export function useColorTheme() {
       const cleanRel = themeItem.relative_path.startsWith("./")
         ? themeItem.relative_path.slice(2)
         : themeItem.relative_path.startsWith("/")
-        ? themeItem.relative_path.slice(1)
-        : themeItem.relative_path;
+          ? themeItem.relative_path.slice(1)
+          : themeItem.relative_path;
 
       const url = `/api/themes/assets/color/${encodeURIComponent(themeItem.package_id)}/${cleanRel}`;
       const res = await fetch(url);
@@ -64,7 +64,8 @@ export function useColorTheme() {
       const componentRules: string[] = [];
 
       const editorBg = colors["editor.background"];
-      const sideBg = colors["sideBar.background"] || colors["editorGroupHeader.tabsBackground"] || colors["panel.background"];
+      const sideBg =
+        colors["sideBar.background"] || colors["editorGroupHeader.tabsBackground"] || colors["panel.background"];
       const titleBg = colors["titleBar.activeBackground"] || sideBg;
       const activityBg = colors["activityBar.background"] || sideBg;
       const statusBg = colors["statusBar.background"] || activityBg;
@@ -72,9 +73,18 @@ export function useColorTheme() {
       const breadcrumbBg = colors["editorGroupHeader.tabsBackground"] || sideBg;
       const inputBg = colors["input.background"] || colors["dropdown.background"];
       const textFg = colors["editor.foreground"] || colors["foreground"] || (isLight ? "#0f172a" : "#abb2bf");
-      const textMuted = colors["descriptionForeground"] || colors["sideBarTitle.foreground"] || colors["tab.inactiveForeground"] || (isLight ? "#64748b" : "#5c6370");
-      const accent = colors["button.background"] || colors["activityBarBadge.background"] || colors["focusBorder"] || "#00e5ff";
-      const border = colors["sideBar.border"] || colors["panel.border"] || colors["editorGroup.border"] || (isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.08)");
+      const textMuted =
+        colors["descriptionForeground"] ||
+        colors["sideBarTitle.foreground"] ||
+        colors["tab.inactiveForeground"] ||
+        (isLight ? "#64748b" : "#5c6370");
+      const accent =
+        colors["button.background"] || colors["activityBarBadge.background"] || colors["focusBorder"] || "#00e5ff";
+      const border =
+        colors["sideBar.border"] ||
+        colors["panel.border"] ||
+        colors["editorGroup.border"] ||
+        (isLight ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.08)");
       const borderActive = colors["focusBorder"] || colors["activityBar.activeBorder"] || accent;
 
       if (editorBg) rootVars.push(`--bg-color: ${editorBg} !important;`);

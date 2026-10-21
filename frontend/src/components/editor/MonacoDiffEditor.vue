@@ -16,7 +16,7 @@
           @click="toggleInlineMode"
         >
           <span class="codicon" :class="isInline ? 'codicon-split-horizontal' : 'codicon-list-flat'"></span>
-          <span>{{ isInline ? '并排对比' : '行内对比' }}</span>
+          <span>{{ isInline ? "并排对比" : "行内对比" }}</span>
         </button>
       </div>
     </div>

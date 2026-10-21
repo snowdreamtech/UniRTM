@@ -215,4 +215,3 @@ go = "1.24.0"
 当清单被加载后：
 1. 开发者在 CLI 运行 `unirtm config set plugins."<plugin-id>".config.port abc` 时，会自动校验并提示 `"property 'port' must be an integer"`。
 2. 结合 VS Code 的 JSON 校验器，IDE 会在编辑插件配置时自动提供智能提示和文档浮窗。
-

@@ -129,7 +129,7 @@ describe("BottomDrawer Tab Drag, Drop & Visibility Management", () => {
   it("supports hiding a tab and auto-switching if current tab is hidden", () => {
     const initialHidden = new Set<DrawerTab>();
     const tabOrder = [...DEFAULT_TAB_ORDER];
-    
+
     // 隐藏当前正在查看的 terminal
     const res = toggleTabVisibility(initialHidden, tabOrder, "terminal", "terminal");
     expect(res.newHidden.has("terminal")).toBe(true);

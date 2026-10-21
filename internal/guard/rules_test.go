@@ -227,7 +227,6 @@ func TestBuiltinRules_LargeFiles(t *testing.T) {
 	}
 }
 
-
 func TestBuiltinRules_CaseConflict(t *testing.T) {
 	rule := guard.NewCaseConflictRule()
 	ctx := context.Background()
@@ -803,10 +802,3 @@ func TestBuiltinRegistry(t *testing.T) {
 		t.Errorf("Expected at least 25 builtin rules, got %d", len(rules))
 	}
 }
-
-
-
-
-
-
-

@@ -33,11 +33,7 @@ export function useCredentialBroker() {
   /**
    * 响应凭证请求
    */
-  async function respondCredential(
-    id: string,
-    passphrase: string,
-    rememberSession: boolean = false
-  ): Promise<boolean> {
+  async function respondCredential(id: string, passphrase: string, rememberSession: boolean = false): Promise<boolean> {
     isSubmitting.value = true;
     lastError.value = null;
     try {

@@ -3,17 +3,18 @@
     <!-- View Header Row -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
           <span class="view-icon">
             <TechIcon id="workbench:tools" :size="20" />
           </span>
           <span>{{ t("nav.tools") || "开发环境与工具链" }}</span>
         </h2>
         <p class="view-desc">
-          由 UniRTM 统一版本锁定与高性能垫片（Go Shims）路由，替换 NVM、GVM、Pyenv 等异构管理器，提供跨平台一致的工具链环境。
+          由 UniRTM 统一版本锁定与高性能垫片（Go Shims）路由，替换 NVM、GVM、Pyenv
+          等异构管理器，提供跨平台一致的工具链环境。
         </p>
       </div>
-      <div class="view-actions" style="display: flex; gap: 8px; align-items: center;">
+      <div class="view-actions" style="display: flex; gap: 8px; align-items: center">
         <button
           class="tool-action-btn secondary"
           id="btn-check-updates"
@@ -35,21 +36,37 @@
     <div class="scope-selection-bar glass-card" id="runtimes-scope-bar">
       <div class="scope-context-pill">
         <span class="scope-badge" :class="currentScope">
-          <TechIcon :id="currentScope === 'user' ? 'workbench:settings' : 'workbench:folder'" :size="13" :colored="false" />
-          {{ currentScope === 'user' ? (t("runtimes.scope_user") || "用户全局环境") : (t("runtimes.scope_workspace") || "工作区项目环境") }}
+          <TechIcon
+            :id="currentScope === 'user' ? 'workbench:settings' : 'workbench:folder'"
+            :size="13"
+            :colored="false"
+          />
+          {{
+            currentScope === "user"
+              ? t("runtimes.scope_user") || "用户全局环境"
+              : t("runtimes.scope_workspace") || "工作区项目环境"
+          }}
         </span>
         <span class="scope-hint-text">
-          {{ currentScope === 'user' ? (t("runtimes.scope_user_desc") || "配置当前用户所有未指定工作区时的默认兜底环境 (~/.unirtm)") : (t("runtimes.scope_workspace_desc") || "锁定当前工作区工具版本，团队协作检出即生效 (.unirtm.toml)") }}
+          {{
+            currentScope === "user"
+              ? t("runtimes.scope_user_desc") || "配置当前用户所有未指定工作区时的默认兜底环境 (~/.unirtm)"
+              : t("runtimes.scope_workspace_desc") || "锁定当前工作区工具版本，团队协作检出即生效 (.unirtm.toml)"
+          }}
         </span>
       </div>
       <div class="scope-context-config font-mono" :title="currentScope === 'user' ? '~/.unirtm' : '.unirtm.toml'">
         <span class="file-icon">📄</span>
-        <span>{{ currentScope === 'user' ? '~/.unirtm' : '.unirtm.toml' }}</span>
+        <span>{{ currentScope === "user" ? "~/.unirtm" : ".unirtm.toml" }}</span>
       </div>
     </div>
 
     <!-- Legacy Version Files Banner (Workspace Scope Only) -->
-    <div v-if="currentScope === 'workspace' && detectedLegacies.length > 0" class="legacy-banner glass-card" id="legacy-detected-banner">
+    <div
+      v-if="currentScope === 'workspace' && detectedLegacies.length > 0"
+      class="legacy-banner glass-card"
+      id="legacy-detected-banner"
+    >
       <div class="legacy-banner-left">
         <span class="legacy-banner-icon">
           <TechIcon id="workbench:about" :size="16" />
@@ -59,7 +76,8 @@
             {{ t("runtimes.legacy_banner", { files: detectedLegacies.join(", ") }) }}
           </span>
           <span class="legacy-banner-sub">
-            Seamlessly active via zero-configuration compatibility. You can keep them or import to workspace configuration for unified governance.
+            Seamlessly active via zero-configuration compatibility. You can keep them or import to workspace
+            configuration for unified governance.
           </span>
         </div>
       </div>
@@ -70,9 +88,9 @@
           @click="migrateLegacy"
           :disabled="migrating"
         >
-          <span style="display: inline-flex; align-items: center; gap: 4px;">
+          <span style="display: inline-flex; align-items: center; gap: 4px">
             <TechIcon id="workbench:tasks" :size="12" :colored="false" />
-            {{ migrating ? "Importing..." : (t("runtimes.import_legacy") || "一键导入至工作区") }}
+            {{ migrating ? "Importing..." : t("runtimes.import_legacy") || "一键导入至工作区" }}
           </span>
         </button>
       </div>
@@ -101,7 +119,10 @@
           v-if="scopeMissingCount > 0"
           class="stat-badge stat-badge-missing clickable"
           :class="{ active: filterOnlyMissing }"
-          :title="t('runtimes.missing_tooltip', { count: scopeMissingCount }) || `当前作用域有 ${scopeMissingCount} 个工具配置了但本地尚未安装，点击快速筛选`"
+          :title="
+            t('runtimes.missing_tooltip', { count: scopeMissingCount }) ||
+            `当前作用域有 ${scopeMissingCount} 个工具配置了但本地尚未安装，点击快速筛选`
+          "
           @click="filterOnlyMissing = !filterOnlyMissing"
         >
           <span class="badge-dot warning-dot">●</span>
@@ -112,7 +133,12 @@
         <span
           class="stat-badge"
           :class="{ highlight: scopeUpgradableCount > 0, clickable: scopeUpgradableCount > 0 }"
-          :title="scopeUpgradableCount > 0 ? (t('runtimes.upgradable_tooltip', { count: scopeUpgradableCount }) || `当前作用域有 ${scopeUpgradableCount} 个工具可升级，点击查看详情`) : ''"
+          :title="
+            scopeUpgradableCount > 0
+              ? t('runtimes.upgradable_tooltip', { count: scopeUpgradableCount }) ||
+                `当前作用域有 ${scopeUpgradableCount} 个工具可升级，点击查看详情`
+              : ''
+          "
           @click="scopeUpgradableCount > 0 ? (isDiffDrawerOpen = true) : undefined"
         >
           <b>{{ scopeUpgradableCount }}</b> {{ t("runtimes.count_upgradable_suffix") || "个可升级" }}
@@ -140,11 +166,7 @@
           </button>
         </div>
 
-        <button
-          class="tool-action-btn primary small"
-          id="btn-add-runtime"
-          @click="openAddModal"
-        >
+        <button class="tool-action-btn primary small" id="btn-add-runtime" @click="openAddModal">
           <span>+ {{ t("runtimes.add_runtime") || "添加运行环境" }}</span>
         </button>
       </div>
@@ -156,12 +178,14 @@
         <TechIcon id="workbench:tools" :size="32" :colored="false" />
       </div>
       <div class="empty-title">
-        {{ currentScope === 'user' ? '用户默认环境暂未配置工具' : '当前工作区暂未配置工具' }}
+        {{ currentScope === "user" ? "用户默认环境暂未配置工具" : "当前工作区暂未配置工具" }}
       </div>
       <p class="empty-desc">
-        {{ currentScope === 'user'
-            ? '用户区配置文件 (~/.config/unirtm/unirtm.toml) 提供未绑定工作区时的全局兜底环境，可通过上方「+ 添加运行环境」进行配置。'
-            : '工作区配置文件 (.unirtm.toml) 暂无匹配工具，可通过上方「+ 添加运行环境」添加。' }}
+        {{
+          currentScope === "user"
+            ? "用户区配置文件 (~/.config/unirtm/unirtm.toml) 提供未绑定工作区时的全局兜底环境，可通过上方「+ 添加运行环境」进行配置。"
+            : "工作区配置文件 (.unirtm.toml) 暂无匹配工具，可通过上方「+ 添加运行环境」添加。"
+        }}
       </p>
       <button class="tool-action-btn primary small" @click="openAddModal">
         <span>+ {{ t("runtimes.add_runtime") || "添加运行环境" }}</span>
@@ -198,7 +222,7 @@
                   class="runtime-version-badge is-muted font-mono"
                   :title="t('runtimes.unconfigured')"
                 >
-                  {{ t('runtimes.unconfigured') }}
+                  {{ t("runtimes.unconfigured") }}
                 </span>
 
                 <!-- 2. 已配置但未安装 (Missing) -> 琥珀警示色 -->
@@ -208,7 +232,11 @@
                   :title="`工作区配置了 ${formatVersion(getToolStatus(rt).configuredVersion)}，但本地磁盘尚未安装`"
                 >
                   <span class="missing-dot">●</span>
-                  <span>{{ formatVersion(getToolStatus(rt).configuredVersion) }} ({{ t('runtimes.status_missing') || '待安装' }})</span>
+                  <span
+                    >{{ formatVersion(getToolStatus(rt).configuredVersion) }} ({{
+                      t("runtimes.status_missing") || "待安装"
+                    }})</span
+                  >
                 </span>
 
                 <!-- 3. 已安装且已就绪 (Ready) -> 沉稳中性低噪音，不展示任何图标 -->
@@ -276,10 +304,18 @@
                   :class="{ 'is-pinned': rt.pinned }"
                   :id="'btn-pin-' + rt.id"
                   @click.stop="handleTogglePinFromMenu(rt)"
-                  :title="rt.pinned ? (rt.pin_reason ? `${t('runtimes.action_unlock')}：${rt.pin_reason}` : t('runtimes.action_unlock')) : t('runtimes.action_lock')"
+                  :title="
+                    rt.pinned
+                      ? rt.pin_reason
+                        ? `${t('runtimes.action_unlock')}：${rt.pin_reason}`
+                        : t('runtimes.action_unlock')
+                      : t('runtimes.action_lock')
+                  "
                 >
                   <TechIcon :id="rt.pinned ? 'workbench:unlock' : 'workbench:lock'" :size="13" />
-                  <span>{{ rt.pinned ? (t("runtimes.action_unlock") || "解除锁定") : (t("runtimes.action_lock") || "锁定版本") }}</span>
+                  <span>{{
+                    rt.pinned ? t("runtimes.action_unlock") || "解除锁定" : t("runtimes.action_lock") || "锁定版本"
+                  }}</span>
                 </button>
                 <div class="dropdown-divider"></div>
                 <button
@@ -341,7 +377,7 @@
                   class="runtime-version-badge is-muted font-mono"
                   :title="t('runtimes.unconfigured')"
                 >
-                  {{ t('runtimes.unconfigured') }}
+                  {{ t("runtimes.unconfigured") }}
                 </span>
                 <span
                   v-else-if="getToolStatus(rt).state === 'missing'"
@@ -349,7 +385,11 @@
                   :title="`配置了 ${formatVersion(getToolStatus(rt).configuredVersion)}，但本地尚未下载安装`"
                 >
                   <span class="missing-dot">●</span>
-                  <span>{{ formatVersion(getToolStatus(rt).configuredVersion) }} ({{ t('runtimes.status_missing') || '待安装' }})</span>
+                  <span
+                    >{{ formatVersion(getToolStatus(rt).configuredVersion) }} ({{
+                      t("runtimes.status_missing") || "待安装"
+                    }})</span
+                  >
                 </span>
                 <span
                   v-else
@@ -368,7 +408,9 @@
                   <span class="upgrade-arrow">↑</span>
                   <span>{{ formatVersion(getToolStatus(rt).upgradableVersion!) }}</span>
                 </button>
-                <span v-if="rt.pinned" class="pin-indicator" :title="rt.pin_reason || t('runtimes.action_lock')">📌</span>
+                <span v-if="rt.pinned" class="pin-indicator" :title="rt.pin_reason || t('runtimes.action_lock')"
+                  >📌</span
+                >
               </div>
             </td>
 
@@ -418,10 +460,20 @@
                         :class="{ 'is-pinned': rt.pinned }"
                         :id="'btn-pin-row-' + rt.id"
                         @click.stop="handleTogglePinFromMenu(rt)"
-                        :title="rt.pinned ? (rt.pin_reason ? `${t('runtimes.action_unlock')}：${rt.pin_reason}` : t('runtimes.action_unlock')) : t('runtimes.action_lock')"
+                        :title="
+                          rt.pinned
+                            ? rt.pin_reason
+                              ? `${t('runtimes.action_unlock')}：${rt.pin_reason}`
+                              : t('runtimes.action_unlock')
+                            : t('runtimes.action_lock')
+                        "
                       >
                         <TechIcon :id="rt.pinned ? 'workbench:unlock' : 'workbench:lock'" :size="13" />
-                        <span>{{ rt.pinned ? (t("runtimes.action_unlock") || "解除锁定") : (t("runtimes.action_lock") || "锁定版本") }}</span>
+                        <span>{{
+                          rt.pinned
+                            ? t("runtimes.action_unlock") || "解除锁定"
+                            : t("runtimes.action_lock") || "锁定版本"
+                        }}</span>
                       </button>
                       <div class="dropdown-divider"></div>
                       <button
@@ -443,7 +495,6 @@
       </table>
     </div>
 
-
     <!-- Switch Version Modal -->
     <div
       v-if="isSwitchModalOpen && switchModalRuntime"
@@ -462,7 +513,11 @@
                 {{ formatToolTitle(switchModalRuntime.name) }} · {{ t("runtimes.switch_version") }}
               </h3>
               <p class="modal-desc">
-                {{ currentScope === 'user' ? t('runtimes.switch_scope_user_tip') : t('runtimes.switch_scope_workspace_tip') }}
+                {{
+                  currentScope === "user"
+                    ? t("runtimes.switch_scope_user_tip")
+                    : t("runtimes.switch_scope_workspace_tip")
+                }}
               </p>
             </div>
           </div>
@@ -484,12 +539,18 @@
                 'is-active': ver === getCurrentVersion(switchModalRuntime),
                 'is-inactive': ver !== getCurrentVersion(switchModalRuntime),
               }"
-              :title="ver === getCurrentVersion(switchModalRuntime) ? t('runtimes.active_badge') : `${t('runtimes.action_switch')}: ${formatVersion(ver)}`"
+              :title="
+                ver === getCurrentVersion(switchModalRuntime)
+                  ? t('runtimes.active_badge')
+                  : `${t('runtimes.action_switch')}: ${formatVersion(ver)}`
+              "
               @click="handleSelectVersionAndClose(switchModalRuntime, ver)"
             >
               <span v-if="ver === getCurrentVersion(switchModalRuntime)" class="pill-active-dot">●</span>
               <span class="pill-ver-text">{{ formatVersion(ver) }}</span>
-              <span v-if="ver === getCurrentVersion(switchModalRuntime)" class="pill-active-tag">{{ t("runtimes.active_badge") }}</span>
+              <span v-if="ver === getCurrentVersion(switchModalRuntime)" class="pill-active-tag">{{
+                t("runtimes.active_badge")
+              }}</span>
             </button>
           </div>
 
@@ -541,7 +602,9 @@
             </span>
             <div class="scope-opt-text">
               <span class="scope-opt-name">{{ t("runtimes.scope_workspace") || "工作区" }}</span>
-              <span class="scope-opt-desc">{{ t("runtimes.scope_workspace_tip") || "应用于当前工作区，随团队项目协作生效" }}</span>
+              <span class="scope-opt-desc">{{
+                t("runtimes.scope_workspace_tip") || "应用于当前工作区，随团队项目协作生效"
+              }}</span>
             </div>
           </label>
           <label class="modal-scope-item" :class="{ active: modalInstallScope === 'user' }">
@@ -551,7 +614,9 @@
             </span>
             <div class="scope-opt-text">
               <span class="scope-opt-name">{{ t("runtimes.scope_user") || "用户" }}</span>
-              <span class="scope-opt-desc">{{ t("runtimes.scope_user_tip") || "应用于本机所有工作区的默认兜底版本" }}</span>
+              <span class="scope-opt-desc">{{
+                t("runtimes.scope_user_tip") || "应用于本机所有工作区的默认兜底版本"
+              }}</span>
             </div>
           </label>
         </div>
@@ -569,13 +634,15 @@
         </div>
 
         <!-- Quick Major Filter Tags -->
-        <div v-if="quickFilterTags.length > 0 || (selectedRuntime?.installed_versions && selectedRuntime.installed_versions.length > 0)" class="quick-filter-chips">
-          <button
-            class="filter-chip"
-            :class="{ active: selectedMajorFilter === '' }"
-            @click="selectedMajorFilter = ''"
-          >
-            {{ t('runtimes.all_versions') || '全部' }}
+        <div
+          v-if="
+            quickFilterTags.length > 0 ||
+            (selectedRuntime?.installed_versions && selectedRuntime.installed_versions.length > 0)
+          "
+          class="quick-filter-chips"
+        >
+          <button class="filter-chip" :class="{ active: selectedMajorFilter === '' }" @click="selectedMajorFilter = ''">
+            {{ t("runtimes.all_versions") || "全部" }}
           </button>
           <button
             v-if="selectedRuntime?.installed_versions && selectedRuntime.installed_versions.length > 0"
@@ -623,43 +690,51 @@
               <div class="custom-ver-header">
                 <span class="font-mono ver-name">{{ formatVersion(cleanCustomVersion) }}</span>
                 <span class="custom-badge font-mono">
-                  {{ t('runtimes.custom_version_unlisted') || '官方未收录' }}
+                  {{ t("runtimes.custom_version_unlisted") || "官方未收录" }}
                 </span>
               </div>
               <p class="custom-ver-desc">
-                {{ t('runtimes.custom_version_desc') || '该版本未包含在当前官方版本清单中。若您确认存在此构建，可尝试自定义安装。' }}
+                {{
+                  t("runtimes.custom_version_desc") ||
+                  "该版本未包含在当前官方版本清单中。若您确认存在此构建，可尝试自定义安装。"
+                }}
               </p>
               <button
                 class="install-action-btn"
                 :disabled="installingVer === cleanCustomVersion"
                 @click="installRemoteVersion(selectedRuntime?.id || '', cleanCustomVersion)"
               >
-                <span v-if="installingVer === cleanCustomVersion">{{ t("runtimes.installing") || "Installing..." }}</span>
+                <span v-if="installingVer === cleanCustomVersion">{{
+                  t("runtimes.installing") || "Installing..."
+                }}</span>
                 <span v-else>{{ t("runtimes.install_custom_btn") || "尝试安装自定义版本" }}</span>
               </button>
             </div>
           </div>
 
-          <div
-            v-else
-            v-for="rv in filteredRemoteVersions"
-            :key="rv.version"
-            class="remote-ver-row"
-          >
+          <div v-else v-for="rv in filteredRemoteVersions" :key="rv.version" class="remote-ver-row">
             <div class="remote-ver-info">
               <span class="font-mono ver-name">{{ formatVersion(rv.version) }}</span>
               <span
                 v-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)"
                 class="installed-tag"
                 :class="{ 'active-scope-tag': isActiveInModalScope(selectedRuntime?.id || '', rv.version) }"
-                :title="isActiveInModalScope(selectedRuntime?.id || '', rv.version) ? '当前生效且已安装在本地' : '已保存在本地共享安装池中，切换无需下载'"
+                :title="
+                  isActiveInModalScope(selectedRuntime?.id || '', rv.version)
+                    ? '当前生效且已安装在本地'
+                    : '已保存在本地共享安装池中，切换无需下载'
+                "
               >
                 {{ t("runtimes.installed") || "已安装" }}
               </span>
               <span
                 v-else-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version)"
                 class="installed-tag is-missing"
-                :title="modalInstallScope === 'user' ? '用户默认已配置该版本，但本地尚未下载安装' : '工作区已配置该版本，但本地尚未下载安装'"
+                :title="
+                  modalInstallScope === 'user'
+                    ? '用户默认已配置该版本，但本地尚未下载安装'
+                    : '工作区已配置该版本，但本地尚未下载安装'
+                "
               >
                 {{ t("runtimes.status_missing") || "待安装" }}
               </span>
@@ -668,18 +743,35 @@
             <button
               class="install-action-btn"
               :class="{
-                'is-active-ver': isActiveInModalScope(selectedRuntime?.id || '', rv.version) && isAlreadyInstalled(selectedRuntime?.id || '', rv.version),
-                'is-installed': isAlreadyInstalled(selectedRuntime?.id || '', rv.version) && !isActiveInModalScope(selectedRuntime?.id || '', rv.version)
+                'is-active-ver':
+                  isActiveInModalScope(selectedRuntime?.id || '', rv.version) &&
+                  isAlreadyInstalled(selectedRuntime?.id || '', rv.version),
+                'is-installed':
+                  isAlreadyInstalled(selectedRuntime?.id || '', rv.version) &&
+                  !isActiveInModalScope(selectedRuntime?.id || '', rv.version),
               }"
-              :disabled="installingVer === rv.version || (isActiveInModalScope(selectedRuntime?.id || '', rv.version) && isAlreadyInstalled(selectedRuntime?.id || '', rv.version))"
+              :disabled="
+                installingVer === rv.version ||
+                (isActiveInModalScope(selectedRuntime?.id || '', rv.version) &&
+                  isAlreadyInstalled(selectedRuntime?.id || '', rv.version))
+              "
               @click="installRemoteVersion(selectedRuntime?.id || '', rv.version)"
             >
               <span v-if="installingVer === rv.version">{{ t("runtimes.installing") || "Installing..." }}</span>
-              <span v-else-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version) && isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">
+              <span
+                v-else-if="
+                  isActiveInModalScope(selectedRuntime?.id || '', rv.version) &&
+                  isAlreadyInstalled(selectedRuntime?.id || '', rv.version)
+                "
+              >
                 {{ t("runtimes.active_badge") || "当前使用" }}
               </span>
               <span v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">
-                {{ modalInstallScope === 'user' ? (t("runtimes.set_user") || '设为用户') : (t("runtimes.set_workspace") || '设为工作区') }}
+                {{
+                  modalInstallScope === "user"
+                    ? t("runtimes.set_user") || "设为用户"
+                    : t("runtimes.set_workspace") || "设为工作区"
+                }}
               </span>
               <span v-else>{{ t("runtimes.install_apply") || "安装并应用" }}</span>
             </button>
@@ -698,10 +790,14 @@
             </span>
             <div>
               <h3 class="modal-title">{{ t("runtimes.add_runtime") || "添加工具" }}</h3>
-              <p class="modal-desc">为当前{{ currentScope === 'user' ? '用户默认' : '工作区' }}添加工具与版本</p>
+              <p class="modal-desc">为当前{{ currentScope === "user" ? "用户默认" : "工作区" }}添加工具与版本</p>
             </div>
           </div>
-          <button class="btn btn-icon modal-close-btn" @click="isAddModalOpen = false" :title="t('runtimes.close') || '关闭'">
+          <button
+            class="btn btn-icon modal-close-btn"
+            @click="isAddModalOpen = false"
+            :title="t('runtimes.close') || '关闭'"
+          >
             <TechIcon id="workbench:close" :size="14" />
           </button>
         </div>
@@ -732,11 +828,7 @@
               >
                 + {{ t("common.add") }}
               </button>
-              <span
-                v-else
-                class="preset-added-badge"
-                :title="t('tools.already_added')"
-              >
+              <span v-else class="preset-added-badge" :title="t('tools.already_added')">
                 ✓ {{ t("tools.already_added") }}
               </span>
             </div>
@@ -755,11 +847,7 @@
                 class="custom-prefix-select"
                 :title="t('tools.custom.prefix_hint') || '选择工具生态或 Provider 前缀'"
               >
-                <option
-                  v-for="opt in COMMON_TOOL_PREFIXES"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
+                <option v-for="opt in COMMON_TOOL_PREFIXES" :key="opt.value" :value="opt.value">
                   {{ opt.label }}
                 </option>
               </select>
@@ -814,23 +902,25 @@
     </div>
 
     <!-- Version Diff & Batch Update Drawer/Modal -->
-    <div
-      v-if="isDiffDrawerOpen"
-      class="modal-backdrop diff-drawer-backdrop"
-      @click.self="isDiffDrawerOpen = false"
-    >
+    <div v-if="isDiffDrawerOpen" class="modal-backdrop diff-drawer-backdrop" @click.self="isDiffDrawerOpen = false">
       <div class="diff-drawer glass-card" role="dialog" aria-modal="true" id="diff-drawer-container">
         <!-- Header -->
         <div class="diff-drawer-header">
           <div>
             <h3 class="diff-drawer-title">可升级工具</h3>
             <p class="diff-drawer-desc">
-              {{ filteredUpdateResults.length > 0
-                ? `发现 ${filteredUpdateResults.length} 个工具可升级至最新版本，请勾选后确认应用。`
-                : "当前所有工具均已是最新版本。" }}
+              {{
+                filteredUpdateResults.length > 0
+                  ? `发现 ${filteredUpdateResults.length} 个工具可升级至最新版本，请勾选后确认应用。`
+                  : "当前所有工具均已是最新版本。"
+              }}
             </p>
           </div>
-          <button class="btn btn-icon modal-close-btn" @click="isDiffDrawerOpen = false" :title="t('common.close') || '关闭'">
+          <button
+            class="btn btn-icon modal-close-btn"
+            @click="isDiffDrawerOpen = false"
+            :title="t('common.close') || '关闭'"
+          >
             <TechIcon id="workbench:close" :size="14" />
           </button>
         </div>
@@ -838,11 +928,7 @@
         <!-- Select All Bar -->
         <div v-if="filteredUpdateResults.length > 0" class="diff-select-all-bar">
           <label class="diff-select-all-label">
-            <input
-              type="checkbox"
-              :checked="isAllUpdatableSelected"
-              @change="toggleSelectAllUpdatable"
-            />
+            <input type="checkbox" :checked="isAllUpdatableSelected" @change="toggleSelectAllUpdatable" />
             <span>全选所有可升级工具 ({{ filteredUpdateResults.length }})</span>
           </label>
         </div>
@@ -863,11 +949,7 @@
               :class="{ 'is-selected': selectedUpdateTools.includes(item.id) }"
             >
               <div class="diff-item-left">
-                <input
-                  type="checkbox"
-                  :value="item.id"
-                  v-model="selectedUpdateTools"
-                />
+                <input type="checkbox" :value="item.id" v-model="selectedUpdateTools" />
                 <TechIcon :id="item.id" :size="24" :colored="true" />
                 <div class="diff-tool-name-col">
                   <span class="diff-tool-title font-mono">{{ formatToolTitle(item.name || item.id) }}</span>
@@ -881,7 +963,7 @@
               </div>
               <div class="diff-version-transition">
                 <span class="diff-ver-old font-mono" :title="`当前版本: ${formatVersion(item.current_version)}`">
-                  {{ formatVersion(item.current_version) || '未指定' }}
+                  {{ formatVersion(item.current_version) || "未指定" }}
                 </span>
                 <span class="diff-ver-arrow">→</span>
                 <span class="diff-ver-new font-mono" :title="`可升级至最新: ${formatVersion(item.latest_version)}`">
@@ -900,11 +982,7 @@
             </span>
           </div>
           <div class="diff-footer-actions">
-            <button
-              class="tool-action-btn secondary"
-              @click="isDiffDrawerOpen = false"
-              :disabled="batchUpdating"
-            >
+            <button class="tool-action-btn secondary" @click="isDiffDrawerOpen = false" :disabled="batchUpdating">
               取消
             </button>
             <button
@@ -921,7 +999,6 @@
       </div>
     </div>
   </div>
-
 </template>
 
 <script setup lang="ts">
@@ -1015,9 +1092,7 @@ const migrating = ref(false);
 const searchKey = ref("");
 
 // View mode: 'cards' or 'list'
-const viewMode = ref<"cards" | "list">(
-  (localStorage.getItem("unirtm_view_mode_tools") as "cards" | "list") || "cards"
-);
+const viewMode = ref<"cards" | "list">((localStorage.getItem("unirtm_view_mode_tools") as "cards" | "list") || "cards");
 function setViewMode(mode: "cards" | "list") {
   viewMode.value = mode;
   localStorage.setItem("unirtm_view_mode_tools", mode);
@@ -1053,11 +1128,7 @@ const customToolName = ref("");
 const customToolVersion = ref("");
 
 const customSpec = computed(() => {
-  return composeToolSpec(
-    customPrefix.value,
-    customToolName.value,
-    customToolVersion.value
-  );
+  return composeToolSpec(customPrefix.value, customToolName.value, customToolVersion.value);
 });
 
 const customPlaceholder = computed(() => {
@@ -1104,9 +1175,7 @@ const isAllUpdatableSelected = computed(() => {
 function toggleSelectAllUpdatable() {
   const updatableIds = filteredUpdateResults.value.map((r) => r.id);
   if (isAllUpdatableSelected.value) {
-    selectedUpdateTools.value = selectedUpdateTools.value.filter(
-      (id) => !updatableIds.includes(id)
-    );
+    selectedUpdateTools.value = selectedUpdateTools.value.filter((id) => !updatableIds.includes(id));
   } else {
     const newSet = new Set([...selectedUpdateTools.value, ...updatableIds]);
     selectedUpdateTools.value = Array.from(newSet);
@@ -1302,7 +1371,11 @@ async function confirmRemoveRuntime(rt: RuntimeItem) {
   const scopeName = isGlobal ? "用户配置" : "工作区";
   if (rt.pinned) {
     const reasonText = rt.pin_reason ? `（锁定原因：${rt.pin_reason}）` : "";
-    if (!window.confirm(`警告：工具 ${rt.name} 当前处于版本锁定保护状态${reasonText}。\n确定要强制将其从${scopeName}中移除吗？`)) {
+    if (
+      !window.confirm(
+        `警告：工具 ${rt.name} 当前处于版本锁定保护状态${reasonText}。\n确定要强制将其从${scopeName}中移除吗？`
+      )
+    ) {
       return;
     }
   }
@@ -1380,10 +1453,7 @@ const filteredRuntimes = computed(() => {
 });
 function isToolUpgradable(rt: RuntimeItem): boolean {
   if (rt.pinned) return false;
-  return Boolean(
-    getLocalUpgradableVersion(rt, currentScope.value) ||
-    getRemoteUpgradableVersion(rt.id)
-  );
+  return Boolean(getLocalUpgradableVersion(rt, currentScope.value) || getRemoteUpgradableVersion(rt.id));
 }
 
 const scopeUpgradableCount = computed(() => {
@@ -1456,7 +1526,7 @@ function compareSemverDesc(a: string, b: string): number {
 function getLocalUpgradableVersion(rt: RuntimeItem, scope: "workspace" | "user" = currentScope.value): string | null {
   if (rt.pinned) return null;
 
-  const currentVer = scope === "workspace" ? (rt.active_version || rt.global_version) : rt.global_version;
+  const currentVer = scope === "workspace" ? rt.active_version || rt.global_version : rt.global_version;
   if (!currentVer || !rt.installed_versions || rt.installed_versions.length === 0) {
     return null;
   }
@@ -1492,10 +1562,7 @@ function getRemoteUpgradableVersion(toolId: string): string | null {
     const rNorm = normId(r.id || "");
     const rShort = shortName(r.id || "");
     const rName = (r.name || "").toLowerCase();
-    return (
-      (targetNorm && rNorm === targetNorm) ||
-      (targetShort && (rShort === targetShort || rName === targetShort))
-    );
+    return (targetNorm && rNorm === targetNorm) || (targetShort && (rShort === targetShort || rName === targetShort));
   });
   if (!match || !match.has_update || match.pinned || !match.latest_version) {
     return null;
@@ -1504,13 +1571,10 @@ function getRemoteUpgradableVersion(toolId: string): string | null {
     if (r.id === toolId || r.name === toolId) return true;
     const rNorm = normId(r.id || "");
     const rShort = shortName(r.id || "");
-    return (
-      (targetNorm && rNorm === targetNorm) ||
-      (targetShort && rShort === targetShort)
-    );
+    return (targetNorm && rNorm === targetNorm) || (targetShort && rShort === targetShort);
   });
   if (rt) {
-    const cur = currentScope.value === "workspace" ? (rt.active_version || rt.global_version) : rt.global_version;
+    const cur = currentScope.value === "workspace" ? rt.active_version || rt.global_version : rt.global_version;
     if (cur) {
       const cleanCur = cur.replace(/^[vV]+/, "").trim();
       const cleanLatest = match.latest_version.replace(/^[vV]+/, "").trim();
@@ -1555,9 +1619,6 @@ function openInstallFromSwitch(rt: RuntimeItem) {
   closeSwitchVersionModal();
   openRemoteModal(rt);
 }
-
-
-
 
 const quickFilterTags = computed(() => {
   const versions = remoteVersions.value.map((v) => v.version.replace(/^v/, ""));
@@ -1637,7 +1698,6 @@ const filteredRemoteVersions = computed(() => {
   return list;
 });
 
-
 function isAlreadyInstalled(toolId: string, ver: string): boolean {
   const rt = runtimes.value.find((r) => r.id === toolId);
   if (!rt || !rt.installed_versions) return false;
@@ -1682,9 +1742,7 @@ async function togglePin(rt: RuntimeItem) {
   const prevReason = rt.pin_reason;
 
   if (rt.pinned) {
-    const ok = window.confirm(
-      `确定解除 ${rt.name} 的版本锁定吗？\n解除后将允许自由切换或升级该工具的版本。`
-    );
+    const ok = window.confirm(`确定解除 ${rt.name} 的版本锁定吗？\n解除后将允许自由切换或升级该工具的版本。`);
     if (!ok) return;
 
     // Optimistic update
@@ -1741,7 +1799,7 @@ async function togglePin(rt: RuntimeItem) {
 }
 
 async function quickSwitch(toolId: string, ver: string, targetGlobal?: boolean) {
-  const isGlobal = targetGlobal !== undefined ? targetGlobal : (currentScope.value === "user");
+  const isGlobal = targetGlobal !== undefined ? targetGlobal : currentScope.value === "user";
   const scopeName = isGlobal ? "用户" : "工作区";
 
   // Check if tool is currently pinned
@@ -1801,7 +1859,6 @@ async function quickSwitch(toolId: string, ver: string, targetGlobal?: boolean) 
     emit("log-event", "ERROR", `Failed to switch version: ${err.message}`);
   }
 }
-
 
 async function migrateLegacy() {
   migrating.value = true;
@@ -2065,11 +2122,7 @@ async function runBatchUpdate() {
     }
     showToast(msg, "success");
     isDiffDrawerOpen.value = false;
-    emit(
-      "log-event",
-      "INFO",
-      `Batch updated ${updatedCount} tools (${isGlobal ? "user" : "workspace"})`
-    );
+    emit("log-event", "INFO", `Batch updated ${updatedCount} tools (${isGlobal ? "user" : "workspace"})`);
     await fetchStatus();
   } catch (err: any) {
     showToast(`批量升级失败: ${err.message}`, "error");
@@ -2134,7 +2187,6 @@ onBeforeUnmount(() => {
     remoteModalAbortController = null;
   }
 });
-
 </script>
 
 <style scoped>
@@ -2514,7 +2566,9 @@ onBeforeUnmount(() => {
   min-width: 0;
   text-decoration: none;
   cursor: pointer;
-  transition: color 0.15s ease, text-decoration 0.15s ease;
+  transition:
+    color 0.15s ease,
+    text-decoration 0.15s ease;
 }
 
 .runtime-name:hover {
@@ -2624,7 +2678,6 @@ onBeforeUnmount(() => {
   font-size: 0.76rem;
 }
 
-
 .runtime-version-badge.is-muted {
   background: rgba(148, 163, 184, 0.12);
   color: #94a3b8;
@@ -2674,7 +2727,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
   white-space: nowrap;
 }
-
 
 /* Status box */
 .runtime-status-box {
@@ -2784,9 +2836,6 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   border: 1px solid var(--card-border);
 }
-
-
-
 
 /* Installed versions */
 .installed-versions-section {
@@ -2963,7 +3012,9 @@ onBeforeUnmount(() => {
   background: var(--card-bg, #1e293b);
   border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
   border-radius: 8px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 0 12px var(--accent-cyan-glow, rgba(2, 132, 199, 0.15));
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.35),
+    0 0 12px var(--accent-cyan-glow, rgba(2, 132, 199, 0.15));
   padding: 0.35rem;
   z-index: 50;
   min-width: 140px;
@@ -2975,7 +3026,9 @@ onBeforeUnmount(() => {
 [data-theme="light"] .runtime-dropdown-menu {
   background: #ffffff;
   border-color: #e2e8f0;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 12px rgba(2, 132, 199, 0.1);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 0 12px rgba(2, 132, 199, 0.1);
 }
 
 .runtime-dropdown-menu .dropdown-item {
@@ -3042,7 +3095,6 @@ onBeforeUnmount(() => {
   opacity: 0;
   transform: translateY(-4px) scale(0.98);
 }
-
 
 /* Modal */
 .modal-backdrop {
@@ -3222,7 +3274,6 @@ onBeforeUnmount(() => {
   background: #10b981;
   color: #fff;
 }
-
 
 /* Modal Scope Picker */
 .modal-scope-picker {
@@ -4433,7 +4484,6 @@ onBeforeUnmount(() => {
 [data-theme="light"] .tool-table-row:hover {
   background: rgba(2, 132, 199, 0.03);
 }
-
 
 :root[data-theme="light"] .view-mode-toggle,
 [data-theme="light"] .view-mode-toggle {

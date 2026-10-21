@@ -15,12 +15,8 @@ describe("useGit composable", () => {
       upstream: "origin/dev",
       ahead: 1,
       behind: 0,
-      staged: [
-        { path: "src/main.ts", status: "M", label: "modified" },
-      ],
-      unstaged: [
-        { path: "src/test.ts", status: "A", label: "added" },
-      ],
+      staged: [{ path: "src/main.ts", status: "M", label: "modified" }],
+      unstaged: [{ path: "src/test.ts", status: "A", label: "added" }],
       totalChanges: 2,
     };
 
@@ -57,10 +53,13 @@ describe("useGit composable", () => {
     const { stage } = useGit();
     const result = await stage(["src/foo.ts"]);
     expect(result).toBe(true);
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/stage", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ paths: ["src/foo.ts"] }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/stage",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ paths: ["src/foo.ts"] }),
+      })
+    );
   });
 
   it("stageChunk stages specific file and notifies workspace bus", async () => {
@@ -84,10 +83,13 @@ describe("useGit composable", () => {
       type: "modified",
     });
     expect(result).toBe(true);
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/stage", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ paths: ["src/bar.ts"] }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/stage",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ paths: ["src/bar.ts"] }),
+      })
+    );
   });
 
   it("commit sends commit message", async () => {
@@ -107,10 +109,13 @@ describe("useGit composable", () => {
     const { commit } = useGit();
     const result = await commit("feat: add scm");
     expect(result).toBe(true);
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/commit", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ message: "feat: add scm", amend: false }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/commit",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ message: "feat: add scm", amend: false }),
+      })
+    );
   });
 
   it("fetchDiff returns diff payload", async () => {
@@ -134,7 +139,14 @@ describe("useGit composable", () => {
 
   it("fetchLog fetches commit history and updates commits ref", async () => {
     const mockCommits = [
-      { hash: "abc12345", shortHash: "abc1234", author: "dev", email: "dev@test.com", timestamp: 123456789, message: "init" },
+      {
+        hash: "abc12345",
+        shortHash: "abc1234",
+        author: "dev",
+        email: "dev@test.com",
+        timestamp: 123456789,
+        message: "init",
+      },
     ];
 
     global.fetch = vi.fn().mockResolvedValue({
@@ -296,13 +308,7 @@ describe("useGit composable", () => {
       });
     });
 
-    const {
-      createTag,
-      createBranchFromCommit,
-      cherryPick,
-      revertCommit,
-      resetToCommit,
-    } = useGit();
+    const { createTag, createBranchFromCommit, cherryPick, revertCommit, resetToCommit } = useGit();
 
     await createTag("v1.0.0", "c2", "first release");
     expect(global.fetch).toHaveBeenCalledWith("/api/git/tag", expect.objectContaining({ method: "POST" }));
@@ -336,10 +342,13 @@ describe("useGit composable", () => {
 
     const { commit } = useGit();
     await commit("feat: signed commit", false, true);
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/commit", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ message: "feat: signed commit", amend: false, sign: true }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/commit",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ message: "feat: signed commit", amend: false, sign: true }),
+      })
+    );
   });
 
   it("fetchCommitDetail and fetchGraph preserve gpg metadata", async () => {
@@ -380,15 +389,7 @@ describe("useGit composable", () => {
       });
     });
 
-    const {
-      renameBranch,
-      deleteBranch,
-      mergeBranch,
-      rebaseBranch,
-      pushBranch,
-      deleteTag,
-      pushTag,
-    } = useGit();
+    const { renameBranch, deleteBranch, mergeBranch, rebaseBranch, pushBranch, deleteTag, pushTag } = useGit();
 
     await renameBranch("old", "new");
     expect(global.fetch).toHaveBeenCalledWith("/api/git/branch/rename", expect.objectContaining({ method: "POST" }));
@@ -409,10 +410,13 @@ describe("useGit composable", () => {
     expect(global.fetch).toHaveBeenCalledWith("/api/git/tag/delete", expect.objectContaining({ method: "POST" }));
 
     await pushTag("v1.0.0", true);
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/tag/push", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ name: "v1.0.0", force: true }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/tag/push",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ name: "v1.0.0", force: true }),
+      })
+    );
   });
 
   it("fetchCompare fetches comparison between two commits", async () => {
@@ -431,9 +435,7 @@ describe("useGit composable", () => {
         timestamp: 123457,
         message: "Second commit",
       },
-      files: [
-        { path: "src/app.ts", status: "M", additions: 5, deletions: 1 },
-      ],
+      files: [{ path: "src/app.ts", status: "M", additions: 5, deletions: 1 }],
       totalAdditions: 5,
       totalDeletions: 1,
     };
@@ -464,20 +466,29 @@ describe("useGit composable", () => {
     const { stashUncommitted, resetUncommitted, cleanUntracked } = useGit();
 
     await stashUncommitted("WIP changes", true);
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/stash", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ message: "WIP changes", includeUntracked: true }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/stash",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ message: "WIP changes", includeUntracked: true }),
+      })
+    );
 
     await resetUncommitted();
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/reset-uncommitted", expect.objectContaining({
-      method: "POST",
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/reset-uncommitted",
+      expect.objectContaining({
+        method: "POST",
+      })
+    );
 
     await cleanUntracked();
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/clean", expect.objectContaining({
-      method: "POST",
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/clean",
+      expect.objectContaining({
+        method: "POST",
+      })
+    );
   });
 
   it("stashApply, stashPop, stashDrop, stashBranch call respective endpoints", async () => {
@@ -491,28 +502,40 @@ describe("useGit composable", () => {
     const { stashApply, stashPop, stashDrop, stashBranch } = useGit();
 
     await stashApply("stash@{1}");
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/stash/apply", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ stash: "stash@{1}" }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/stash/apply",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ stash: "stash@{1}" }),
+      })
+    );
 
     await stashPop("stash@{0}");
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/stash/pop", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ stash: "stash@{0}" }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/stash/pop",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ stash: "stash@{0}" }),
+      })
+    );
 
     await stashDrop("stash@{2}");
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/stash/drop", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ stash: "stash@{2}" }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/stash/drop",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ stash: "stash@{2}" }),
+      })
+    );
 
     await stashBranch("feat-stash-branch", "stash@{0}");
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/stash/branch", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ branch: "feat-stash-branch", stash: "stash@{0}" }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/stash/branch",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ branch: "feat-stash-branch", stash: "stash@{0}" }),
+      })
+    );
   });
 
   it("pull and fetchRemote call respective endpoints", async () => {
@@ -526,15 +549,21 @@ describe("useGit composable", () => {
     const { pull, fetchRemote } = useGit();
 
     await pull(true);
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/pull", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ rebase: true }),
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/pull",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ rebase: true }),
+      })
+    );
 
     await fetchRemote();
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/fetch", expect.objectContaining({
-      method: "POST",
-    }));
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/fetch",
+      expect.objectContaining({
+        method: "POST",
+      })
+    );
   });
 
   it("fetchGraph and loadMoreCommits support pagination and infinite scrolling", async () => {
@@ -576,15 +605,8 @@ describe("useGit composable", () => {
       });
     });
 
-    const {
-      graphCommits,
-      graphLimit,
-      hasMoreCommits,
-      isLoadingMore,
-      fetchGraph,
-      loadMoreCommits,
-      resetGraphLimit,
-    } = useGit();
+    const { graphCommits, graphLimit, hasMoreCommits, isLoadingMore, fetchGraph, loadMoreCommits, resetGraphLimit } =
+      useGit();
 
     resetGraphLimit();
     expect(graphLimit.value).toBe(200);
@@ -610,8 +632,26 @@ describe("useGit composable", () => {
 
   it("fetchRepositories fetches list of repositories and defaults activeRepo", async () => {
     const mockRepos = [
-      { id: "UniRTM", name: "UniRTM", rootPath: "/path/to/UniRTM", branch: "dev", ahead: 0, behind: 0, isDirty: false, totalChanges: 0 },
-      { id: "template", name: "template", rootPath: "/path/to/template", branch: "main", ahead: 2, behind: 0, isDirty: true, totalChanges: 1 },
+      {
+        id: "UniRTM",
+        name: "UniRTM",
+        rootPath: "/path/to/UniRTM",
+        branch: "dev",
+        ahead: 0,
+        behind: 0,
+        isDirty: false,
+        totalChanges: 0,
+      },
+      {
+        id: "template",
+        name: "template",
+        rootPath: "/path/to/template",
+        branch: "main",
+        ahead: 2,
+        behind: 0,
+        isDirty: true,
+        totalChanges: 1,
+      },
     ];
 
     global.fetch = vi.fn().mockImplementation((url: string) => {
@@ -644,7 +684,16 @@ describe("useGit composable", () => {
   });
 
   it("setActiveRepo passes repo parameter and header in git calls", async () => {
-    const mockRepo = { id: "template", name: "template", rootPath: "/path/to/template", branch: "main", ahead: 2, behind: 0, isDirty: true, totalChanges: 1 };
+    const mockRepo = {
+      id: "template",
+      name: "template",
+      rootPath: "/path/to/template",
+      branch: "main",
+      ahead: 2,
+      behind: 0,
+      isDirty: true,
+      totalChanges: 1,
+    };
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ branch: "main", staged: [], unstaged: [] }),
@@ -668,8 +717,26 @@ describe("useGit composable", () => {
 
   it("restores activeRepo from localStorage upon fetchRepositories", async () => {
     const mockRepos = [
-      { id: "repo-A", name: "repo-A", rootPath: "/path/to/repo-A", branch: "dev", ahead: 0, behind: 0, isDirty: false, totalChanges: 0 },
-      { id: "repo-B", name: "repo-B", rootPath: "/path/to/repo-B", branch: "main", ahead: 1, behind: 0, isDirty: false, totalChanges: 0 },
+      {
+        id: "repo-A",
+        name: "repo-A",
+        rootPath: "/path/to/repo-A",
+        branch: "dev",
+        ahead: 0,
+        behind: 0,
+        isDirty: false,
+        totalChanges: 0,
+      },
+      {
+        id: "repo-B",
+        name: "repo-B",
+        rootPath: "/path/to/repo-B",
+        branch: "main",
+        ahead: 1,
+        behind: 0,
+        isDirty: false,
+        totalChanges: 0,
+      },
     ];
 
     global.fetch = vi.fn().mockImplementation((url: string) => {
@@ -690,9 +757,15 @@ describe("useGit composable", () => {
       let store: Record<string, string> = { unirtm_active_git_repo: "repo-B" };
       return {
         getItem: (key: string) => store[key] || null,
-        setItem: (key: string, value: string) => { store[key] = value; },
-        removeItem: (key: string) => { delete store[key]; },
-        clear: () => { store = {}; },
+        setItem: (key: string, value: string) => {
+          store[key] = value;
+        },
+        removeItem: (key: string) => {
+          delete store[key];
+        },
+        clear: () => {
+          store = {};
+        },
       };
     })();
     Object.defineProperty(global, "localStorage", {
@@ -716,6 +789,3 @@ describe("useGit composable", () => {
     (activeRepo as any).value = null;
   });
 });
-
-
-

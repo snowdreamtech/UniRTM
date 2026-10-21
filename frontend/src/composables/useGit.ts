@@ -214,7 +214,7 @@ export function useGit() {
   const { showToast } = useToast();
 
   const currentBranch = computed(() => status.value.branch || "HEAD");
-  const totalChanges = computed(() => (status.value.staged.length + status.value.unstaged.length));
+  const totalChanges = computed(() => status.value.staged.length + status.value.unstaged.length);
   const hasStagedChanges = computed(() => status.value.staged.length > 0);
   const hasUnstagedChanges = computed(() => status.value.unstaged.length > 0);
 
@@ -270,7 +270,7 @@ export function useGit() {
         behind: data.behind || 0,
         staged: stagedList,
         unstaged: unstagedList,
-        totalChanges: data.totalChanges ?? (stagedList.length + unstagedList.length),
+        totalChanges: data.totalChanges ?? stagedList.length + unstagedList.length,
       };
       return status.value;
     } catch (err: any) {
@@ -636,11 +636,7 @@ export function useGit() {
   /**
    * Fetches diff for a file in a specific historical commit vs its parent.
    */
-  async function fetchCommitDiff(
-    hash: string,
-    path: string,
-    parentHash?: string
-  ): Promise<GitCommitDiffResult | null> {
+  async function fetchCommitDiff(hash: string, path: string, parentHash?: string): Promise<GitCommitDiffResult | null> {
     try {
       const q = new URLSearchParams({ hash, path });
       if (parentHash) q.set("parent", parentHash);
@@ -708,11 +704,7 @@ export function useGit() {
   /**
    * Creates a new branch pointing to a specific commit.
    */
-  async function createBranchFromCommit(
-    name: string,
-    hash: string,
-    checkoutBranch: boolean = false
-  ): Promise<boolean> {
+  async function createBranchFromCommit(name: string, hash: string, checkoutBranch: boolean = false): Promise<boolean> {
     try {
       const res = await gitFetch("/api/git/branch/create", {
         method: "POST",
@@ -779,10 +771,7 @@ export function useGit() {
   /**
    * Resets branch to specific commit.
    */
-  async function resetToCommit(
-    hash: string,
-    mode: "soft" | "mixed" | "hard" = "mixed"
-  ): Promise<boolean> {
+  async function resetToCommit(hash: string, mode: "soft" | "mixed" | "hard" = "mixed"): Promise<boolean> {
     try {
       const res = await gitFetch("/api/git/reset", {
         method: "POST",
@@ -846,11 +835,7 @@ export function useGit() {
   /**
    * Merges specified branch into current branch.
    */
-  async function mergeBranch(
-    branch: string,
-    noFf: boolean = false,
-    squash: boolean = false
-  ): Promise<boolean> {
+  async function mergeBranch(branch: string, noFf: boolean = false, squash: boolean = false): Promise<boolean> {
     try {
       const res = await gitFetch("/api/git/branch/merge", {
         method: "POST",
@@ -892,11 +877,7 @@ export function useGit() {
   /**
    * Pushes branch to remote.
    */
-  async function pushBranch(
-    branch: string,
-    setUpstream: boolean = false,
-    force: boolean = false
-  ): Promise<boolean> {
+  async function pushBranch(branch: string, setUpstream: boolean = false, force: boolean = false): Promise<boolean> {
     try {
       const res = await gitFetch("/api/git/branch/push", {
         method: "POST",
@@ -1222,7 +1203,10 @@ export function useGit() {
             activeRepo.value = matched;
           }
         }
-        if (!activeRepo.value || !repositories.value.some((r) => r.id === activeRepo.value?.id || r.rootPath === activeRepo.value?.rootPath)) {
+        if (
+          !activeRepo.value ||
+          !repositories.value.some((r) => r.id === activeRepo.value?.id || r.rootPath === activeRepo.value?.rootPath)
+        ) {
           activeRepo.value = repositories.value[0];
           persistActiveRepo(activeRepo.value);
         }
@@ -1241,7 +1225,9 @@ export function useGit() {
    */
   async function setActiveRepo(repoOrId: GitRepositoryItem | string): Promise<void> {
     if (typeof repoOrId === "string") {
-      const target = repositories.value.find((r) => r.id === repoOrId || r.name === repoOrId || r.rootPath === repoOrId);
+      const target = repositories.value.find(
+        (r) => r.id === repoOrId || r.name === repoOrId || r.rootPath === repoOrId
+      );
       if (target) {
         activeRepo.value = target;
       } else {

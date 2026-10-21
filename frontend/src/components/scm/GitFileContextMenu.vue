@@ -9,21 +9,17 @@
       @click="handleOverlayClick"
       @contextmenu.prevent="handleOverlayClick"
     >
-      <div
-        class="git-file-menu"
-        :style="menuStyle"
-        @click.stop
-      >
+      <div class="git-file-menu" :style="menuStyle" @click.stop>
         <!-- 1. Open Changes -->
         <div class="menu-item" @click="triggerAction('open-changes')">
           <span class="codicon codicon-diff-single item-icon"></span>
-          <span class="item-label">{{ t('scm.file_menu.open_changes') }}</span>
+          <span class="item-label">{{ t("scm.file_menu.open_changes") }}</span>
         </div>
 
         <!-- 2. Open File -->
         <div class="menu-item" @click="triggerAction('open-file')">
           <span class="codicon codicon-go-to-file item-icon"></span>
-          <span class="item-label">{{ t('scm.file_menu.open_file') }}</span>
+          <span class="item-label">{{ t("scm.file_menu.open_file") }}</span>
         </div>
 
         <div class="menu-separator"></div>
@@ -32,17 +28,17 @@
         <template v-if="file.isStaged">
           <div class="menu-item" @click="triggerAction('unstage')">
             <span class="codicon codicon-remove item-icon"></span>
-            <span class="item-label">{{ t('scm.file_menu.unstage') }}</span>
+            <span class="item-label">{{ t("scm.file_menu.unstage") }}</span>
           </div>
         </template>
         <template v-else>
           <div class="menu-item" @click="triggerAction('stage')">
             <span class="codicon codicon-add item-icon"></span>
-            <span class="item-label">{{ t('scm.file_menu.stage') }}</span>
+            <span class="item-label">{{ t("scm.file_menu.stage") }}</span>
           </div>
           <div class="menu-item danger" @click="triggerAction('discard')">
             <span class="codicon codicon-discard item-icon"></span>
-            <span class="item-label">{{ t('scm.file_menu.discard') }}</span>
+            <span class="item-label">{{ t("scm.file_menu.discard") }}</span>
           </div>
         </template>
 
@@ -51,17 +47,17 @@
         <!-- 4. Reveal in Explorer View -->
         <div class="menu-item" @click="triggerAction('reveal-explorer')">
           <span class="codicon codicon-folder-opened item-icon"></span>
-          <span class="item-label">{{ t('scm.file_menu.reveal_explorer') }}</span>
+          <span class="item-label">{{ t("scm.file_menu.reveal_explorer") }}</span>
         </div>
 
         <!-- 5. Copy Path & Relative Path -->
         <div class="menu-item" @click="triggerAction('copy-path')">
           <span class="codicon codicon-copy item-icon"></span>
-          <span class="item-label">{{ t('scm.file_menu.copy_path') }}</span>
+          <span class="item-label">{{ t("scm.file_menu.copy_path") }}</span>
         </div>
         <div class="menu-item" @click="triggerAction('copy-relative-path')">
           <span class="codicon codicon-files item-icon"></span>
-          <span class="item-label">{{ t('scm.file_menu.copy_relative_path') }}</span>
+          <span class="item-label">{{ t("scm.file_menu.copy_relative_path") }}</span>
         </div>
       </div>
     </div>

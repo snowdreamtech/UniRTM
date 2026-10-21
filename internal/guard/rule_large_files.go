@@ -47,7 +47,10 @@ func (r *LargeFilesRule) Execute(ctx context.Context, files []string, opts Execu
 		default:
 		}
 
-		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
+		fullPath := rel
+		if !filepath.IsAbs(fullPath) {
+			fullPath = filepath.Join(opts.WorkspaceDir, rel)
+		}
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 {
 			continue

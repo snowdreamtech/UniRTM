@@ -241,5 +241,3 @@ DATABASE_URL=postgres://localhost:5432/db
 		t.Fatalf("Expected 200 for /api/ports/workspace-hints, got %d", rr.Code)
 	}
 }
-
-

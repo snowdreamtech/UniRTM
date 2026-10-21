@@ -60,10 +60,7 @@
           "description": "Machine-specific preferred integrated shell or terminal binary path (e.g. '/bin/bash', '/usr/bin/zsh', 'pwsh'). Recommended in global configuration only."
         },
         "cache_ttl": {
-          "oneOf": [
-            { "type": "integer" },
-            { "type": "string" }
-          ],
+          "oneOf": [{ "type": "integer" }, { "type": "string" }],
           "description": "Metadata and package cache time-to-live (e.g. '168h', 604800, '7d')"
         },
         "jobs": {
@@ -84,10 +81,7 @@
           "description": "GitHub release download accelerator prefix"
         },
         "task_timeout": {
-          "oneOf": [
-            { "type": "integer" },
-            { "type": "string" }
-          ],
+          "oneOf": [{ "type": "integer" }, { "type": "string" }],
           "description": "Default execution timeout for tasks (e.g. '10m', 600)"
         },
         "task_output": {
@@ -141,11 +135,7 @@
       "type": "object",
       "description": "Environment variables injected into subshells and tasks. Supports Jinja2/Pongo2 templating.",
       "additionalProperties": {
-        "oneOf": [
-          { "type": "string" },
-          { "type": "number" },
-          { "type": "boolean" }
-        ]
+        "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "boolean" }]
       }
     },
     "tasks": {

@@ -4,8 +4,11 @@
     <div v-if="repositories.length > 0" class="scm-changes-group scm-repositories-group">
       <div class="group-header" @click="isReposExpanded = !isReposExpanded">
         <div class="group-left">
-          <span class="codicon twistie" :class="isReposExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
-          <span class="group-title">{{ t('scm.repositories') || '存储库' }}</span>
+          <span
+            class="codicon twistie"
+            :class="isReposExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"
+          ></span>
+          <span class="group-title">{{ t("scm.repositories") || "存储库" }}</span>
           <span class="group-count">{{ repositories.length }}</span>
         </div>
         <div class="group-actions" @click.stop>
@@ -27,18 +30,14 @@
           <span class="codicon codicon-repo repo-icon"></span>
           <span class="repo-name">{{ repo.name }}</span>
           <span class="repo-branch-pill">
-            <span class="repo-branch-name">{{ repo.branch }}{{ repo.isDirty ? '*' : '' }}</span>
+            <span class="repo-branch-name">{{ repo.branch }}{{ repo.isDirty ? "*" : "" }}</span>
             <span v-if="repo.behind > 0 || repo.ahead > 0" class="repo-sync-pill">
               <span v-if="repo.ahead > 0">↑{{ repo.ahead }}</span>
               <span v-if="repo.behind > 0">↓{{ repo.behind }}</span>
             </span>
           </span>
           <div class="repo-item-actions" @click.stop>
-            <button
-              class="item-action-btn"
-              :title="t('scm.actions.more')"
-              @click="openRepoActions($event, repo)"
-            >
+            <button class="item-action-btn" :title="t('scm.actions.more')" @click="openRepoActions($event, repo)">
               <span class="codicon codicon-ellipsis"></span>
             </button>
           </div>
@@ -48,7 +47,11 @@
 
     <!-- 1. SCM Header: Branch info & Sync -->
     <div class="scm-header-bar">
-      <div class="branch-selector" :title="`${t('scm.branch.current')}: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''}`" @click="isBranchMenuOpen = !isBranchMenuOpen">
+      <div
+        class="branch-selector"
+        :title="`${t('scm.branch.current')}: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''}`"
+        @click="isBranchMenuOpen = !isBranchMenuOpen"
+      >
         <span class="codicon codicon-git-branch"></span>
         <span class="branch-name">{{ currentBranch }}</span>
         <span v-if="status.ahead > 0 || status.behind > 0" class="branch-sync-pill">
@@ -59,11 +62,7 @@
       </div>
 
       <div class="scm-header-actions">
-        <button
-          class="scm-action-btn"
-          :title="t('scm.tabs.graph')"
-          @click.stop="openGitGraph"
-        >
+        <button class="scm-action-btn" :title="t('scm.tabs.graph')" @click.stop="openGitGraph">
           <span class="codicon codicon-git-commit"></span>
         </button>
         <button
@@ -74,11 +73,7 @@
         >
           <span class="codicon codicon-refresh"></span>
         </button>
-        <button
-          class="scm-action-btn"
-          :title="t('scm.actions.more')"
-          @click.stop="toggleMoreMenu"
-        >
+        <button class="scm-action-btn" :title="t('scm.actions.more')" @click.stop="toggleMoreMenu">
           <span class="codicon codicon-ellipsis"></span>
         </button>
       </div>
@@ -87,7 +82,7 @@
     <!-- Branch Dropdown Popover -->
     <div v-if="isBranchMenuOpen" class="branch-dropdown-menu">
       <div class="branch-dropdown-header">
-        <span>{{ t('scm.branch.switch') }}</span>
+        <span>{{ t("scm.branch.switch") }}</span>
         <button class="branch-close-btn" @click="isBranchMenuOpen = false">×</button>
       </div>
       <div class="branch-list">
@@ -100,7 +95,7 @@
         >
           <span class="codicon" :class="b.current ? 'codicon-check' : 'codicon-git-branch'"></span>
           <span class="branch-item-name">{{ b.name }}</span>
-          <span v-if="b.remote" class="branch-remote-tag">{{ t('scm.branch.remote') }}</span>
+          <span v-if="b.remote" class="branch-remote-tag">{{ t("scm.branch.remote") }}</span>
         </div>
       </div>
     </div>
@@ -130,11 +125,22 @@
           {{ p.label }}
         </span>
       </div>
-      <div v-else class="commit-validation-bar" :class="{ 'is-valid': commitValidation.isValid, 'is-warning': !commitValidation.isValid || commitValidation.warning }">
+      <div
+        v-else
+        class="commit-validation-bar"
+        :class="{
+          'is-valid': commitValidation.isValid,
+          'is-warning': !commitValidation.isValid || commitValidation.warning,
+        }"
+      >
         <div class="validation-status-left">
           <span class="codicon" :class="commitValidation.isValid ? 'codicon-pass' : 'codicon-warning'"></span>
-          <span v-if="commitValidation.isValid" class="validation-type-badge">{{ commitValidation.type }}<span v-if="commitValidation.scope">({{ commitValidation.scope }})</span></span>
-          <span class="validation-msg">{{ commitValidation.warning || (t('scm.commit.conventional_valid') || 'Conventional Commits 合规') }}</span>
+          <span v-if="commitValidation.isValid" class="validation-type-badge"
+            >{{ commitValidation.type }}<span v-if="commitValidation.scope">({{ commitValidation.scope }})</span></span
+          >
+          <span class="validation-msg">{{
+            commitValidation.warning || t("scm.commit.conventional_valid") || "Conventional Commits 合规"
+          }}</span>
         </div>
         <button
           v-if="commitValidation.canAutoFix"
@@ -143,7 +149,7 @@
           @click.stop="handleAutoFixCommitMessage"
         >
           <span class="codicon codicon-wand"></span>
-          <span>{{ t('guard.actions.fix') || '规范化' }}</span>
+          <span>{{ t("guard.actions.fix") || "规范化" }}</span>
         </button>
       </div>
 
@@ -151,7 +157,7 @@
         <label class="gpg-sign-toggle" :title="t('scm.sidebar.gpg_sign')">
           <input type="checkbox" v-model="signCommit" class="gpg-sign-checkbox" />
           <span class="codicon codicon-verified gpg-sign-icon"></span>
-          <span class="gpg-sign-text">{{ t('scm.sidebar.gpg_sign') }}</span>
+          <span class="gpg-sign-text">{{ t("scm.sidebar.gpg_sign") }}</span>
         </label>
       </div>
 
@@ -170,8 +176,11 @@
             :title="t('guard.actions.auto_fix') || '一键自动修复'"
             @click.stop="() => handleRunGuardFix()"
           >
-            <span class="codicon" :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"></span>
-            <span>{{ t('guard.actions.fix') || '自动修复' }}</span>
+            <span
+              class="codicon"
+              :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"
+            ></span>
+            <span>{{ t("guard.actions.fix") || "自动修复" }}</span>
           </button>
           <button
             class="guard-btn-refresh"
@@ -187,7 +196,7 @@
       <!-- Expandable Guard Diagnostics Dropdown (Only when there are issues) -->
       <div v-if="isGuardDetailsOpen && guardStatus.issues.length > 0" class="guard-diagnostics-drawer">
         <div class="guard-drawer-header">
-          <span class="guard-drawer-title">{{ t('guard.diagnostics.title') || '质量守卫诊断结果' }}</span>
+          <span class="guard-drawer-title">{{ t("guard.diagnostics.title") || "质量守卫诊断结果" }}</span>
           <button class="guard-close-btn" @click="isGuardDetailsOpen = false">×</button>
         </div>
         <div class="guard-issues-list">
@@ -200,7 +209,9 @@
           >
             <span class="codicon" :class="iss.severity === 'error' ? 'codicon-error' : 'codicon-warning'"></span>
             <div class="guard-issue-info">
-              <span class="guard-issue-file font-mono">{{ iss.file_path }}<span v-if="iss.line" class="issue-line-badge">:{{ iss.line }}</span></span>
+              <span class="guard-issue-file font-mono"
+                >{{ iss.file_path }}<span v-if="iss.line" class="issue-line-badge">:{{ iss.line }}</span></span
+              >
               <span class="guard-issue-msg">{{ iss.message }}</span>
             </div>
             <button
@@ -209,20 +220,16 @@
               :title="t('guard.actions.auto_fix') || '自动修复此文件'"
               @click.stop="handleRunGuardFix([iss.file_path])"
             >
-              ⚡ {{ t('guard.fixable') || '可修复' }}
+              ⚡ {{ t("guard.fixable") || "可修复" }}
             </button>
           </div>
         </div>
       </div>
 
-      <button
-        class="commit-btn"
-        :disabled="isCommitting || !commitMessage.trim()"
-        @click="handleCommit"
-      >
+      <button class="commit-btn" :disabled="isCommitting || !commitMessage.trim()" @click="handleCommit">
         <span v-if="isCommitting" class="codicon codicon-loading codicon-modifier-spin"></span>
         <span v-else class="codicon codicon-check"></span>
-        <span>{{ t('scm.sidebar.commit') }}</span>
+        <span>{{ t("scm.sidebar.commit") }}</span>
       </button>
     </div>
 
@@ -230,8 +237,11 @@
     <div class="scm-changes-group">
       <div class="group-header" @click="isStagedExpanded = !isStagedExpanded">
         <div class="group-left">
-          <span class="codicon twistie" :class="isStagedExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
-          <span class="group-title">{{ t('scm.sidebar.staged') }}</span>
+          <span
+            class="codicon twistie"
+            :class="isStagedExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"
+          ></span>
+          <span class="group-title">{{ t("scm.sidebar.staged") }}</span>
           <span class="group-count">{{ status.staged.length }}</span>
         </div>
         <div class="group-actions" @click.stop>
@@ -265,25 +275,17 @@
           </div>
           <span class="change-status-badge" :class="'badge-' + item.status">{{ item.status }}</span>
           <div class="change-item-actions" @click.stop>
-            <button
-              class="item-action-btn"
-              :title="t('scm.diff.open_file')"
-              @click="handleOpenFileInEditor(item.path)"
-            >
+            <button class="item-action-btn" :title="t('scm.diff.open_file')" @click="handleOpenFileInEditor(item.path)">
               <span class="codicon codicon-go-to-file"></span>
             </button>
-            <button
-              class="item-action-btn"
-              :title="t('scm.diff.unstage_file')"
-              @click="handleUnstageFile(item.path)"
-            >
+            <button class="item-action-btn" :title="t('scm.diff.unstage_file')" @click="handleUnstageFile(item.path)">
               <span class="codicon codicon-remove"></span>
             </button>
           </div>
         </div>
 
         <div v-if="status.staged.length === 0" class="empty-hint">
-          <span>{{ t('scm.sidebar.no_staged') }}</span>
+          <span>{{ t("scm.sidebar.no_staged") }}</span>
         </div>
       </div>
     </div>
@@ -292,8 +294,11 @@
     <div class="scm-changes-group">
       <div class="group-header" @click="isUnstagedExpanded = !isUnstagedExpanded">
         <div class="group-left">
-          <span class="codicon twistie" :class="isUnstagedExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
-          <span class="group-title">{{ t('scm.sidebar.unstaged') }}</span>
+          <span
+            class="codicon twistie"
+            :class="isUnstagedExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"
+          ></span>
+          <span class="group-title">{{ t("scm.sidebar.unstaged") }}</span>
           <span class="group-count">{{ status.unstaged.length }}</span>
         </div>
         <div class="group-actions" @click.stop>
@@ -335,32 +340,20 @@
           </div>
           <span class="change-status-badge" :class="'badge-' + item.status">{{ item.status }}</span>
           <div class="change-item-actions" @click.stop>
-            <button
-              class="item-action-btn"
-              :title="t('scm.diff.open_file')"
-              @click="handleOpenFileInEditor(item.path)"
-            >
+            <button class="item-action-btn" :title="t('scm.diff.open_file')" @click="handleOpenFileInEditor(item.path)">
               <span class="codicon codicon-go-to-file"></span>
             </button>
-            <button
-              class="item-action-btn"
-              :title="t('scm.diff.discard_file')"
-              @click="handleDiscardFile(item.path)"
-            >
+            <button class="item-action-btn" :title="t('scm.diff.discard_file')" @click="handleDiscardFile(item.path)">
               <span class="codicon codicon-discard"></span>
             </button>
-            <button
-              class="item-action-btn"
-              :title="t('scm.diff.stage_file')"
-              @click="handleStageFile(item.path)"
-            >
+            <button class="item-action-btn" :title="t('scm.diff.stage_file')" @click="handleStageFile(item.path)">
               <span class="codicon codicon-add"></span>
             </button>
           </div>
         </div>
 
         <div v-if="status.unstaged.length === 0" class="empty-hint">
-          <span>{{ t('scm.sidebar.clean_working_tree') }}</span>
+          <span>{{ t("scm.sidebar.clean_working_tree") }}</span>
         </div>
       </div>
     </div>
@@ -466,17 +459,17 @@ const activeModalType = ref<GitModalActionType | null>(null);
 const modalTargetRefName = ref<string | undefined>(undefined);
 
 const quickCommitPrefixes = [
-  { label: 'feat', prefix: 'feat: ', title: '新功能 (Feature)' },
-  { label: 'fix', prefix: 'fix: ', title: '修复缺陷 (Bug fix)' },
-  { label: 'docs', prefix: 'docs: ', title: '文档变更 (Documentation)' },
-  { label: 'style', prefix: 'style: ', title: '代码格式 (Code style)' },
-  { label: 'refactor', prefix: 'refactor: ', title: '代码重构 (Refactor)' },
-  { label: 'perf', prefix: 'perf: ', title: '性能优化 (Performance)' },
-  { label: 'test', prefix: 'test: ', title: '测试用例 (Test)' },
-  { label: 'build', prefix: 'build: ', title: '构建与依赖 (Build)' },
-  { label: 'ci', prefix: 'ci: ', title: '持续集成 (CI/CD)' },
-  { label: 'chore', prefix: 'chore: ', title: '日常维护 (Chore)' },
-  { label: 'revert', prefix: 'revert: ', title: '代码回滚 (Revert)' },
+  { label: "feat", prefix: "feat: ", title: "新功能 (Feature)" },
+  { label: "fix", prefix: "fix: ", title: "修复缺陷 (Bug fix)" },
+  { label: "docs", prefix: "docs: ", title: "文档变更 (Documentation)" },
+  { label: "style", prefix: "style: ", title: "代码格式 (Code style)" },
+  { label: "refactor", prefix: "refactor: ", title: "代码重构 (Refactor)" },
+  { label: "perf", prefix: "perf: ", title: "性能优化 (Performance)" },
+  { label: "test", prefix: "test: ", title: "测试用例 (Test)" },
+  { label: "build", prefix: "build: ", title: "构建与依赖 (Build)" },
+  { label: "ci", prefix: "ci: ", title: "持续集成 (CI/CD)" },
+  { label: "chore", prefix: "chore: ", title: "日常维护 (Chore)" },
+  { label: "revert", prefix: "revert: ", title: "代码回滚 (Revert)" },
 ];
 
 const commitValidation = computed<CommitMessageValidation>(() => {
@@ -510,8 +503,10 @@ const fileContextMenuPos = ref({ x: 0, y: 0 });
 const fileContextMenuTarget = ref<ContextMenuTargetFile | null>(null);
 
 const commitPlaceholder = computed(() => {
-  return t('scm.sidebar.commit_placeholder_branch', { branch: currentBranch.value }) ||
-    `消息(按Enter在“${currentBranch.value}”提交)`;
+  return (
+    t("scm.sidebar.commit_placeholder_branch", { branch: currentBranch.value }) ||
+    `消息(按Enter在“${currentBranch.value}”提交)`
+  );
 });
 
 onMounted(async () => {
@@ -602,7 +597,8 @@ const guardLabelText = computed(() => {
   if (isGuardLoading.value) return t("guard.status.checking") || "守卫质检中...";
   if (isGuardFixing.value) return t("guard.status.fixing") || "正在自动修复...";
   if (guardStatus.value.errors_count > 0) return t("guard.status.blocked") || "拦截违规";
-  if (guardStatus.value.fixable_count > 0) return `${guardStatus.value.fixable_count} ` + (t("guard.status.fixable") || "处可自愈");
+  if (guardStatus.value.fixable_count > 0)
+    return `${guardStatus.value.fixable_count} ` + (t("guard.status.fixable") || "处可自愈");
   return t("guard.status.passed") || "质量守卫通过";
 });
 
@@ -679,13 +675,15 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   selectedDiffPath.value = path;
   selectedIsStaged.value = staged;
   // Navigate to SCM view with query parameters
-  router.push({
-    name: "scm",
-    query: {
-      path,
-      staged: String(staged),
-    },
-  }).catch(() => {});
+  router
+    .push({
+      name: "scm",
+      query: {
+        path,
+        staged: String(staged),
+      },
+    })
+    .catch(() => {});
 }
 
 function openFileContextMenu(event: MouseEvent, item: { path: string; status?: string }, isStaged: boolean) {
@@ -723,7 +721,6 @@ async function handleFileMenuAction(action: FileMenuActionType, file: ContextMen
       router.push({ name: "explorer" }).catch(() => {});
       break;
     case "copy-path":
-
       try {
         const fullPath = file.path.startsWith("/") ? file.path : `/${file.path}`;
         await navigator.clipboard.writeText(fullPath);
@@ -970,7 +967,9 @@ async function handleModalConfirm(payload: {
   user-select: none;
   background-color: var(--card-bg);
   position: relative;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 /* Branch bar */

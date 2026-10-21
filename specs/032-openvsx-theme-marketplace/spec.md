@@ -76,4 +76,3 @@ Connect UniRTM to [Open VSX Registry](https://open-vsx.org) to provide an integr
 - **100% Static Extraction**: No Node.js runtime, no Extension Host process.
 - **Proxy Aware**: All downloads flow through UniRTM's configured network proxy/mirrors if enabled.
 - **Offline Resilient**: Builtin themes (Dark, Light, Seti UI) remain 100% functional without internet connectivity.
-

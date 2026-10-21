@@ -3,15 +3,18 @@
     <!-- View Header -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
           <TechIcon id="workbench:tasks" :size="20" />
           <span>{{ t("tasks.title") || "任务流与工程自动化" }}</span>
         </h2>
         <p class="view-desc">
-          {{ t("tasks.desc") || "由 UniRTM 统一编排运行工程构建、依赖安全审计、代码格式化与自定义脚本，保障跨平台执行一致性。" }}
+          {{
+            t("tasks.desc") ||
+            "由 UniRTM 统一编排运行工程构建、依赖安全审计、代码格式化与自定义脚本，保障跨平台执行一致性。"
+          }}
         </p>
       </div>
-      <div class="view-actions" style="display: flex; gap: 8px; align-items: center;">
+      <div class="view-actions" style="display: flex; gap: 8px; align-items: center">
         <button class="tool-action-btn secondary" @click="fetchTasks" :disabled="loading" title="刷新任务列表">
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': loading }" />
           <span>{{ loading ? t("common.refreshing") || "刷新中..." : t("common.refresh") || "刷新" }}</span>
@@ -23,18 +26,31 @@
     <div class="scope-selection-bar glass-card" id="tasks-scope-bar">
       <div class="scope-context-pill">
         <span class="scope-badge" :class="activeScope">
-          <TechIcon :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'" :size="13" :colored="false" />
-          {{ activeScope === 'user' ? (t("runtimes.scope_user") || "用户全局任务") : (t("runtimes.scope_workspace") || "工作区项目任务") }}
+          <TechIcon
+            :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'"
+            :size="13"
+            :colored="false"
+          />
+          {{
+            activeScope === "user"
+              ? t("runtimes.scope_user") || "用户全局任务"
+              : t("runtimes.scope_workspace") || "工作区项目任务"
+          }}
         </span>
         <span class="scope-hint-text">
-          {{ activeScope === 'user'
-              ? (t("runtimes.scope_user_desc") || "展示当前用户全局配置文件 (~/.config/unirtm/unirtm.toml) 定义的任务")
-              : (t("runtimes.scope_workspace_desc") || "解析当前工作区项目配置文件 (.unirtm.toml) 定义的自动化任务") }}
+          {{
+            activeScope === "user"
+              ? t("runtimes.scope_user_desc") || "展示当前用户全局配置文件 (~/.config/unirtm/unirtm.toml) 定义的任务"
+              : t("runtimes.scope_workspace_desc") || "解析当前工作区项目配置文件 (.unirtm.toml) 定义的自动化任务"
+          }}
         </span>
       </div>
-      <div class="scope-context-config font-mono" :title="activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml'">
+      <div
+        class="scope-context-config font-mono"
+        :title="activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml'"
+      >
         <span class="file-icon">📄</span>
-        <span>{{ activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }}</span>
+        <span>{{ activeScope === "user" ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml" }}</span>
       </div>
     </div>
 
@@ -94,21 +110,29 @@
       <!-- Loading State -->
       <div v-if="loading && tasks.length === 0" class="tasks-empty-box">
         <TechIcon id="workbench:sync" :size="24" class="spin-icon" />
-        <span style="font-size: 0.85rem; color: var(--text-muted);">正在解析配置文件中的任务...</span>
+        <span style="font-size: 0.85rem; color: var(--text-muted)">正在解析配置文件中的任务...</span>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="filteredTasks.length === 0" class="tasks-empty-box">
         <TechIcon id="workbench:tasks" :size="32" :colored="false" />
         <div class="empty-title">
-          {{ searchKey ? `未找到匹配 "${searchKey}" 的任务` : (activeScope === 'user' ? '用户全局环境暂未定义任务' : '当前工作区配置文件暂未定义 [tasks]') }}
+          {{
+            searchKey
+              ? `未找到匹配 "${searchKey}" 的任务`
+              : activeScope === "user"
+                ? "用户全局环境暂未定义任务"
+                : "当前工作区配置文件暂未定义 [tasks]"
+          }}
         </div>
         <p class="empty-desc">
-          {{ activeScope === 'user'
-              ? '可在用户配置文件 (~/.config/unirtm/unirtm.toml) 中配置 [tasks.task-name] 定义通用任务。'
-              : '可在项目根目录的 .unirtm.toml 中添加 [tasks.task-name] 定义构建、测试与安全扫描等自动化脚本。' }}
+          {{
+            activeScope === "user"
+              ? "可在用户配置文件 (~/.config/unirtm/unirtm.toml) 中配置 [tasks.task-name] 定义通用任务。"
+              : "可在项目根目录的 .unirtm.toml 中添加 [tasks.task-name] 定义构建、测试与安全扫描等自动化脚本。"
+          }}
         </p>
-        <button v-if="!searchKey" class="tool-action-btn primary" style="margin-top: 0.75rem;" @click="openCreateModal">
+        <button v-if="!searchKey" class="tool-action-btn primary" style="margin-top: 0.75rem" @click="openCreateModal">
           <TechIcon id="workbench:edit" :size="14" />
           <span>{{ t("tasks.create_first") || "创建第一个任务" }}</span>
         </button>
@@ -124,7 +148,7 @@
         >
           <div class="task-info-side">
             <div class="task-name-line">
-              <span class="task-title font-mono" style="display: inline-flex; align-items: center; gap: 6px;">
+              <span class="task-title font-mono" style="display: inline-flex; align-items: center; gap: 6px">
                 <TechIcon id="workbench:tasks" :size="14" />
                 {{ task.name }}
               </span>
@@ -133,11 +157,7 @@
               </span>
               <div v-if="task.depends && task.depends.length > 0" class="task-depends-wrap">
                 <span class="depends-label">依赖:</span>
-                <span
-                  v-for="dep in task.depends"
-                  :key="dep"
-                  class="depends-pill font-mono"
-                >
+                <span v-for="dep in task.depends" :key="dep" class="depends-pill font-mono">
                   {{ dep }}
                 </span>
               </div>
@@ -181,11 +201,11 @@
               @click="executeTask(task)"
               :title="`运行任务: unirtm run ${task.name}`"
             >
-              <span v-if="runningTask === task.name" style="display: inline-flex; align-items: center; gap: 6px;">
+              <span v-if="runningTask === task.name" style="display: inline-flex; align-items: center; gap: 6px">
                 <TechIcon id="workbench:sync" :size="12" class="spin-icon" />
                 <span>{{ t("tasks.running") || "运行中..." }}</span>
               </span>
-              <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
+              <span v-else style="display: inline-flex; align-items: center; gap: 4px">
                 <TechIcon id="workbench:tasks" :size="12" :colored="false" />
                 <span>{{ t("tasks.run") || "运行" }}</span>
               </span>
@@ -242,7 +262,11 @@
                   <span v-if="task.description" class="table-task-desc" :title="task.description">
                     {{ task.description }}
                   </span>
-                  <span v-else-if="!task.depends || task.depends.length === 0" style="color: var(--text-muted); opacity: 0.5;">-</span>
+                  <span
+                    v-else-if="!task.depends || task.depends.length === 0"
+                    style="color: var(--text-muted); opacity: 0.5"
+                    >-</span
+                  >
                 </div>
               </td>
 
@@ -280,11 +304,11 @@
                     @click="executeTask(task)"
                     :title="`运行任务: unirtm run ${task.name}`"
                   >
-                    <span v-if="runningTask === task.name" style="display: inline-flex; align-items: center; gap: 4px;">
+                    <span v-if="runningTask === task.name" style="display: inline-flex; align-items: center; gap: 4px">
                       <TechIcon id="workbench:sync" :size="12" class="spin-icon" />
                       <span>{{ t("tasks.running") || "运行中..." }}</span>
                     </span>
-                    <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
+                    <span v-else style="display: inline-flex; align-items: center; gap: 4px">
                       <TechIcon id="workbench:tasks" :size="12" :colored="false" />
                       <span>{{ t("tasks.run") || "运行" }}</span>
                     </span>
@@ -313,28 +337,42 @@
     <div v-if="taskToDelete" class="modal-overlay" @click.self="taskToDelete = null">
       <div class="modal-card glass-modal delete-confirm-modal">
         <div class="modal-header">
-          <div class="header-title" style="color: #ef4444;">
+          <div class="header-title" style="color: #ef4444">
             <TechIcon id="workbench:warning" :size="20" />
-            <h3 style="margin: 0; font-size: 1.05rem;">{{ t("tasks.delete_title") || "确认删除任务" }}</h3>
+            <h3 style="margin: 0; font-size: 1.05rem">{{ t("tasks.delete_title") || "确认删除任务" }}</h3>
           </div>
           <button class="btn btn-icon close-btn" @click="taskToDelete = null" :title="t('common.close') || '关闭'">
             <TechIcon id="workbench:close" :size="14" />
           </button>
         </div>
-        <div class="modal-body" style="padding: 1.25rem 1.4rem;">
-          <p style="margin: 0 0 0.75rem 0; font-size: 0.85rem; color: var(--text-main);">
+        <div class="modal-body" style="padding: 1.25rem 1.4rem">
+          <p style="margin: 0 0 0.75rem 0; font-size: 0.85rem; color: var(--text-main)">
             {{ t("tasks.delete_confirm", { name: taskToDelete.name }) }}
           </p>
-          <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
-            {{ t("tasks.delete_warning", { file: activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }) }}
+          <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4">
+            {{
+              t("tasks.delete_warning", {
+                file: activeScope === "user" ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml",
+              })
+            }}
           </p>
-          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--card-border);">
+          <div
+            class="modal-footer"
+            style="
+              display: flex;
+              justify-content: flex-end;
+              gap: 0.75rem;
+              margin-top: 1.25rem;
+              padding-top: 1rem;
+              border-top: 1px solid var(--card-border);
+            "
+          >
             <button class="tool-action-btn secondary" @click="taskToDelete = null" :disabled="deletingTask">
               {{ t("common.cancel") || "取消" }}
             </button>
             <button class="tool-action-btn danger" @click="handleConfirmDelete" :disabled="deletingTask">
               <TechIcon v-if="deletingTask" id="workbench:sync" :size="14" class="spin-icon" />
-              <span>{{ deletingTask ? (t("common.deleting") || "删除中...") : (t("common.delete") || "确认删除") }}</span>
+              <span>{{ deletingTask ? t("common.deleting") || "删除中..." : t("common.delete") || "确认删除" }}</span>
             </button>
           </div>
         </div>
@@ -357,7 +395,13 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, category?: "output" | "tasks" | "doctor"): void;
+  (
+    e: "log-event",
+    level: "INFO" | "SUCCESS" | "WARN" | "ERROR",
+    msg: string,
+    detail?: string,
+    category?: "output" | "tasks" | "doctor"
+  ): void;
   (e: "task-started", taskName: string): void;
   (e: "task-finished", taskName: string): void;
 }>();
@@ -380,9 +424,7 @@ const loading = ref(false);
 const runningTask = ref<string | null>(null);
 const searchKey = ref("");
 
-const viewMode = ref<"cards" | "list">(
-  (localStorage.getItem("unirtm_view_mode_tasks") as "cards" | "list") || "cards"
-);
+const viewMode = ref<"cards" | "list">((localStorage.getItem("unirtm_view_mode_tasks") as "cards" | "list") || "cards");
 
 function setViewMode(mode: "cards" | "list") {
   viewMode.value = mode;
@@ -928,8 +970,12 @@ async function executeTask(task: ProjectTask) {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .task-actions-side {
@@ -1003,7 +1049,9 @@ async function executeTask(task: ProjectTask) {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 0 12px var(--accent-cyan-glow);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.25),
+    0 0 12px var(--accent-cyan-glow);
   padding: 0.35rem;
   z-index: 50;
   min-width: 130px;
@@ -1021,7 +1069,9 @@ async function executeTask(task: ProjectTask) {
 [data-theme="light"] .task-dropdown-menu {
   background: #ffffff;
   border-color: #e2e8f0;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 12px rgba(2, 132, 199, 0.1);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 0 12px rgba(2, 132, 199, 0.1);
 }
 
 .task-dropdown-menu .dropdown-item {

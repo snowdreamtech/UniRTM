@@ -8,7 +8,9 @@ let toastTimer: number | undefined;
 export function useToast() {
   function showToast(msg: string, type: "info" | "warning" | "error" | "success" = "info") {
     // Strip any leading emoji prefixes from the message text to avoid duplicate icons in Toast
-    const cleanMsg = msg ? msg.replace(/^[\s\uFE0F]*[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}][\s\uFE0F]*/u, "").trim() : "";
+    const cleanMsg = msg
+      ? msg.replace(/^[\s\uFE0F]*[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}][\s\uFE0F]*/u, "").trim()
+      : "";
     toastMessage.value = cleanMsg || msg;
     toastType.value = type;
     if (toastTimer) clearTimeout(toastTimer);

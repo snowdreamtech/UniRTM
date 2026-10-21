@@ -156,8 +156,8 @@ function connectWebSocket() {
 
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const host = window.location.host;
-  const cols = (term && term.cols > 10) ? term.cols : 80;
-  const rows = (term && term.rows > 5) ? term.rows : 24;
+  const cols = term && term.cols > 10 ? term.cols : 80;
+  const rows = term && term.rows > 5 ? term.rows : 24;
 
   lastSentCols = cols;
   lastSentRows = rows;
@@ -308,7 +308,6 @@ onMounted(() => {
 
   term.open(terminalContainer.value);
 
-
   // Load WebGL Addon with graceful fallback
   (async () => {
     if (typeof window === "undefined" || !term) return;
@@ -441,19 +440,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    class="xterm-pane-wrapper"
-    @click="emit('focus')"
-    @contextmenu.prevent="handleContextMenu"
-  >
+  <div class="xterm-pane-wrapper" @click="emit('focus')" @contextmenu.prevent="handleContextMenu">
     <div ref="terminalContainer" class="xterm-container"></div>
 
     <!-- Floating Search Widget -->
-    <TerminalSearchWidget
-      :visible="isSearchVisible"
-      :search-addon="searchAddonInstance"
-      @close="closeSearch"
-    />
+    <TerminalSearchWidget :visible="isSearchVisible" :search-addon="searchAddonInstance" @close="closeSearch" />
 
     <!-- Context Menu -->
     <TerminalContextMenu
@@ -476,10 +467,8 @@ onBeforeUnmount(() => {
     <div v-if="!isConnected && !isConnecting" class="xterm-overlay">
       <div class="xterm-overlay-card">
         <span class="overlay-icon">⚠️</span>
-        <span class="overlay-text">{{ connectionError || '终端会话已断开' }}</span>
-        <button class="overlay-reconnect-btn" @click.stop="reconnect">
-          重新连接
-        </button>
+        <span class="overlay-text">{{ connectionError || "终端会话已断开" }}</span>
+        <button class="overlay-reconnect-btn" @click.stop="reconnect">重新连接</button>
       </div>
     </div>
   </div>

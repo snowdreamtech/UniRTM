@@ -9,7 +9,7 @@ describe("useTerminalSessions composable", () => {
 
   it("creates initial session and active pane correctly", () => {
     const { sessions, activeSession, activePane, createSession } = useTerminalSessions();
-    
+
     expect(sessions.value.length).toBe(0);
     expect(activeSession.value).toBeNull();
 
@@ -24,7 +24,7 @@ describe("useTerminalSessions composable", () => {
 
   it("supports creating multiple sessions (tabs) and switching", () => {
     const { sessions, activeSession, createSession, setActiveSession } = useTerminalSessions();
-    
+
     const s1 = createSession({ name: "bash", path: "/bin/bash" });
     const s2 = createSession({ name: "zsh", path: "/bin/zsh" });
 
@@ -37,7 +37,7 @@ describe("useTerminalSessions composable", () => {
 
   it("supports splitting terminal vertically (1 into 2) and horizontally", () => {
     const { activeSession, createSession, splitActiveSession } = useTerminalSessions();
-    
+
     createSession({ name: "bash", path: "/bin/bash" });
     expect(activeSession.value?.panes.length).toBe(1);
 
@@ -55,7 +55,7 @@ describe("useTerminalSessions composable", () => {
 
   it("closes split pane and restores single pane", () => {
     const { activeSession, createSession, splitActiveSession, closePane } = useTerminalSessions();
-    
+
     createSession({ name: "bash", path: "/bin/bash" });
     const pane2 = splitActiveSession("vertical", { name: "zsh", path: "/bin/zsh" });
     expect(activeSession.value?.panes.length).toBe(2);
@@ -67,7 +67,7 @@ describe("useTerminalSessions composable", () => {
 
   it("closes session and automatically ensures at least one session exists if all closed", () => {
     const { sessions, createSession, closeSession } = useTerminalSessions();
-    
+
     const s1 = createSession({ name: "bash", path: "/bin/bash" });
     expect(sessions.value.length).toBe(1);
 
@@ -78,7 +78,7 @@ describe("useTerminalSessions composable", () => {
 
   it("executes commands, records history and handles clear/echo", () => {
     const { activePane, createSession, runCommand } = useTerminalSessions();
-    
+
     createSession({ name: "bash", path: "/bin/bash" });
     const paneId = activePane.value!.id;
 

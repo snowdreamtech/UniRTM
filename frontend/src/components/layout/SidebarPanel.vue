@@ -10,11 +10,7 @@
     <div class="sidebar-header">
       <span class="panel-title">{{ headerTitle }}</span>
       <div class="panel-tools">
-        <button
-          class="panel-tool-btn"
-          title="Collapse Sidebar"
-          @click="$emit('toggle-collapse')"
-        >
+        <button class="panel-tool-btn" title="Collapse Sidebar" @click="$emit('toggle-collapse')">
           <span>◀</span>
         </button>
       </div>
@@ -22,12 +18,7 @@
 
     <!-- Filter input -->
     <div class="sidebar-search">
-      <input
-        v-model="searchQuery"
-        type="text"
-        class="sidebar-search-input"
-        :placeholder="searchPlaceholder"
-      />
+      <input v-model="searchQuery" type="text" class="sidebar-search-input" :placeholder="searchPlaceholder" />
     </div>
 
     <!-- Panel Content based on currentTab -->
@@ -58,12 +49,10 @@
         <SourceControlSidebar />
       </template>
 
-
-
       <!-- TOOLS Navigation Items -->
       <template v-if="currentTab === 'tools'">
         <div class="nav-group-title">
-          {{ activeScope === 'user' ? '用户工具' : (t("sidebar.group_tools") || "项目工具") }}
+          {{ activeScope === "user" ? "用户工具" : t("sidebar.group_tools") || "项目工具" }}
         </div>
 
         <!-- 1. ⚠️ 待安装 (N)：仅当 N > 0 时显示在最顶部，默认展开，琥珀色警示 -->
@@ -75,7 +64,10 @@
             :title="t('sidebar.tools_missing_hint') || '工作区已配置但尚未在本地安装的工具'"
           >
             <div class="accordion-header-left">
-              <span class="codicon twistie" :class="isMissingExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+              <span
+                class="codicon twistie"
+                :class="isMissingExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"
+              ></span>
               <span class="accordion-status-icon warning">⚠️</span>
               <span class="accordion-title">{{ t("sidebar.tools_missing") || "待安装" }}</span>
             </div>
@@ -111,7 +103,10 @@
             :title="t('sidebar.tools_upgradable_hint') || '发现更高可用版本，支持一键升级'"
           >
             <div class="accordion-header-left">
-              <span class="codicon twistie" :class="isUpgradableExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+              <span
+                class="codicon twistie"
+                :class="isUpgradableExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"
+              ></span>
               <span class="accordion-status-dot update">●</span>
               <span class="accordion-title">{{ t("sidebar.tools_upgradable") || "可升级" }}</span>
             </div>
@@ -133,8 +128,13 @@
               </div>
               <span
                 class="status-indicator-dot update"
-                :title="tool.upgradableVersion ? `可升级至 v${tool.upgradableVersion}` : (t('tools.actions.upgrade') || '可升级')"
-              >●</span>
+                :title="
+                  tool.upgradableVersion
+                    ? `可升级至 v${tool.upgradableVersion}`
+                    : t('tools.actions.upgrade') || '可升级'
+                "
+                >●</span
+              >
             </button>
           </div>
         </div>
@@ -147,7 +147,10 @@
             @click="isReadyExpanded = !isReadyExpanded"
           >
             <div class="accordion-header-left">
-              <span class="codicon twistie" :class="isReadyExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+              <span
+                class="codicon twistie"
+                :class="isReadyExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"
+              ></span>
               <span class="accordion-title">{{ t("sidebar.tools_ready") || "已就绪" }}</span>
             </div>
             <span class="accordion-count badge-neutral">{{ readyTools.length }}</span>
@@ -179,7 +182,9 @@
       <!-- TASKS Navigation Items -->
       <template v-if="currentTab === 'tasks'">
         <div class="nav-group-title">
-          {{ activeScope === 'user' ? '用户任务 (~/.unirtm.toml)' : (t("sidebar.group_tasks") || "项目任务 (.unirtm.toml)") }}
+          {{
+            activeScope === "user" ? "用户任务 (~/.unirtm.toml)" : t("sidebar.group_tasks") || "项目任务 (.unirtm.toml)"
+          }}
         </div>
         <button
           v-for="task in filteredTaskItems"
@@ -200,7 +205,11 @@
       <!-- ENVIRONMENTS Navigation Items -->
       <template v-if="currentTab === 'environments'">
         <div class="nav-group-title">
-          {{ activeScope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
+          {{
+            activeScope === "user"
+              ? t("environments.scope_user") || "用户"
+              : t("environments.scope_workspace") || "工作区"
+          }}
         </div>
         <button
           v-for="env in filteredEnvItems"
@@ -210,13 +219,29 @@
           @click="handleSubItemClick(env.name)"
         >
           <span class="item-icon">
-            <TechIcon :id="env.isSensitive ? 'workbench:key' : 'workbench:variable'" :size="18" :style="{ color: env.isSensitive ? '#f59e0b' : 'inherit' }" />
+            <TechIcon
+              :id="env.isSensitive ? 'workbench:key' : 'workbench:variable'"
+              :size="18"
+              :style="{ color: env.isSensitive ? '#f59e0b' : 'inherit' }"
+            />
           </span>
           <div class="item-dual">
             <span class="item-label font-mono">{{ env.name }}</span>
-            <span class="item-sub font-mono">{{ env.isSensitive ? '••••••••' : env.value }}</span>
+            <span class="item-sub font-mono">{{ env.isSensitive ? "••••••••" : env.value }}</span>
           </div>
-          <span v-if="env.isSensitive" class="badge-installed" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); display: inline-flex; align-items: center; padding: 2px 4px;" title="敏感字段">
+          <span
+            v-if="env.isSensitive"
+            class="badge-installed"
+            style="
+              background: rgba(245, 158, 11, 0.15);
+              color: #f59e0b;
+              border-color: rgba(245, 158, 11, 0.3);
+              display: inline-flex;
+              align-items: center;
+              padding: 2px 4px;
+            "
+            title="敏感字段"
+          >
             <TechIcon id="workbench:lock" :size="11" />
           </span>
         </button>
@@ -247,7 +272,7 @@
             <span class="item-label">{{ t("settings.cat_plugins") || "功能插件" }}</span>
             <span class="item-sub">敬请期待</span>
           </div>
-          <span class="badge-soon" style="font-size: 0.6rem; padding: 1px 4px;">开发中</span>
+          <span class="badge-soon" style="font-size: 0.6rem; padding: 1px 4px">开发中</span>
         </button>
       </template>
 
@@ -471,8 +496,6 @@ const filteredDashboardItems = computed(() => {
   return dashboardItems.filter((i) => i.label.toLowerCase().includes(searchQuery.value.toLowerCase()));
 });
 
-
-
 // Tools items (Synchronized with active toolchains and runtimes by Scope)
 const isMissingExpanded = ref(true);
 const isUpgradableExpanded = ref(true);
@@ -583,12 +606,8 @@ async function fetchSidebarEnvs() {
 const filteredEnvItems = computed(() => {
   if (!searchQuery.value) return rawEnvs.value;
   const q = searchQuery.value.toLowerCase().trim();
-  return rawEnvs.value.filter(
-    (e) => e.name.toLowerCase().includes(q) || e.value.toLowerCase().includes(q)
-  );
+  return rawEnvs.value.filter((e) => e.name.toLowerCase().includes(q) || e.value.toLowerCase().includes(q));
 });
-
-
 
 // Doctor checks
 const doctorChecks = [
@@ -867,7 +886,9 @@ onMounted(async () => {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .accordion-header:hover {

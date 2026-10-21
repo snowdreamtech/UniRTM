@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-
 )
 
 var trailingWhitespaceRegex = regexp.MustCompile(`[ \t]+(\r?\n|$)`)
@@ -50,7 +49,10 @@ func (r *TrailingWhitespaceRule) Execute(ctx context.Context, files []string, op
 		default:
 		}
 
-		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
+		fullPath := rel
+		if !filepath.IsAbs(fullPath) {
+			fullPath = filepath.Join(opts.WorkspaceDir, rel)
+		}
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() > maxSize {
 			continue

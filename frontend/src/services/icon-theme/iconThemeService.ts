@@ -15,11 +15,7 @@ function parseJSONC(text: string): Record<string, any> {
   return JSON.parse(cleaned);
 }
 
-import {
-  workbenchSemanticIcons,
-  isWorkbenchSemanticIcon,
-  WORKBENCH_BUILTIN_SVGS,
-} from "./workbenchIcons";
+import { workbenchSemanticIcons, isWorkbenchSemanticIcon, WORKBENCH_BUILTIN_SVGS } from "./workbenchIcons";
 
 class IconThemeService {
   private activeManifest: IconThemeManifest;
@@ -169,8 +165,8 @@ class IconThemeService {
     const cleanRel = themeItem.relative_path.startsWith("./")
       ? themeItem.relative_path.slice(2)
       : themeItem.relative_path.startsWith("/")
-      ? themeItem.relative_path.slice(1)
-      : themeItem.relative_path;
+        ? themeItem.relative_path.slice(1)
+        : themeItem.relative_path;
 
     const manifestUrl = `/api/themes/assets/icon/${encodeURIComponent(themeItem.package_id)}/${cleanRel}`;
     const lastSlash = cleanRel.lastIndexOf("/");
@@ -375,12 +371,7 @@ class IconThemeService {
     // Tier 1: Look up in active manifest
     const activeKey = this.matchManifest(this.activeManifest, candidates);
     if (activeKey && this.activeManifest.iconDefinitions?.[activeKey]) {
-      const res = this.buildResolvedIcon(
-        this.activeManifest,
-        activeKey,
-        false,
-        this.currentBaseUrl
-      );
+      const res = this.buildResolvedIcon(this.activeManifest, activeKey, false, this.currentBaseUrl);
       this.resolutionCache.set(rawIdentifier, res);
       return res;
     }
@@ -399,7 +390,7 @@ class IconThemeService {
 
     // Tier 2: Fallback to Seti UI manifest
     const setiManifest = defaultSetiManifest as unknown as IconThemeManifest;
-    
+
     // Check if semantic fallback key exists in Seti
     if (semanticFallbackKey && setiManifest.iconDefinitions?.[semanticFallbackKey]) {
       const res = this.buildResolvedIcon(setiManifest, semanticFallbackKey, true, "");
@@ -436,4 +427,3 @@ class IconThemeService {
 }
 
 export const iconThemeService = new IconThemeService();
-

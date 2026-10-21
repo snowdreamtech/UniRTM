@@ -8,15 +8,19 @@
       </div>
       <div
         class="workspace-pill"
-        :title="activeScope === 'user' ? '用户全局模式 (~/.unirtm) • 点击切换 (Alt+S)' : '当前工作区: /UniRTM (dev) • 点击切换 (Alt+S)'"
-        style="cursor: pointer;"
+        :title="
+          activeScope === 'user'
+            ? '用户全局模式 (~/.unirtm) • 点击切换 (Alt+S)'
+            : '当前工作区: /UniRTM (dev) • 点击切换 (Alt+S)'
+        "
+        style="cursor: pointer"
         @click="toggleScope(router)"
       >
         <span class="folder-icon">
           <TechIcon :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'" :size="16" />
         </span>
-        <span class="workspace-name">{{ activeScope === 'user' ? '用户全局' : 'UniRTM' }}</span>
-        <span class="branch-tag" :class="activeScope">{{ activeScope === 'user' ? 'global' : 'dev' }}</span>
+        <span class="workspace-name">{{ activeScope === "user" ? "用户全局" : "UniRTM" }}</span>
+        <span class="branch-tag" :class="activeScope">{{ activeScope === "user" ? "global" : "dev" }}</span>
       </div>
     </div>
 
@@ -70,7 +74,7 @@
       <button
         class="titlebar-icon-btn"
         id="btn-theme-toggle"
-        :title="isLight ? (t('theme.toggleDark') || 'Switch to Dark') : (t('theme.toggleLight') || 'Switch to Light')"
+        :title="isLight ? t('theme.toggleDark') || 'Switch to Dark' : t('theme.toggleLight') || 'Switch to Light'"
         @click="$emit('toggle-theme')"
       >
         <span>{{ isLight ? "🌙" : "☀️" }}</span>
@@ -382,7 +386,9 @@ onUnmounted(() => {
 
 .dropdown-fade-enter-active,
 .dropdown-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .dropdown-fade-enter-from,

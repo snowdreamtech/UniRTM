@@ -1,10 +1,10 @@
 # Data Model: Network Profiles & Mirror Matrix Architecture
 
-**Feature**: Network Profiles, Domestic Mirror Matrix & Cascading Overrides  
-**Branch**: `dev`  
-**Spec**: [spec.md](./spec.md)  
-**Plan**: [plan.md](./plan.md)  
-**Tasks**: [tasks.md](./tasks.md)  
+**Feature**: Network Profiles, Domestic Mirror Matrix & Cascading Overrides
+**Branch**: `dev`
+**Spec**: [spec.md](./spec.md)
+**Plan**: [plan.md](./plan.md)
+**Tasks**: [tasks.md](./tasks.md)
 
 ---
 

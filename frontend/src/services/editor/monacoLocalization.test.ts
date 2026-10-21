@@ -2,10 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  translateMonacoLabel,
-  localizeEditorActions,
-} from "./monacoLocalization";
+import { translateMonacoLabel, localizeEditorActions } from "./monacoLocalization";
 import { currentLocale } from "../../i18n";
 
 describe("monacoLocalization", () => {
@@ -77,5 +74,3 @@ describe("monacoLocalization", () => {
     expect(fakeMenu2[1].textContent).toBe("粘贴");
   });
 });
-
-

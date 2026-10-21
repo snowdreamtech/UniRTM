@@ -8,7 +8,7 @@
 graph TD
     User["开发者 / Web UI 操作"] --> SCM["SourceControlView / Git Action"]
     SCM --> BackendGit["Go 后端 /api/git/* 路由"]
-    
+
     subgraph "执行引擎与拦截注入"
         BackendGit --> GitExec["runGitCommandWithBroker(...)"]
         GitExec -.注入环境变量.-> EnvAskPass["GIT_ASKPASS / SSH_ASKPASS"]

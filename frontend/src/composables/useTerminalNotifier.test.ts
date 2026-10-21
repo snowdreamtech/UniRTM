@@ -77,10 +77,7 @@ describe("useTerminalNotifier", () => {
     expect(result).not.toBeNull();
     expect(result?.notified).toBe(true);
     expect(result?.success).toBe(true);
-    expect(showToast).toHaveBeenCalledWith(
-      expect.stringContaining("completed (15s)"),
-      "success"
-    );
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining("completed (15s)"), "success");
   });
 
   it("triggers error toast when long task finishes with errors", () => {
@@ -97,9 +94,6 @@ describe("useTerminalNotifier", () => {
     expect(result).not.toBeNull();
     expect(result?.notified).toBe(true);
     expect(result?.success).toBe(false);
-    expect(showToast).toHaveBeenCalledWith(
-      expect.stringContaining("finished with errors (12s)"),
-      "error"
-    );
+    expect(showToast).toHaveBeenCalledWith(expect.stringContaining("finished with errors (12s)"), "error");
   });
 });

@@ -2,17 +2,18 @@
 # Copyright (c) 2026 SnowdreamTech. All rights reserved.
 # Licensed under the MIT License.
 
-import os
-import sys
-import pty
 import fcntl
-import termios
-import struct
-import select
 import json
+import os
+import pty
+import select
+import struct
+import sys
+import termios
 
 _current_rows = 0
 _current_cols = 0
+
 
 def set_winsize(fd, rows, cols):
     global _current_rows, _current_cols
@@ -24,6 +25,7 @@ def set_winsize(fd, rows, cols):
         fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
     except Exception:
         pass
+
 
 def main():
     cols = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 120
@@ -59,13 +61,10 @@ def main():
         os.close(slave)
 
         stdin_fd = sys.stdin.fileno()
-        stdout_fd = sys.stdout.fileno()
 
         # Set master non-blocking
         flags = fcntl.fcntl(master, fcntl.F_GETFL)
         fcntl.fcntl(master, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-
-        stdin_buf = bytearray()
 
         while True:
             rlist, _, _ = select.select([master, stdin_fd], [], [], 1.0)
@@ -90,25 +89,25 @@ def main():
                     # Check if it contains a JSON control message like {"type":"resize",...}
                     if b'{"type":' in chunk:
                         # Split by closing brace or newline to safely parse concatenated frames
-                        raw_str = chunk.decode('utf-8', 'ignore')
+                        raw_str = chunk.decode("utf-8", "ignore")
                         start = 0
                         has_control = False
                         while True:
                             idx = raw_str.find('{"type":', start)
                             if idx == -1:
                                 break
-                            end_idx = raw_str.find('}', idx)
+                            end_idx = raw_str.find("}", idx)
                             if end_idx == -1:
                                 break
                             has_control = True
-                            json_slice = raw_str[idx:end_idx+1]
+                            json_slice = raw_str[idx : end_idx + 1]
                             try:
                                 msg = json.loads(json_slice)
-                                if msg.get('type') == 'resize':
-                                    r = int(msg.get('rows', rows))
-                                    c = int(msg.get('cols', cols))
+                                if msg.get("type") == "resize":
+                                    r = int(msg.get("rows", rows))
+                                    c = int(msg.get("cols", cols))
                                     set_winsize(master, r, c)
-                                elif msg.get('type') == 'kill':
+                                elif msg.get("type") == "kill":
                                     return
                             except Exception:
                                 pass
@@ -130,6 +129,7 @@ def main():
         except Exception:
             pass
         os.close(master)
+
 
 if __name__ == "__main__":
     main()

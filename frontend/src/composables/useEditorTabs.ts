@@ -46,15 +46,58 @@ export interface EditorTab {
   initialColumn?: number;
 }
 
-
 export const KNOWN_BINARY_EXTENSIONS = new Set([
-  "exe", "dll", "so", "dylib", "bin", "elf", "wasm",
-  "zip", "tar", "gz", "tgz", "bz2", "xz", "7z", "rar", "iso", "dmg", "pkg", "deb", "rpm",
-  "o", "a", "lib", "class", "pyc", "pyo",
-  "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
-  "mp3", "mp4", "wav", "ogg", "avi", "mov", "flv", "mkv",
-  "db", "sqlite", "sqlite3", "db3", "rdb",
-  "woff", "woff2", "ttf", "otf", "eot",
+  "exe",
+  "dll",
+  "so",
+  "dylib",
+  "bin",
+  "elf",
+  "wasm",
+  "zip",
+  "tar",
+  "gz",
+  "tgz",
+  "bz2",
+  "xz",
+  "7z",
+  "rar",
+  "iso",
+  "dmg",
+  "pkg",
+  "deb",
+  "rpm",
+  "o",
+  "a",
+  "lib",
+  "class",
+  "pyc",
+  "pyo",
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "ppt",
+  "pptx",
+  "mp3",
+  "mp4",
+  "wav",
+  "ogg",
+  "avi",
+  "mov",
+  "flv",
+  "mkv",
+  "db",
+  "sqlite",
+  "sqlite3",
+  "db3",
+  "rdb",
+  "woff",
+  "woff2",
+  "ttf",
+  "otf",
+  "eot",
 ]);
 
 const tabs = ref<EditorTab[]>([]);
@@ -71,14 +114,14 @@ export function useEditorTabs() {
     return tabs.value.some((t) => t.isDirty);
   });
 
-const pendingOpenings = new Map<string, Promise<void>>();
+  const pendingOpenings = new Map<string, Promise<void>>();
 
-function normalizePath(p: string): string {
-  if (!p) return "";
-  let clean = p.trim().replace(/\\/g, "/");
-  clean = clean.replace(/^\.\//, "");
-  return clean;
-}
+  function normalizePath(p: string): string {
+    if (!p) return "";
+    let clean = p.trim().replace(/\\/g, "/");
+    clean = clean.replace(/^\.\//, "");
+    return clean;
+  }
 
   async function openTab(file: {
     path: string;
@@ -88,9 +131,7 @@ function normalizePath(p: string): string {
     column?: number;
   }): Promise<void> {
     const normPath = normalizePath(file.path);
-    const existing = tabs.value.find(
-      (t) => normalizePath(t.id) === normPath || normalizePath(t.path) === normPath
-    );
+    const existing = tabs.value.find((t) => normalizePath(t.id) === normPath || normalizePath(t.path) === normPath);
     if (existing) {
       activeTabId.value = existing.id;
       if (file.line !== undefined) existing.initialLine = file.line;
@@ -100,7 +141,7 @@ function normalizePath(p: string): string {
           const res = await fetch(`/api/fs/read?path=${encodeURIComponent(file.path)}`);
           if (res.ok) {
             const data = await res.json();
-            const content = data.content !== undefined ? data.content : data.data?.content ?? "";
+            const content = data.content !== undefined ? data.content : (data.data?.content ?? "");
             existing.content = content;
             existing.originalContent = content;
           }
@@ -111,9 +152,7 @@ function normalizePath(p: string): string {
 
     if (pendingOpenings.has(normPath)) {
       await pendingOpenings.get(normPath);
-      const afterWait = tabs.value.find(
-        (t) => normalizePath(t.id) === normPath || normalizePath(t.path) === normPath
-      );
+      const afterWait = tabs.value.find((t) => normalizePath(t.id) === normPath || normalizePath(t.path) === normPath);
       if (afterWait) {
         activeTabId.value = afterWait.id;
       }
@@ -157,7 +196,7 @@ function normalizePath(p: string): string {
             }
           } else {
             const data = await res.json();
-            fileContent = data.content !== undefined ? data.content : data.data?.content ?? "";
+            fileContent = data.content !== undefined ? data.content : (data.data?.content ?? "");
             if (data.size) {
               fileSize = data.size;
             }
@@ -283,7 +322,7 @@ function normalizePath(p: string): string {
         const res = await fetch(`/api/fs/read?path=${encodeURIComponent(tab.path)}`);
         if (res.ok) {
           const data = await res.json();
-          const content = data.content !== undefined ? data.content : data.data?.content ?? "";
+          const content = data.content !== undefined ? data.content : (data.data?.content ?? "");
           tab.content = content;
           tab.originalContent = content;
           tab.isDirty = false;
@@ -429,8 +468,8 @@ function normalizePath(p: string): string {
     const diffId = options.commitHash
       ? `diff:commit:${options.commitHash.slice(0, 7)}:${options.path}`
       : options.isStaged
-      ? `diff:staged:${options.path}`
-      : `diff:working:${options.path}`;
+        ? `diff:staged:${options.path}`
+        : `diff:working:${options.path}`;
 
     const existing = tabs.value.find((t) => t.id === diffId);
     if (existing) {
@@ -446,10 +485,10 @@ function normalizePath(p: string): string {
     const displayName = options.name
       ? options.name
       : options.commitHash
-      ? `${fileName} (${options.commitHash.slice(0, 7)})`
-      : options.isStaged
-      ? `${fileName} (Staged)`
-      : `${fileName} (Working Tree)`;
+        ? `${fileName} (${options.commitHash.slice(0, 7)})`
+        : options.isStaged
+          ? `${fileName} (Staged)`
+          : `${fileName} (Working Tree)`;
 
     const language = getLanguageForFile(fileName);
 
@@ -511,4 +550,3 @@ function normalizePath(p: string): string {
     togglePinTab,
   };
 }
-

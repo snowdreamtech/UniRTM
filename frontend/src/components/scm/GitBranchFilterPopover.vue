@@ -19,17 +19,8 @@
 
     <!-- Teleported Popover -->
     <Teleport to="body">
-      <div
-        v-if="isOpen"
-        class="branch-popover-overlay"
-        @click="closePopover"
-        @contextmenu.prevent="closePopover"
-      >
-        <div
-          class="branch-popover-dropdown"
-          :style="popoverStyle"
-          @click.stop
-        >
+      <div v-if="isOpen" class="branch-popover-overlay" @click="closePopover" @contextmenu.prevent="closePopover">
+        <div class="branch-popover-dropdown" :style="popoverStyle" @click.stop>
           <!-- Header & Search Box -->
           <div class="popover-header">
             <div class="popover-search-wrap">
@@ -42,24 +33,15 @@
                 :placeholder="t('scm.graph.branch_filter.filter_placeholder')"
                 @keydown.esc="closePopover"
               />
-              <button
-                v-if="searchQuery"
-                class="search-clear-btn"
-                @click="searchQuery = ''"
-              >
+              <button v-if="searchQuery" class="search-clear-btn" @click="searchQuery = ''">
                 <span class="codicon codicon-close"></span>
               </button>
             </div>
 
             <!-- Quick Action Toolbar -->
             <div class="popover-quick-actions">
-              <button
-                type="button"
-                class="quick-btn"
-                :class="{ active: isAllSelected }"
-                @click="selectAllBranches"
-              >
-                {{ t('scm.graph.branch_filter.all') }}
+              <button type="button" class="quick-btn" :class="{ active: isAllSelected }" @click="selectAllBranches">
+                {{ t("scm.graph.branch_filter.all") }}
               </button>
               <button
                 type="button"
@@ -67,14 +49,10 @@
                 :class="{ active: isCurrentSelectedOnly }"
                 @click="selectCurrentBranch"
               >
-                {{ t('scm.graph.branch_filter.current') }}
+                {{ t("scm.graph.branch_filter.current") }}
               </button>
-              <button
-                type="button"
-                class="quick-btn"
-                @click="clearSelection"
-              >
-                {{ t('scm.graph.branch_filter.clear') }}
+              <button type="button" class="quick-btn" @click="clearSelection">
+                {{ t("scm.graph.branch_filter.clear") }}
               </button>
             </div>
           </div>
@@ -83,7 +61,11 @@
           <div class="popover-branch-list">
             <!-- 1. All Branches Item -->
             <div
-              v-if="!searchQuery || 'all branches'.includes(searchQuery.toLowerCase()) || t('scm.graph.all_branches').toLowerCase().includes(searchQuery.toLowerCase())"
+              v-if="
+                !searchQuery ||
+                'all branches'.includes(searchQuery.toLowerCase()) ||
+                t('scm.graph.all_branches').toLowerCase().includes(searchQuery.toLowerCase())
+              "
               class="branch-list-item"
               :class="{ selected: isAllSelected }"
               @click="toggleAll"
@@ -92,14 +74,16 @@
                 <span v-if="isAllSelected" class="codicon codicon-check check-icon"></span>
               </span>
               <span class="codicon codicon-git-branch-create item-type-icon"></span>
-              <span class="item-name font-semibold">{{ t('scm.graph.all_branches') }}</span>
+              <span class="item-name font-semibold">{{ t("scm.graph.all_branches") }}</span>
             </div>
 
             <div v-if="!searchQuery" class="list-divider"></div>
 
             <!-- 2. Local Branches Section -->
             <div v-if="filteredLocalBranches.length > 0" class="branch-section">
-              <div class="section-title">{{ t('scm.graph.branch_filter.local') }} ({{ filteredLocalBranches.length }})</div>
+              <div class="section-title">
+                {{ t("scm.graph.branch_filter.local") }} ({{ filteredLocalBranches.length }})
+              </div>
               <div
                 v-for="b in filteredLocalBranches"
                 :key="b.name"
@@ -112,13 +96,15 @@
                 </span>
                 <span class="codicon codicon-git-branch item-type-icon"></span>
                 <span class="item-name" :class="{ 'font-bold': b.current }">{{ b.name }}</span>
-                <span v-if="b.current" class="current-badge">{{ t('scm.graph.current_badge') }}</span>
+                <span v-if="b.current" class="current-badge">{{ t("scm.graph.current_badge") }}</span>
               </div>
             </div>
 
             <!-- 3. Remote Branches Section -->
             <div v-if="filteredRemoteBranches.length > 0" class="branch-section">
-              <div class="section-title">{{ t('scm.graph.branch_filter.remote') }} ({{ filteredRemoteBranches.length }})</div>
+              <div class="section-title">
+                {{ t("scm.graph.branch_filter.remote") }} ({{ filteredRemoteBranches.length }})
+              </div>
               <div
                 v-for="b in filteredRemoteBranches"
                 :key="b.name"
@@ -139,7 +125,7 @@
               v-if="filteredLocalBranches.length === 0 && filteredRemoteBranches.length === 0 && searchQuery"
               class="empty-state"
             >
-              <span>{{ t('scm.graph.branch_filter.no_branches_found') }}</span>
+              <span>{{ t("scm.graph.branch_filter.no_branches_found") }}</span>
             </div>
           </div>
         </div>
@@ -197,9 +183,7 @@ const displayLabel = computed(() => {
   }
   if (props.modelValue.length === 1) {
     const single = props.modelValue[0];
-    const isCurrent =
-      single === props.currentBranch ||
-      single === `refs/heads/${props.currentBranch}`;
+    const isCurrent = single === props.currentBranch || single === `refs/heads/${props.currentBranch}`;
     return isCurrent ? `${single} (${t("scm.graph.current_badge")})` : single;
   }
   return t("scm.graph.branch_filter.multiple_selected", {

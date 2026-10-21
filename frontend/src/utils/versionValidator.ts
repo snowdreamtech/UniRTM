@@ -53,7 +53,8 @@ export function validateRuntimeVersion(toolId: string, input: string): VersionVa
   // 5. Check for CalVer (Calendar Versioning):
   // 4-digit Year (1990-2099): 2024.03.15, 2024.1, 2024.05.1
   // 2-digit Year (10-99): 24.04, 24.04.1
-  const calverRegex = /^(19\d\d|20\d\d|[1-9]\d)\.(0?[1-9]|1[0-2])(?:\.(0?[1-9]|[12]\d|3[01]|\d+))?(?:[._-][0-9A-Za-z.-]+)?$/;
+  const calverRegex =
+    /^(19\d\d|20\d\d|[1-9]\d)\.(0?[1-9]|1[0-2])(?:\.(0?[1-9]|[12]\d|3[01]|\d+))?(?:[._-][0-9A-Za-z.-]+)?$/;
   const calverMatch = val.match(calverRegex);
   if (calverMatch) {
     const year = parseInt(calverMatch[1], 10);

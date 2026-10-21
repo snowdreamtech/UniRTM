@@ -35,12 +35,7 @@ describe("useFileTree", () => {
   });
 
   it("manages inline action lifecycle (create & rename)", () => {
-    const {
-      inlineAction,
-      startInlineCreate,
-      startInlineRename,
-      cancelInlineAction,
-    } = useFileTree();
+    const { inlineAction, startInlineCreate, startInlineRename, cancelInlineAction } = useFileTree();
 
     startInlineCreate("src", "new-file");
     expect(inlineAction.value).toEqual({
@@ -270,9 +265,7 @@ describe("useFileTree", () => {
 
     // Mock useGit status
     const { status } = useGit();
-    status.value.unstaged = [
-      { path: "src/changed.ts", status: "M", label: "src/changed.ts" },
-    ];
+    status.value.unstaged = [{ path: "src/changed.ts", status: "M", label: "src/changed.ts" }];
 
     toggleGitFilter();
     expect(isGitFilterActive.value).toBe(true);
@@ -297,9 +290,7 @@ describe("useFileTree", () => {
       { path: "src/utils/math.ts", status: "M", label: "src/utils/math.ts" },
       { path: "src/components/Header.vue", status: "M", label: "src/components/Header.vue" },
     ];
-    status.value.staged = [
-      { path: "src/App.vue", status: "A", label: "src/App.vue" },
-    ];
+    status.value.staged = [{ path: "src/App.vue", status: "A", label: "src/App.vue" }];
 
     expect(
       getNodeGitChangeCount({
@@ -483,4 +474,3 @@ describe("useFileTree", () => {
     expect(isMultiRoot.value).toBe(false);
   });
 });
-

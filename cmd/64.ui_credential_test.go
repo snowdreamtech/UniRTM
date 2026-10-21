@@ -148,4 +148,3 @@ func TestCredentialHTTPHandlers(t *testing.T) {
 	assert.Equal(t, http.StatusOK, internalRec.Code)
 	assert.Equal(t, "auto_cached_secret", internalRec.Body.String())
 }
-

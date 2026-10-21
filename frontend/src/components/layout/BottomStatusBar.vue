@@ -10,8 +10,12 @@
         @click="$emit('select-tab', 'scm')"
       >
         <span class="status-icon"><TechIcon id="workbench:git" :size="13" :colored="false" /></span>
-        <span v-if="repositories.length > 1 && activeRepo" class="status-repo-name font-mono">{{ activeRepo.name }}</span>
-        <span class="status-text font-mono">{{ currentBranch }}{{ (status.staged.length > 0 || status.unstaged.length > 0) ? '*' : '' }}</span>
+        <span v-if="repositories.length > 1 && activeRepo" class="status-repo-name font-mono">{{
+          activeRepo.name
+        }}</span>
+        <span class="status-text font-mono"
+          >{{ currentBranch }}{{ status.staged.length > 0 || status.unstaged.length > 0 ? "*" : "" }}</span
+        >
         <button
           v-if="status.ahead > 0 || status.behind > 0"
           class="git-sync-btn"

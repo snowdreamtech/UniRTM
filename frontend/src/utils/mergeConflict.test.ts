@@ -54,13 +54,7 @@ describe("mergeConflict utility", () => {
   });
 
   it("computes resolution replacement text accurately", () => {
-    const sample = [
-      "<<<<<<< HEAD",
-      "first",
-      "=======",
-      "second",
-      ">>>>>>> remote",
-    ].join("\n");
+    const sample = ["<<<<<<< HEAD", "first", "=======", "second", ">>>>>>> remote"].join("\n");
 
     const conflicts = parseMergeConflicts(sample);
     const c = conflicts[0];

@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
 )
 
 var sensitiveKeyRegex = regexp.MustCompile(`(?i)(?:AWS_SECRET|GITHUB_TOKEN|PRIVATE_KEY|DATABASE_URL|SECRET_KEY|AUTH_TOKEN|PASSWORD|API_KEY)\s*=\s*['"]?([^\s'"]+)`)
@@ -58,7 +57,10 @@ func (r *EnvSafetyRule) Execute(ctx context.Context, files []string, opts Execut
 			continue
 		}
 
-		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
+		fullPath := rel
+		if !filepath.IsAbs(fullPath) {
+			fullPath = filepath.Join(opts.WorkspaceDir, rel)
+		}
 		f, err := os.Open(fullPath)
 		if err != nil {
 			continue

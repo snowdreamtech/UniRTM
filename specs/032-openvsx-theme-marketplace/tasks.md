@@ -95,5 +95,3 @@
   - Page size select dropdown (`12`, `24`, `48` 条/页)
   - Smooth scroll to top of list upon page navigation
 - [x] T021 [P] [US6] Build validation and full test suite (`npm run build`, `npm run test`, `go test`).
-
-

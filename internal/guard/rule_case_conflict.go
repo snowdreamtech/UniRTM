@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-
 )
 
 type CaseConflictRule struct{}

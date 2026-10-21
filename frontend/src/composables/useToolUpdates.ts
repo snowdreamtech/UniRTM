@@ -87,8 +87,14 @@ export function useToolUpdates() {
     let changed = false;
 
     const semverGt = (a: string, b: string) => {
-      const pa = a.replace(/^[vV]+/, "").split(".").map((n) => parseInt(n, 10));
-      const pb = b.replace(/^[vV]+/, "").split(".").map((n) => parseInt(n, 10));
+      const pa = a
+        .replace(/^[vV]+/, "")
+        .split(".")
+        .map((n) => parseInt(n, 10));
+      const pb = b
+        .replace(/^[vV]+/, "")
+        .split(".")
+        .map((n) => parseInt(n, 10));
       for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
         const na = isNaN(pa[i]) ? 0 : pa[i];
         const nb = isNaN(pb[i]) ? 0 : pb[i];
@@ -128,7 +134,7 @@ export function useToolUpdates() {
             pinned: false,
             in_workspace: Boolean(tool.active_version || (!tool.global_version && tool.source !== "unirtm.toml")),
             in_user: Boolean(tool.global_version || tool.source === "unirtm.toml"),
-            scope: tool.global_version && tool.active_version ? "both" : (tool.global_version ? "user" : "workspace"),
+            scope: tool.global_version && tool.active_version ? "both" : tool.global_version ? "user" : "workspace",
           });
           changed = true;
         }
@@ -175,9 +181,7 @@ export function useToolUpdates() {
 
   function markToolUpdated(toolId: string) {
     updateResults.value = updateResults.value.map((item) =>
-      item.id === toolId || item.name === toolId
-        ? { ...item, has_update: false }
-        : item
+      item.id === toolId || item.name === toolId ? { ...item, has_update: false } : item
     );
   }
 

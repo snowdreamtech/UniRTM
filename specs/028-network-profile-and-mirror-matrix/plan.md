@@ -1,10 +1,10 @@
 # Technical Plan: Network Profiles, Domestic Mirror Matrix & Cascading Overrides
 
-**Feature**: Network Profiles, Domestic Mirror Matrix & Cascading Overrides  
-**Branch**: `dev`  
-**Spec**: [spec.md](./spec.md)  
-**Tasks**: [tasks.md](./tasks.md)  
-**Data Model**: [data-model.md](./data-model.md)  
+**Feature**: Network Profiles, Domestic Mirror Matrix & Cascading Overrides
+**Branch**: `dev`
+**Spec**: [spec.md](./spec.md)
+**Tasks**: [tasks.md](./tasks.md)
+**Data Model**: [data-model.md](./data-model.md)
 
 ---
 

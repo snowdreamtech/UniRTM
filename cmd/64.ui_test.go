@@ -670,7 +670,3 @@ func TestUIGitAPI(t *testing.T) {
 		t.Fatalf("Expected 200 for /api/git/log, got %d: %s", rrLog.Code, rrLog.Body.String())
 	}
 }
-
-
-
-

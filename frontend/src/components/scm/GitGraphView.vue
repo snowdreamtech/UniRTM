@@ -4,7 +4,7 @@
     <div class="graph-toolbar">
       <!-- 0. Repo Selector (Multi-Repository) -->
       <div v-if="repositories.length > 0" class="toolbar-item repo-selector-item">
-        <span class="toolbar-label">{{ t('scm.graph.repo_label') || 'Repo:' }}</span>
+        <span class="toolbar-label">{{ t("scm.graph.repo_label") || "Repo:" }}</span>
         <div class="repo-select-wrapper">
           <select
             class="graph-repo-select"
@@ -33,11 +33,7 @@
       <div v-if="graphFilterPath" class="filter-file-badge">
         <span class="codicon codicon-file"></span>
         <span class="file-path-text font-mono" :title="graphFilterPath">{{ getFileName(graphFilterPath) }}</span>
-        <button
-          class="clear-filter-btn"
-          :title="t('scm.graph.clear_filter')"
-          @click="clearGraphFilterPath"
-        >
+        <button class="clear-filter-btn" :title="t('scm.graph.clear_filter')" @click="clearGraphFilterPath">
           <span class="codicon codicon-close"></span>
         </button>
       </div>
@@ -83,7 +79,7 @@
         @click="handleManualRefresh"
       >
         <span class="codicon" :class="isLoadingGraph ? 'codicon-sync codicon-modifier-spin' : 'codicon-refresh'"></span>
-        <span>{{ t('common.refresh') }}</span>
+        <span>{{ t("common.refresh") }}</span>
       </button>
 
       <!-- 5. Show Stashes Toggle Button -->
@@ -94,7 +90,7 @@
         @click="toggleShowStashes"
       >
         <span class="codicon codicon-archive"></span>
-        <span>{{ t('scm.graph.toggle_stashes') }}</span>
+        <span>{{ t("scm.graph.toggle_stashes") }}</span>
       </button>
 
       <!-- 5. Commit Count Badge -->
@@ -105,7 +101,9 @@
         @click="hasMoreCommits ? handleLoadMore() : undefined"
       >
         <span v-if="isLoadingMore" class="codicon codicon-loading codicon-modifier-spin"></span>
-        <span>{{ t('scm.graph.commits_count', { count: filteredCommits.length }) }}{{ hasMoreCommits ? '+' : '' }}</span>
+        <span
+          >{{ t("scm.graph.commits_count", { count: filteredCommits.length }) }}{{ hasMoreCommits ? "+" : "" }}</span
+        >
       </div>
     </div>
 
@@ -114,20 +112,19 @@
       <!-- Graph Table Area -->
       <div class="graph-table-wrapper" ref="tableWrapperRef" @scroll="handleScroll">
         <div class="graph-table-header">
-          <div class="col-header col-graph" :style="{ width: graphColWidth + 'px' }">{{ t('scm.graph.col_graph') }}</div>
-          <div class="col-header col-desc">{{ t('scm.graph.col_desc') }}</div>
-          <div class="col-header col-date">{{ t('scm.graph.col_date') }}</div>
-          <div class="col-header col-author">{{ t('scm.graph.col_author') }}</div>
-          <div class="col-header col-hash">{{ t('scm.graph.col_commit') }}</div>
-          <div class="col-header col-actions">{{ t('scm.graph.col_actions') }}</div>
+          <div class="col-header col-graph" :style="{ width: graphColWidth + 'px' }">
+            {{ t("scm.graph.col_graph") }}
+          </div>
+          <div class="col-header col-desc">{{ t("scm.graph.col_desc") }}</div>
+          <div class="col-header col-date">{{ t("scm.graph.col_date") }}</div>
+          <div class="col-header col-author">{{ t("scm.graph.col_author") }}</div>
+          <div class="col-header col-hash">{{ t("scm.graph.col_commit") }}</div>
+          <div class="col-header col-actions">{{ t("scm.graph.col_actions") }}</div>
         </div>
 
         <div class="graph-table-body" :style="{ height: totalBodyHeight + 'px' }">
           <!-- SVG DAG Overlay for Lanes, Nodes, Bezier Curves -->
-          <svg
-            class="graph-svg-layer"
-            :style="{ width: graphColWidth + 'px', height: totalSvgHeight + 'px' }"
-          >
+          <svg class="graph-svg-layer" :style="{ width: graphColWidth + 'px', height: totalSvgHeight + 'px' }">
             <!-- 1. Connecting Paths (Vertical lines & Bezier curves) -->
             <path
               v-for="p in graphLayout.paths"
@@ -191,7 +188,7 @@
             class="graph-row"
             :class="{
               selected: isRowSelected(commit),
-              'uncommitted-row': commit.hash === '*'
+              'uncommitted-row': commit.hash === '*',
             }"
             :style="{ top: getRowTop(idx) + 'px', height: ROW_HEIGHT + 'px' }"
             @click="handleRowClick($event, commit)"
@@ -225,10 +222,10 @@
                         refItem.type === 'tag'
                           ? 'codicon-tag'
                           : refItem.type === 'remote'
-                          ? 'codicon-cloud'
-                          : refItem.type === 'stash'
-                          ? 'codicon-archive'
-                          : 'codicon-git-branch'
+                            ? 'codicon-cloud'
+                            : refItem.type === 'stash'
+                              ? 'codicon-archive'
+                              : 'codicon-git-branch'
                       "
                     ></span>
                     <span class="ref-name">{{ refItem.name }}</span>
@@ -267,7 +264,7 @@
 
             <!-- Col 3: Date -->
             <div class="col-cell col-date" :title="commit.hash === '*' ? '*' : formatExactDate(commit.timestamp)">
-              {{ commit.hash === '*' ? '*' : formatRelativeTime(commit.timestamp) }}
+              {{ commit.hash === "*" ? "*" : formatRelativeTime(commit.timestamp) }}
             </div>
 
             <!-- Col 4: Author -->
@@ -311,10 +308,10 @@
             v-if="selectedCommit && expandedCommitIndex !== -1"
             class="inline-commit-detail-panel"
             :style="{
-              top: ((expandedCommitIndex + 1) * ROW_HEIGHT) + 'px',
+              top: (expandedCommitIndex + 1) * ROW_HEIGHT + 'px',
               left: graphColWidth + 'px',
               height: EXPANDED_PANEL_HEIGHT + 'px',
-              width: `calc(100% - ${graphColWidth}px)`
+              width: `calc(100% - ${graphColWidth}px)`,
             }"
             @click.stop
           >
@@ -324,15 +321,16 @@
                 <template v-if="isComparing && activeCompare">
                   <div class="inline-compare-title">
                     <span class="codicon codicon-diff"></span>
-                    <span>{{ t('scm.compare.comparing', { base: activeCompare.base.shortHash, target: activeCompare.target.shortHash }) }}</span>
+                    <span>{{
+                      t("scm.compare.comparing", {
+                        base: activeCompare.base.shortHash,
+                        target: activeCompare.target.shortHash,
+                      })
+                    }}</span>
                   </div>
-                  <button
-                    class="inline-tool-btn"
-                    :title="t('scm.compare.swap')"
-                    @click="handleSwapCompare"
-                  >
+                  <button class="inline-tool-btn" :title="t('scm.compare.swap')" @click="handleSwapCompare">
                     <span class="codicon codicon-arrow-swap"></span>
-                    <span>{{ t('scm.compare.swap') }}</span>
+                    <span>{{ t("scm.compare.swap") }}</span>
                   </button>
                 </template>
                 <template v-else-if="selectedCommit?.hash === '*'">
@@ -342,7 +340,7 @@
                     @click="openModal('stash-uncommitted', selectedCommit)"
                   >
                     <span class="codicon codicon-archive"></span>
-                    <span>{{ t('scm.uncommitted.stash') }}</span>
+                    <span>{{ t("scm.uncommitted.stash") }}</span>
                   </button>
                   <button
                     class="inline-tool-btn danger"
@@ -350,7 +348,7 @@
                     @click="openModal('reset-uncommitted', selectedCommit)"
                   >
                     <span class="codicon codicon-discard"></span>
-                    <span>{{ t('scm.uncommitted.reset') }}</span>
+                    <span>{{ t("scm.uncommitted.reset") }}</span>
                   </button>
                   <button
                     class="inline-tool-btn danger"
@@ -358,7 +356,7 @@
                     @click="openModal('clean-uncommitted', selectedCommit)"
                   >
                     <span class="codicon codicon-trash"></span>
-                    <span>{{ t('scm.uncommitted.clean') }}</span>
+                    <span>{{ t("scm.uncommitted.clean") }}</span>
                   </button>
                   <button
                     class="inline-tool-btn"
@@ -366,7 +364,7 @@
                     @click="emit('switch-tab', 'changes')"
                   >
                     <span class="codicon codicon-source-control"></span>
-                    <span>{{ t('scm.uncommitted.open_scm') }}</span>
+                    <span>{{ t("scm.uncommitted.open_scm") }}</span>
                   </button>
                 </template>
                 <template v-else>
@@ -376,7 +374,7 @@
                     @click="openModal('create-tag', selectedCommit)"
                   >
                     <span class="codicon codicon-tag"></span>
-                    <span>{{ t('scm.actions.tag') }}</span>
+                    <span>{{ t("scm.actions.tag") }}</span>
                   </button>
                   <button
                     class="inline-tool-btn"
@@ -384,7 +382,7 @@
                     @click="openModal('create-branch', selectedCommit)"
                   >
                     <span class="codicon codicon-git-branch"></span>
-                    <span>{{ t('scm.actions.branch') }}</span>
+                    <span>{{ t("scm.actions.branch") }}</span>
                   </button>
                 </template>
               </div>
@@ -428,11 +426,7 @@
                 </button>
                 <div class="action-divider"></div>
                 <!-- Close Button -->
-                <button
-                  class="inline-close-btn"
-                  :title="t('common.close')"
-                  @click="closeDetailOrCompare"
-                >
+                <button class="inline-close-btn" :title="t('common.close')" @click="closeDetailOrCompare">
                   <span class="codicon codicon-close"></span>
                 </button>
               </div>
@@ -447,10 +441,10 @@
                   <div class="compare-stats-card">
                     <div class="compare-stats-header">
                       <span class="codicon codicon-diff-multiple"></span>
-                      <span class="compare-stats-title">{{ t('scm.compare.title') }}</span>
+                      <span class="compare-stats-title">{{ t("scm.compare.title") }}</span>
                     </div>
                     <div class="compare-stats-pill font-mono">
-                      <span class="stat-files">{{ activeCompare.files.length }} {{ t('scm.changes.total') }}</span>
+                      <span class="stat-files">{{ activeCompare.files.length }} {{ t("scm.changes.total") }}</span>
                       <span class="stat-divider">•</span>
                       <span class="stat-add">+{{ activeCompare.totalAdditions }}</span>
                       <span class="stat-del">-{{ activeCompare.totalDeletions }}</span>
@@ -460,7 +454,7 @@
                   <!-- Base Commit Card -->
                   <div class="compare-commit-box">
                     <div class="compare-box-label font-mono">
-                      <span class="box-badge base-badge">{{ t('scm.compare.base') }}</span>
+                      <span class="box-badge base-badge">{{ t("scm.compare.base") }}</span>
                       <span class="hash-link" @click="handleCopyHash(activeCompare.base.hash)">
                         {{ activeCompare.base.shortHash }}
                         <span class="codicon codicon-copy"></span>
@@ -483,7 +477,7 @@
                   <!-- Target Commit Card -->
                   <div class="compare-commit-box">
                     <div class="compare-box-label font-mono">
-                      <span class="box-badge target-badge">{{ t('scm.compare.target') }}</span>
+                      <span class="box-badge target-badge">{{ t("scm.compare.target") }}</span>
                       <span class="hash-link" @click="handleCopyHash(activeCompare.target.hash)">
                         {{ activeCompare.target.shortHash }}
                         <span class="codicon codicon-copy"></span>
@@ -504,25 +498,25 @@
                   <div class="uncommitted-meta-card">
                     <div class="uncommitted-card-header">
                       <span class="codicon codicon-diff-ignored"></span>
-                      <span class="uncommitted-card-title">{{ t('scm.uncommitted.displaying') }}</span>
+                      <span class="uncommitted-card-title">{{ t("scm.uncommitted.displaying") }}</span>
                     </div>
                     <div class="uncommitted-stats-list">
                       <div class="uncommitted-stat-row">
-                        <span class="stat-label">{{ t('scm.changes.staged') }}:</span>
+                        <span class="stat-label">{{ t("scm.changes.staged") }}:</span>
                         <span class="stat-num staged font-mono">{{ status.staged.length }}</span>
                       </div>
                       <div class="uncommitted-stat-row">
-                        <span class="stat-label">{{ t('scm.changes.unstaged') }}:</span>
+                        <span class="stat-label">{{ t("scm.changes.unstaged") }}:</span>
                         <span class="stat-num unstaged font-mono">{{ status.unstaged.length }}</span>
                       </div>
                       <div class="uncommitted-stat-row total-row">
-                        <span class="stat-label">{{ t('scm.changes.total') }}:</span>
+                        <span class="stat-label">{{ t("scm.changes.total") }}:</span>
                         <span class="stat-num total font-mono">{{ totalChanges }}</span>
                       </div>
                     </div>
                     <div class="uncommitted-card-hint">
                       <span class="codicon codicon-info"></span>
-                      <span>{{ t('scm.uncommitted.hint') }}</span>
+                      <span>{{ t("scm.uncommitted.hint") }}</span>
                     </div>
                   </div>
                 </template>
@@ -530,7 +524,7 @@
                 <template v-else>
                   <div class="meta-field-group">
                     <div class="meta-field">
-                      <span class="meta-field-label">{{ t('scm.detail.commit') }}:</span>
+                      <span class="meta-field-label">{{ t("scm.detail.commit") }}:</span>
                       <div class="meta-field-val hash-val font-mono">
                         <span>{{ selectedCommit.hash }}</span>
                         <button
@@ -544,7 +538,7 @@
                     </div>
 
                     <div v-if="selectedCommit.parents && selectedCommit.parents.length > 0" class="meta-field">
-                      <span class="meta-field-label">{{ t('scm.detail.parents') }}:</span>
+                      <span class="meta-field-label">{{ t("scm.detail.parents") }}:</span>
                       <div class="meta-field-val parents-val">
                         <span
                           v-for="p in selectedCommit.parents"
@@ -559,28 +553,26 @@
                     </div>
 
                     <div class="meta-field">
-                      <span class="meta-field-label">{{ t('scm.detail.author') }}:</span>
-                      <div class="meta-field-val">
-                        {{ selectedCommit.author }} &lt;{{ selectedCommit.email }}&gt;
-                      </div>
+                      <span class="meta-field-label">{{ t("scm.detail.author") }}:</span>
+                      <div class="meta-field-val">{{ selectedCommit.author }} &lt;{{ selectedCommit.email }}&gt;</div>
                     </div>
 
                     <div class="meta-field">
-                      <span class="meta-field-label">{{ t('scm.detail.author_date') }}:</span>
+                      <span class="meta-field-label">{{ t("scm.detail.author_date") }}:</span>
                       <div class="meta-field-val">
                         {{ formatExactDate(selectedCommit.timestamp) }}
                       </div>
                     </div>
 
                     <div v-if="selectedCommitDetail?.committer" class="meta-field">
-                      <span class="meta-field-label">{{ t('scm.detail.committer') }}:</span>
+                      <span class="meta-field-label">{{ t("scm.detail.committer") }}:</span>
                       <div class="meta-field-val">
                         {{ selectedCommitDetail.committer }} &lt;{{ selectedCommitDetail.committerEmail }}&gt;
                       </div>
                     </div>
 
                     <div v-if="selectedCommitDetail?.committerTimestamp" class="meta-field">
-                      <span class="meta-field-label">{{ t('scm.detail.committer_date') }}:</span>
+                      <span class="meta-field-label">{{ t("scm.detail.committer_date") }}:</span>
                       <div class="meta-field-val">
                         {{ formatExactDate(selectedCommitDetail.committerTimestamp) }}
                       </div>
@@ -588,11 +580,7 @@
                   </div>
 
                   <!-- GPG Signature Card -->
-                  <div
-                    v-if="currentGpgInfo"
-                    class="inline-gpg-card"
-                    :class="'gpg-card-' + currentGpgInfo.status"
-                  >
+                  <div v-if="currentGpgInfo" class="inline-gpg-card" :class="'gpg-card-' + currentGpgInfo.status">
                     <div class="inline-gpg-header">
                       <span class="codicon" :class="getGpgIcon(currentGpgInfo.status)"></span>
                       <span class="inline-gpg-title">{{ getGpgFullLabel(currentGpgInfo.status) }}</span>
@@ -600,20 +588,20 @@
                     </div>
                     <div v-if="currentGpgInfo.status !== 'none'" class="inline-gpg-details font-mono">
                       <div v-if="currentGpgInfo.signer">
-                        <span class="gpg-k">{{ t('scm.gpg.signer') }}:</span>
+                        <span class="gpg-k">{{ t("scm.gpg.signer") }}:</span>
                         <span class="gpg-v">{{ currentGpgInfo.signer }}</span>
                       </div>
                       <div v-if="currentGpgInfo.keyId">
-                        <span class="gpg-k">{{ t('scm.gpg.key_id') }}:</span>
+                        <span class="gpg-k">{{ t("scm.gpg.key_id") }}:</span>
                         <span class="gpg-v">{{ currentGpgInfo.keyId }}</span>
                       </div>
                       <div v-if="currentGpgInfo.fingerprint">
-                        <span class="gpg-k">{{ t('scm.gpg.fingerprint') }}:</span>
+                        <span class="gpg-k">{{ t("scm.gpg.fingerprint") }}:</span>
                         <span class="gpg-v fingerprint">{{ currentGpgInfo.fingerprint }}</span>
                       </div>
                     </div>
                     <div v-else class="inline-gpg-unsigned">
-                      <span>{{ t('scm.gpg.unsigned_hint') }}</span>
+                      <span>{{ t("scm.gpg.unsigned_hint") }}</span>
                     </div>
                   </div>
 
@@ -622,31 +610,74 @@
                     <template v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message)">
                       <div class="inline-message-top">
                         <div class="inline-subject-row">
-                          <template v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject">
-                            <span class="cc-type-badge large" :class="'cc-' + parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.type">
-                              {{ parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.type }}
+                          <template
+                            v-if="
+                              parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message)
+                                .parsedSubject
+                            "
+                          >
+                            <span
+                              class="cc-type-badge large"
+                              :class="
+                                'cc-' +
+                                parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message)
+                                  .parsedSubject!.type
+                              "
+                            >
+                              {{
+                                parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message)
+                                  .parsedSubject!.type
+                              }}
                             </span>
-                            <span v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.scope" class="cc-scope-badge large">
-                              ({{ parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.scope }})
+                            <span
+                              v-if="
+                                parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message)
+                                  .parsedSubject!.scope
+                              "
+                              class="cc-scope-badge large"
+                            >
+                              ({{
+                                parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message)
+                                  .parsedSubject!.scope
+                              }})
                             </span>
-                            <span v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.isBreaking" class="cc-breaking-badge large">BREAKING</span>
-                            <span class="inline-subject-title">{{ parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.description }}</span>
+                            <span
+                              v-if="
+                                parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message)
+                                  .parsedSubject!.isBreaking
+                              "
+                              class="cc-breaking-badge large"
+                              >BREAKING</span
+                            >
+                            <span class="inline-subject-title">{{
+                              parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message)
+                                .parsedSubject!.description
+                            }}</span>
                           </template>
                           <template v-else>
-                            <span class="inline-subject-title">{{ parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).subject }}</span>
+                            <span class="inline-subject-title">{{
+                              parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).subject
+                            }}</span>
                           </template>
                         </div>
                         <button
                           class="inline-copy-msg-btn"
                           :title="t('scm.actions.copy_message') || '复制提交信息'"
-                          @click.stop="handleCopyCommitDetailMessage(selectedCommitDetail?.message || selectedCommit.message)"
+                          @click.stop="
+                            handleCopyCommitDetailMessage(selectedCommitDetail?.message || selectedCommit.message)
+                          "
                         >
                           <span class="codicon codicon-copy"></span>
                         </button>
                       </div>
 
-                      <div v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).body" class="inline-body-content">
-                        <pre class="inline-body-text">{{ parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).body }}</pre>
+                      <div
+                        v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).body"
+                        class="inline-body-content"
+                      >
+                        <pre class="inline-body-text">{{
+                          parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).body
+                        }}</pre>
                       </div>
                     </template>
                   </div>
@@ -661,7 +692,7 @@
                 <div class="inline-files-header">
                   <div class="inline-files-count-group">
                     <span class="inline-files-count">
-                      {{ t('scm.detail.changed_files') }} ({{ currentFiles.length }})
+                      {{ t("scm.detail.changed_files") }} ({{ currentFiles.length }})
                     </span>
                     <span v-if="totalAdditions > 0 || totalDeletions > 0" class="inline-files-stats-pill">
                       <span v-if="totalAdditions > 0" class="stat-add">+{{ totalAdditions }}</span>
@@ -676,11 +707,7 @@
                       class="files-search-input"
                       :placeholder="t('scm.graph.search_placeholder')"
                     />
-                    <button
-                      v-if="filesSearchQuery"
-                      class="files-clear-search"
-                      @click="filesSearchQuery = ''"
-                    >
+                    <button v-if="filesSearchQuery" class="files-clear-search" @click="filesSearchQuery = ''">
                       <span class="codicon codicon-close"></span>
                     </button>
                   </div>
@@ -688,20 +715,17 @@
 
                 <div v-if="isLoadingDetail || isLoadingCompare" class="inline-files-loading">
                   <span class="codicon codicon-loading codicon-modifier-spin"></span>
-                  <span>{{ t('scm.graph.loading_files') }}</span>
+                  <span>{{ t("scm.graph.loading_files") }}</span>
                 </div>
 
                 <!-- Tree View -->
-                <div
-                  v-else-if="filesViewMode === 'tree'"
-                  class="inline-files-tree"
-                >
+                <div v-else-if="filesViewMode === 'tree'" class="inline-files-tree">
                   <div
                     v-for="row in flatTreeRows"
                     :key="row.id"
                     class="tree-node-row"
                     :class="{ 'is-dir': row.isDir, 'is-file': !row.isDir }"
-                    :style="{ paddingLeft: (row.depth * 16 + 8) + 'px' }"
+                    :style="{ paddingLeft: row.depth * 16 + 8 + 'px' }"
                     @click="row.isDir ? toggleFolder(row.path) : handleFileClick(row.path)"
                   >
                     <!-- Folder row -->
@@ -721,7 +745,9 @@
                     <template v-else>
                       <span class="tree-spacer"></span>
                       <TechIcon :id="getFileName(row.path)" :size="15" />
-                      <span class="file-status-pill" :class="'badge-' + (row.file?.status || 'M')">{{ row.file?.status }}</span>
+                      <span class="file-status-pill" :class="'badge-' + (row.file?.status || 'M')">{{
+                        row.file?.status
+                      }}</span>
                       <span class="tree-node-name file-name font-mono" :title="row.path">{{ row.name }}</span>
 
                       <div v-if="row.file" class="file-diff-stats">
@@ -749,15 +775,12 @@
                   </div>
 
                   <div v-if="flatTreeRows.length === 0" class="no-files-hint">
-                    {{ t('scm.graph.no_commits') }}
+                    {{ t("scm.graph.no_commits") }}
                   </div>
                 </div>
 
                 <!-- List View -->
-                <div
-                  v-else
-                  class="inline-files-list"
-                >
+                <div v-else class="inline-files-list">
                   <div
                     v-for="file in flatFileList"
                     :key="file.path"
@@ -792,7 +815,7 @@
                   </div>
 
                   <div v-if="flatFileList.length === 0" class="no-files-hint">
-                    {{ t('scm.graph.no_commits') }}
+                    {{ t("scm.graph.no_commits") }}
                   </div>
                 </div>
               </div>
@@ -805,22 +828,24 @@
             class="graph-load-more-row"
             :style="{
               top: loadMoreTop + 'px',
-              height: LOAD_MORE_HEIGHT + 'px'
+              height: LOAD_MORE_HEIGHT + 'px',
             }"
           >
             <!-- When there are more commits to load -->
             <template v-if="hasMoreCommits">
-              <button
-                class="load-more-btn"
-                :disabled="isLoadingMore || isLoadingGraph"
-                @click="handleLoadMore"
-              >
+              <button class="load-more-btn" :disabled="isLoadingMore || isLoadingGraph" @click="handleLoadMore">
                 <span
                   class="codicon"
-                  :class="(isLoadingMore || isLoadingGraph) ? 'codicon-loading codicon-modifier-spin' : 'codicon-arrow-down'"
+                  :class="
+                    isLoadingMore || isLoadingGraph ? 'codicon-loading codicon-modifier-spin' : 'codicon-arrow-down'
+                  "
                 ></span>
                 <span>
-                  {{ (isLoadingMore || isLoadingGraph) ? t('scm.graph.loading_more') : t('scm.graph.load_more_commits', { count: 200 }) }}
+                  {{
+                    isLoadingMore || isLoadingGraph
+                      ? t("scm.graph.loading_more")
+                      : t("scm.graph.load_more_commits", { count: 200 })
+                  }}
                 </span>
               </button>
             </template>
@@ -828,7 +853,7 @@
             <template v-else>
               <div class="all-commits-loaded-hint">
                 <span class="codicon codicon-check"></span>
-                <span>{{ t('scm.graph.all_commits_loaded') }}</span>
+                <span>{{ t("scm.graph.all_commits_loaded") }}</span>
               </div>
             </template>
           </div>
@@ -836,7 +861,7 @@
           <!-- Empty State -->
           <div v-if="filteredCommits.length === 0 && !isLoadingGraph" class="graph-empty-state">
             <span class="codicon codicon-inbox empty-icon"></span>
-            <span>{{ t('scm.graph.no_commits') }}</span>
+            <span>{{ t("scm.graph.no_commits") }}</span>
           </div>
         </div>
       </div>
@@ -854,18 +879,18 @@
         <!-- Uncommitted Changes Dedicated Menu (Aligned with Git Graph) -->
         <template v-if="contextCommit?.hash === '*'">
           <div class="menu-item" @click="handleContextAction('stash-uncommitted')">
-            {{ t('scm.uncommitted.stash') }}
+            {{ t("scm.uncommitted.stash") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item danger" @click="handleContextAction('reset-uncommitted')">
-            {{ t('scm.uncommitted.reset') }}
+            {{ t("scm.uncommitted.reset") }}
           </div>
           <div class="menu-item danger" @click="handleContextAction('clean-uncommitted')">
-            {{ t('scm.uncommitted.clean') }}
+            {{ t("scm.uncommitted.clean") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="handleContextAction('open-scm-view')">
-            {{ t('scm.uncommitted.open_scm') }}
+            {{ t("scm.uncommitted.open_scm") }}
           </div>
         </template>
 
@@ -873,42 +898,44 @@
         <template v-else>
           <template v-if="comparePair">
             <div class="menu-item primary-action" @click="handleContextAction('compare')">
-              {{ t('scm.commit.compare_with', { base: comparePair.base.shortHash, target: comparePair.target.shortHash }) }}
+              {{
+                t("scm.commit.compare_with", { base: comparePair.base.shortHash, target: comparePair.target.shortHash })
+              }}
             </div>
             <div class="menu-separator"></div>
           </template>
           <div class="menu-item" @click="handleContextAction('add-tag')">
-            {{ t('scm.commit.add_tag') }}
+            {{ t("scm.commit.add_tag") }}
           </div>
           <div class="menu-item" @click="handleContextAction('create-branch')">
-            {{ t('scm.commit.create_branch') }}
+            {{ t("scm.commit.create_branch") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="handleContextAction('checkout')">
-            {{ t('scm.commit.checkout') }}
+            {{ t("scm.commit.checkout") }}
           </div>
           <div class="menu-item" @click="handleContextAction('cherry-pick')">
-            {{ t('scm.commit.cherry_pick') }}
+            {{ t("scm.commit.cherry_pick") }}
           </div>
           <div class="menu-item" @click="handleContextAction('revert')">
-            {{ t('scm.commit.revert') }}
+            {{ t("scm.commit.revert") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="handleContextAction('merge')">
-            {{ t('scm.commit.merge') }}
+            {{ t("scm.commit.merge") }}
           </div>
           <div class="menu-item" @click="handleContextAction('rebase')">
-            {{ t('scm.commit.rebase') }}
+            {{ t("scm.commit.rebase") }}
           </div>
           <div class="menu-item danger" @click="handleContextAction('reset')">
-            {{ t('scm.commit.reset') }}
+            {{ t("scm.commit.reset") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="handleContextAction('copy-hash')">
-            {{ t('scm.commit.copy_hash') }}
+            {{ t("scm.commit.copy_hash") }}
           </div>
           <div class="menu-item" @click="handleContextAction('copy-subject')">
-            {{ t('scm.commit.copy_subject') }}
+            {{ t("scm.commit.copy_subject") }}
           </div>
         </template>
       </div>
@@ -925,54 +952,54 @@
           <!-- 图 1: Current Branch Context Menu -->
           <template v-if="isRefCurrent">
             <div class="menu-item" @click="handleRefAction('rename-branch')">
-              {{ t('scm.branch.rename') }}
+              {{ t("scm.branch.rename") }}
             </div>
             <div class="menu-item" @click="handleRefAction('push-branch')">
-              {{ t('scm.branch.push') }}
+              {{ t("scm.branch.push") }}
             </div>
             <div class="menu-separator"></div>
             <div class="menu-item" @click="handleRefAction('archive')">
-              {{ t('scm.branch.archive') }}
+              {{ t("scm.branch.archive") }}
             </div>
             <div class="menu-item" @click="handleRefAction('toggle-dropdown-filter')">
-              {{ isBranchFiltered ? t('scm.branch.unselect_filter') : t('scm.branch.select_filter') }}
+              {{ isBranchFiltered ? t("scm.branch.unselect_filter") : t("scm.branch.select_filter") }}
             </div>
             <div class="menu-separator"></div>
             <div class="menu-item" @click="handleRefAction('copy-name')">
-              {{ t('scm.branch.copy_name') }}
+              {{ t("scm.branch.copy_name") }}
             </div>
           </template>
 
           <!-- 图 2: Inactive Branch Context Menu -->
           <template v-else>
             <div class="menu-item" @click="handleRefAction('checkout-branch')">
-              {{ t('scm.branch.checkout') }}
+              {{ t("scm.branch.checkout") }}
             </div>
             <div class="menu-item" @click="handleRefAction('rename-branch')">
-              {{ t('scm.branch.rename') }}
+              {{ t("scm.branch.rename") }}
             </div>
             <div class="menu-item danger" @click="handleRefAction('delete-branch')">
-              {{ t('scm.branch.delete') }}
+              {{ t("scm.branch.delete") }}
             </div>
             <div class="menu-item" @click="handleRefAction('merge-branch')">
-              {{ t('scm.branch.merge') }}
+              {{ t("scm.branch.merge") }}
             </div>
             <div class="menu-item" @click="handleRefAction('rebase-branch')">
-              {{ t('scm.branch.rebase') }}
+              {{ t("scm.branch.rebase") }}
             </div>
             <div class="menu-item" @click="handleRefAction('push-branch')">
-              {{ t('scm.branch.push') }}
+              {{ t("scm.branch.push") }}
             </div>
             <div class="menu-separator"></div>
             <div class="menu-item" @click="handleRefAction('archive')">
-              {{ t('scm.branch.archive') }}
+              {{ t("scm.branch.archive") }}
             </div>
             <div class="menu-item" @click="handleRefAction('toggle-dropdown-filter')">
-              {{ isBranchFiltered ? t('scm.branch.unselect_filter') : t('scm.branch.select_filter') }}
+              {{ isBranchFiltered ? t("scm.branch.unselect_filter") : t("scm.branch.select_filter") }}
             </div>
             <div class="menu-separator"></div>
             <div class="menu-item" @click="handleRefAction('copy-name')">
-              {{ t('scm.branch.copy_name') }}
+              {{ t("scm.branch.copy_name") }}
             </div>
           </template>
         </template>
@@ -980,66 +1007,66 @@
         <!-- Tag Context Menu -->
         <template v-else-if="selectedRef?.type === 'tag'">
           <div class="menu-item" @click="handleRefAction('checkout-tag')">
-            {{ t('scm.tag.checkout') }}
+            {{ t("scm.tag.checkout") }}
           </div>
           <div class="menu-item" @click="handleRefAction('create-branch-from-tag')">
-            {{ t('scm.tag.create_branch') }}
+            {{ t("scm.tag.create_branch") }}
           </div>
           <div class="menu-item danger" @click="handleRefAction('delete-tag')">
-            {{ t('scm.tag.delete') }}
+            {{ t("scm.tag.delete") }}
           </div>
           <div class="menu-item" @click="handleRefAction('push-tag')">
-            {{ t('scm.tag.push') }}
+            {{ t("scm.tag.push") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="handleRefAction('archive')">
-            {{ t('scm.branch.archive') }}
+            {{ t("scm.branch.archive") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="handleRefAction('copy-name')">
-            {{ t('scm.tag.copy_name') }}
+            {{ t("scm.tag.copy_name") }}
           </div>
         </template>
 
         <!-- Stash Context Menu -->
         <template v-else-if="selectedRef?.type === 'stash'">
           <div class="menu-item" @click="handleRefAction('apply-stash')">
-            {{ t('scm.stash.apply') }}
+            {{ t("scm.stash.apply") }}
           </div>
           <div class="menu-item" @click="handleRefAction('pop-stash')">
-            {{ t('scm.stash.pop') }}
+            {{ t("scm.stash.pop") }}
           </div>
           <div class="menu-item danger" @click="handleRefAction('drop-stash')">
-            {{ t('scm.stash.drop') }}
+            {{ t("scm.stash.drop") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="handleRefAction('branch-from-stash')">
-            {{ t('scm.stash.create_branch') }}
+            {{ t("scm.stash.create_branch") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="handleRefAction('copy-name')">
-            {{ t('scm.branch.copy_name') }}
+            {{ t("scm.branch.copy_name") }}
           </div>
         </template>
 
         <!-- Remote Branch Context Menu -->
         <template v-else-if="selectedRef?.type === 'remote'">
           <div class="menu-item" @click="handleRefAction('checkout-remote')">
-            {{ t('scm.remote.checkout') }}
+            {{ t("scm.remote.checkout") }}
           </div>
           <div class="menu-item" @click="handleRefAction('pull-remote')">
-            {{ t('scm.remote.pull') }}
+            {{ t("scm.remote.pull") }}
           </div>
           <div class="menu-item" @click="handleRefAction('merge-remote')">
-            {{ t('scm.remote.merge') }}
+            {{ t("scm.remote.merge") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="handleRefAction('archive')">
-            {{ t('scm.branch.archive') }}
+            {{ t("scm.branch.archive") }}
           </div>
           <div class="menu-separator"></div>
           <div class="menu-item" @click="handleRefAction('copy-name')">
-            {{ t('scm.branch.copy_name') }}
+            {{ t("scm.branch.copy_name") }}
           </div>
         </template>
       </div>
@@ -1129,9 +1156,7 @@ const {
 const { showToast } = useToast();
 
 const selectedBranches = ref<string[]>(
-  graphFilterBranches.value && graphFilterBranches.value.length > 0
-    ? [...graphFilterBranches.value]
-    : ["all"]
+  graphFilterBranches.value && graphFilterBranches.value.length > 0 ? [...graphFilterBranches.value] : ["all"]
 );
 const showStashes = ref(true);
 const searchQuery = ref("");
@@ -1163,7 +1188,9 @@ const isComparing = computed(() => {
 function parseCommitSubject(msg: string) {
   if (!msg || msg.startsWith("*") || msg.startsWith("Uncommitted")) return null;
   const firstLine = msg.split(/\r?\n/)[0];
-  const m = firstLine.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(([a-zA-Z0-9_.\-/]+)\))?(!)?: (.+)$/);
+  const m = firstLine.match(
+    /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(([a-zA-Z0-9_.\-/]+)\))?(!)?: (.+)$/
+  );
   if (!m) return null;
   return {
     type: m[1],
@@ -1199,11 +1226,7 @@ const comparePair = computed<{ base: GitGraphCommit; target: GitGraphCommit } | 
   if (compareCommit.value && selectedCommit.value) {
     return { base: selectedCommit.value, target: compareCommit.value };
   }
-  if (
-    contextCommit.value &&
-    selectedCommit.value &&
-    contextCommit.value.hash !== selectedCommit.value.hash
-  ) {
+  if (contextCommit.value && selectedCommit.value && contextCommit.value.hash !== selectedCommit.value.hash) {
     return { base: selectedCommit.value, target: contextCommit.value };
   }
   return null;
@@ -1247,10 +1270,7 @@ const isBranchFiltered = computed(() => {
 });
 
 const emit = defineEmits<{
-  (
-    e: "open-commit-diff",
-    payload: { path: string; hash: string; parentHash?: string }
-  ): void;
+  (e: "open-commit-diff", payload: { path: string; hash: string; parentHash?: string }): void;
   (e: "open-diff", payload: { path: string; staged: boolean }): void;
   (e: "switch-tab", tab: "changes" | "graph"): void;
   (e: "open-file", path: string): void;
@@ -1258,11 +1278,7 @@ const emit = defineEmits<{
 
 // Virtual Uncommitted Commit node injected at top when totalChanges > 0
 const currentHeadCommit = computed(() => {
-  return (
-    graphCommits.value.find((c) =>
-      c.refs?.some((r) => r.current || r.type === "head")
-    ) || graphCommits.value[0]
-  );
+  return graphCommits.value.find((c) => c.refs?.some((r) => r.current || r.type === "head")) || graphCommits.value[0];
 });
 
 const uncommittedVirtualCommit = computed<GitGraphCommit | null>(() => {
@@ -1312,23 +1328,16 @@ const filteredCommits = computed(() => {
 
 const expandedCommitIndex = computed(() => {
   if (!selectedCommit.value) return -1;
-  const idxA = filteredCommits.value.findIndex(
-    (c) => c.hash === selectedCommit.value?.hash
-  );
+  const idxA = filteredCommits.value.findIndex((c) => c.hash === selectedCommit.value?.hash);
   if (!compareCommit.value) return idxA;
-  const idxB = filteredCommits.value.findIndex(
-    (c) => c.hash === compareCommit.value?.hash
-  );
+  const idxB = filteredCommits.value.findIndex((c) => c.hash === compareCommit.value?.hash);
   if (idxA === -1) return idxB;
   if (idxB === -1) return idxA;
   return Math.max(idxA, idxB);
 });
 
 function isRowSelected(commit: GitGraphCommit): boolean {
-  return (
-    selectedCommit.value?.hash === commit.hash ||
-    compareCommit.value?.hash === commit.hash
-  );
+  return selectedCommit.value?.hash === commit.hash || compareCommit.value?.hash === commit.hash;
 }
 
 function getRowTop(idx: number): number {
@@ -1427,9 +1436,7 @@ const currentFiles = computed<GitCommitFileItem[]>(() => {
 const fileTreeData = computed<FileTreeNode[]>(() => {
   const files = currentFiles.value;
   const query = filesSearchQuery.value.trim().toLowerCase();
-  const filtered = query
-    ? files.filter((f) => f.path.toLowerCase().includes(query))
-    : files;
+  const filtered = query ? files.filter((f) => f.path.toLowerCase().includes(query)) : files;
 
   const root: FileTreeNode = { name: "", path: "", isDir: true, children: [] };
   for (const f of filtered) {
@@ -1547,17 +1554,9 @@ function handleFileClick(path: string) {
     return;
   }
   if (isComparing.value && activeCompare.value) {
-    handleOpenFileDiff(
-      path,
-      activeCompare.value.target.hash,
-      activeCompare.value.base.hash
-    );
+    handleOpenFileDiff(path, activeCompare.value.target.hash, activeCompare.value.base.hash);
   } else if (selectedCommit.value) {
-    handleOpenFileDiff(
-      path,
-      selectedCommit.value.hash,
-      selectedCommit.value.parents?.[0]
-    );
+    handleOpenFileDiff(path, selectedCommit.value.hash, selectedCommit.value.parents?.[0]);
   }
 }
 
@@ -1701,9 +1700,7 @@ function handleCopyHash(hash: string) {
 }
 
 function jumpToCommit(parentHash: string) {
-  const target = graphCommits.value.find(
-    (c) => c.hash.startsWith(parentHash) || parentHash.startsWith(c.hash)
-  );
+  const target = graphCommits.value.find((c) => c.hash.startsWith(parentHash) || parentHash.startsWith(c.hash));
   if (target) {
     handleSelectCommit(target);
     const idx = filteredCommits.value.findIndex((c) => c.hash === target.hash);
@@ -1777,10 +1774,7 @@ async function handleContextAction(action: string) {
     if (comparePair.value) {
       selectedCommit.value = comparePair.value.base;
       compareCommit.value = comparePair.value.target;
-      await triggerCompare(
-        comparePair.value.base.hash,
-        comparePair.value.target.hash
-      );
+      await triggerCompare(comparePair.value.base.hash, comparePair.value.target.hash);
     }
     return;
   }
@@ -2355,7 +2349,8 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
 }
 
 @keyframes pulseHead {
-  0%, 100% {
+  0%,
+  100% {
     stroke-opacity: 0.9;
     r: 7;
   }
@@ -3377,7 +3372,9 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   font-size: 13px;
   color: #e2e8f0;
   cursor: pointer;
-  transition: background-color 0.08s ease, color 0.08s ease;
+  transition:
+    background-color 0.08s ease,
+    color 0.08s ease;
   white-space: nowrap;
 }
 

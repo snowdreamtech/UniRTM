@@ -5,12 +5,23 @@
       <div class="return-guard-content">
         <button class="return-guard-btn" @click="handleReturnContext">
           <span class="codicon codicon-arrow-left"></span>
-          <span>{{ route.query.from === 'settings' ? (t("settings.return_to_settings") || "返回设置") : (t("guard.actions.return_to_guard") || "返回质量守卫") }}</span>
+          <span>{{
+            route.query.from === "settings"
+              ? t("settings.return_to_settings") || "返回设置"
+              : t("guard.actions.return_to_guard") || "返回质量守卫"
+          }}</span>
         </button>
         <span class="return-guard-divider">|</span>
         <span class="return-guard-info">
-          <span class="codicon" :class="route.query.from === 'settings' ? 'codicon-settings-gear' : 'codicon-shield'"></span>
-          {{ route.query.from === 'settings' ? (t("settings.editing_context") || "正在编辑设置配置文件") : (t("guard.config.editing_context") || "正在编辑质量守卫配置文件") }}: <strong>{{ route.query.file || activeTab?.name }}</strong>
+          <span
+            class="codicon"
+            :class="route.query.from === 'settings' ? 'codicon-settings-gear' : 'codicon-shield'"
+          ></span>
+          {{
+            route.query.from === "settings"
+              ? t("settings.editing_context") || "正在编辑设置配置文件"
+              : t("guard.config.editing_context") || "正在编辑质量守卫配置文件"
+          }}: <strong>{{ route.query.file || activeTab?.name }}</strong>
         </span>
       </div>
       <button class="return-guard-dismiss" @click="handleDismissGuardBanner" title="关闭横幅">
@@ -29,7 +40,7 @@
             active: tab.id === activeTabId,
             'is-pinned': tab.isPinned,
             'is-diff': tab.isDiff,
-            'has-git-status': !!tab.gitStatus
+            'has-git-status': !!tab.gitStatus,
           }"
           @click="handleSelectTab(tab.id)"
           @auxclick.middle.stop="closeTab(tab.id)"
@@ -40,33 +51,19 @@
           <TechIcon v-else :id="tab.name" :size="16" class="tab-icon" />
           <span
             class="tab-title"
-            :class="[
-              tab.gitStatus ? 'git-color-' + tab.gitStatus : '',
-              tab.isDiff ? 'tab-title-diff' : ''
-            ]"
+            :class="[tab.gitStatus ? 'git-color-' + tab.gitStatus : '', tab.isDiff ? 'tab-title-diff' : '']"
           >
             {{ tab.name }}
           </span>
           <span v-if="tab.gitStatus" class="tab-git-badge" :class="'badge-' + tab.gitStatus">{{ tab.gitStatus }}</span>
           <span v-if="tab.isDirty" class="dirty-dot" title="未保存更改">●</span>
-          <button
-            v-if="tab.isPinned"
-            class="tab-pin-btn"
-            title="取消固定"
-            @click.stop="togglePinTab(tab.id)"
-          >
+          <button v-if="tab.isPinned" class="tab-pin-btn" title="取消固定" @click.stop="togglePinTab(tab.id)">
             <span class="codicon codicon-pinned"></span>
           </button>
-          <button
-            v-else
-            class="tab-close-btn"
-            title="关闭 (中键亦可关闭)"
-            @click.stop="closeTab(tab.id)"
-          >
+          <button v-else class="tab-close-btn" title="关闭 (中键亦可关闭)" @click.stop="closeTab(tab.id)">
             <span class="codicon codicon-close"></span>
           </button>
         </div>
-
       </div>
 
       <div class="tab-actions-right">
@@ -79,35 +76,16 @@
           <span class="codicon codicon-save"></span>
           <span>保存</span>
         </button>
-        <button
-          v-if="hasDirtyTabs"
-          class="action-btn"
-          title="全部保存"
-          @click="saveAllTabs"
-        >
+        <button v-if="hasDirtyTabs" class="action-btn" title="全部保存" @click="saveAllTabs">
           <span class="codicon codicon-save-all"></span>
         </button>
-        <button
-          v-if="activeTab"
-          class="action-btn"
-          title="复制相对路径"
-          @click="handleCopyPath"
-        >
+        <button v-if="activeTab" class="action-btn" title="复制相对路径" @click="handleCopyPath">
           <span class="codicon codicon-copy"></span>
         </button>
-        <button
-          v-if="activeTab"
-          class="action-btn"
-          title="在集成终端中打开所在目录"
-          @click="handleOpenParentTerminal"
-        >
+        <button v-if="activeTab" class="action-btn" title="在集成终端中打开所在目录" @click="handleOpenParentTerminal">
           <span class="codicon codicon-terminal"></span>
         </button>
-        <button
-          class="action-btn"
-          title="关闭全部标签页"
-          @click="() => closeAllTabs()"
-        >
+        <button class="action-btn" title="关闭全部标签页" @click="() => closeAllTabs()">
           <span class="codicon codicon-close-all"></span>
         </button>
       </div>
@@ -119,11 +97,7 @@
       <nav class="editor-breadcrumb" aria-label="文件导航路径">
         <div class="bc-items-scroll">
           <template v-for="(item, index) in breadcrumbs" :key="item.id">
-            <span
-              v-if="index > 0"
-              class="codicon codicon-chevron-right bc-separator"
-              aria-hidden="true"
-            ></span>
+            <span v-if="index > 0" class="codicon codicon-chevron-right bc-separator" aria-hidden="true"></span>
             <button
               type="button"
               class="bc-item"
@@ -159,10 +133,7 @@
         <div
           v-if="splitState.active && splitState.tab"
           class="editor-split-container"
-          :class="[
-            'split-' + splitState.direction,
-            'split-pos-' + splitState.position,
-          ]"
+          :class="['split-' + splitState.direction, 'split-pos-' + splitState.position]"
         >
           <!-- Primary Pane (Active Tab) -->
           <div class="split-pane split-primary-pane">
@@ -205,16 +176,13 @@
             <div class="split-pane-header">
               <div class="split-pane-info">
                 <TechIcon :id="splitState.tab.name" :size="14" class="split-pane-icon" />
-                <span class="split-pane-name">{{ splitState.tab.name }}{{ splitState.inGroup ? ' (组内拆分)' : '' }}</span>
+                <span class="split-pane-name"
+                  >{{ splitState.tab.name }}{{ splitState.inGroup ? " (组内拆分)" : "" }}</span
+                >
                 <span v-if="splitState.tab.isDirty" class="dirty-dot">●</span>
               </div>
               <div class="split-pane-tools">
-                <button
-                  type="button"
-                  class="split-tool-btn"
-                  title="关闭拆分视图"
-                  @click="closeSplitEditor"
-                >
+                <button type="button" class="split-tool-btn" title="关闭拆分视图" @click="closeSplitEditor">
                   <span class="codicon codicon-close"></span>
                 </button>
               </div>
@@ -268,12 +236,16 @@
               <h3 class="binary-title">{{ activeTab.name }}</h3>
               <div class="binary-meta">
                 <span v-if="activeTab.size" class="binary-badge">{{ formatFileSize(activeTab.size) }}</span>
-                <span class="binary-badge tag">{{ activeTab.binaryReason === 'too_large' ? '大文件' : '二进制文件' }}</span>
+                <span class="binary-badge tag">{{
+                  activeTab.binaryReason === "too_large" ? "大文件" : "二进制文件"
+                }}</span>
               </div>
               <p class="binary-message">
-                {{ activeTab.binaryReason === 'too_large' 
-                   ? '该文件体积过大 (超过 10 MB)，无法在文本编辑器中显示。' 
-                   : '该文件未在文本编辑器中显示，因为它是二进制文件或使用了不受支持的文本编码。' }}
+                {{
+                  activeTab.binaryReason === "too_large"
+                    ? "该文件体积过大 (超过 10 MB)，无法在文本编辑器中显示。"
+                    : "该文件未在文本编辑器中显示，因为它是二进制文件或使用了不受支持的文本编码。"
+                }}
               </p>
               <div class="binary-actions">
                 <button type="button" class="action-btn-primary" @click="handleOpenParentTerminal">
@@ -289,11 +261,7 @@
           </div>
 
           <!-- 3. Monaco Diff Editor (Diff Tab) -->
-          <MonacoDiffEditor
-            v-else-if="activeTab.isDiff"
-            :key="'diff-' + activeTab.id"
-            :tab="activeTab"
-          />
+          <MonacoDiffEditor v-else-if="activeTab.isDiff" :key="'diff-' + activeTab.id" :tab="activeTab" />
 
           <!-- 4. Monaco Code Editor (Normal Tab) -->
           <MonacoEditor
@@ -304,7 +272,6 @@
             @cursor-change="handleCursorChange"
             @save="handleSave"
           />
-
         </template>
       </div>
 
@@ -396,9 +363,7 @@
       <div class="welcome-watermark">
         <TechIcon id="workbench:explorer" :size="56" class="watermark-icon" />
         <h2 class="welcome-title">{{ t("explorer.title") || "资源管理器" }}</h2>
-        <p class="welcome-desc">
-          在左侧选择文件以查看详情或编辑，支持文件浏览、增删改查与终端快捷联动。
-        </p>
+        <p class="welcome-desc">在左侧选择文件以查看详情或编辑，支持文件浏览、增删改查与终端快捷联动。</p>
 
         <div class="welcome-shortcuts">
           <div class="shortcut-list">
@@ -448,45 +413,30 @@
               <li class="action-item" role="none" @click="handleCloseCurrent">
                 <a class="action-menu-item" role="menuitem">
                   <span class="action-label">关闭</span>
-                  <span class="keybinding">{{ isMac ? '⌘W' : 'Ctrl+W' }}</span>
+                  <span class="keybinding">{{ isMac ? "⌘W" : "Ctrl+W" }}</span>
                 </a>
               </li>
-              <li
-                class="action-item"
-                :class="{ disabled: !canCloseOthers }"
-                role="none"
-                @click="handleCloseOthers"
-              >
+              <li class="action-item" :class="{ disabled: !canCloseOthers }" role="none" @click="handleCloseOthers">
                 <a class="action-menu-item" role="menuitem">
                   <span class="action-label">关闭其他</span>
-                  <span class="keybinding">{{ isMac ? '⌥⌘T' : 'Alt+Ctrl+T' }}</span>
+                  <span class="keybinding">{{ isMac ? "⌥⌘T" : "Alt+Ctrl+T" }}</span>
                 </a>
               </li>
-              <li
-                class="action-item"
-                :class="{ disabled: !canCloseToRight }"
-                role="none"
-                @click="handleCloseToRight"
-              >
+              <li class="action-item" :class="{ disabled: !canCloseToRight }" role="none" @click="handleCloseToRight">
                 <a class="action-menu-item" role="menuitem">
                   <span class="action-label">关闭右侧标签页</span>
                 </a>
               </li>
-              <li
-                class="action-item"
-                :class="{ disabled: !canCloseSaved }"
-                role="none"
-                @click="handleCloseSaved"
-              >
+              <li class="action-item" :class="{ disabled: !canCloseSaved }" role="none" @click="handleCloseSaved">
                 <a class="action-menu-item" role="menuitem">
                   <span class="action-label">关闭已保存</span>
-                  <span class="keybinding">{{ isMac ? '[⌘K U]' : '[Ctrl+K U]' }}</span>
+                  <span class="keybinding">{{ isMac ? "[⌘K U]" : "[Ctrl+K U]" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click="handleCloseAll">
                 <a class="action-menu-item" role="menuitem">
                   <span class="action-label">全部关闭</span>
-                  <span class="keybinding">{{ isMac ? '[⌘K W]' : '[Ctrl+K W]' }}</span>
+                  <span class="keybinding">{{ isMac ? "[⌘K W]" : "[Ctrl+K W]" }}</span>
                 </a>
               </li>
 
@@ -497,13 +447,13 @@
               <li class="action-item" role="none" @click="handleCopyAbsolutePath">
                 <a class="action-menu-item" role="menuitem">
                   <span class="action-label">复制路径</span>
-                  <span class="keybinding">{{ isMac ? '⌥⌘C' : 'Shift+Alt+C' }}</span>
+                  <span class="keybinding">{{ isMac ? "⌥⌘C" : "Shift+Alt+C" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click="handleCopyRelativePath">
                 <a class="action-menu-item" role="menuitem">
                   <span class="action-label">复制相对路径</span>
-                  <span class="keybinding">{{ isMac ? '⌥⇧⌘C' : 'Ctrl+K Ctrl+C' }}</span>
+                  <span class="keybinding">{{ isMac ? "⌥⇧⌘C" : "Ctrl+K Ctrl+C" }}</span>
                 </a>
               </li>
 
@@ -538,11 +488,15 @@
               <!-- Group 4: Pin / Unpin Tab -->
               <li class="action-item" role="none" @click="handleTogglePin">
                 <a class="action-menu-item" role="menuitem">
-                  <span class="action-label">{{ targetTab?.isPinned ? '取消固定' : '固定' }}</span>
+                  <span class="action-label">{{ targetTab?.isPinned ? "取消固定" : "固定" }}</span>
                   <span class="keybinding">{{
                     targetTab?.isPinned
-                      ? (isMac ? '[⌘K ⇧Enter]' : '[Ctrl+K Shift+Enter]')
-                      : (isMac ? '[⌘K Enter]' : '[Ctrl+K Enter]')
+                      ? isMac
+                        ? "[⌘K ⇧Enter]"
+                        : "[Ctrl+K Shift+Enter]"
+                      : isMac
+                        ? "[⌘K Enter]"
+                        : "[Ctrl+K Enter]"
                   }}</span>
                 </a>
               </li>
@@ -637,7 +591,9 @@
 
               <li class="action-item" role="none" @click.stop="handleSplitInGroup">
                 <a class="action-menu-item" role="menuitem">
-                  <span class="action-label">{{ splitState.active && splitState.inGroup ? '加入编辑器组' : '在组中拆分' }}</span>
+                  <span class="action-label">{{
+                    splitState.active && splitState.inGroup ? "加入编辑器组" : "在组中拆分"
+                  }}</span>
                 </a>
               </li>
             </ul>
@@ -685,7 +641,8 @@ function handleDismissGuardBanner() {
 }
 
 const { status: gitStatusData, getGitStatus, setGraphFilterPath, fetchStatus } = useGit();
-const { onOpenDiff, setActiveFilePath, onGitStatusChanged, onOpenInEditor, onSendToTerminal, onRevealInTerminal } = useWorkspaceBus();
+const { onOpenDiff, setActiveFilePath, onGitStatusChanged, onOpenInEditor, onSendToTerminal, onRevealInTerminal } =
+  useWorkspaceBus();
 
 const currentGitBranch = computed(() => {
   return gitStatusData.value?.branch || "main";
@@ -728,15 +685,7 @@ const emit = defineEmits<{
 
 const { showToast } = useToast();
 
-const {
-  tree,
-  selectedNode,
-  copyRelativePath,
-  startInlineCreate,
-  expandPath,
-  selectNode,
-  fetchTree,
-} = useFileTree();
+const { tree, selectedNode, copyRelativePath, startInlineCreate, expandPath, selectNode, fetchTree } = useFileTree();
 
 const {
   tabs,
@@ -757,7 +706,6 @@ const {
   closeAllTabs,
   togglePinTab,
 } = useEditorTabs();
-
 
 // Tab Context Menu State
 const contextMenuRef = ref<HTMLDivElement | null>(null);
@@ -918,22 +866,28 @@ function handleCopyAbsolutePath() {
   if (!rel.startsWith("/")) {
     fullPath = root ? (root.endsWith("/") ? `${root}${rel}` : `${root}/${rel}`) : rel;
   }
-  navigator.clipboard?.writeText(fullPath).then(() => {
-    showToast(t("explorer.copied_full_path") || `已复制完整路径: ${fullPath}`, "success");
-  }).catch(() => {
-    showToast("复制路径失败", "error");
-  });
+  navigator.clipboard
+    ?.writeText(fullPath)
+    .then(() => {
+      showToast(t("explorer.copied_full_path") || `已复制完整路径: ${fullPath}`, "success");
+    })
+    .catch(() => {
+      showToast("复制路径失败", "error");
+    });
   closeContextMenu();
 }
 
 function handleCopyRelativePath() {
   if (!targetTab.value) return;
   const rel = targetTab.value.path;
-  navigator.clipboard?.writeText(rel).then(() => {
-    showToast(t("explorer.copied_path") || `已复制相对路径: ${rel}`, "success");
-  }).catch(() => {
-    showToast("复制相对路径失败", "error");
-  });
+  navigator.clipboard
+    ?.writeText(rel)
+    .then(() => {
+      showToast(t("explorer.copied_path") || `已复制相对路径: ${rel}`, "success");
+    })
+    .catch(() => {
+      showToast("复制相对路径失败", "error");
+    });
   closeContextMenu();
 }
 
@@ -1097,10 +1051,7 @@ function handleGlobalPointerDown(e: MouseEvent) {
     const el = contextMenuRef.value;
     const subEl = submenuContentRef.value;
     const target = e.target as Node;
-    if (
-      (!el || !el.contains(target)) &&
-      (!subEl || !subEl.contains(target))
-    ) {
+    if ((!el || !el.contains(target)) && (!subEl || !subEl.contains(target))) {
       closeContextMenu();
     }
   }
@@ -1168,7 +1119,6 @@ watch(
   }
 );
 
-
 onBeforeUnmount(() => {
   window.removeEventListener("pointerdown", handleGlobalPointerDown);
   window.removeEventListener("keydown", handleGlobalKeyDown);
@@ -1197,7 +1147,6 @@ watch(
   },
   { immediate: true, deep: true }
 );
-
 
 interface BreadcrumbItem {
   id: string;
@@ -1510,7 +1459,6 @@ function handleCreateFolderInside() {
   color: #ef4444;
 }
 
-
 .tab-actions-right {
   display: flex;
   align-items: center;
@@ -1602,7 +1550,9 @@ function handleCreateFolderInside() {
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   line-height: 1;
 }
 

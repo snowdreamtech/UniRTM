@@ -124,7 +124,10 @@ export function useTerminalSessions() {
     return found || session.panes[0] || null;
   });
 
-  function splitActiveSession(direction: "vertical" | "horizontal", shell?: { name: string; path: string }): TerminalPane | null {
+  function splitActiveSession(
+    direction: "vertical" | "horizontal",
+    shell?: { name: string; path: string }
+  ): TerminalPane | null {
     if (sessions.value.length === 0) {
       createSession(shell);
     }
@@ -151,9 +154,7 @@ export function useTerminalSessions() {
   }
 
   function setActivePane(paneId: string, sessionId?: string) {
-    const targetSession = sessionId
-      ? sessions.value.find((s) => s.id === sessionId)
-      : activeSession.value;
+    const targetSession = sessionId ? sessions.value.find((s) => s.id === sessionId) : activeSession.value;
     if (targetSession) {
       const pane = targetSession.panes.find((p) => p.id === paneId);
       if (pane) {

@@ -3,9 +3,6 @@
 
 package guard
 
-import (
-)
-
 // GetAllBuiltinRules returns instances of all Go-native built-in guard rules
 func GetAllBuiltinRules() []Rule {
 	return []Rule{
@@ -39,4 +36,3 @@ func GetAllBuiltinRules() []Rule {
 		NewIpAddressesRule(),
 	}
 }
-

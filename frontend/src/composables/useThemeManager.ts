@@ -17,10 +17,22 @@ const defaultColors: ThemeItem[] = [
   { id: "light", name: "UniRTM Light", type: "color", is_builtin: true, ui_theme: "vs" },
 ];
 const defaultIcons: ThemeItem[] = [
-  { id: "seti", name: "Seti UI", type: "icon", is_builtin: true, description: "Official Visual Studio Code default file icon theme" },
+  {
+    id: "seti",
+    name: "Seti UI",
+    type: "icon",
+    is_builtin: true,
+    description: "Official Visual Studio Code default file icon theme",
+  },
 ];
 const defaultProducts: ThemeItem[] = [
-  { id: "codicons", name: "Codicons (默认)", type: "product", is_builtin: true, description: "Official Visual Studio Code product icon theme" },
+  {
+    id: "codicons",
+    name: "Codicons (默认)",
+    type: "product",
+    is_builtin: true,
+    description: "Official Visual Studio Code product icon theme",
+  },
 ];
 
 const colorThemes = ref<ThemeItem[]>(defaultColors);
@@ -76,7 +88,9 @@ export function useThemeManager() {
 
       // Initialize preferred themes from server or localStorage
       const serverThemeItem = colorThemes.value.find((c) => c.id === serverColor);
-      const isServerLight = serverColor === "light" || (serverThemeItem && (serverThemeItem.ui_theme === "vs" || serverThemeItem.ui_theme === "light"));
+      const isServerLight =
+        serverColor === "light" ||
+        (serverThemeItem && (serverThemeItem.ui_theme === "vs" || serverThemeItem.ui_theme === "light"));
 
       if (!localStorage.getItem(PREF_DARK_KEY)) {
         if (!isServerLight && serverColor !== "default") {
@@ -170,7 +184,9 @@ export function useThemeManager() {
 
       // If active theme was deleted, reset to default
       if (type === "color") {
-        const deletedColor = colorThemes.value.find((c) => c.package_id === packageId && c.id === activeColorTheme.value);
+        const deletedColor = colorThemes.value.find(
+          (c) => c.package_id === packageId && c.id === activeColorTheme.value
+        );
         if (deletedColor) {
           if (preferredDarkTheme.value === deletedColor.id) {
             preferredDarkTheme.value = "default";
@@ -188,7 +204,9 @@ export function useThemeManager() {
           await setActiveTheme(undefined, "seti");
         }
       } else if (type === "product") {
-        const deletedProduct = productIconThemes.value.find((p) => p.package_id === packageId && p.id === activeProductIconTheme.value);
+        const deletedProduct = productIconThemes.value.find(
+          (p) => p.package_id === packageId && p.id === activeProductIconTheme.value
+        );
         if (deletedProduct) {
           await setActiveTheme(undefined, undefined, undefined, "codicons");
         }
@@ -226,8 +244,10 @@ export function useThemeManager() {
       if (colorId) {
         payload.color = colorId;
         const themeItem = colorThemes.value.find((c) => c.id === colorId);
-        const isLight = colorId === "light" || (themeItem && (themeItem.ui_theme === "vs" || themeItem.ui_theme === "light"));
-        const isDark = colorId === "dark" || (themeItem && (themeItem.ui_theme === "vs-dark" || themeItem.ui_theme === "dark"));
+        const isLight =
+          colorId === "light" || (themeItem && (themeItem.ui_theme === "vs" || themeItem.ui_theme === "light"));
+        const isDark =
+          colorId === "dark" || (themeItem && (themeItem.ui_theme === "vs-dark" || themeItem.ui_theme === "dark"));
 
         if (colorId === "default") {
           if (effectiveTheme.value === "light") {

@@ -67,9 +67,7 @@ describe("toolStatus utility", () => {
         active_version: "1.23.1",
         installed_versions: ["1.23.1", "1.22.0"],
       };
-      const updates: ToolUpdateCandidate[] = [
-        { id: "go", latest_version: "1.23.1", has_update: false },
-      ];
+      const updates: ToolUpdateCandidate[] = [{ id: "go", latest_version: "1.23.1", has_update: false }];
       const res = computeToolStatus(tool, "workspace", updates);
       expect(res.state).toBe("ready");
       expect(res.configuredVersion).toBe("1.23.1");
@@ -84,9 +82,7 @@ describe("toolStatus utility", () => {
         active_version: "3.12.0",
         installed_versions: ["3.12.0"],
       };
-      const updates: ToolUpdateCandidate[] = [
-        { id: "python", latest_version: "3.13.1", has_update: true },
-      ];
+      const updates: ToolUpdateCandidate[] = [{ id: "python", latest_version: "3.13.1", has_update: true }];
       const res = computeToolStatus(tool, "workspace", updates);
       expect(res.state).toBe("upgradable");
       expect(res.configuredVersion).toBe("3.12.0");
@@ -102,9 +98,7 @@ describe("toolStatus utility", () => {
         installed_versions: ["1.80.0"],
         pinned: true, // 锁定版本
       };
-      const updates: ToolUpdateCandidate[] = [
-        { id: "rust", latest_version: "1.82.0", has_update: true },
-      ];
+      const updates: ToolUpdateCandidate[] = [{ id: "rust", latest_version: "1.82.0", has_update: true }];
       const res = computeToolStatus(tool, "workspace", updates);
       expect(res.state).toBe("ready"); // 不触发 upgradable
       expect(res.upgradableVersion).toBeNull();
@@ -202,4 +196,3 @@ describe("toolStatus utility", () => {
     });
   });
 });
-

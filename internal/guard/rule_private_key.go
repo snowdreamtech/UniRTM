@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
 )
 
 var privateKeyRegex = regexp.MustCompile(`-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----`)
@@ -67,7 +66,10 @@ func (r *PrivateKeyRule) Execute(ctx context.Context, files []string, opts Execu
 			continue
 		}
 
-		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
+		fullPath := rel
+		if !filepath.IsAbs(fullPath) {
+			fullPath = filepath.Join(opts.WorkspaceDir, rel)
+		}
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() > 2*1024*1024 {
 			continue

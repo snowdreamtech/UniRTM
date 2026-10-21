@@ -67,14 +67,16 @@ export function useAppScope() {
     if (router && router.currentRoute?.value) {
       const cur = router.currentRoute.value;
       if (cur.query.scope !== scope) {
-        router.replace({
-          name: cur.name || undefined,
-          params: cur.params,
-          query: {
-            ...cur.query,
-            scope,
-          },
-        }).catch(() => {});
+        router
+          .replace({
+            name: cur.name || undefined,
+            params: cur.params,
+            query: {
+              ...cur.query,
+              scope,
+            },
+          })
+          .catch(() => {});
       }
     }
   }

@@ -39,7 +39,9 @@
         </div>
       </div>
       <div class="peek-content">
-        <pre v-if="activeDiffPeek.diff.originalText" class="peek-pre deleted-code">{{ activeDiffPeek.diff.originalText }}</pre>
+        <pre v-if="activeDiffPeek.diff.originalText" class="peek-pre deleted-code">{{
+          activeDiffPeek.diff.originalText
+        }}</pre>
         <span v-else class="peek-empty-tip">(新增代码，原版本无此内容)</span>
       </div>
     </div>
@@ -48,14 +50,23 @@
       <div class="conflict-banner-info">
         <span class="codicon codicon-warning conflict-icon"></span>
         <span class="conflict-text">
-          代码合并冲突 (第 {{ activeConflictIdx + 1 }}/{{ detectedConflicts.length }} 处 · 第 {{ activeConflict.startLine }} 行)
+          代码合并冲突 (第 {{ activeConflictIdx + 1 }}/{{ detectedConflicts.length }} 处 · 第
+          {{ activeConflict.startLine }} 行)
         </span>
       </div>
       <div class="conflict-actions">
-        <button class="conflict-action-btn current" title="采用当前分支的修改" @click="resolveActiveConflict('current')">
+        <button
+          class="conflict-action-btn current"
+          title="采用当前分支的修改"
+          @click="resolveActiveConflict('current')"
+        >
           采用当前更改 ({{ activeConflict.currentLabel }})
         </button>
-        <button class="conflict-action-btn incoming" title="采用传入分支的修改" @click="resolveActiveConflict('incoming')">
+        <button
+          class="conflict-action-btn incoming"
+          title="采用传入分支的修改"
+          @click="resolveActiveConflict('incoming')"
+        >
           采用传入更改 ({{ activeConflict.incomingLabel }})
         </button>
         <button class="conflict-action-btn both" title="同时保留双方更改" @click="resolveActiveConflict('both')">
@@ -152,7 +163,8 @@ function nextConflict(): void {
 
 function prevConflict(): void {
   if (detectedConflicts.value.length <= 1) return;
-  activeConflictIdx.value = (activeConflictIdx.value - 1 + detectedConflicts.value.length) % detectedConflicts.value.length;
+  activeConflictIdx.value =
+    (activeConflictIdx.value - 1 + detectedConflicts.value.length) % detectedConflicts.value.length;
   scrollToActiveConflict();
 }
 
@@ -459,13 +471,11 @@ onMounted(async () => {
       ) {
         const line = e.target.position?.lineNumber;
         if (line) {
-          const matchingDiff = currentDiffs.find(
-            (d) => line >= d.startLineNumber && line <= d.endLineNumber
-          );
+          const matchingDiff = currentDiffs.find((d) => line >= d.startLineNumber && line <= d.endLineNumber);
           if (matchingDiff) {
             const browserEvt = e.event.browserEvent as MouseEvent;
             const containerRect = editorContainerRef.value?.getBoundingClientRect();
-            const top = (browserEvt.clientY - (containerRect?.top || 0)) + 6;
+            const top = browserEvt.clientY - (containerRect?.top || 0) + 6;
             activeDiffPeek.value = {
               diff: matchingDiff,
               top: Math.max(16, Math.min(top, (containerRect?.height || 400) - 130)),

@@ -3,13 +3,7 @@ import { useToolUpdates } from "./useToolUpdates";
 import { useAppScope } from "./useAppScope";
 
 describe("useToolUpdates", () => {
-  const {
-    updatableCount,
-    hasUpdate,
-    setUpdateResults,
-    markToolUpdated,
-    clearUpdates,
-  } = useToolUpdates();
+  const { updatableCount, hasUpdate, setUpdateResults, markToolUpdated, clearUpdates } = useToolUpdates();
 
   beforeEach(() => {
     clearUpdates();
@@ -178,4 +172,3 @@ describe("useToolUpdates", () => {
     setScope("workspace");
   });
 });
-

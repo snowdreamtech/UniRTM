@@ -6310,8 +6310,3 @@ func handlePortsWorkspaceHints(w http.ResponseWriter, r *http.Request) {
 		"hints":   hints,
 	})
 }
-
-
-
-
-

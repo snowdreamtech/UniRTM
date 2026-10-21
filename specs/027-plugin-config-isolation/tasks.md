@@ -1,9 +1,9 @@
 # Feature Tasks: Plugin & Extension Configuration Namespace Isolation
 
-**Feature**: Plugin & Extension Configuration Namespace Isolation  
-**Branch**: `027-plugin-config-isolation`  
-**Spec**: [spec.md](./spec.md)  
-**Plan**: [plan.md](./plan.md)  
+**Feature**: Plugin & Extension Configuration Namespace Isolation
+**Branch**: `027-plugin-config-isolation`
+**Spec**: [spec.md](./spec.md)
+**Plan**: [plan.md](./plan.md)
 
 ---
 

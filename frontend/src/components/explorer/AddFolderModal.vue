@@ -7,11 +7,16 @@
       <div class="modal-header">
         <div class="modal-title-row">
           <span class="modal-icon">
-            <span class="codicon codicon-folder-library" style="font-size: 20px; color: var(--accent-cyan, #06b6d4);"></span>
+            <span
+              class="codicon codicon-folder-library"
+              style="font-size: 20px; color: var(--accent-cyan, #06b6d4)"
+            ></span>
           </span>
           <div>
-            <h3 class="modal-title">{{ t('explorer.add_folder_title') || '将文件夹添加到工作区' }}</h3>
-            <p class="modal-desc">{{ t('explorer.add_folder_desc') || '输入本地文件夹相对路径或绝对路径，将其作为顶级根挂载至当前工作区' }}</p>
+            <h3 class="modal-title">{{ t("explorer.add_folder_title") || "将文件夹添加到工作区" }}</h3>
+            <p class="modal-desc">
+              {{ t("explorer.add_folder_desc") || "输入本地文件夹相对路径或绝对路径，将其作为顶级根挂载至当前工作区" }}
+            </p>
           </div>
         </div>
         <button class="btn btn-icon modal-close-btn" @click="closeAddFolderModal" :title="t('common.close') || '关闭'">
@@ -21,7 +26,7 @@
 
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">{{ t('explorer.folder_path_label') || '文件夹路径' }}</label>
+          <label class="form-label">{{ t("explorer.folder_path_label") || "文件夹路径" }}</label>
           <input
             ref="inputRef"
             v-model="inputPath"
@@ -34,7 +39,7 @@
         </div>
 
         <div v-if="suggestedFolders.length > 0" class="suggestions-section">
-          <span class="suggestions-label">{{ t('explorer.quick_suggestions') || '当前可用子文件夹快捷添加：' }}</span>
+          <span class="suggestions-label">{{ t("explorer.quick_suggestions") || "当前可用子文件夹快捷添加：" }}</span>
           <div class="suggestion-chips">
             <button
               v-for="folder in suggestedFolders"
@@ -53,16 +58,11 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" @click="closeAddFolderModal">
-          {{ t('common.cancel') || '取消' }}
+          {{ t("common.cancel") || "取消" }}
         </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          :disabled="!inputPath.trim() || submitting"
-          @click="handleSubmit"
-        >
-          <span v-if="submitting">{{ t('common.saving') || '添加中...' }}</span>
-          <span v-else>{{ t('explorer.confirm_add') || '添加到工作区' }}</span>
+        <button type="button" class="btn btn-primary" :disabled="!inputPath.trim() || submitting" @click="handleSubmit">
+          <span v-if="submitting">{{ t("common.saving") || "添加中..." }}</span>
+          <span v-else>{{ t("explorer.confirm_add") || "添加到工作区" }}</span>
         </button>
       </div>
     </div>
@@ -74,13 +74,7 @@ import { ref, computed, watch, nextTick } from "vue";
 import { useFileTree } from "../../composables/useFileTree";
 import { t } from "../../i18n";
 
-const {
-  addFolderModal,
-  closeAddFolderModal,
-  addFolderToWorkspace,
-  tree,
-  workspaceRoots,
-} = useFileTree();
+const { addFolderModal, closeAddFolderModal, addFolderToWorkspace, tree, workspaceRoots } = useFileTree();
 
 const inputRef = ref<HTMLInputElement | null>(null);
 const inputPath = ref("");
@@ -102,9 +96,7 @@ watch(
 const suggestedFolders = computed(() => {
   if (!tree.value?.children) return [];
   const existingPaths = new Set(workspaceRoots.value.map((r) => r.path));
-  return tree.value.children
-    .filter((c) => c.is_dir && !existingPaths.has(c.path))
-    .slice(0, 8);
+  return tree.value.children.filter((c) => c.is_dir && !existingPaths.has(c.path)).slice(0, 8);
 });
 
 async function handleSubmit() {

@@ -85,10 +85,7 @@ export function parseMergeConflicts(text: string): MergeConflictRegion[] {
 /**
  * Computes replacement text for a conflict region given resolution strategy.
  */
-export function getConflictResolutionText(
-  conflict: MergeConflictRegion,
-  resolution: ConflictResolution
-): string {
+export function getConflictResolutionText(conflict: MergeConflictRegion, resolution: ConflictResolution): string {
   switch (resolution) {
     case "current":
       return conflict.currentContent;

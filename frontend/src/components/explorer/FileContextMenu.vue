@@ -57,7 +57,7 @@
     <!-- Open in Integrated Terminal -->
     <div class="menu-item" @click="handleOpenTerminal">
       <span class="menu-icon codicon codicon-terminal"></span>
-      <span class="menu-label">{{ t('explorer.context_menu.open_terminal') }}</span>
+      <span class="menu-label">{{ t("explorer.context_menu.open_terminal") }}</span>
     </div>
 
     <!-- Workspace Multi-root Actions -->
@@ -66,16 +66,12 @@
 
       <div class="menu-item" @click="handleAddToWorkspace">
         <span class="menu-icon codicon codicon-folder-library"></span>
-        <span class="menu-label">{{ t('explorer.add_folder_to_workspace') || '将文件夹添加到工作区...' }}</span>
+        <span class="menu-label">{{ t("explorer.add_folder_to_workspace") || "将文件夹添加到工作区..." }}</span>
       </div>
 
-      <div
-        v-if="isWorkspaceRoot(contextMenu.node)"
-        class="menu-item danger"
-        @click="handleRemoveFromWorkspace"
-      >
+      <div v-if="isWorkspaceRoot(contextMenu.node)" class="menu-item danger" @click="handleRemoveFromWorkspace">
         <span class="menu-icon codicon codicon-close"></span>
-        <span class="menu-label">{{ t('explorer.remove_folder_from_workspace') || '将文件夹从工作区删除' }}</span>
+        <span class="menu-label">{{ t("explorer.remove_folder_from_workspace") || "将文件夹从工作区删除" }}</span>
       </div>
     </template>
 
@@ -117,7 +113,6 @@
         <span class="menu-label">放弃更改 (Discard)</span>
       </div>
     </template>
-
   </div>
 </template>
 
@@ -131,15 +126,7 @@ import { useLocalHistory } from "../../composables/useLocalHistory";
 import { t } from "../../i18n";
 
 const router = useRouter();
-const {
-  status,
-  getGitStatus,
-  setGraphFilterPath,
-  stage,
-  unstage,
-  discard,
-  fetchDiff,
-} = useGit();
+const { status, getGitStatus, setGraphFilterPath, stage, unstage, discard, fetchDiff } = useGit();
 const { openDiff: openWorkspaceDiff, notifyGitStatusChanged } = useWorkspaceBus();
 
 const emit = defineEmits<{
@@ -231,7 +218,6 @@ async function handleDiscardFile() {
     notifyGitStatusChanged();
   }
 }
-
 
 const menuRef = ref<HTMLElement | null>(null);
 

@@ -64,7 +64,9 @@
                 <h1 class="hero-title">{{ activeDetail.displayName || activeDetail.name }}</h1>
                 <span class="hero-version font-mono">v{{ activeDetail.version }}</span>
                 <span v-if="isDetailActive" class="badge-active-pill">● 当前生效使用中</span>
-                <span v-else-if="activeDetail.is_installed" class="badge-installed">✓ {{ t("settings.installed") || "已安装" }}</span>
+                <span v-else-if="activeDetail.is_installed" class="badge-installed"
+                  >✓ {{ t("settings.installed") || "已安装" }}</span
+                >
               </div>
               <div class="hero-meta-row">
                 <span class="hero-author font-mono">
@@ -91,25 +93,19 @@
               @click="onInstallDetail(activeDetail)"
             >
               <span v-if="mpIsInstalling(activeDetail)" class="spinner-small"></span>
-              <span>{{ mpIsInstalling(activeDetail) ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
+              <span>{{
+                mpIsInstalling(activeDetail) ? t("settings.installing") || "安装中..." : t("settings.install") || "安装"
+              }}</span>
             </button>
             <div v-else class="installed-action-buttons">
               <span v-if="isDetailActive" class="badge-hero-applied">
                 <span class="active-dot"></span>
                 <span>当前主题已生效</span>
               </span>
-              <button
-                v-else
-                class="btn-apply-detail-primary"
-                @click="onApplyDetailTheme(activeDetail)"
-              >
+              <button v-else class="btn-apply-detail-primary" @click="onApplyDetailTheme(activeDetail)">
                 应用此主题
               </button>
-              <button
-                class="btn-uninstall-danger"
-                :disabled="isUninstalling"
-                @click="onUninstallDetail(activeDetail)"
-              >
+              <button class="btn-uninstall-danger" :disabled="isUninstalling" @click="onUninstallDetail(activeDetail)">
                 {{ isUninstalling ? "卸载中..." : "卸载" }}
               </button>
             </div>
@@ -158,11 +154,7 @@
 
             <!-- Tab 1: README (Markdown with Screenshots) -->
             <div v-show="activeDetailTab === 'readme'" class="tab-content tab-readme">
-              <div
-                v-if="activeDetail.readme"
-                class="markdown-body"
-                v-html="renderedReadme"
-              ></div>
+              <div v-if="activeDetail.readme" class="markdown-body" v-html="renderedReadme"></div>
               <div v-else class="readme-empty-hint">
                 <span class="empty-icon">
                   <TechIcon id="workbench:about" :size="32" />
@@ -180,17 +172,10 @@
               >
                 <h3 class="group-title">颜色主题 (Color Themes)</h3>
                 <div class="contribute-list">
-                  <div
-                    v-for="sub in activeDetail.contributes.themes"
-                    :key="sub.label"
-                    class="contribute-item"
-                  >
+                  <div v-for="sub in activeDetail.contributes.themes" :key="sub.label" class="contribute-item">
                     <div class="sub-info">
                       <span class="sub-label">{{ sub.label }}</span>
-                      <span
-                        class="sub-mode-tag"
-                        :class="sub.uiTheme === 'vs' ? 'mode-light' : 'mode-dark'"
-                      >
+                      <span class="sub-mode-tag" :class="sub.uiTheme === 'vs' ? 'mode-light' : 'mode-dark'">
                         {{ formatUITheme(sub.uiTheme) }}
                       </span>
                     </div>
@@ -200,14 +185,14 @@
                       disabled
                       :title="t('marketplace.current_active') || '当前正在生效的主题'"
                     >
-                      {{ t('marketplace.currently_applied') || '已应用' }}
+                      {{ t("marketplace.currently_applied") || "已应用" }}
                     </button>
                     <button
                       v-else-if="activeDetail.is_installed"
                       class="btn-apply-sub"
                       @click="onApplySubColorTheme(sub.label)"
                     >
-                      {{ t('settings.apply') || '应用' }}
+                      {{ t("settings.apply") || "应用" }}
                     </button>
                   </div>
                 </div>
@@ -220,14 +205,10 @@
               >
                 <h3 class="group-title">文件图标 (Icon Themes)</h3>
                 <div class="contribute-list">
-                  <div
-                    v-for="sub in activeDetail.contributes.iconThemes"
-                    :key="sub.label"
-                    class="contribute-item"
-                  >
+                  <div v-for="sub in activeDetail.contributes.iconThemes" :key="sub.label" class="contribute-item">
                     <div class="sub-info">
                       <span class="sub-label">{{ sub.label }}</span>
-                      <span class="sub-mode-tag mode-icon">{{ t('marketplace.filter_icons') || '文件图标' }}</span>
+                      <span class="sub-mode-tag mode-icon">{{ t("marketplace.filter_icons") || "文件图标" }}</span>
                     </div>
                     <button
                       v-if="activeDetail.is_installed && isSubIconActive(sub.label, sub.id)"
@@ -235,14 +216,14 @@
                       disabled
                       :title="t('marketplace.current_active') || '当前正在生效的主题'"
                     >
-                      {{ t('marketplace.currently_applied') || '已应用' }}
+                      {{ t("marketplace.currently_applied") || "已应用" }}
                     </button>
                     <button
                       v-else-if="activeDetail.is_installed"
                       class="btn-apply-sub"
                       @click="onApplySubIconTheme(sub.label)"
                     >
-                      {{ t('settings.apply') || '应用' }}
+                      {{ t("settings.apply") || "应用" }}
                     </button>
                   </div>
                 </div>
@@ -250,7 +231,9 @@
 
               <!-- Product Icon Themes List -->
               <div
-                v-if="activeDetail.contributes?.productIconThemes && activeDetail.contributes.productIconThemes.length > 0"
+                v-if="
+                  activeDetail.contributes?.productIconThemes && activeDetail.contributes.productIconThemes.length > 0
+                "
                 class="contribute-group"
               >
                 <h3 class="group-title">界面图标 (Product Icon Themes)</h3>
@@ -262,7 +245,9 @@
                   >
                     <div class="sub-info">
                       <span class="sub-label">{{ sub.label }}</span>
-                      <span class="sub-mode-tag mode-product">{{ t('marketplace.filter_product_icons') || '界面图标' }}</span>
+                      <span class="sub-mode-tag mode-product">{{
+                        t("marketplace.filter_product_icons") || "界面图标"
+                      }}</span>
                     </div>
                     <button
                       v-if="activeDetail.is_installed && isSubProductIconActive(sub.label, sub.id)"
@@ -270,23 +255,26 @@
                       disabled
                       :title="t('marketplace.current_active') || '当前正在生效的主题'"
                     >
-                      {{ t('marketplace.currently_applied') || '已应用' }}
+                      {{ t("marketplace.currently_applied") || "已应用" }}
                     </button>
                     <button
                       v-else-if="activeDetail.is_installed"
                       class="btn-apply-sub"
                       @click="onApplySubProductIconTheme(sub.id || sub.label)"
                     >
-                      {{ t('settings.apply') || '应用' }}
+                      {{ t("settings.apply") || "应用" }}
                     </button>
                   </div>
                 </div>
               </div>
 
               <div
-                v-if="(!activeDetail.contributes?.themes || activeDetail.contributes.themes.length === 0) &&
-                      (!activeDetail.contributes?.iconThemes || activeDetail.contributes.iconThemes.length === 0) &&
-                      (!activeDetail.contributes?.productIconThemes || activeDetail.contributes.productIconThemes.length === 0)"
+                v-if="
+                  (!activeDetail.contributes?.themes || activeDetail.contributes.themes.length === 0) &&
+                  (!activeDetail.contributes?.iconThemes || activeDetail.contributes.iconThemes.length === 0) &&
+                  (!activeDetail.contributes?.productIconThemes ||
+                    activeDetail.contributes.productIconThemes.length === 0)
+                "
                 class="readme-empty-hint"
               >
                 <p>该扩展清单中未发现显式声明的主题子集</p>
@@ -295,11 +283,7 @@
 
             <!-- Tab 3: Changelog -->
             <div v-show="activeDetailTab === 'changelog'" class="tab-content tab-changelog">
-              <div
-                v-if="changelogContent"
-                class="markdown-body"
-                v-html="renderedChangelog"
-              ></div>
+              <div v-if="changelogContent" class="markdown-body" v-html="renderedChangelog"></div>
               <div v-else class="readme-empty-hint">
                 <p>正在读取或该扩展未提供独立更新日志</p>
               </div>
@@ -393,11 +377,7 @@
             <div v-if="activeDetail.tags && activeDetail.tags.length > 0" class="sidebar-section">
               <h4 class="sidebar-heading">标签分类</h4>
               <div class="sidebar-tags">
-                <span
-                  v-for="tag in activeDetail.tags"
-                  :key="tag"
-                  class="tag-chip"
-                >
+                <span v-for="tag in activeDetail.tags" :key="tag" class="tag-chip">
                   {{ tag }}
                 </span>
               </div>
@@ -413,18 +393,12 @@
       <div class="view-header-row">
         <div>
           <h2 class="view-title">{{ t("nav.marketplace") || "扩展与主题市场" }}</h2>
-          <p class="view-desc">
-            探索与安装 VS Code 兼容的主题与图标集，以及扩展 UniRTM 原生能力的开发者功能套件。
-          </p>
+          <p class="view-desc">探索与安装 VS Code 兼容的主题与图标集，以及扩展 UniRTM 原生能力的开发者功能套件。</p>
         </div>
 
         <!-- Channel Switcher Tabs -->
         <div class="channel-tabs glass-card">
-          <button
-            class="channel-btn"
-            :class="{ active: currentChannel === 'themes' }"
-            @click="switchChannel('themes')"
-          >
+          <button class="channel-btn" :class="{ active: currentChannel === 'themes' }" @click="switchChannel('themes')">
             <TechIcon id="workbench:marketplace" :size="16" />
             <span>{{ t("settings.theme_tab_marketplace") || "主题与图标 (Open VSX)" }}</span>
           </button>
@@ -450,7 +424,7 @@
             @click="switchThemeTypeTab('all')"
           >
             <TechIcon id="workbench:marketplace" :size="15" />
-            <span>{{ t('marketplace.filter_all') || '全部' }}</span>
+            <span>{{ t("marketplace.filter_all") || "全部" }}</span>
           </button>
           <button
             class="type-tab-btn"
@@ -458,7 +432,7 @@
             @click="switchThemeTypeTab('color')"
           >
             <span>🎨</span>
-            <span>{{ t('marketplace.filter_themes') || '颜色主题' }}</span>
+            <span>{{ t("marketplace.filter_themes") || "颜色主题" }}</span>
           </button>
           <button
             class="type-tab-btn"
@@ -466,7 +440,7 @@
             @click="switchThemeTypeTab('icon')"
           >
             <span>📁</span>
-            <span>{{ t('marketplace.filter_icons') || '文件图标' }}</span>
+            <span>{{ t("marketplace.filter_icons") || "文件图标" }}</span>
           </button>
           <button
             class="type-tab-btn"
@@ -474,7 +448,7 @@
             @click="switchThemeTypeTab('product_icon')"
           >
             <span>⚡</span>
-            <span>{{ t('marketplace.filter_product_icons') || '界面图标' }}</span>
+            <span>{{ t("marketplace.filter_product_icons") || "界面图标" }}</span>
           </button>
           <button
             class="type-tab-btn type-tab-installed"
@@ -482,8 +456,10 @@
             @click="switchThemeTypeTab('installed')"
           >
             <span>📦</span>
-            <span>{{ t('marketplace.filter_installed') || '已安装' }}</span>
-            <span v-if="installedExtensions.length > 0" class="tab-badge font-mono">{{ installedExtensions.length }}</span>
+            <span>{{ t("marketplace.filter_installed") || "已安装" }}</span>
+            <span v-if="installedExtensions.length > 0" class="tab-badge font-mono">{{
+              installedExtensions.length
+            }}</span>
           </button>
         </div>
 
@@ -500,22 +476,11 @@
               :placeholder="searchPlaceholder"
               @keydown.enter="onSearchThemes(mpSearchQuery)"
             />
-            <button
-              v-if="mpSearchQuery"
-              class="btn-clear-search"
-              title="清空"
-              @click="onClearSearch"
-            >
-              ✕
-            </button>
+            <button v-if="mpSearchQuery" class="btn-clear-search" title="清空" @click="onClearSearch">✕</button>
           </div>
-          <button
-            class="btn-search-action"
-            :disabled="mpIsSearching"
-            @click="onSearchThemes(mpSearchQuery)"
-          >
+          <button class="btn-search-action" :disabled="mpIsSearching" @click="onSearchThemes(mpSearchQuery)">
             <span v-if="mpIsSearching" class="spinner-small"></span>
-            <span v-else>{{ t('marketplace.search') || '搜索' }}</span>
+            <span v-else>{{ t("marketplace.search") || "搜索" }}</span>
           </button>
 
           <!-- View Mode Switcher -->
@@ -544,14 +509,18 @@
         <!-- Quick Chips & Results count -->
         <div class="market-chips-bar">
           <div class="chips-left">
-            <span class="chips-label">{{ activeThemeTypeTab === 'installed' ? '类型过滤:' : (t('marketplace.recommended_categories') || '推荐分类') + ':' }}</span>
+            <span class="chips-label">{{
+              activeThemeTypeTab === "installed"
+                ? "类型过滤:"
+                : (t("marketplace.recommended_categories") || "推荐分类") + ":"
+            }}</span>
             <button
               v-for="chip in contextualChips"
               :key="chip.id"
               class="chip-btn"
               :class="{
                 active: selectedFilter === chip.id,
-                'chip-installed': chip.isInstalled
+                'chip-installed': chip.isInstalled,
               }"
               @click="onSelectContextualChip(chip)"
             >
@@ -559,10 +528,19 @@
             </button>
           </div>
           <span v-if="activeThemeTypeTab === 'installed'" class="results-count-label">
-            {{ t('marketplace.installed_count', { count: displayedExtensions.length }) || `已安装 ${displayedExtensions.length} 款主题与图标包` }}
+            {{
+              t("marketplace.installed_count", { count: displayedExtensions.length }) ||
+              `已安装 ${displayedExtensions.length} 款主题与图标包`
+            }}
           </span>
           <span v-else class="results-count-label">
-            {{ activeThemeTypeTab !== 'all' ? `筛选后呈现 ${displayedExtensions.length} 款` : (mpTotalSize > 0 ? (t('marketplace.total_count', { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包`) : '') }}
+            {{
+              activeThemeTypeTab !== "all"
+                ? `筛选后呈现 ${displayedExtensions.length} 款`
+                : mpTotalSize > 0
+                  ? t("marketplace.total_count", { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包`
+                  : ""
+            }}
           </span>
         </div>
 
@@ -574,17 +552,19 @@
 
         <!-- Error Banner -->
         <div v-if="mpError && activeThemeTypeTab !== 'installed'" class="error-banner">
-          <span style="display: inline-flex; align-items: center; gap: 6px;">
+          <span style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:warning" :size="14" />
             <span>{{ mpError }}</span>
           </span>
-          <button class="btn-retry" @click="onSearchThemes(mpSearchQuery)">{{ t('marketplace.retry') || '重试' }}</button>
+          <button class="btn-retry" @click="onSearchThemes(mpSearchQuery)">
+            {{ t("marketplace.retry") || "重试" }}
+          </button>
         </div>
 
         <!-- Loading State -->
         <div v-if="mpIsSearching && activeThemeTypeTab !== 'installed'" class="market-loading-box glass-card">
           <div class="spinner-small"></div>
-          <span>{{ t('marketplace.searching_openvsx') || '正在实时连接 Open VSX 检索主题与图标...' }}</span>
+          <span>{{ t("marketplace.searching_openvsx") || "正在实时连接 Open VSX 检索主题与图标..." }}</span>
         </div>
 
         <!-- Empty State -->
@@ -593,7 +573,9 @@
             <TechIcon id="workbench:marketplace" :size="36" />
           </span>
           <p>{{ emptyStateMessage }}</p>
-          <button class="btn-reset-chip" @click="onResetToPopular">{{ t('marketplace.view_popular') || '查看热门推荐' }}</button>
+          <button class="btn-reset-chip" @click="onResetToPopular">
+            {{ t("marketplace.view_popular") || "查看热门推荐" }}
+          </button>
         </div>
 
         <!-- Themes Cards View -->
@@ -602,10 +584,12 @@
             v-for="item in displayedExtensions"
             :key="(item.namespace || '') + '.' + item.name"
             class="glass-card theme-card"
-            :class="{ 'card-is-active': isExtensionActive(item), 'clickable-card': !item.is_builtin && Boolean(item.namespace) }"
+            :class="{
+              'card-is-active': isExtensionActive(item),
+              'clickable-card': !item.is_builtin && Boolean(item.namespace),
+            }"
             @click="!item.is_builtin && navigateToDetail(item.namespace || '', item.name)"
           >
-
             <div class="card-header-row">
               <div class="card-icon-wrap">
                 <img
@@ -618,7 +602,13 @@
                 />
                 <span v-else class="card-fallback-icon">
                   <TechIcon
-                    :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : (getCardDisplayType(item) === 'icon' ? 'workbench:folder' : 'workbench:tools')"
+                    :id="
+                      getCardDisplayType(item) === 'theme'
+                        ? 'workbench:marketplace'
+                        : getCardDisplayType(item) === 'icon'
+                          ? 'workbench:folder'
+                          : 'workbench:tools'
+                    "
                     :size="24"
                   />
                 </span>
@@ -628,11 +618,13 @@
                   <span class="card-name" :title="item.displayName || item.name">
                     {{ item.displayName || item.name }}
                   </span>
-                  <span v-if="item.is_builtin" class="badge-builtin-pill">{{ t('network.tag_builtin') || '官方内置' }}</span>
+                  <span v-if="item.is_builtin" class="badge-builtin-pill">{{
+                    t("network.tag_builtin") || "官方内置"
+                  }}</span>
                   <span v-else class="card-version font-mono">v{{ item.version }}</span>
                   <span v-if="isExtensionActive(item)" class="badge-active-pill">
                     <span class="active-dot"></span>
-                    <span>{{ t('marketplace.active') || '生效中' }}</span>
+                    <span>{{ t("marketplace.active") || "生效中" }}</span>
                   </span>
                 </div>
                 <div class="card-subtitle-row">
@@ -642,17 +634,21 @@
                     :class="{
                       'type-product-icon': getCardDisplayType(item) === 'product_icon',
                       'type-icon': getCardDisplayType(item) === 'icon',
-                      'type-color': getCardDisplayType(item) === 'theme'
+                      'type-color': getCardDisplayType(item) === 'theme',
                     }"
-                    style="display: inline-flex; align-items: center; gap: 4px;"
+                    style="display: inline-flex; align-items: center; gap: 4px"
                   >
-                    <TechIcon :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : 'workbench:tools'" :size="12" :colored="false" />
+                    <TechIcon
+                      :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : 'workbench:tools'"
+                      :size="12"
+                      :colored="false"
+                    />
                     {{
-                      getCardDisplayType(item) === 'product_icon'
-                        ? (t('marketplace.filter_product_icons') || '界面图标')
-                        : (getCardDisplayType(item) === 'icon'
-                            ? (t('marketplace.filter_icons') || '文件图标')
-                            : (t('marketplace.filter_themes') || '颜色主题'))
+                      getCardDisplayType(item) === "product_icon"
+                        ? t("marketplace.filter_product_icons") || "界面图标"
+                        : getCardDisplayType(item) === "icon"
+                          ? t("marketplace.filter_icons") || "文件图标"
+                          : t("marketplace.filter_themes") || "颜色主题"
                     }}
                   </span>
                 </div>
@@ -668,15 +664,18 @@
                 <span class="stat-item" :title="'Downloads: ' + item.downloadCount">
                   ⬇️ {{ formatDownloads(item.downloadCount) }}
                 </span>
-                <span v-if="item.averageRating" class="stat-item">
-                  ⭐ {{ item.averageRating.toFixed(1) }}
-                </span>
+                <span v-if="item.averageRating" class="stat-item"> ⭐ {{ item.averageRating.toFixed(1) }} </span>
               </div>
 
               <div class="card-actions" @click.stop>
                 <div v-if="isItemInstalled(item)" class="installed-group">
                   <span :class="isExtensionActive(item) ? 'badge-active-applied' : 'badge-installed'">
-                    ✓ {{ isExtensionActive(item) ? (t('marketplace.in_use') || "使用中") : (t("settings.installed") || "已安装") }}
+                    ✓
+                    {{
+                      isExtensionActive(item)
+                        ? t("marketplace.in_use") || "使用中"
+                        : t("settings.installed") || "已安装"
+                    }}
                   </span>
                   <button
                     v-if="!isExtensionActive(item)"
@@ -692,7 +691,7 @@
                     disabled
                     :title="t('marketplace.current_active') || '当前正在生效的主题'"
                   >
-                    {{ t('marketplace.currently_applied') || '已应用' }}
+                    {{ t("marketplace.currently_applied") || "已应用" }}
                   </button>
                   <!-- More Menu for Installed Themes (Uninstall) -->
                   <div
@@ -720,20 +719,17 @@
                           :title="t('common.delete') || '卸载此主题包'"
                         >
                           <TechIcon id="workbench:delete" :size="13" />
-                          <span>{{ t('common.delete') || '卸载此主题包' }}</span>
+                          <span>{{ t("common.delete") || "卸载此主题包" }}</span>
                         </button>
                       </div>
                     </transition>
                   </div>
                 </div>
-                <button
-                  v-else
-                  class="btn-install-theme"
-                  :disabled="mpIsInstalling(item)"
-                  @click="onInstallTheme(item)"
-                >
+                <button v-else class="btn-install-theme" :disabled="mpIsInstalling(item)" @click="onInstallTheme(item)">
                   <span v-if="mpIsInstalling(item)" class="spinner-small"></span>
-                  <span>{{ mpIsInstalling(item) ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
+                  <span>{{
+                    mpIsInstalling(item) ? t("settings.installing") || "安装中..." : t("settings.install") || "安装"
+                  }}</span>
                 </button>
               </div>
             </div>
@@ -757,7 +753,10 @@
                 v-for="item in displayedExtensions"
                 :key="(item.namespace || '') + '.' + item.name"
                 class="market-table-row"
-                :class="{ 'row-is-active': isExtensionActive(item), 'clickable-row': !item.is_builtin && Boolean(item.namespace) }"
+                :class="{
+                  'row-is-active': isExtensionActive(item),
+                  'clickable-row': !item.is_builtin && Boolean(item.namespace),
+                }"
                 @click="!item.is_builtin && navigateToDetail(item.namespace || '', item.name)"
               >
                 <!-- Col: Extension Info -->
@@ -774,7 +773,13 @@
                       />
                       <span v-else class="table-fallback-icon">
                         <TechIcon
-                          :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : (getCardDisplayType(item) === 'icon' ? 'workbench:folder' : 'workbench:tools')"
+                          :id="
+                            getCardDisplayType(item) === 'theme'
+                              ? 'workbench:marketplace'
+                              : getCardDisplayType(item) === 'icon'
+                                ? 'workbench:folder'
+                                : 'workbench:tools'
+                          "
                           :size="16"
                         />
                       </span>
@@ -782,11 +787,13 @@
                     <div class="table-ext-info">
                       <div class="table-ext-title-row">
                         <span class="ext-name">{{ item.displayName || item.name }}</span>
-                        <span v-if="item.is_builtin" class="badge-builtin-pill">{{ t('network.tag_builtin') || '官方内置' }}</span>
+                        <span v-if="item.is_builtin" class="badge-builtin-pill">{{
+                          t("network.tag_builtin") || "官方内置"
+                        }}</span>
                         <span v-else class="ext-ver font-mono">v{{ item.version }}</span>
                         <span v-if="isExtensionActive(item)" class="badge-active-pill small">
                           <span class="active-dot"></span>
-                          <span>{{ t('marketplace.active') || '生效中' }}</span>
+                          <span>{{ t("marketplace.active") || "生效中" }}</span>
                         </span>
                       </div>
                     </div>
@@ -802,17 +809,21 @@
                       :class="{
                         'type-product-icon': getCardDisplayType(item) === 'product_icon',
                         'type-icon': getCardDisplayType(item) === 'icon',
-                        'type-color': getCardDisplayType(item) === 'theme'
+                        'type-color': getCardDisplayType(item) === 'theme',
                       }"
-                      style="display: inline-flex; align-items: center; gap: 4px;"
+                      style="display: inline-flex; align-items: center; gap: 4px"
                     >
-                      <TechIcon :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : 'workbench:tools'" :size="11" :colored="false" />
+                      <TechIcon
+                        :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : 'workbench:tools'"
+                        :size="11"
+                        :colored="false"
+                      />
                       {{
-                        getCardDisplayType(item) === 'product_icon'
-                          ? (t('marketplace.filter_product_icons') || '界面图标')
-                          : (getCardDisplayType(item) === 'icon'
-                              ? (t('marketplace.filter_icons') || '文件图标')
-                              : (t('marketplace.filter_themes') || '颜色主题'))
+                        getCardDisplayType(item) === "product_icon"
+                          ? t("marketplace.filter_product_icons") || "界面图标"
+                          : getCardDisplayType(item) === "icon"
+                            ? t("marketplace.filter_icons") || "文件图标"
+                            : t("marketplace.filter_themes") || "颜色主题"
                       }}
                     </span>
                   </div>
@@ -831,9 +842,7 @@
                     <span class="stat-pill" :title="'Downloads: ' + item.downloadCount">
                       ⬇️ {{ formatDownloads(item.downloadCount) }}
                     </span>
-                    <span v-if="item.averageRating" class="stat-pill">
-                      ⭐ {{ item.averageRating.toFixed(1) }}
-                    </span>
+                    <span v-if="item.averageRating" class="stat-pill"> ⭐ {{ item.averageRating.toFixed(1) }} </span>
                   </div>
                 </td>
 
@@ -855,7 +864,7 @@
                         disabled
                         :title="t('marketplace.current_active') || '当前正在生效的主题'"
                       >
-                        {{ t('marketplace.currently_applied') || '已应用' }}
+                        {{ t("marketplace.currently_applied") || "已应用" }}
                       </button>
                       <!-- More Menu for Installed Themes (Uninstall) -->
                       <div
@@ -883,7 +892,7 @@
                               :title="t('common.delete') || '卸载此主题包'"
                             >
                               <TechIcon id="workbench:delete" :size="13" />
-                              <span>{{ t('common.delete') || '卸载此主题包' }}</span>
+                              <span>{{ t("common.delete") || "卸载此主题包" }}</span>
                             </button>
                           </div>
                         </transition>
@@ -896,7 +905,9 @@
                       @click="onInstallTheme(item)"
                     >
                       <span v-if="mpIsInstalling(item)" class="spinner-small"></span>
-                      <span>{{ mpIsInstalling(item) ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
+                      <span>{{
+                        mpIsInstalling(item) ? t("settings.installing") || "安装中..." : t("settings.install") || "安装"
+                      }}</span>
                     </button>
                   </div>
                 </td>
@@ -908,9 +919,14 @@
         <!-- Pagination Bar -->
         <div v-if="activeThemeTypeTab !== 'installed' && mpTotalPages > 1" class="market-pagination-bar glass-card">
           <div class="pagination-summary">
-            <span>{{ t('marketplace.total_count', { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包` }}</span>
+            <span>{{
+              t("marketplace.total_count", { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包`
+            }}</span>
             <span class="pagination-divider">•</span>
-            <span>{{ t('marketplace.page_info', { current: mpCurrentPage, total: mpTotalPages }) || `第 ${mpCurrentPage} / ${mpTotalPages} 页` }}</span>
+            <span>{{
+              t("marketplace.page_info", { current: mpCurrentPage, total: mpTotalPages }) ||
+              `第 ${mpCurrentPage} / ${mpTotalPages} 页`
+            }}</span>
           </div>
 
           <div class="pagination-buttons">
@@ -964,18 +980,20 @@
 
           <div class="pagination-tools">
             <div class="page-jump-box">
-              <span>{{ t('marketplace.jump_to') || '跳至' }}</span>
+              <span>{{ t("marketplace.jump_to") || "跳至" }}</span>
               <input
                 v-model.number="jumpPageInput"
                 type="number"
                 min="1"
                 :max="mpTotalPages"
                 class="jump-input"
-                :placeholder="t('marketplace.page_info', { current: '', total: '' }).replace(/[^0-9a-zA-Z]/g, '') || '页码'"
+                :placeholder="
+                  t('marketplace.page_info', { current: '', total: '' }).replace(/[^0-9a-zA-Z]/g, '') || '页码'
+                "
                 @keydown.enter="onJumpPage"
               />
               <button class="btn-jump-submit" :disabled="mpIsSearching" @click="onJumpPage">
-                {{ t('marketplace.jump_btn') || '跳转' }}
+                {{ t("marketplace.jump_btn") || "跳转" }}
               </button>
             </div>
 
@@ -986,9 +1004,9 @@
                 :disabled="mpIsSearching"
                 @change="onChangePageSize(Number(($event.target as HTMLSelectElement).value))"
               >
-                <option :value="12">{{ t('marketplace.page_size_item', { size: 12 }) || '12 条 / 页' }}</option>
-                <option :value="24">{{ t('marketplace.page_size_item', { size: 24 }) || '24 条 / 页' }}</option>
-                <option :value="48">{{ t('marketplace.page_size_item', { size: 48 }) || '48 条 / 页' }}</option>
+                <option :value="12">{{ t("marketplace.page_size_item", { size: 12 }) || "12 条 / 页" }}</option>
+                <option :value="24">{{ t("marketplace.page_size_item", { size: 24 }) || "24 条 / 页" }}</option>
+                <option :value="48">{{ t("marketplace.page_size_item", { size: 48 }) || "48 条 / 页" }}</option>
               </select>
             </div>
           </div>
@@ -1010,7 +1028,8 @@
               探索中，敬请期待！我们正在规划兼顾高隔离安全性、极简调度与生态兼容的原生插件架构。
             </p>
             <p class="hero-detail-text">
-              为了确保 UniRTM 核心运行时的极致性能与稳定性，真正的功能插件将通过轻量级进程隔离、标准协议（LSP / MCP）与强作用域命名空间与工作台通讯，避免因第三方插件而引入内存泄漏或宿主崩溃。
+              为了确保 UniRTM 核心运行时的极致性能与稳定性，真正的功能插件将通过轻量级进程隔离、标准协议（LSP /
+              MCP）与强作用域命名空间与工作台通讯，避免因第三方插件而引入内存泄漏或宿主崩溃。
             </p>
             <div class="hero-actions-row">
               <a
@@ -1049,7 +1068,8 @@
             </div>
             <h4 class="pillar-title">统一 Provider 规范</h4>
             <p class="pillar-desc">
-              采用极简能力暴露标准（Runtime Provider、Linter Provider、Tool Provider），通过标准化 JSON-RPC / MCP 接口接入工作区统一调度。
+              采用极简能力暴露标准（Runtime Provider、Linter Provider、Tool Provider），通过标准化 JSON-RPC / MCP
+              接口接入工作区统一调度。
             </p>
             <div class="pillar-tag font-mono">Provider Contracts</div>
           </div>
@@ -1060,7 +1080,8 @@
             </div>
             <h4 class="pillar-title">命名空间存储约束</h4>
             <p class="pillar-desc">
-              所有插件配置与持久化存储严格限制在 <code>plugins.&lt;plugin-id&gt;.*</code> 作用域，配置清晰透明、杜绝隐蔽写盘，卸载零残留。
+              所有插件配置与持久化存储严格限制在
+              <code>plugins.&lt;plugin-id&gt;.*</code> 作用域，配置清晰透明、杜绝隐蔽写盘，卸载零残留。
             </p>
             <div class="pillar-tag font-mono">Scoped Persistence</div>
           </div>
@@ -1224,7 +1245,9 @@ function handleIconError(key: string) {
   }
 }
 
-function hasValidIcon(item: { namespace?: string; name?: string; files?: { icon?: string } } | null | undefined): boolean {
+function hasValidIcon(
+  item: { namespace?: string; name?: string; files?: { icon?: string } } | null | undefined
+): boolean {
   if (!item || !item.files?.icon) return false;
   const key = `${item.namespace || ""}.${item.name || ""}`;
   return !failedIconKeys.value.has(key);
@@ -1280,9 +1303,24 @@ const contextualChips = computed<ThemeChipItem[]>(() => {
   if (activeThemeTypeTab.value === "installed") {
     return [
       { id: "installed-all", name: t("marketplace.filter_all") || "全部已安装", query: "", isInstalled: true },
-      { id: "installed-color", name: "🎨 " + (t("marketplace.filter_themes") || "颜色主题"), query: "", isInstalled: true },
-      { id: "installed-icon", name: "📁 " + (t("marketplace.filter_icons") || "文件图标"), query: "", isInstalled: true },
-      { id: "installed-product", name: "⚡ " + (t("marketplace.filter_product_icons") || "界面图标"), query: "", isInstalled: true },
+      {
+        id: "installed-color",
+        name: "🎨 " + (t("marketplace.filter_themes") || "颜色主题"),
+        query: "",
+        isInstalled: true,
+      },
+      {
+        id: "installed-icon",
+        name: "📁 " + (t("marketplace.filter_icons") || "文件图标"),
+        query: "",
+        isInstalled: true,
+      },
+      {
+        id: "installed-product",
+        name: "⚡ " + (t("marketplace.filter_product_icons") || "界面图标"),
+        query: "",
+        isInstalled: true,
+      },
     ];
   }
 
@@ -1346,7 +1384,9 @@ const searchPlaceholder = computed(() => {
   if (activeThemeTypeTab.value === "product_icon") {
     return "在 Open VSX 搜索界面图标主题 (如 Fluent Icons, Codicons)...";
   }
-  return t("settings.marketplace_search_placeholder") || "在 Open VSX 搜索主题或图标集 (如 Dracula, Material, Catppuccin)...";
+  return (
+    t("settings.marketplace_search_placeholder") || "在 Open VSX 搜索主题或图标集 (如 Dracula, Material, Catppuccin)..."
+  );
 });
 
 const emptyStateMessage = computed(() => {
@@ -1369,8 +1409,10 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
   const list: MarketplaceExtension[] = [];
   const seen = new Set<string>();
 
-  const setiSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%230284c7' d='M6 6a2 2 0 0 1 2-2h8l4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6z'/%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M13 13l-3 3 3 3m6-6l3 3-3 3'/%3E%3C/svg%3E";
-  const codiconsSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e293b'/%3E%3Cpath fill='%2338bdf8' d='M16 4l2.5 7.5L26 14l-7.5 2.5L16 24l-2.5-7.5L6 14l7.5-2.5z'/%3E%3Cpath fill='%230284c7' d='M23 20l1 3 3 1-3 1-1 3-1-3-3-1 3-1z'/%3E%3C/svg%3E";
+  const setiSvg =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%230284c7' d='M6 6a2 2 0 0 1 2-2h8l4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6z'/%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M13 13l-3 3 3 3m6-6l3 3-3 3'/%3E%3C/svg%3E";
+  const codiconsSvg =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e293b'/%3E%3Cpath fill='%2338bdf8' d='M16 4l2.5 7.5L26 14l-7.5 2.5L16 24l-2.5-7.5L6 14l7.5-2.5z'/%3E%3Cpath fill='%230284c7' d='M23 20l1 3 3 1-3 1-1 3-1-3-3-1 3-1z'/%3E%3C/svg%3E";
 
   // System Built-in themes (VS Code standard built-in items)
   const builtinItems: MarketplaceExtension[] = [
@@ -1436,15 +1478,10 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
     seen.add(pkg);
 
     const match = mpSearchResults.value.find(
-      (s) => (s.package_id && s.package_id.toLowerCase() === pkg) ||
-             s.name.toLowerCase() === pkg
+      (s) => (s.package_id && s.package_id.toLowerCase() === pkg) || s.name.toLowerCase() === pkg
     );
 
-    const resolvedIcon =
-      match?.files?.icon ||
-      (themeItem as any).icon_url ||
-      (themeItem as any).icon ||
-      "";
+    const resolvedIcon = match?.files?.icon || (themeItem as any).icon_url || (themeItem as any).icon || "";
 
     if (match) {
       list.push({
@@ -1677,7 +1714,13 @@ function hasInstalledColorTheme(item: { package_id?: string; name: string; is_bu
   }
   const pkgId = (item.package_id || item.name || "").toLowerCase();
   const name = (item.name || "").toLowerCase();
-  return colorThemes.value.some((c) => !c.is_builtin && ((c.package_id && c.package_id.toLowerCase() === pkgId) || c.id.toLowerCase() === name || (c.package_id && c.package_id.toLowerCase() === name)));
+  return colorThemes.value.some(
+    (c) =>
+      !c.is_builtin &&
+      ((c.package_id && c.package_id.toLowerCase() === pkgId) ||
+        c.id.toLowerCase() === name ||
+        (c.package_id && c.package_id.toLowerCase() === name))
+  );
 }
 
 function hasInstalledIconTheme(item: { package_id?: string; name: string; is_builtin?: boolean }): boolean {
@@ -1687,7 +1730,13 @@ function hasInstalledIconTheme(item: { package_id?: string; name: string; is_bui
   }
   const pkgId = (item.package_id || item.name || "").toLowerCase();
   const name = (item.name || "").toLowerCase();
-  return iconThemes.value.some((i) => !i.is_builtin && ((i.package_id && i.package_id.toLowerCase() === pkgId) || i.id.toLowerCase() === name || (i.package_id && i.package_id.toLowerCase() === name)));
+  return iconThemes.value.some(
+    (i) =>
+      !i.is_builtin &&
+      ((i.package_id && i.package_id.toLowerCase() === pkgId) ||
+        i.id.toLowerCase() === name ||
+        (i.package_id && i.package_id.toLowerCase() === name))
+  );
 }
 
 function hasInstalledProductIconTheme(item: { package_id?: string; name: string; is_builtin?: boolean }): boolean {
@@ -1697,7 +1746,13 @@ function hasInstalledProductIconTheme(item: { package_id?: string; name: string;
   }
   const pkgId = (item.package_id || item.name || "").toLowerCase();
   const name = (item.name || "").toLowerCase();
-  return productIconThemes.value.some((p) => !p.is_builtin && ((p.package_id && p.package_id.toLowerCase() === pkgId) || p.id.toLowerCase() === name || (p.package_id && p.package_id.toLowerCase() === name)));
+  return productIconThemes.value.some(
+    (p) =>
+      !p.is_builtin &&
+      ((p.package_id && p.package_id.toLowerCase() === pkgId) ||
+        p.id.toLowerCase() === name ||
+        (p.package_id && p.package_id.toLowerCase() === name))
+  );
 }
 
 function getCardDisplayType(item: MarketplaceExtension): "product_icon" | "icon" | "theme" {
@@ -1725,9 +1780,27 @@ function getExtensionType(item: MarketplaceExtension): "product_icon" | "icon" |
   }
 
   // 1. Calculate count of each contributed type from locally installed themes
-  const colorCount = colorThemes.value.filter((c) => !c.is_builtin && ((c.package_id && c.package_id.toLowerCase() === pkgId) || c.id.toLowerCase() === name || (c.package_id && c.package_id.toLowerCase() === fullId))).length;
-  const iconCount = iconThemes.value.filter((i) => !i.is_builtin && ((i.package_id && i.package_id.toLowerCase() === pkgId) || i.id.toLowerCase() === name || (i.package_id && i.package_id.toLowerCase() === fullId))).length;
-  const productCount = productIconThemes.value.filter((p) => !p.is_builtin && ((p.package_id && p.package_id.toLowerCase() === pkgId) || p.id.toLowerCase() === name || (p.package_id && p.package_id.toLowerCase() === fullId))).length;
+  const colorCount = colorThemes.value.filter(
+    (c) =>
+      !c.is_builtin &&
+      ((c.package_id && c.package_id.toLowerCase() === pkgId) ||
+        c.id.toLowerCase() === name ||
+        (c.package_id && c.package_id.toLowerCase() === fullId))
+  ).length;
+  const iconCount = iconThemes.value.filter(
+    (i) =>
+      !i.is_builtin &&
+      ((i.package_id && i.package_id.toLowerCase() === pkgId) ||
+        i.id.toLowerCase() === name ||
+        (i.package_id && i.package_id.toLowerCase() === fullId))
+  ).length;
+  const productCount = productIconThemes.value.filter(
+    (p) =>
+      !p.is_builtin &&
+      ((p.package_id && p.package_id.toLowerCase() === pkgId) ||
+        p.id.toLowerCase() === name ||
+        (p.package_id && p.package_id.toLowerCase() === fullId))
+  ).length;
 
   if (colorCount > 0 || iconCount > 0 || productCount > 0) {
     if (productCount > colorCount && productCount > iconCount) return "product_icon";
@@ -1745,7 +1818,11 @@ function getExtensionType(item: MarketplaceExtension): "product_icon" | "icon" |
     "jetbrains-product-icons",
     "workbench-icons",
   ];
-  if (KNOWN_PRODUCT_ICONS.some((k) => name === k || fullId === k || pkgId === k || name.includes("product-icon") || name.includes("producticon"))) {
+  if (
+    KNOWN_PRODUCT_ICONS.some(
+      (k) => name === k || fullId === k || pkgId === k || name.includes("product-icon") || name.includes("producticon")
+    )
+  ) {
     return "product_icon";
   }
 
@@ -1806,7 +1883,14 @@ function getExtensionType(item: MarketplaceExtension): "product_icon" | "icon" |
   return "theme";
 }
 
-function isItemInstalled(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean; is_builtin?: boolean }): boolean {
+function isItemInstalled(item: {
+  namespace?: string;
+  name: string;
+  displayName?: string;
+  package_id?: string;
+  is_installed?: boolean;
+  is_builtin?: boolean;
+}): boolean {
   if (item.is_installed || item.is_builtin) return true;
   const pkgId = (item.package_id || item.name || "").toLowerCase();
   const name = (item.name || "").toLowerCase();
@@ -1819,7 +1903,14 @@ function isItemInstalled(item: { namespace?: string; name: string; displayName?:
     const cPkg = (c.package_id || "").toLowerCase();
     const cId = c.id.toLowerCase();
     const cName = c.name.toLowerCase();
-    return cPkg === pkgId || cPkg === name || cPkg === fullId || cId === pkgId || cId === name || (Boolean(displayName) && cName === displayName);
+    return (
+      cPkg === pkgId ||
+      cPkg === name ||
+      cPkg === fullId ||
+      cId === pkgId ||
+      cId === name ||
+      (Boolean(displayName) && cName === displayName)
+    );
   });
   if (isColor) return true;
 
@@ -1828,7 +1919,14 @@ function isItemInstalled(item: { namespace?: string; name: string; displayName?:
     const iPkg = (i.package_id || "").toLowerCase();
     const iId = i.id.toLowerCase();
     const iName = i.name.toLowerCase();
-    return iPkg === pkgId || iPkg === name || iPkg === fullId || iId === pkgId || iId === name || (Boolean(displayName) && iName === displayName);
+    return (
+      iPkg === pkgId ||
+      iPkg === name ||
+      iPkg === fullId ||
+      iId === pkgId ||
+      iId === name ||
+      (Boolean(displayName) && iName === displayName)
+    );
   });
   if (isIcon) return true;
 
@@ -1837,12 +1935,26 @@ function isItemInstalled(item: { namespace?: string; name: string; displayName?:
     const pPkg = (p.package_id || "").toLowerCase();
     const pId = p.id.toLowerCase();
     const pName = p.name.toLowerCase();
-    return pPkg === pkgId || pPkg === name || pPkg === fullId || pId === pkgId || pId === name || (Boolean(displayName) && pName === displayName);
+    return (
+      pPkg === pkgId ||
+      pPkg === name ||
+      pPkg === fullId ||
+      pId === pkgId ||
+      pId === name ||
+      (Boolean(displayName) && pName === displayName)
+    );
   });
   return isProduct;
 }
 
-function isColorThemeActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean; is_builtin?: boolean }): boolean {
+function isColorThemeActive(item: {
+  namespace?: string;
+  name: string;
+  displayName?: string;
+  package_id?: string;
+  is_installed?: boolean;
+  is_builtin?: boolean;
+}): boolean {
   if (!isItemInstalled(item) || !activeColorTheme.value) return false;
   const actColor = activeColorTheme.value.toLowerCase();
   const pkgId = (item.package_id || item.name || "").toLowerCase();
@@ -1862,13 +1974,26 @@ function isColorThemeActive(item: { namespace?: string; name: string; displayNam
     const cPkg = (c.package_id || "").toLowerCase();
     const cId = c.id.toLowerCase();
     const cName = c.name.toLowerCase();
-    const belongs = cPkg === pkgId || cPkg === name || cPkg === fullId || cId === pkgId || cId === name || (Boolean(displayName) && cName === displayName);
+    const belongs =
+      cPkg === pkgId ||
+      cPkg === name ||
+      cPkg === fullId ||
+      cId === pkgId ||
+      cId === name ||
+      (Boolean(displayName) && cName === displayName);
     if (!belongs) return false;
     return cId === actColor || cName === actColor;
   });
 }
 
-function isFileIconActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean; is_builtin?: boolean }): boolean {
+function isFileIconActive(item: {
+  namespace?: string;
+  name: string;
+  displayName?: string;
+  package_id?: string;
+  is_installed?: boolean;
+  is_builtin?: boolean;
+}): boolean {
   if (!isItemInstalled(item) || !activeIconTheme.value) return false;
   const actIcon = activeIconTheme.value.toLowerCase();
   const pkgId = (item.package_id || item.name || "").toLowerCase();
@@ -1888,13 +2013,26 @@ function isFileIconActive(item: { namespace?: string; name: string; displayName?
     const iPkg = (i.package_id || "").toLowerCase();
     const iId = i.id.toLowerCase();
     const iName = i.name.toLowerCase();
-    const belongs = iPkg === pkgId || iPkg === name || iPkg === fullId || iId === pkgId || iId === name || (Boolean(displayName) && iName === displayName);
+    const belongs =
+      iPkg === pkgId ||
+      iPkg === name ||
+      iPkg === fullId ||
+      iId === pkgId ||
+      iId === name ||
+      (Boolean(displayName) && iName === displayName);
     if (!belongs) return false;
     return iId === actIcon || iName === actIcon;
   });
 }
 
-function isProductIconActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean; is_builtin?: boolean }): boolean {
+function isProductIconActive(item: {
+  namespace?: string;
+  name: string;
+  displayName?: string;
+  package_id?: string;
+  is_installed?: boolean;
+  is_builtin?: boolean;
+}): boolean {
   if (!isItemInstalled(item) || !activeProductIconTheme.value) return false;
   const actProd = activeProductIconTheme.value.toLowerCase();
   const pkgId = (item.package_id || item.name || "").toLowerCase();
@@ -1914,14 +2052,27 @@ function isProductIconActive(item: { namespace?: string; name: string; displayNa
     const pPkg = (p.package_id || "").toLowerCase();
     const pId = p.id.toLowerCase();
     const pName = p.name.toLowerCase();
-    const belongs = pPkg === pkgId || pPkg === name || pPkg === fullId || pId === pkgId || pId === name || (Boolean(displayName) && pName === displayName);
+    const belongs =
+      pPkg === pkgId ||
+      pPkg === name ||
+      pPkg === fullId ||
+      pId === pkgId ||
+      pId === name ||
+      (Boolean(displayName) && pName === displayName);
     if (!belongs) return false;
     return pId === actProd || pName === actProd;
   });
 }
 
 function isExtensionActive(
-  item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean; is_builtin?: boolean },
+  item: {
+    namespace?: string;
+    name: string;
+    displayName?: string;
+    package_id?: string;
+    is_installed?: boolean;
+    is_builtin?: boolean;
+  },
   explicitType?: "product_icon" | "icon" | "theme"
 ): boolean {
   if (!isItemInstalled(item)) return false;
@@ -1930,13 +2081,22 @@ function isExtensionActive(
   if (explicitType === "icon") return isFileIconActive(item);
   if (explicitType === "theme") return isColorThemeActive(item);
 
-  if (activeThemeTypeTab.value === "product_icon" || (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "product_icon")) {
+  if (
+    activeThemeTypeTab.value === "product_icon" ||
+    (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "product_icon")
+  ) {
     return isProductIconActive(item);
   }
-  if (activeThemeTypeTab.value === "icon" || (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "icon")) {
+  if (
+    activeThemeTypeTab.value === "icon" ||
+    (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "icon")
+  ) {
     return isFileIconActive(item);
   }
-  if (activeThemeTypeTab.value === "color" || (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "color")) {
+  if (
+    activeThemeTypeTab.value === "color" ||
+    (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "color")
+  ) {
     return isColorThemeActive(item);
   }
 
@@ -1987,8 +2147,10 @@ function onSearchThemes(q?: string) {
     return;
   }
   const query = q !== undefined ? q : mpSearchQuery.value;
-  const match = contextualChips.value.find((c) => !c.isInstalled && c.query.toLowerCase() === query.toLowerCase().trim());
-  selectedFilter.value = match ? match.id : (query ? "" : (contextualChips.value[0]?.id || "all"));
+  const match = contextualChips.value.find(
+    (c) => !c.isInstalled && c.query.toLowerCase() === query.toLowerCase().trim()
+  );
+  selectedFilter.value = match ? match.id : query ? "" : contextualChips.value[0]?.id || "all";
   mpSearchThemes(query);
 }
 
@@ -2017,7 +2179,11 @@ function switchThemeTypeTab(tab: ThemeTypeTab) {
 
   if (tab === "color") {
     selectedFilter.value = "color-all";
-    if (mpSearchQuery.value === "icon" || mpSearchQuery.value === "product icon" || mpSearchQuery.value === "fluent-icons") {
+    if (
+      mpSearchQuery.value === "icon" ||
+      mpSearchQuery.value === "product icon" ||
+      mpSearchQuery.value === "fluent-icons"
+    ) {
       mpSearchQuery.value = "";
     }
     mpSearchThemes(mpSearchQuery.value);
@@ -2080,9 +2246,7 @@ async function onUninstallThemeCard(item: MarketplaceExtension) {
     await deleteTheme("icon", pkgId);
     await deleteTheme("product", pkgId);
     item.is_installed = false;
-    const found = mpSearchResults.value.find(
-      (s) => s.name === item.name || (s.package_id && s.package_id === pkgId)
-    );
+    const found = mpSearchResults.value.find((s) => s.name === item.name || (s.package_id && s.package_id === pkgId));
     if (found) found.is_installed = false;
     await fetchThemes();
     feedbackMsg.value = t("marketplace.uninstalled_success", { name }) || `✓ 已卸载 ${name}`;
@@ -2240,7 +2404,9 @@ async function onApplyTheme(item: MarketplaceExtension) {
       const cPkg = (c.package_id || "").toLowerCase();
       const cId = c.id.toLowerCase();
       const cName = c.name.toLowerCase();
-      return cPkg === pkgID || cPkg === name || cPkg === fullId || cId === pkgID || cId === name || cName === displayName;
+      return (
+        cPkg === pkgID || cPkg === name || cPkg === fullId || cId === pkgID || cId === name || cName === displayName
+      );
     });
 
     // Find matching icon theme
@@ -2248,7 +2414,9 @@ async function onApplyTheme(item: MarketplaceExtension) {
       const iPkg = (i.package_id || "").toLowerCase();
       const iId = i.id.toLowerCase();
       const iName = i.name.toLowerCase();
-      return iPkg === pkgID || iPkg === name || iPkg === fullId || iId === pkgID || iId === name || iName === displayName;
+      return (
+        iPkg === pkgID || iPkg === name || iPkg === fullId || iId === pkgID || iId === name || iName === displayName
+      );
     });
 
     // Find matching product icon theme
@@ -2256,7 +2424,9 @@ async function onApplyTheme(item: MarketplaceExtension) {
       const pPkg = (p.package_id || "").toLowerCase();
       const pId = p.id.toLowerCase();
       const pName = p.name.toLowerCase();
-      return pPkg === pkgID || pPkg === name || pPkg === fullId || pId === pkgID || pId === name || pName === displayName;
+      return (
+        pPkg === pkgID || pPkg === name || pPkg === fullId || pId === pkgID || pId === name || pName === displayName
+      );
     });
 
     const targetType = getCardDisplayType(item);
@@ -2321,8 +2491,6 @@ function formatDate(dateStr?: string): string {
 function cleanGitUrl(url: string): string {
   return url.replace(/^git\+/, "").replace(/\.git$/, "");
 }
-
-
 </script>
 
 <style scoped>
@@ -2663,7 +2831,9 @@ function cleanGitUrl(url: string): string {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-icon,
@@ -2714,7 +2884,11 @@ function cleanGitUrl(url: string): string {
   justify-content: space-between;
   padding: 14px;
   border-radius: 10px;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .clickable-card {
@@ -2730,8 +2904,16 @@ function cleanGitUrl(url: string): string {
 .card-is-active {
   position: relative;
   border: 2px solid #00e5ff !important;
-  background: linear-gradient(145deg, rgba(0, 229, 255, 0.22) 0%, rgba(14, 165, 233, 0.14) 40%, rgba(15, 23, 42, 0.96) 100%) !important;
-  box-shadow: 0 0 26px rgba(0, 229, 255, 0.42), 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 0 18px rgba(0, 229, 255, 0.15) !important;
+  background: linear-gradient(
+    145deg,
+    rgba(0, 229, 255, 0.22) 0%,
+    rgba(14, 165, 233, 0.14) 40%,
+    rgba(15, 23, 42, 0.96) 100%
+  ) !important;
+  box-shadow:
+    0 0 26px rgba(0, 229, 255, 0.42),
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    inset 0 0 18px rgba(0, 229, 255, 0.15) !important;
 }
 
 .card-is-active::before {
@@ -2749,7 +2931,10 @@ function cleanGitUrl(url: string): string {
 
 .card-is-active:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 34px rgba(0, 229, 255, 0.55), 0 10px 28px rgba(0, 0, 0, 0.6), inset 0 0 22px rgba(0, 229, 255, 0.2) !important;
+  box-shadow:
+    0 0 34px rgba(0, 229, 255, 0.55),
+    0 10px 28px rgba(0, 0, 0, 0.6),
+    inset 0 0 22px rgba(0, 229, 255, 0.2) !important;
   border-color: #00e5ff !important;
 }
 
@@ -2771,7 +2956,9 @@ function cleanGitUrl(url: string): string {
 [data-theme="light"] .card-is-active {
   border: 2px solid #0284c7 !important;
   background: linear-gradient(145deg, rgba(2, 132, 199, 0.14) 0%, rgba(240, 249, 255, 0.97) 100%) !important;
-  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.25), inset 0 0 14px rgba(2, 132, 199, 0.08) !important;
+  box-shadow:
+    0 6px 20px rgba(2, 132, 199, 0.25),
+    inset 0 0 14px rgba(2, 132, 199, 0.08) !important;
 }
 
 :root[data-theme="light"] .card-is-active::before,
@@ -2855,7 +3042,9 @@ function cleanGitUrl(url: string): string {
   background: var(--card-bg, #1e293b);
   border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
   border-radius: 8px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 0 12px var(--accent-cyan-glow, rgba(2, 132, 199, 0.15));
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.35),
+    0 0 12px var(--accent-cyan-glow, rgba(2, 132, 199, 0.15));
   padding: 0.35rem;
   z-index: 50;
   min-width: 140px;
@@ -2874,7 +3063,9 @@ function cleanGitUrl(url: string): string {
 [data-theme="light"] .theme-dropdown-menu {
   background: #ffffff;
   border-color: #e2e8f0;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 12px rgba(2, 132, 199, 0.1);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 0 12px rgba(2, 132, 199, 0.1);
 }
 
 .theme-dropdown-menu .dropdown-item {
@@ -3114,7 +3305,8 @@ function cleanGitUrl(url: string): string {
 }
 
 @keyframes activeDotPulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
     box-shadow: 0 0 8px #00e5ff;
@@ -4569,7 +4761,6 @@ function cleanGitUrl(url: string): string {
   font-size: 0.75rem;
 }
 
-
 .plugin-tags-row.small {
   gap: 3px;
 }
@@ -4716,9 +4907,19 @@ function cleanGitUrl(url: string): string {
 }
 
 @keyframes pulse-ring {
-  0% { transform: scale(0.9); opacity: 0.8; }
-  50% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 12px #10b981; }
-  100% { transform: scale(0.9); opacity: 0.8; }
+  0% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 1;
+    box-shadow: 0 0 12px #10b981;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
 }
 
 .hero-badge-pill .badge-text {
@@ -4815,7 +5016,10 @@ function cleanGitUrl(url: string): string {
   gap: 0.65rem;
   border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
   background: rgba(255, 255, 255, 0.02);
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .pillar-card:hover {

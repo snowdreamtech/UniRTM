@@ -1,6 +1,6 @@
 # Quickstart Guide: Plugin Configuration
 
-**Feature**: `027-plugin-config-isolation`  
+**Feature**: `027-plugin-config-isolation`
 
 ---
 

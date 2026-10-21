@@ -66,9 +66,7 @@ describe("usePorts composable", () => {
     const { ports, listeningPorts, addPort, updatePort, stopPort, startPort, removePort } = usePorts();
 
     // Mark 3306 as listening on OS
-    listeningPorts.value = [
-      { port: 3306, protocol: "tcp", localAddress: "127.0.0.1:3306", process: "mysqld" },
-    ];
+    listeningPorts.value = [{ port: 3306, protocol: "tcp", localAddress: "127.0.0.1:3306", process: "mysqld" }];
 
     // 1. Add manual port 3306
     const added = await addPort({
@@ -287,5 +285,3 @@ describe("usePorts composable", () => {
     expect(apiRisk.level).toBe("standard");
   });
 });
-
-

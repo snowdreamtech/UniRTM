@@ -65,8 +65,8 @@ export function useTerminal() {
 
         uniqueList.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
         terminals.value = uniqueList;
-        defaultTerminalPath.value = data.default || (uniqueList[0]?.path || "");
-        currentTerminalPath.value = data.current || data.default || (uniqueList[0]?.path || "");
+        defaultTerminalPath.value = data.default || uniqueList[0]?.path || "";
+        currentTerminalPath.value = data.current || data.default || uniqueList[0]?.path || "";
       } else {
         terminalError.value = "Failed to load terminals";
       }

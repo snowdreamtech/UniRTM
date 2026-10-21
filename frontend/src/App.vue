@@ -343,7 +343,8 @@ function handleOpenTerminalInDir(dirPath: string) {
   drawerActiveTab.value = "terminal";
   const { ensureInitialSession, activeSession, runCommand } = useTerminalSessions();
   ensureInitialSession();
-  const pane = activeSession.value?.panes.find((p) => p.id === activeSession.value?.activePaneId) || activeSession.value?.panes[0];
+  const pane =
+    activeSession.value?.panes.find((p) => p.id === activeSession.value?.activePaneId) || activeSession.value?.panes[0];
   if (pane && dirPath) {
     runCommand(pane.id, `cd "${dirPath}"`);
   }

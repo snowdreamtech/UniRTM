@@ -102,4 +102,3 @@ export interface MarketplaceExtensionDetail {
   readme?: string;
   contributes?: ExtensionContributions;
 }
-

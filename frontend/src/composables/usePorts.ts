@@ -260,10 +260,7 @@ export function usePorts() {
     isLoading.value = true;
     try {
       // Parallel fetch of workspace hints and listening ports with probe
-      const [, portsRes] = await Promise.all([
-        fetchWorkspaceHints(),
-        fetch("/api/ports/list?probe=true"),
-      ]);
+      const [, portsRes] = await Promise.all([fetchWorkspaceHints(), fetch("/api/ports/list?probe=true")]);
       if (portsRes.ok) {
         const data = await portsRes.json();
         if (data.success && Array.isArray(data.listening)) {
@@ -421,10 +418,7 @@ export function usePorts() {
   /**
    * Terminal Output Sniffer: automatically detected port from terminal output text.
    */
-  function registerDetectedPort(
-    port: number,
-    options?: { label?: string; protocol?: PortProtocol }
-  ) {
+  function registerDetectedPort(port: number, options?: { label?: string; protocol?: PortProtocol }) {
     if (!port || port <= 0 || port > 65535) return;
     if (userIgnoredAutoPorts.value.has(port)) return;
 

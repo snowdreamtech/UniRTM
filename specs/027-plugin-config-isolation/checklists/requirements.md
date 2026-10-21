@@ -1,8 +1,8 @@
 # Specification Quality Checklist: Plugin & Extension Configuration Namespace Isolation
 
-**Purpose**: Validate specification completeness and quality before proceeding to implementation  
-**Created**: 2026-10-13  
-**Feature**: [spec.md](../spec.md)  
+**Purpose**: Validate specification completeness and quality before proceeding to implementation
+**Created**: 2026-10-13
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 

@@ -1,6 +1,6 @@
 # Research & Precedents: Plugin Configuration Isolation
 
-**Feature**: `027-plugin-config-isolation`  
+**Feature**: `027-plugin-config-isolation`
 
 ---
 

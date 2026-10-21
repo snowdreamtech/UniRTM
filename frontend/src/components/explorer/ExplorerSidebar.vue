@@ -1,5 +1,9 @@
 <template>
-  <div class="explorer-sidebar-container" @click="handleBackgroundClick" @contextmenu.prevent="handleBackgroundContextMenu">
+  <div
+    class="explorer-sidebar-container"
+    @click="handleBackgroundClick"
+    @contextmenu.prevent="handleBackgroundContextMenu"
+  >
     <!-- VS Code Section Header -->
     <div class="explorer-section-header">
       <div class="workspace-title-group" @click.stop="toggleRootExpand">
@@ -9,18 +13,10 @@
 
       <!-- Action Toolbar (New File, New Folder, Refresh, Collapse All) -->
       <div class="explorer-toolbar">
-        <button
-          class="toolbar-btn"
-          title="新建文件"
-          @click.stop="handleToolbarNewFile"
-        >
+        <button class="toolbar-btn" title="新建文件" @click.stop="handleToolbarNewFile">
           <span class="codicon codicon-new-file"></span>
         </button>
-        <button
-          class="toolbar-btn"
-          title="新建文件夹"
-          @click.stop="handleToolbarNewFolder"
-        >
+        <button class="toolbar-btn" title="新建文件夹" @click.stop="handleToolbarNewFolder">
           <span class="codicon codicon-new-folder"></span>
         </button>
         <button
@@ -39,18 +35,10 @@
         >
           <span class="codicon codicon-refresh"></span>
         </button>
-        <button
-          class="toolbar-btn"
-          title="将文件夹添加到工作区..."
-          @click.stop="openAddFolderModal('', '')"
-        >
+        <button class="toolbar-btn" title="将文件夹添加到工作区..." @click.stop="openAddFolderModal('', '')">
           <span class="codicon codicon-folder-library"></span>
         </button>
-        <button
-          class="toolbar-btn"
-          title="全部折叠"
-          @click.stop="collapseAll"
-        >
+        <button class="toolbar-btn" title="全部折叠" @click.stop="collapseAll">
           <span class="codicon codicon-collapse-all"></span>
         </button>
       </div>
@@ -74,17 +62,13 @@
       <!-- Tree Nodes -->
       <div v-else-if="filteredTree" class="tree-nodes-list">
         <!-- Root Inline Creation Input -->
-        <div
-          v-if="isInlineCreatingRoot"
-          class="root-inline-row"
-          :style="{ paddingLeft: '20px' }"
-        >
+        <div v-if="isInlineCreatingRoot" class="root-inline-row" :style="{ paddingLeft: '20px' }">
           <span class="root-twistie">
             <span v-if="inlineAction?.type === 'new-folder'" class="codicon codicon-chevron-right"></span>
           </span>
           <span class="root-icon">
             <TechIcon
-              :id="inlineAction?.type === 'new-folder' ? 'codicon:folder' : (createRootInputValue || 'file.txt')"
+              :id="inlineAction?.type === 'new-folder' ? 'codicon:folder' : createRootInputValue || 'file.txt'"
               :size="16"
             />
           </span>
@@ -105,12 +89,7 @@
 
         <!-- Render top-level children -->
         <template v-if="sortedRootChildren.length > 0">
-          <FileTreeNode
-            v-for="child in sortedRootChildren"
-            :key="child.path || child.name"
-            :node="child"
-            :depth="0"
-          />
+          <FileTreeNode v-for="child in sortedRootChildren" :key="child.path || child.name" :node="child" :depth="0" />
         </template>
 
         <div v-else-if="!isInlineCreatingRoot" class="tree-empty-state">
@@ -170,13 +149,15 @@ const {
 
 const { onRevealFile } = useWorkspaceBus();
 
-
 const rootCreateInputRef = ref<HTMLInputElement | null>(null);
 const createRootInputValue = ref("");
 
 const workspaceName = computed(() => {
   if (isMultiRoot.value) {
-    return t("explorer.workspace_multi_title", { count: workspaceRoots.value.length }) || `工作区 (${workspaceRoots.value.length} 个文件夹)`;
+    return (
+      t("explorer.workspace_multi_title", { count: workspaceRoots.value.length }) ||
+      `工作区 (${workspaceRoots.value.length} 个文件夹)`
+    );
   }
   return (tree.value?.name || "UNIRTM").toUpperCase();
 });
@@ -191,8 +172,7 @@ function toggleRootExpand() {
 
 const isInlineCreatingRoot = computed(() => {
   return (
-    (inlineAction.value?.type === "new-file" ||
-      inlineAction.value?.type === "new-folder") &&
+    (inlineAction.value?.type === "new-file" || inlineAction.value?.type === "new-folder") &&
     inlineAction.value.parentPath === ""
   );
 });
@@ -299,7 +279,6 @@ onBeforeUnmount(() => {
   }
 });
 </script>
-
 
 <style scoped>
 .explorer-sidebar-container {
@@ -496,4 +475,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-

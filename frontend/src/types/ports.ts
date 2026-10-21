@@ -70,4 +70,3 @@ export interface PortRiskAssessment {
   reason: string;
   recommendation: string;
 }
-

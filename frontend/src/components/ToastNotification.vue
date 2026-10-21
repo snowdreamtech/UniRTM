@@ -3,7 +3,15 @@
     <div v-if="message" class="global-toast" :class="type">
       <span class="toast-icon">
         <TechIcon
-          :id="type === 'warning' ? 'workbench:warning' : type === 'error' ? 'workbench:error' : type === 'success' ? 'workbench:tasks' : 'workbench:about'"
+          :id="
+            type === 'warning'
+              ? 'workbench:warning'
+              : type === 'error'
+                ? 'workbench:error'
+                : type === 'success'
+                  ? 'workbench:tasks'
+                  : 'workbench:about'
+          "
           :size="16"
           :colored="false"
         />

@@ -8,7 +8,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-
 )
 
 var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
@@ -45,7 +44,10 @@ func (r *Utf8BOMRule) Execute(ctx context.Context, files []string, opts ExecuteO
 		default:
 		}
 
-		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
+		fullPath := rel
+		if !filepath.IsAbs(fullPath) {
+			fullPath = filepath.Join(opts.WorkspaceDir, rel)
+		}
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() < 3 {
 			continue

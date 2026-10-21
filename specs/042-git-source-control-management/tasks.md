@@ -33,4 +33,3 @@
   - [x] 5.2 状态栏集成：在 `BottomStatusBar.vue` 底部全局状态栏集成 Git 当前分支名称与 `↓0 ↑1` 同步按钮，支持一键与远程同步及快捷跳转 SCM
   - [x] 5.3 提交历史可视化：在 `SourceControlView.vue` 中集成实时 Git Commit History 列表，展示提交哈希、提交信息、作者与格式化时间戳
   - [ ] 5.4 储藏管理 (Stash)：支持 `git stash` 暂存现场与快速恢复
-

@@ -12,7 +12,7 @@ graph TD
     PortsView --> usePorts
     usePorts --> LocalStore["持久化用户端口 (localStorage)"]
     usePorts --> BackendAPI["/api/ports/* REST API"]
-    
+
     subgraph "三维一体智能推断体系"
         MethodA["方式 A: 宿主进程语义分析 (/proc/cmdline, ps, tasklist)"]
         MethodB["方式 B: 网络应用探针 (TLS 握手 + HTTP Server Header + 协议嗅探)"]
@@ -22,7 +22,7 @@ graph TD
     BackendAPI --> MethodA
     BackendAPI --> MethodB
     usePorts --> MethodC
-    
+
     subgraph "后端服务 (Go cmd/64.ui.go / Vite Connect)"
         BackendAPI --> PortScanner["系统级端口监听扫描器"]
         BackendAPI --> PortProber["并发安全网络探针引擎 (超时 <= 40ms)"]
@@ -142,4 +142,3 @@ export interface PortForwardItem {
 - **常态化感知与自动过期收敛**：
   - 面板顶部常态显示公开端口数量与黄色预警；
   - 在工作区挂载卸载时，自动对公开端口执行安全合规收敛，避免长期公网裸奔。
-

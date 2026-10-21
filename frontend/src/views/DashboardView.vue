@@ -10,7 +10,10 @@
       </div>
       <h1 class="hero-title">{{ t("app.greeting") || "欢迎使用 UniRTM！" }}</h1>
       <p class="hero-desc">
-        {{ t("app.template_desc") || "在编写代码前，让一切各就各位。快速、简单、跨平台地统一管理开发工具、环境变量与任务。" }}
+        {{
+          t("app.template_desc") ||
+          "在编写代码前，让一切各就各位。快速、简单、跨平台地统一管理开发工具、环境变量与任务。"
+        }}
       </p>
 
       <!-- 4 KPI Metrics Grid -->
@@ -34,7 +37,7 @@
         <div class="kpi-card" @click="handleTestNetwork">
           <span class="kpi-icon"><TechIcon id="workbench:runtimes" :size="30" /></span>
           <div class="kpi-info">
-            <span class="kpi-val">{{ latencyMs !== null ? latencyMs + 'ms' : '畅通' }}</span>
+            <span class="kpi-val">{{ latencyMs !== null ? latencyMs + "ms" : "畅通" }}</span>
             <span class="kpi-lbl">{{ t("dashboard.kpi_mirror") }}</span>
           </div>
         </div>
@@ -68,7 +71,10 @@
           </div>
           <div class="spec-row">
             <span class="spec-name">{{ t("hello.go_version") || "Go 编译版本" }}</span>
-            <span class="spec-val font-mono"><TechIcon id="go" :size="18" style="margin-right: 6px; vertical-align: middle;" />go1.24.0 linux/amd64</span>
+            <span class="spec-val font-mono"
+              ><TechIcon id="go" :size="18" style="margin-right: 6px; vertical-align: middle" />go1.24.0
+              linux/amd64</span
+            >
           </div>
           <div class="spec-row">
             <span class="spec-name">{{ t("hello.app_version") || "核心版本" }}</span>
@@ -95,13 +101,17 @@
           <div class="spec-row">
             <span class="spec-name">{{ t("network.col_profile") || "当前配置方案" }}</span>
             <span class="spec-badge badge-neutral font-mono">
-              {{ networkStatus?.active_profile || 'official' }}
+              {{ networkStatus?.active_profile || "official" }}
             </span>
           </div>
           <div class="spec-row">
             <span class="spec-name">{{ t("network.tab_proxy") || "网络代理" }}</span>
             <span class="spec-badge font-mono" :class="networkStatus?.proxy?.enabled ? 'badge-on' : 'badge-neutral'">
-              {{ networkStatus?.proxy?.enabled ? (networkStatus.proxy.url || (t("network.proxy_enabled") || "已启用")) : (t("network.direct_mode") || "官方直连") }}
+              {{
+                networkStatus?.proxy?.enabled
+                  ? networkStatus.proxy.url || t("network.proxy_enabled") || "已启用"
+                  : t("network.direct_mode") || "官方直连"
+              }}
             </span>
           </div>
           <div class="spec-row">
@@ -117,7 +127,7 @@
             <span v-if="testingNetwork" class="spin-icon">
               <TechIcon id="workbench:sync" :size="16" />
             </span>
-            <span v-else style="display: inline-flex; align-items: center; gap: 8px;">
+            <span v-else style="display: inline-flex; align-items: center; gap: 8px">
               <TechIcon id="workbench:tasks" :size="16" :colored="false" />
               {{ t("hello.test_speed_btn") || "测试网络联通性" }}
             </span>
@@ -182,7 +192,12 @@ async function handleTestNetwork() {
       if (okItem) {
         latencyMs.value = okItem.latency_ms;
         networkConnected.value = true;
-        emit("log-event", "SUCCESS", `Network latency probe completed: ${okItem.latency_ms}ms`, `Target: ${okItem.endpoint}`);
+        emit(
+          "log-event",
+          "SUCCESS",
+          `Network latency probe completed: ${okItem.latency_ms}ms`,
+          `Target: ${okItem.endpoint}`
+        );
       } else {
         networkConnected.value = false;
         latencyMs.value = null;

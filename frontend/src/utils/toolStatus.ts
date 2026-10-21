@@ -36,8 +36,12 @@ function cleanVer(v: string | undefined | null): string {
  * 比较两个语义化版本（降序：v1 > v2 返回负数，v1 < v2 返回正数，相等返回 0）
  */
 export function compareSemverDesc(v1: string, v2: string): number {
-  const p1 = cleanVer(v1).split(".").map((n) => parseInt(n, 10) || 0);
-  const p2 = cleanVer(v2).split(".").map((n) => parseInt(n, 10) || 0);
+  const p1 = cleanVer(v1)
+    .split(".")
+    .map((n) => parseInt(n, 10) || 0);
+  const p2 = cleanVer(v2)
+    .split(".")
+    .map((n) => parseInt(n, 10) || 0);
   const maxLen = Math.max(p1.length, p2.length);
 
   for (let i = 0; i < maxLen; i++) {
@@ -51,10 +55,7 @@ export function compareSemverDesc(v1: string, v2: string): number {
 /**
  * 检查指定版本是否已在本地安装列表中
  */
-export function isVersionLocallyInstalled(
-  installedVersions: string[] | undefined | null,
-  version: string
-): boolean {
+export function isVersionLocallyInstalled(installedVersions: string[] | undefined | null, version: string): boolean {
   if (!installedVersions || !version) return false;
   const targetClean = cleanVer(version);
   if (!targetClean) return false;
@@ -70,10 +71,7 @@ export function computeToolStatus(
   scope: "user" | "workspace",
   updates: ToolUpdateCandidate[] = []
 ): ToolStatusResult {
-  const configured =
-    scope === "user"
-      ? tool.global_version || ""
-      : tool.active_version || tool.global_version || "";
+  const configured = scope === "user" ? tool.global_version || "" : tool.active_version || tool.global_version || "";
 
   if (!configured.trim()) {
     return {
@@ -217,4 +215,3 @@ export function categorizeTools(
 
   return { missing, upgradable, ready, allFiltered };
 }
-

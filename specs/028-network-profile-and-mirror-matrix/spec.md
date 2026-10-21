@@ -1,8 +1,8 @@
 # Feature Specification: Network Profiles, Domestic Mirror Matrix & Cascading Overrides
 
-**Feature Identifier**: `028-network-profile-and-mirror-matrix`  
-**Created**: 2026-10-13  
-**Status**: Implemented  
+**Feature Identifier**: `028-network-profile-and-mirror-matrix`
+**Created**: 2026-10-13
+**Status**: Implemented
 **Input**: "Design and implement a complete network profile, domestic mirror matrix, and cascading proxy management subsystem for pre-compilation environment and network preparation. Support multi-ecosystem public domestic mirrors (built-in dropdowns); strictly forbid embedding any third-party proxy servers or GitHub relays (default to official direct); support full profile lifecycle CRUD (create, edit, save-as, reset to factory defaults, delete); support per-language granular overrides (Overrides > Active Profile); maintain full parity across CLI and Web UI with 100% native localization."
 
 ---

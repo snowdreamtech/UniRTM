@@ -1,7 +1,7 @@
 # Data Model: Plugin & Extension Configuration Isolation
 
-**Feature**: `027-plugin-config-isolation`  
-**Spec**: [spec.md](./spec.md)  
+**Feature**: `027-plugin-config-isolation`
+**Spec**: [spec.md](./spec.md)
 
 ---
 

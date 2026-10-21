@@ -1,8 +1,8 @@
 # Feature Specification: 033-dynamic-icon-themes-and-seti-fallback
 
-**Feature Branch**: `033-dynamic-icon-themes-and-seti-fallback`  
-**Created**: 2026-10-15  
-**Status**: Draft  
+**Feature Branch**: `033-dynamic-icon-themes-and-seti-fallback`
+**Created**: 2026-10-15
+**Status**: Draft
 **Input**: 用户需求："通过speckit制定计划：1. 将Unirtm WEB中的图标全面接入图标集，方便我们根据图标集进行动态更换。 2. 如果图标不够，fallback到默认图标，Seti UI。"
 
 ---
@@ -21,8 +21,8 @@
 
 ### User Story 1 - 全面图标集接入与全局动态更换 (Priority: P1)
 
-**作为** UniRTM 用户与开发者，  
-**我希望** 工作台所有模块（ActivityBar、Sidebar 面板、Dashboard 卡片、Doctor 检查项、Tasks 任务、Marketplace 扩展项、Settings 导航项、BottomStatusBar 指示器）中的图标都由图标集驱动，  
+**作为** UniRTM 用户与开发者，
+**我希望** 工作台所有模块（ActivityBar、Sidebar 面板、Dashboard 卡片、Doctor 检查项、Tasks 任务、Marketplace 扩展项、Settings 导航项、BottomStatusBar 指示器）中的图标都由图标集驱动，
 **以便于** 当我在市场中安装并切换任何第三方图标主题包（或在浅色/深色图标主题间切换）时，整个 Web 工作台的图标能够瞬时响应、统一更换风格。
 
 - **独立可测性**:
@@ -37,9 +37,9 @@
 
 ### User Story 2 - 第三方图标缺失时优雅回退到 Seti UI (Priority: P1)
 
-**作为** UniRTM 用户，  
-**我希望** 当我使用第三方图标集时，如果该图标集覆盖不全（例如缺少某些小众编程语言、UniRTM 专属配置文件或工作台特定标识），  
-**能够** 自动、平滑地 fallback 到默认图标集 Seti UI，  
+**作为** UniRTM 用户，
+**我希望** 当我使用第三方图标集时，如果该图标集覆盖不全（例如缺少某些小众编程语言、UniRTM 专属配置文件或工作台特定标识），
+**能够** 自动、平滑地 fallback 到默认图标集 Seti UI，
 **使得** 界面始终美观完整，永远不出现裂图、空白字符或方块乱码。
 
 - **独立可测性**:
@@ -55,8 +55,8 @@
 
 ### User Story 3 - 统一的 `<TechIcon>` / `<UniIcon>` 语义化调用与开发者体验 (Priority: P2)
 
-**作为** UniRTM 前端工程师，  
-**我希望** 可以在任何 Vue 组件中通过简明统一的组件调用图标，既支持技术/语言/文件名（如 `id="go"`、`id="Cargo.toml"`），也支持工作台语义标记（如 `id="workbench:settings"`、`id="workbench:doctor"`），  
+**作为** UniRTM 前端工程师，
+**我希望** 可以在任何 Vue 组件中通过简明统一的组件调用图标，既支持技术/语言/文件名（如 `id="go"`、`id="Cargo.toml"`），也支持工作台语义标记（如 `id="workbench:settings"`、`id="workbench:doctor"`），
 **以便于** 后续维护工作台视图时无需关心底层是 SVG、Font-Face 还是 Seti Fallback。
 
 - **独立可测性**:

@@ -14,9 +14,7 @@
         <p v-if="deleteConfirmModal.node?.is_dir" class="modal-subtext">
           该文件夹内的所有子文件和目录也将被一并永久删除，此操作不可逆。
         </p>
-        <p v-else class="modal-subtext">
-          此文件将被永久删除，此操作不可逆。
-        </p>
+        <p v-else class="modal-subtext">此文件将被永久删除，此操作不可逆。</p>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" @click="handleCancel">取消</button>

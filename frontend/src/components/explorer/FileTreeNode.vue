@@ -15,14 +15,8 @@
       @contextmenu="handleContextMenu"
       :title="(node.path || node.name) + (node.is_ignored ? ' (已由 .gitignore 排除)' : '')"
     >
-
       <!-- Indent guide lines for deep nesting -->
-      <div
-        v-for="i in depth"
-        :key="i"
-        class="tree-indent-guide"
-        :style="{ left: `${(i - 1) * 14 + 12}px` }"
-      ></div>
+      <div v-for="i in depth" :key="i" class="tree-indent-guide" :style="{ left: `${(i - 1) * 14 + 12}px` }"></div>
 
       <!-- Twistie / Chevron Indicator -->
       <span class="tree-twistie" @click.stop="handleTwistieClick">
@@ -37,10 +31,7 @@
       <!-- Folder or File Icon -->
       <span class="tree-icon">
         <template v-if="node.is_dir">
-          <TechIcon
-            :id="isExpanded ? 'codicon:folder-opened' : 'codicon:folder'"
-            :size="16"
-          />
+          <TechIcon :id="isExpanded ? 'codicon:folder-opened' : 'codicon:folder'" :size="16" />
         </template>
         <template v-else>
           <TechIcon :id="node.name" :size="16" />
@@ -66,31 +57,26 @@
           :class="[
             gitStatus ? 'git-color-' + gitStatus : '',
             node.is_ignored ? 'is-ignored-text' : '',
-            dirGitCount > 0 ? 'git-has-changes' : ''
+            dirGitCount > 0 ? 'git-has-changes' : '',
           ]"
         >
           {{ node.name }}
         </span>
         <span v-if="gitStatus" class="git-tree-badge" :class="'badge-' + gitStatus">{{ gitStatus }}</span>
-        <span v-else-if="dirGitCount > 0 && !isExpanded" class="git-dir-badge" :title="`包含 ${dirGitCount} 个待提交的变动文件`">+{{ dirGitCount }}</span>
+        <span
+          v-else-if="dirGitCount > 0 && !isExpanded"
+          class="git-dir-badge"
+          :title="`包含 ${dirGitCount} 个待提交的变动文件`"
+          >+{{ dirGitCount }}</span
+        >
       </div>
-
 
       <!-- Actions on Hover (Rename, Delete) -->
       <div class="tree-row-actions">
-        <button
-          v-if="!node.is_dir"
-          class="tree-action-btn"
-          title="重命名 (F2)"
-          @click.stop="startInlineRename(node)"
-        >
+        <button v-if="!node.is_dir" class="tree-action-btn" title="重命名 (F2)" @click.stop="startInlineRename(node)">
           <span class="codicon codicon-edit"></span>
         </button>
-        <button
-          class="tree-action-btn danger"
-          title="删除"
-          @click.stop="promptDelete(node)"
-        >
+        <button class="tree-action-btn danger" title="删除" @click.stop="promptDelete(node)">
           <span class="codicon codicon-trash"></span>
         </button>
       </div>
@@ -102,19 +88,14 @@
       class="tree-node-row is-creating"
       :style="{ paddingLeft: `${(depth + 1) * 14 + 6}px` }"
     >
-      <div
-        v-for="i in (depth + 1)"
-        :key="i"
-        class="tree-indent-guide"
-        :style="{ left: `${(i - 1) * 14 + 12}px` }"
-      ></div>
+      <div v-for="i in depth + 1" :key="i" class="tree-indent-guide" :style="{ left: `${(i - 1) * 14 + 12}px` }"></div>
       <span class="tree-twistie">
         <span v-if="inlineAction?.type === 'new-folder'" class="codicon codicon-chevron-right"></span>
         <span v-else class="twistie-spacer"></span>
       </span>
       <span class="tree-icon">
         <TechIcon
-          :id="inlineAction?.type === 'new-folder' ? 'codicon:folder' : (createInputValue || 'newfile.txt')"
+          :id="inlineAction?.type === 'new-folder' ? 'codicon:folder' : createInputValue || 'newfile.txt'"
           :size="16"
         />
       </span>
@@ -135,12 +116,7 @@
 
     <!-- Recursive Children -->
     <div v-if="node.is_dir && isExpanded && node.children && node.children.length > 0" class="tree-children">
-      <FileTreeNode
-        v-for="child in sortedChildren"
-        :key="child.path || child.name"
-        :node="child"
-        :depth="depth + 1"
-      />
+      <FileTreeNode v-for="child in sortedChildren" :key="child.path || child.name" :node="child" :depth="depth + 1" />
     </div>
   </div>
 </template>
@@ -198,16 +174,12 @@ const isSelected = computed(() => {
 });
 
 const isRenaming = computed(() => {
-  return (
-    inlineAction.value?.type === "rename" &&
-    inlineAction.value.targetPath === props.node.path
-  );
+  return inlineAction.value?.type === "rename" && inlineAction.value.targetPath === props.node.path;
 });
 
 const isInlineCreatingHere = computed(() => {
   return (
-    (inlineAction.value?.type === "new-file" ||
-      inlineAction.value?.type === "new-folder") &&
+    (inlineAction.value?.type === "new-file" || inlineAction.value?.type === "new-folder") &&
     inlineAction.value.parentPath === props.node.path &&
     isExpanded.value
   );
@@ -358,8 +330,6 @@ async function commitCreate() {
 .tree-node-row.is-ignored:hover {
   opacity: 0.9;
 }
-
-
 
 .tree-indent-guide {
   position: absolute;

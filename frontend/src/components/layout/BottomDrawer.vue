@@ -1,10 +1,5 @@
 <template>
-  <div
-    v-show="isOpen"
-    class="bottom-drawer"
-    :class="{ 'is-resizing': isDrawerHeightDragging }"
-    id="app-bottom-drawer"
-  >
+  <div v-show="isOpen" class="bottom-drawer" :class="{ 'is-resizing': isDrawerHeightDragging }" id="app-bottom-drawer">
     <!-- Top Horizontal Sash for vertical drag-resizing (VS Code style) -->
     <div
       class="drawer-top-resizer-sash"
@@ -43,10 +38,7 @@
             <TechIcon :id="tabDefinitions[tabId].icon" :size="13" />
             {{ tabDefinitions[tabId].label }}
           </span>
-          <span
-            v-if="tabDefinitions[tabId].badge && tabDefinitions[tabId].badge > 0"
-            class="tab-badge"
-          >
+          <span v-if="tabDefinitions[tabId].badge && tabDefinitions[tabId].badge > 0" class="tab-badge">
             {{ tabDefinitions[tabId].badge }}
           </span>
         </button>
@@ -64,7 +56,16 @@
               :data-tooltip="t('terminal.new_terminal') || '新建终端'"
               @click="handleCreateDefaultSession"
             >
-              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                viewBox="0 0 16 16"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="M8 3v10M3 8h10" />
               </svg>
             </button>
@@ -74,14 +75,23 @@
               title="选择 Shell 新建终端"
               @click.stop="isNewMenuOpen = !isNewMenuOpen"
             >
-              <svg viewBox="0 0 16 16" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                viewBox="0 0 16 16"
+                width="9"
+                height="9"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="M4 6l4 4 4-4" />
               </svg>
             </button>
 
             <!-- Dropdown to select Shell for new session -->
             <div v-if="isNewMenuOpen" class="term-new-dropdown font-mono" @click.stop>
-              <div class="dropdown-header">{{ t('terminal.new_terminal') || '新建终端' }}</div>
+              <div class="dropdown-header">{{ t("terminal.new_terminal") || "新建终端" }}</div>
               <div
                 v-for="term in terminals"
                 :key="term.path"
@@ -90,13 +100,14 @@
               >
                 <div class="shell-option-main">
                   <span class="shell-option-name font-mono">{{ term.name }}</span>
-                  <span v-if="term.is_default" class="shell-default-pill">{{ t('terminal.default_badge') || '系统默认' }}</span>
+                  <span v-if="term.is_default" class="shell-default-pill">{{
+                    t("terminal.default_badge") || "系统默认"
+                  }}</span>
                 </div>
                 <span class="shell-option-path font-mono">{{ term.path }}</span>
               </div>
             </div>
           </div>
-
         </template>
 
         <!-- "更多" (More Actions) Dropdown Menu (复制日志, 清空日志, 关闭终端) -->
@@ -119,33 +130,58 @@
           <div v-if="isMoreMenuOpen" class="drawer-more-dropdown font-mono" @click.stop>
             <!-- 1. 复制日志 -->
             <button class="more-menu-item" @click="handleMenuCopyLogs">
-              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                viewBox="0 0 16 16"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
                 <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 0 2.5 3.5v5a1.5 1.5 0 0 0 1.5 1.5h1.5" />
               </svg>
-              <span>{{ t('drawer.copy_all') || '复制日志' }}</span>
+              <span>{{ t("drawer.copy_all") || "复制日志" }}</span>
             </button>
 
             <!-- 2. 清空日志 -->
             <button class="more-menu-item" @click="handleMenuClearLogs">
-              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                viewBox="0 0 16 16"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <circle cx="8" cy="8" r="6" />
                 <path d="M3.8 3.8l8.4 8.4" />
               </svg>
-              <span>{{ t('drawer.clear_logs') || '清空日志' }}</span>
+              <span>{{ t("drawer.clear_logs") || "清空日志" }}</span>
             </button>
 
             <!-- 3. 关闭终端 (在终端 Tab 下提供) -->
-            <button
-              v-if="currentTab === 'terminal'"
-              class="more-menu-item danger"
-              @click="handleMenuKillTerminal"
-            >
-              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12 4.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 13V4.5" />
+            <button v-if="currentTab === 'terminal'" class="more-menu-item danger" @click="handleMenuKillTerminal">
+              <svg
+                viewBox="0 0 16 16"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12 4.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 13V4.5"
+                />
                 <path d="M6.5 7.5v4M9.5 7.5v4" />
               </svg>
-              <span>{{ t('terminal.kill_terminal') || '关闭终端' }}</span>
+              <span>{{ t("terminal.kill_terminal") || "关闭终端" }}</span>
             </button>
           </div>
         </div>
@@ -157,7 +193,16 @@
           :data-tooltip="autoScrollTitle"
           @click="autoScroll = !autoScroll"
         >
-          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            viewBox="0 0 16 16"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M8 2.5v8.5" />
             <path d="M4.5 7.5L8 11l3.5-3.5" />
             <path d="M2.5 13.5h11" />
@@ -170,20 +215,44 @@
           :data-tooltip="maximizeTitle"
           @click="isMaximized = !isMaximized"
         >
-          <svg v-if="!isMaximized" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            v-if="!isMaximized"
+            viewBox="0 0 16 16"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M2.5 10.5L8 5l5.5 5.5" />
           </svg>
-          <svg v-else viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            v-else
+            viewBox="0 0 16 16"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M2.5 5.5L8 11l5.5-5.5" />
           </svg>
         </button>
-        <button
-          class="drawer-action-btn"
-          :title="closeTitle"
-          :data-tooltip="closeTitle"
-          @click="$emit('close')"
-        >
-          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="drawer-action-btn" :title="closeTitle" :data-tooltip="closeTitle" @click="$emit('close')">
+          <svg
+            viewBox="0 0 16 16"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
           </svg>
         </button>
@@ -198,10 +267,7 @@
       :style="{ height: `${effectiveBodyHeight}px` }"
     >
       <!-- Main: Terminal Panes Work Area -->
-      <div
-        class="terminal-panes-area"
-        :class="['split-' + (activeSession?.splitDirection || 'none')]"
-      >
+      <div class="terminal-panes-area" :class="['split-' + (activeSession?.splitDirection || 'none')]">
         <div
           v-for="pane in activeSession?.panes"
           :key="pane.id"
@@ -216,7 +282,11 @@
               <span
                 v-if="getActiveProcess(pane.id)"
                 class="term-process-badge"
-                :style="{ backgroundColor: `${getActiveProcess(pane.id)?.color}25`, color: getActiveProcess(pane.id)?.color, borderColor: `${getActiveProcess(pane.id)?.color}60` }"
+                :style="{
+                  backgroundColor: `${getActiveProcess(pane.id)?.color}25`,
+                  color: getActiveProcess(pane.id)?.color,
+                  borderColor: `${getActiveProcess(pane.id)?.color}60`,
+                }"
                 :title="`Running: ${getActiveProcess(pane.id)?.name}`"
               >
                 {{ getActiveProcess(pane.id)?.name }}
@@ -224,7 +294,7 @@
               <span class="term-shell-info font-mono">{{ pane.shellName }}</span>
               <span class="term-shell-path font-mono">({{ pane.shellPath }})</span>
               <span v-if="activeSession?.splitDirection !== 'none'" class="term-split-pill">
-                {{ activeSession?.splitDirection === 'vertical' ? '竖直拆分' : '横向拆分' }}
+                {{ activeSession?.splitDirection === "vertical" ? "竖直拆分" : "横向拆分" }}
               </span>
             </div>
             <div class="pane-banner-right">
@@ -266,18 +336,24 @@
       </div>
 
       <!-- Right: VSCode-style Terminal Tabs Sidebar -->
-      <div
-        class="terminal-sidebar"
-        :style="{ width: `${termSidebarWidth}px` }"
-      >
+      <div class="terminal-sidebar" :style="{ width: `${termSidebarWidth}px` }">
         <div class="terminal-sidebar-header">
-          <span class="sidebar-title">{{ t('terminal.tabs_title') || '终端' }}</span>
+          <span class="sidebar-title">{{ t("terminal.tabs_title") || "终端" }}</span>
           <button
             class="sidebar-add-btn"
             :title="t('terminal.new_terminal') || '新建终端'"
             @click="handleCreateDefaultSession"
           >
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <path d="M8 3v10M3 8h10" />
             </svg>
           </button>
@@ -300,7 +376,15 @@
               >
                 ●
               </span>
-              <svg v-else viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8">
+              <svg
+                v-else
+                viewBox="0 0 16 16"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+              >
                 <path d="M3.5 5.5l3.5 2.5-3.5 2.5M8.5 10.5h4" />
               </svg>
             </div>
@@ -318,7 +402,7 @@
                 {{ getEffectiveTitle(s.id, s.title) }}
               </span>
               <span v-if="s.splitDirection !== 'none'" class="tab-item-split-badge">
-                {{ s.splitDirection === 'vertical' ? '[|]' : '[—]' }}
+                {{ s.splitDirection === "vertical" ? "[|]" : "[—]" }}
               </span>
             </div>
             <!-- Split actions: on terminal tab before trash icon, active only -->
@@ -328,7 +412,16 @@
                 :title="t('terminal.split_vertical') || '竖直拆分终端 (一分为二)'"
                 @click.stop="handleSplitVertical"
               >
-                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  viewBox="0 0 16 16"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <rect x="2" y="2.5" width="12" height="11" rx="1.5" />
                   <path d="M8 2.5v11" />
                 </svg>
@@ -338,7 +431,16 @@
                 :title="t('terminal.split_horizontal') || '水平拆分终端 (一分为二)'"
                 @click.stop="handleSplitHorizontal"
               >
-                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  viewBox="0 0 16 16"
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <rect x="2.5" y="2" width="11" height="12" rx="1.5" />
                   <path d="M2.5 8h11" />
                 </svg>
@@ -350,8 +452,19 @@
               :title="t('terminal.kill_terminal') || '关闭终端'"
               @click.stop="closeSession(s.id)"
             >
-              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12 4.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 13V4.5" />
+              <svg
+                viewBox="0 0 16 16"
+                width="13"
+                height="13"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12 4.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 13V4.5"
+                />
                 <path d="M6.5 7.5v4M9.5 7.5v4" />
               </svg>
             </button>
@@ -395,11 +508,32 @@
           @click.stop="handleCopyRow(log, idx)"
           :title="t('drawer.copy_row') || '复制单行日志'"
         >
-          <svg v-if="copiedRowIdx !== idx" viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            v-if="copiedRowIdx !== idx"
+            viewBox="0 0 16 16"
+            width="11"
+            height="11"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
             <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 0 2.5 3.5v5a1.5 1.5 0 0 0 1.5 1.5h1.5" />
           </svg>
-          <svg v-else viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--success, #10b981);">
+          <svg
+            v-else
+            viewBox="0 0 16 16"
+            width="11"
+            height="11"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="color: var(--success, #10b981)"
+          >
             <path d="M3.5 8.5l3 3 6-6" />
           </svg>
         </button>
@@ -457,7 +591,16 @@
 
         <div class="tab-context-menu-item" @click="handleResetTabOrder">
           <span class="context-check-icon"></span>
-          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            viewBox="0 0 16 16"
+            width="13"
+            height="13"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M2.5 8a5.5 5.5 0 1 0 1.5-3.8L2 6" />
             <path d="M2 2.5v3.5h3.5" />
           </svg>
@@ -508,11 +651,7 @@ const emit = defineEmits<{
 }>();
 
 const { showToast } = useToast();
-const {
-  terminals,
-  currentTerminal,
-  fetchTerminals,
-} = useTerminal();
+const { terminals, currentTerminal, fetchTerminals } = useTerminal();
 
 const { activePortsCount } = usePorts();
 
@@ -792,15 +931,9 @@ watch(autoScroll, (val) => {
   }
 });
 
-const outputLogs = computed(() =>
-  props.logs.filter((l) => !l.category || l.category === "output")
-);
-const tasksLogs = computed(() =>
-  props.logs.filter((l) => l.category === "tasks")
-);
-const doctorLogs = computed(() =>
-  props.logs.filter((l) => l.category === "doctor")
-);
+const outputLogs = computed(() => props.logs.filter((l) => !l.category || l.category === "output"));
+const tasksLogs = computed(() => props.logs.filter((l) => l.category === "tasks"));
+const doctorLogs = computed(() => props.logs.filter((l) => l.category === "doctor"));
 
 const DRAWER_TAB_ORDER_KEY = "unirtm_drawer_tab_order";
 const DRAWER_TAB_HIDDEN_KEY = "unirtm_drawer_tab_hidden";
@@ -1039,29 +1172,16 @@ const displayLogs = computed(() => {
 
 const emptyStateText = computed(() => {
   if (currentTab.value === "tasks") {
-    return (
-      t("drawer.empty_tasks") ||
-      "暂无任务执行日志。在任务视图中点击“运行”以在此查看执行终端输出。"
-    );
+    return t("drawer.empty_tasks") || "暂无任务执行日志。在任务视图中点击“运行”以在此查看执行终端输出。";
   }
   if (currentTab.value === "doctor") {
-    return (
-      t("drawer.empty_doctor") ||
-      "暂无环境体检报告。在环境诊断视图中执行“重新全面体检”以查看详情。"
-    );
+    return t("drawer.empty_doctor") || "暂无环境体检报告。在环境诊断视图中执行“重新全面体检”以查看详情。";
   }
-  return (
-    t("drawer.empty_logs") ||
-    "暂无系统输出日志。系统运行与扩展事件将在此显示。"
-  );
+  return t("drawer.empty_logs") || "暂无系统输出日志。系统运行与扩展事件将在此显示。";
 });
 
-const autoScrollTitle = computed(() =>
-  autoScroll.value ? "自动滚动 (开启)" : "自动滚动 (关闭)"
-);
-const maximizeTitle = computed(() =>
-  isMaximized.value ? "还原面板高度" : "最大化面板高度"
-);
+const autoScrollTitle = computed(() => (autoScroll.value ? "自动滚动 (开启)" : "自动滚动 (关闭)"));
+const maximizeTitle = computed(() => (isMaximized.value ? "还原面板高度" : "最大化面板高度"));
 const closeTitle = computed(() => "关闭面板 (Ctrl+` 或 Esc)");
 
 const isCopiedAll = ref(false);
@@ -1160,9 +1280,7 @@ async function handleCopyRow(log: LogItem, idx: number) {
 
 function handleCreateDefaultSession() {
   const s = createSession(
-    currentTerminal.value
-      ? { name: currentTerminal.value.name, path: currentTerminal.value.path }
-      : undefined
+    currentTerminal.value ? { name: currentTerminal.value.name, path: currentTerminal.value.path } : undefined
   );
   showToast(`${t("terminal.new_terminal") || "新建终端"}: ${s.title}`, "info");
 }
@@ -1339,7 +1457,10 @@ onUnmounted(() => {
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
-  transition: color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .drawer-tab:active {
@@ -1418,7 +1539,9 @@ onUnmounted(() => {
   z-index: 100000;
   background: var(--card-bg, #111827);
   border: 1px solid var(--card-border, #1f2937);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.6),
+    0 8px 10px -6px rgba(0, 0, 0, 0.4);
   border-radius: 6px;
   padding: 4px;
   min-width: 155px;
@@ -1477,7 +1600,9 @@ onUnmounted(() => {
   padding: 6px 10px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
 }
 
 .tab-context-menu-item:hover:not(.disabled) {
@@ -1601,7 +1726,9 @@ onUnmounted(() => {
   pointer-events: none;
   opacity: 0;
   transform: translateY(4px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
   z-index: 100;
 }
 
@@ -2024,10 +2151,11 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.15s ease;
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.15s ease;
   flex-shrink: 0;
 }
 
@@ -2064,10 +2192,11 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.15s ease;
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.15s ease;
   flex-shrink: 0;
 }
 

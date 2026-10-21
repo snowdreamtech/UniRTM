@@ -8,7 +8,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-
 )
 
 type EndOfFileRule struct{}
@@ -47,7 +46,10 @@ func (r *EndOfFileRule) Execute(ctx context.Context, files []string, opts Execut
 		default:
 		}
 
-		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
+		fullPath := rel
+		if !filepath.IsAbs(fullPath) {
+			fullPath = filepath.Join(opts.WorkspaceDir, rel)
+		}
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() == 0 || fi.Size() > maxSize {
 			continue

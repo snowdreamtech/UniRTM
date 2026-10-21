@@ -1,8 +1,8 @@
 # Feature Specification: Unified Multi-Language Runtime Manager
 
-**Feature Identifier**: `029-multilang-runtime-manager`  
-**Created**: 2026-10-14  
-**Status**: In Progress  
+**Feature Identifier**: `029-multilang-runtime-manager`
+**Created**: 2026-10-14
+**Status**: In Progress
 **Input**: "Replace NVM, GVM, and Pyenv across platforms (Linux, macOS, Windows). Establish UniRTM as the definitive multi-language runtime manager with comprehensive CLI and Web UI support, seamless legacy version file compatibility (.nvmrc, .node-version, .go-version, .python-version, .tool-versions), smart semver/alias resolution (lts, latest, fuzzy prefixes), and isolated global package toolchains."
 
 ---

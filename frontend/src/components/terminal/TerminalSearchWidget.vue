@@ -105,7 +105,7 @@ watch(
 
         <!-- Match Counter -->
         <span v-if="query" class="match-count">
-          {{ resultCount > 0 ? `${resultIndex + 1}/${resultCount}` : t('terminal.search.no_results') }}
+          {{ resultCount > 0 ? `${resultIndex + 1}/${resultCount}` : t("terminal.search.no_results") }}
         </span>
 
         <!-- Option Toggles -->
@@ -164,14 +164,11 @@ watch(
             <path d="M8 11.5l5-5H3l5 5z" />
           </svg>
         </button>
-        <button
-          type="button"
-          class="action-btn close-btn"
-          :title="t('terminal.search.close')"
-          @click="emit('close')"
-        >
+        <button type="button" class="action-btn close-btn" :title="t('terminal.search.close')" @click="emit('close')">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
-            <path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z" />
+            <path
+              d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z"
+            />
           </svg>
         </button>
       </div>
@@ -196,7 +193,10 @@ watch(
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 12px;
   color: var(--vscode-editorWidget-foreground, #cccccc);
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .search-input-box {
@@ -372,7 +372,9 @@ watch(
 /* Slide Transition */
 .search-slide-enter-active,
 .search-slide-leave-active {
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
+  transition:
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.18s ease;
 }
 
 .search-slide-enter-from,

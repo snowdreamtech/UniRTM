@@ -1,9 +1,9 @@
 # Technical Plan: Unified Multi-Language Runtime Manager
 
-**Feature**: Unified Multi-Language Runtime Manager (Replacing NVM, GVM, and Pyenv)  
-**Branch**: `dev`  
-**Spec**: [spec.md](./spec.md)  
-**Tasks**: [tasks.md](./tasks.md)  
+**Feature**: Unified Multi-Language Runtime Manager (Replacing NVM, GVM, and Pyenv)
+**Branch**: `dev`
+**Spec**: [spec.md](./spec.md)
+**Tasks**: [tasks.md](./tasks.md)
 
 ---
 

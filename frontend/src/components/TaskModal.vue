@@ -6,10 +6,16 @@
         <div class="header-title">
           <TechIcon id="workbench:tasks" :size="20" />
           <div>
-            <h3>{{ isEdit ? (t("tasks.edit_title") || "编辑任务") : (t("tasks.create_title") || "新建工程任务") }}</h3>
+            <h3>{{ isEdit ? t("tasks.edit_title") || "编辑任务" : t("tasks.create_title") || "新建工程任务" }}</h3>
             <span class="sub-title">
-              {{ scope === 'user' ? (t("runtimes.scope_user") || "用户全局配置") : (t("runtimes.scope_workspace") || "工作区项目配置") }}
-              <span class="scope-file-tag font-mono">{{ scope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }}</span>
+              {{
+                scope === "user"
+                  ? t("runtimes.scope_user") || "用户全局配置"
+                  : t("runtimes.scope_workspace") || "工作区项目配置"
+              }}
+              <span class="scope-file-tag font-mono">{{
+                scope === "user" ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml"
+              }}</span>
             </span>
           </div>
         </div>
@@ -70,7 +76,9 @@
           <div class="form-group">
             <label class="form-label">
               <span>{{ t("tasks.field_depends") || "依赖前置任务 (Depends)" }}</span>
-              <span class="label-hint">{{ t("tasks.depends_hint") || "（选填，执行当前任务前必须先完成的任务）" }}</span>
+              <span class="label-hint">{{
+                t("tasks.depends_hint") || "（选填，执行当前任务前必须先完成的任务）"
+              }}</span>
             </label>
             <div class="depends-selector-wrap">
               <div v-if="filteredAvailableTasks.length > 0" class="dep-pills-list">
@@ -82,7 +90,7 @@
                   :class="{ selected: form.depends.includes(taskName) }"
                   @click="toggleDependency(taskName)"
                 >
-                  <span class="check-mark">{{ form.depends.includes(taskName) ? '✓' : '+' }}</span>
+                  <span class="check-mark">{{ form.depends.includes(taskName) ? "✓" : "+" }}</span>
                   <span>{{ taskName }}</span>
                 </button>
               </div>
@@ -106,11 +114,7 @@
               </div>
               <div v-if="form.depends.length > 0" class="current-selected-deps">
                 <span class="selected-label">{{ t("tasks.dep_order") || "当前选定顺序:" }}</span>
-                <span
-                  v-for="dep in form.depends"
-                  :key="dep"
-                  class="selected-dep-badge font-mono"
-                >
+                <span v-for="dep in form.depends" :key="dep" class="selected-dep-badge font-mono">
                   {{ dep }}
                   <span class="remove-dep" @click="removeDependency(dep)">✕</span>
                 </span>
@@ -120,12 +124,7 @@
 
           <!-- Modal Footer Actions -->
           <div class="modal-footer">
-            <button
-              type="button"
-              class="tool-action-btn secondary"
-              @click="$emit('close')"
-              :disabled="saving"
-            >
+            <button type="button" class="tool-action-btn secondary" @click="$emit('close')" :disabled="saving">
               {{ t("common.cancel") || "取消" }}
             </button>
             <button
@@ -134,7 +133,13 @@
               :disabled="saving || !form.name.trim() || !form.command.trim()"
             >
               <TechIcon v-if="saving" id="workbench:sync" :size="14" class="spin-icon" />
-              <span>{{ saving ? (t("common.saving") || "保存中...") : (isEdit ? (t("common.save_changes") || "保存修改") : (t("tasks.create_btn") || "创建任务")) }}</span>
+              <span>{{
+                saving
+                  ? t("common.saving") || "保存中..."
+                  : isEdit
+                    ? t("common.save_changes") || "保存修改"
+                    : t("tasks.create_btn") || "创建任务"
+              }}</span>
             </button>
           </div>
         </form>
@@ -383,7 +388,9 @@ function handleSubmit() {
   font-size: 0.82rem;
   color: var(--text-main);
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .form-input:focus,
@@ -555,7 +562,11 @@ function handleSubmit() {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
