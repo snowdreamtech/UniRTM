@@ -70,7 +70,7 @@
           <span>{{
             isChecking && checkingMode === "changed"
               ? t("guard.actions.checking") || "Checking..."
-              : t("guard.actions.check_changed") || "Check Changed"
+              : t("guard.actions.check_changed") || "Check Workspace"
           }}</span>
         </button>
 
@@ -136,7 +136,7 @@
               >
                 <div class="item-title-row">
                   <span class="codicon codicon-diff-modified"></span>
-                  <span class="item-name">{{ t("guard.actions.fix_changed") || "Fix Changed" }}</span>
+                  <span class="item-name">{{ t("guard.actions.fix_changed") || "Fix Workspace" }}</span>
                   <span v-if="checkingMode === 'changed'" class="current-badge">Active</span>
                 </div>
                 <div class="item-desc">
@@ -1201,7 +1201,7 @@ function getFixButtonLabel(mode?: "staged" | "changed" | "all") {
   if (targetMode === "all") {
     return t("guard.actions.fix_all") || "Fix Project";
   }
-  return t("guard.actions.fix_changed") || "Fix Changed";
+  return t("guard.actions.fix_changed") || "Fix Workspace";
 }
 
 function getFixButtonTooltip(mode?: "staged" | "changed" | "all") {
@@ -1636,9 +1636,9 @@ export interface ExtensionPipelineRow {
 function getModeLabel(mode: "changed" | "staged" | "all"): string {
   switch (mode) {
     case "changed":
-      return t("guard.modes.changed") || "Workspace Changes";
+      return t("guard.modes.changed") || "Workspace";
     case "staged":
-      return t("guard.modes.staged") || "Staged Changes";
+      return t("guard.modes.staged") || "Staged";
     case "all":
       return t("guard.modes.all") || "Project";
   }
