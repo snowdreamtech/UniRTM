@@ -1383,4 +1383,7 @@ export const frFr: TranslationDict = {
   "explorer.created": "Created successfully",
   "settings.appearance_mode": "Appearance Theme",
   "settings.appearance_mode_desc": "Select your preferred color theme for UniRTM.",
+  "scm.graph.loading": "Chargement du graphique Git...",
+  "scm.graph.loading_desc": "Analyse de la topologie des commits et de l'historique des branches...",
+  "scm.graph.refreshing": "Mise à jour du graphique Git...",
 };

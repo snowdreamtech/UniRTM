@@ -1383,4 +1383,7 @@ export const jaJp: TranslationDict = {
   "explorer.created": "Created successfully",
   "settings.appearance_mode": "Appearance Theme",
   "settings.appearance_mode_desc": "Select your preferred color theme for UniRTM.",
+  "scm.graph.loading": "Git グラフを読み込み中...",
+  "scm.graph.loading_desc": "コミットトポロジとブランチ履歴を解析中、お待ちください...",
+  "scm.graph.refreshing": "Git グラフを更新中...",
 };

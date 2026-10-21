@@ -1382,4 +1382,7 @@ export const ruRu: TranslationDict = {
   "explorer.created": "Created successfully",
   "settings.appearance_mode": "Appearance Theme",
   "settings.appearance_mode_desc": "Select your preferred color theme for UniRTM.",
+  "scm.graph.loading": "Загрузка графа Git...",
+  "scm.graph.loading_desc": "Анализ топологии коммитов и истории веток, пожалуйста, подождите...",
+  "scm.graph.refreshing": "Обновление графа Git...",
 };

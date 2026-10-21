@@ -1381,4 +1381,7 @@ export const noNo: TranslationDict = {
   "explorer.created": "Created successfully",
   "settings.appearance_mode": "Appearance Theme",
   "settings.appearance_mode_desc": "Select your preferred color theme for UniRTM.",
+  "scm.graph.loading": "Loading Git Graph...",
+  "scm.graph.loading_desc": "Parsing commit topology and branch history, please wait...",
+  "scm.graph.refreshing": "Updating Git Graph...",
 };

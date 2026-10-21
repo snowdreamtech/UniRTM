@@ -1371,4 +1371,7 @@ export const zhCn: TranslationDict = {
   "explorer.deleted": "删除成功",
   "explorer.renamed": "重命名成功",
   "explorer.created": "创建成功",
+  "scm.graph.loading": "正在加载 Git 提交图谱...",
+  "scm.graph.loading_desc": "正在解析提交拓扑与分支历史，请稍候...",
+  "scm.graph.refreshing": "正在更新 Git 图谱...",
 };

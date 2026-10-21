@@ -108,7 +108,14 @@
                 <span>{{ t("scm.tabs.changes") }} ({{ totalChanges }})</span>
               </button>
               <button class="mode-tab-btn" :class="{ active: currentTab === 'graph' }" @click="switchTab('graph')">
-                <span class="codicon codicon-git-commit"></span>
+                <span
+                  class="codicon"
+                  :class="
+                    currentTab === 'graph' && isLoadingGraph
+                      ? 'codicon-sync codicon-modifier-spin'
+                      : 'codicon-git-commit'
+                  "
+                ></span>
                 <span>{{ t("scm.tabs.graph") }}</span>
               </button>
             </div>
@@ -583,6 +590,7 @@ const {
   stashUncommitted,
   resetUncommitted,
   cleanUntracked,
+  isLoadingGraph,
 } = useGit();
 
 const isBranchMenuOpen = ref(false);

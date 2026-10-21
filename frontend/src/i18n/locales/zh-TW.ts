@@ -1375,4 +1375,7 @@ export const zhTw: TranslationDict = {
   "explorer.created": "建立成功",
   "settings.appearance_mode": "外觀主題",
   "settings.appearance_mode_desc": "選取 UniRTM 的色彩與介面主題。",
+  "scm.graph.loading": "正在載入 Git 提交圖表...",
+  "scm.graph.loading_desc": "正在解析提交拓撲與分支歷程，請稍候...",
+  "scm.graph.refreshing": "正在更新 Git 圖表...",
 };

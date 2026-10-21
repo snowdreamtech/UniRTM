@@ -111,6 +111,17 @@
     <div class="graph-main-split">
       <!-- Graph Table Area -->
       <div class="graph-table-wrapper" ref="tableWrapperRef" @scroll="handleScroll">
+        <!-- Top Indeterminate Progress Bar for Graph Loading / Updating -->
+        <div v-if="isGraphLoading" class="graph-loading-progressbar">
+          <div class="loading-progress-indeterminate"></div>
+        </div>
+
+        <!-- Floating Refreshing Badge when commits are already loaded -->
+        <div v-if="isGraphLoading && filteredCommits.length > 0" class="graph-refreshing-badge">
+          <span class="codicon codicon-loading codicon-modifier-spin"></span>
+          <span>{{ t("scm.graph.refreshing") || "正在更新 Git 图谱..." }}</span>
+        </div>
+
         <div class="graph-table-header">
           <div class="col-header col-graph" :style="{ width: graphColWidth + 'px' }">
             {{ t("scm.graph.col_graph") }}
@@ -122,7 +133,11 @@
           <div class="col-header col-actions">{{ t("scm.graph.col_actions") }}</div>
         </div>
 
-        <div class="graph-table-body" :style="{ height: totalBodyHeight + 'px' }">
+        <div
+          class="graph-table-body"
+          :class="{ 'table-is-refreshing': isGraphLoading && filteredCommits.length > 0 }"
+          :style="{ height: totalBodyHeight + 'px' }"
+        >
           <!-- SVG DAG Overlay for Lanes, Nodes, Bezier Curves -->
           <svg class="graph-svg-layer" :style="{ width: graphColWidth + 'px', height: totalSvgHeight + 'px' }">
             <!-- 1. Connecting Paths (Vertical lines & Bezier curves) -->
@@ -858,8 +873,21 @@
             </template>
           </div>
 
+          <!-- Loading State (Initial / Empty Graph) -->
+          <div v-if="isGraphLoading && filteredCommits.length === 0" class="graph-loading-state">
+            <div class="graph-loading-spinner-wrapper">
+              <span class="codicon codicon-loading codicon-modifier-spin loading-spinner"></span>
+            </div>
+            <div class="loading-text-group">
+              <span class="loading-primary-text">{{ t("scm.graph.loading") || "正在加载 Git 提交图谱..." }}</span>
+              <span class="loading-secondary-text">{{
+                t("scm.graph.loading_desc") || "正在解析提交拓扑与分支历史，请稍候..."
+              }}</span>
+            </div>
+          </div>
+
           <!-- Empty State -->
-          <div v-if="filteredCommits.length === 0 && !isLoadingGraph" class="graph-empty-state">
+          <div v-else-if="filteredCommits.length === 0 && !isGraphLoading" class="graph-empty-state">
             <span class="codicon codicon-inbox empty-icon"></span>
             <span>{{ t("scm.graph.no_commits") }}</span>
           </div>
@@ -1177,6 +1205,8 @@ const commitTypeFilterOptions = [
   { label: "revert", value: "revert", title: "仅看代码回滚 (Revert)" },
 ];
 const tableWrapperRef = ref<HTMLElement | null>(null);
+const isInitialLoading = ref<boolean>(graphCommits.value.length === 0);
+const isGraphLoading = computed(() => isInitialLoading.value || isLoadingGraph.value);
 const isLoadingDetail = ref(false);
 const isLoadingCompare = ref(false);
 const compareCommit = ref<GitGraphCommit | null>(null);
@@ -1620,19 +1650,28 @@ async function handleRowClick(event: MouseEvent, commit: GitGraphCommit) {
 async function handleRepoChange(repoId: string) {
   const target = repositories.value.find((r) => r.id === repoId || r.name === repoId || r.rootPath === repoId);
   if (target) {
-    await setActiveRepo(target);
-    selectedBranches.value = ["all"];
-    await fetchGraph();
+    try {
+      isInitialLoading.value = true;
+      await setActiveRepo(target);
+      selectedBranches.value = ["all"];
+      await fetchGraph();
+    } finally {
+      isInitialLoading.value = false;
+    }
   }
 }
 
 onMounted(async () => {
-  if (repositories.value.length === 0) {
-    await fetchRepositories();
+  try {
+    isInitialLoading.value = true;
+    if (repositories.value.length === 0) {
+      await fetchRepositories();
+    }
+    await Promise.allSettled([fetchStatus(), fetchBranches()]);
+    await refreshGraph();
+  } finally {
+    isInitialLoading.value = false;
   }
-  await fetchStatus();
-  await fetchBranches();
-  await refreshGraph();
   window.addEventListener("click", closeAllContextMenus);
 });
 
@@ -2696,6 +2735,131 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
 
 .empty-icon {
   font-size: 32px;
+}
+
+/* Loading State (Initial / Empty Graph) */
+.graph-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 16px;
+  color: var(--text-main);
+  animation: graphFadeIn 0.2s ease-out;
+}
+
+.graph-loading-spinner-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent-cyan-glow, rgba(0, 229, 255, 0.12));
+  border: 1px solid var(--card-border);
+}
+
+.graph-loading-spinner-wrapper .loading-spinner {
+  font-size: 24px;
+  color: var(--accent-cyan);
+}
+
+.loading-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.loading-primary-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.loading-secondary-text {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Top Indeterminate Progress Line */
+.graph-loading-progressbar {
+  position: sticky;
+  top: 32px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  overflow: hidden;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.loading-progress-indeterminate {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+  animation: progressIndeterminate 1.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes progressIndeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+/* Floating Refreshing Badge */
+.graph-refreshing-badge {
+  position: absolute;
+  top: 40px;
+  right: 16px;
+  z-index: 25;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--accent-cyan);
+  background: var(--modal-bg, var(--card-bg));
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+  animation: graphBadgeFadeIn 0.2s ease-out;
+  pointer-events: none;
+}
+
+@keyframes graphFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes graphBadgeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Table body when updating in background */
+.graph-table-body.table-is-refreshing {
+  opacity: 0.65;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
 }
 
 /* Bottom Pagination / Load More Row */

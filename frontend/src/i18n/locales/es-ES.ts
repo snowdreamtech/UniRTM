@@ -1383,4 +1383,7 @@ export const esEs: TranslationDict = {
   "explorer.created": "Created successfully",
   "settings.appearance_mode": "Appearance Theme",
   "settings.appearance_mode_desc": "Select your preferred color theme for UniRTM.",
+  "scm.graph.loading": "Cargando gráfico Git...",
+  "scm.graph.loading_desc": "Analizando la topología de commits y el historial de ramas...",
+  "scm.graph.refreshing": "Actualizando gráfico Git...",
 };
