@@ -358,4 +358,3 @@ func handleGuardToml(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
 	}
 }
-

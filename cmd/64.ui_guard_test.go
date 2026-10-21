@@ -68,4 +68,3 @@ func TestUIGuard_Endpoints(t *testing.T) {
 		t.Fatalf("Expected 200 on /api/guard/toml, got %d", rrToml.Code)
 	}
 }
-

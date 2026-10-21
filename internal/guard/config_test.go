@@ -181,4 +181,3 @@ func TestSaveAndDeleteSlotConfig(t *testing.T) {
 		t.Fatalf("expected no slots after delete")
 	}
 }
-

@@ -361,17 +361,46 @@
       </section>
     </main>
 
-    <!-- Slot Edit/Add Modal Component (Placeholder for Phase 3) -->
-    <!-- Toml Config Drawer (Placeholder for Phase 3) -->
+    <!-- Extension / Tool Slot CRUD Modal -->
+    <ExtensionSlotModal
+      :isOpen="isSlotModalOpen"
+      :initialSlot="activeEditingSlot"
+      :targetExtension="targetExtForAdd"
+      @close="isSlotModalOpen = false"
+      @save="onSaveSlot"
+      @delete="onDeleteSlot"
+    />
+
+    <!-- Toml Config Fallback Drawer -->
+    <TomlConfigDrawer :isOpen="isTomlDrawerOpen" @close="isTomlDrawerOpen = false" @saved="onTomlSaved" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { t } from "../i18n";
-import { useGuard, type ToolSlotItem } from "../composables/useGuard";
+import { useGuard, type ToolSlotItem, type SlotConfigInput } from "../composables/useGuard";
+import ExtensionSlotModal from "../components/guard/ExtensionSlotModal.vue";
+import TomlConfigDrawer from "../components/guard/TomlConfigDrawer.vue";
 
-const { guardStatus, guardSlots, isChecking, isFixing, fetchStatus, fetchSlots, runCheck, runFix } = useGuard();
+const {
+  guardStatus,
+  guardSlots,
+  isChecking,
+  isFixing,
+  fetchStatus,
+  fetchSlots,
+  runCheck,
+  runFix,
+  saveSlotConfig,
+  deleteSlotConfig,
+} = useGuard();
+
+const isSlotModalOpen = ref(false);
+const activeEditingSlot = ref<ToolSlotItem | null>(null);
+const targetExtForAdd = ref<string>("");
+
+const isTomlDrawerOpen = ref(false);
 
 const activeTab = ref<"matrix" | "slots" | "reports">("matrix");
 const searchKeyword = ref("");
@@ -502,23 +531,55 @@ const filteredSlots = computed(() => {
 });
 
 function openAddSlotModal() {
-  // Dispatched to modal
+  activeEditingSlot.value = null;
+  targetExtForAdd.value = "";
+  isSlotModalOpen.value = true;
 }
 
 function openTomlFallback() {
-  // Dispatched to fallback drawer
+  isTomlDrawerOpen.value = true;
 }
 
-function editSlot(_slot: ToolSlotItem) {
-  // Dispatched to modal
+function editSlot(slot: ToolSlotItem) {
+  activeEditingSlot.value = slot;
+  targetExtForAdd.value = "";
+  isSlotModalOpen.value = true;
 }
 
-function handleEditRow(_row: ExtensionPipelineRow) {
-  // Dispatched to modal
+function handleEditRow(row: ExtensionPipelineRow) {
+  const primarySlot = row.linter || row.formatter || row.fixer || row.auditor || row.allSlots[0];
+  if (primarySlot) {
+    editSlot(primarySlot);
+  } else {
+    handleAddToolToExt(row.extension);
+  }
 }
 
-function handleAddToolToExt(_ext: string) {
-  // Dispatched to modal
+function handleAddToolToExt(ext: string) {
+  activeEditingSlot.value = null;
+  targetExtForAdd.value = ext;
+  isSlotModalOpen.value = true;
+}
+
+async function onSaveSlot(slot: SlotConfigInput) {
+  const ok = await saveSlotConfig(slot);
+  if (ok) {
+    isSlotModalOpen.value = false;
+    await fetchSlots();
+  }
+}
+
+async function onDeleteSlot(slotId: string) {
+  const ok = await deleteSlotConfig(slotId);
+  if (ok) {
+    isSlotModalOpen.value = false;
+    await fetchSlots();
+  }
+}
+
+async function onTomlSaved() {
+  await fetchSlots();
+  await fetchStatus();
 }
 </script>
 

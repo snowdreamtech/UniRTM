@@ -25,11 +25,11 @@
 ---
 
 ## Phase 3: 构建按扩展名聚合矩阵表格与可视化 CRUD 模态框
-- [ ] Task 3.1: 在 `frontend/src/views/GuardView.vue` 中构建扩展名管线矩阵表格（Extension Pipeline Table），直观展示各文件后缀对应的 Linter, Formatter, Fixer
-- [ ] Task 3.2: 编写 `frontend/src/components/guard/ExtensionSlotModal.vue` 支持从 Tools 工具箱中下拉选取、文件后缀 Tag 输入、多字段定制
-- [ ] Task 3.3: 编写 `frontend/src/components/guard/TomlConfigDrawer.vue` 实现 `.unirtm.toml` 兜底查看与直接编辑通道
-- [ ] Task 3.4: 完善前端多语言（53 种语言扩展名表格与 CRUD 词条补齐）
-- [ ] Task 3.5: 阶段性 Git 提交：`feat(ui): implement extension pipeline matrix table and visual crud modal`
+- [x] Task 3.1: 在 `frontend/src/views/GuardView.vue` 中构建扩展名管线矩阵表格（Extension Pipeline Table），直观展示各文件后缀对应的 Linter, Formatter, Fixer
+- [x] Task 3.2: 编写 `frontend/src/components/guard/ExtensionSlotModal.vue` 支持从 Tools 工具箱中下拉选取、文件后缀 Tag 输入、多字段定制
+- [x] Task 3.3: 编写 `frontend/src/components/guard/TomlConfigDrawer.vue` 实现 `.unirtm.toml` 兜底查看与直接编辑通道
+- [x] Task 3.4: 完善前端多语言（53 种语言扩展名表格与 CRUD 词条补齐）
+- [x] Task 3.5: 阶段性 Git 提交：`feat(ui): implement extension pipeline matrix table and visual crud modal`
 
 ---
 
