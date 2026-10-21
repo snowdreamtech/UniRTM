@@ -1,4 +1,4 @@
-# 任务拆分与执行跟踪清单：UniRTM 工程质量守门员与质检 Harness 重构 (Tasks 053)
+# 任务拆分与执行跟踪清单：UniRTM 工程质量守卫与质检 Harness 重构 (Tasks 053)
 
 ## 任务执行进度概览
 - **当前阶段**：全部完成 (100%)
@@ -64,16 +64,16 @@
 
 ---
 
-## Phase 4: Web UI 守门中心、SCM 侧边栏联动与可视化配置抽屉
+## Phase 4: Web UI 守卫中心、SCM 侧边栏联动与可视化配置抽屉
 - [x] Task 4.1: 在 Go 后端 `cmd/64.ui_guard.go` 中实现 `/api/guard/status`, `/api/guard/run`, `/api/guard/rules` REST API
-- [x] Task 4.2: 在 `frontend/src/components/scm/SourceControlSidebar.vue` 提交区嵌入守门状态指示胶囊与一键修复按钮
-- [x] Task 4.3: 在 `frontend/src/views/SourceControlView.vue` 中实现质量守门概览大盘与诊断展开
+- [x] Task 4.2: 在 `frontend/src/components/scm/SourceControlSidebar.vue` 提交区嵌入守卫状态指示胶囊与一键修复按钮
+- [x] Task 4.3: 在 `frontend/src/views/SourceControlView.vue` 中实现质量守卫概览大盘与诊断展开
 - [x] Task 4.4: 编写 Web UI 端状态交互测试与后端 Guard API 单元测试
 - [x] Task 4.5: 阶段性 Git 提交：`feat(ui): add quality guard hub, SCM sidebar status capsule, and one-click fix in Web UI`
 
 ---
 
 ## Phase 5: 全量测试回归、53 语言包本地化与总结归档
-- [x] Task 5.1: 在 53 种语言包中补充质量守门相关文案（`guard.*`）
+- [x] Task 5.1: 在 53 种语言包中补充质量守卫相关文案（`guard.*`）
 - [x] Task 5.2: 运行 Go 全量测试（`go test -v ./...`）与前端测试（`npm run test`, `vue-tsc`），确保 0 报错
 - [x] Task 5.3: 阶段性 Git 提交：`chore(i18n): complete guard locales and finalize test harness refactoring`

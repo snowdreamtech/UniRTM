@@ -1216,7 +1216,7 @@ export const zhTw: TranslationDict = {
   "guard.config.unsaved_changes": "有未儲存的變更",
   "guard.config.loading": "正在載入設定檔...",
 
-  "nav.guard": "代碼質量守門",
+  "nav.guard": "代碼質量守衛",
   "guard.subtitle": "全自動化代碼質量守衛、文件擴展名管線編排與提交前防線。",
   "guard.status.healthy": "全部規則健康運行",
   "guard.status.issues_found": "發現質檢問題",
@@ -1259,7 +1259,7 @@ export const zhTw: TranslationDict = {
   "guard.cat.secret": "敏感憑據防洩密",
   "guard.banner.title": "Quality Guard 現已升級為一級獨立工作台",
   "guard.banner.desc": "在專屬工作台中管理文件擴展名管線、工具槽位與可視化配置。",
-  "guard.banner.open_hub": "前往質量守門中心",
+  "guard.banner.open_hub": "前往質量守衛中心",
   "guard.modal.edit_title": "編輯工具槽位與文件擴展名映射",
   "guard.modal.create_title": "新建工具槽位與文件擴展名映射",
   "guard.modal.pick_tool": "從 UniRTM 工具庫快速挑選 (自動填充)",

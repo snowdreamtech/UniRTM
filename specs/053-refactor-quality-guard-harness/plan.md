@@ -1,16 +1,16 @@
-# 技术方案与架构设计：UniRTM 工程质量守门员与质检 Harness 重构 (Plan 053)
+# 技术方案与架构设计：UniRTM 工程质量守卫与质检 Harness 重构 (Plan 053)
 
 ## 1. 总体架构设计
 
-质量守门系统（UniRTM Guard & Quality Harness）分为三大核心层次：
+质量守卫系统（UniRTM Guard & Quality Harness）分为三大核心层次：
 1. **Core Guard Engine (Go 核心库 `internal/guard`)**：负责模式判定、文件过滤、生态嗅探、三阶流水线调度及内置原生纯 Go 规则；
 2. **CLI Command Facade (`cmd/66.guard.go` / `cmd/66.check.go` / `cmd/62.hook.go`)**：暴露极简的 `unirtm check`, `unirtm fix`, `unirtm fmt` 与 Git Hook 桥接命令；
-3. **Web UI & API Layer (`cmd/64.ui_guard.go` + `frontend/src/components/scm/SourceControlSidebar.vue` + `frontend/src/views/SourceControlView.vue`)**：提供 HTTP 状态/执行接口，呈现守门胶囊、一键修复按钮、规则管理抽屉与结构化问题定位。
+3. **Web UI & API Layer (`cmd/64.ui_guard.go` + `frontend/src/components/scm/SourceControlSidebar.vue` + `frontend/src/views/SourceControlView.vue`)**：提供 HTTP 状态/执行接口，呈现守卫胶囊、一键修复按钮、规则管理抽屉与结构化问题定位。
 
 ```
 +-----------------------------------------------------------------------------------+
 |                                 UniRTM Web UI                                     |
-|  [守门胶囊 🟢/🟡/🔴]  [⚡ 一键全自动修复]  [⚙️ 规则开关与过滤抽屉]  [Monaco 诊断定位]      |
+|  [守卫胶囊 🟢/🟡/🔴]  [⚡ 一键全自动修复]  [⚙️ 规则开关与过滤抽屉]  [Monaco 诊断定位]      |
 +-----------------------------------------------------------------------------------+
                                        |
                    HTTP REST APIs (/api/guard/*)
@@ -132,5 +132,5 @@ type Rule interface {
 - **Phase 1: Go 原生核心引擎与内置文本卫生/安全规则 (Core Engine & Builtin Rules)**
 - **Phase 2: 工具插槽 (Slots)、三阶执行管道 (Pipeline) 与 CLI 命令 (`unirtm check/fix`)**
 - **Phase 3: 双 Profile 隔离 (Pre-commit vs CI) 与 Git Hook 桥接优化**
-- **Phase 4: Web UI 守门中心、SCM 侧边栏联动与可视化配置抽屉**
+- **Phase 4: Web UI 守卫中心、SCM 侧边栏联动与可视化配置抽屉**
 - **Phase 5: 全量测试回归、性能对比验证与渐进提交**
