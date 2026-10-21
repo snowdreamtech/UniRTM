@@ -16,11 +16,11 @@
 ---
 
 ## Phase 2: 后端 CRUD API 与 TOML 兜底持久化
-- [ ] Task 2.1: 在 `cmd/64.ui_guard.go` 中实现 `POST /api/guard/slots`（写入/更新 `.unirtm.toml`）与 `DELETE /api/guard/slots`（删除配置）
-- [ ] Task 2.2: 在 `frontend/vite.config.ts` 的 Vite dev mock 中支持 `POST` 和 `DELETE /api/guard/slots`
-- [ ] Task 2.3: 在 `frontend/src/composables/useGuard.ts` 中封装 `saveSlotConfig`、`deleteSlotConfig` 与 `fetchRawTomlConfig` / `saveRawTomlConfig`
-- [ ] Task 2.4: 编写 Go 后端 slots 配置持久化测试与 Vite mock 接口验证
-- [ ] Task 2.5: 阶段性 Git 提交：`feat(guard): provide restful crud api and toml persistence for tool slots`
+- [x] Task 2.1: 在 `cmd/64.ui_guard.go` 中实现 `POST /api/guard/slots`（写入/更新 `.unirtm.toml`）与 `DELETE /api/guard/slots`（删除配置）
+- [x] Task 2.2: 在 `frontend/vite.config.ts` 的 Vite dev mock 中支持 `POST` 和 `DELETE /api/guard/slots`
+- [x] Task 2.3: 在 `frontend/src/composables/useGuard.ts` 中封装 `saveSlotConfig`、`deleteSlotConfig` 与 `fetchRawTomlConfig` / `saveRawTomlConfig`
+- [x] Task 2.4: 编写 Go 后端 slots 配置持久化测试与 Vite mock 接口验证
+- [x] Task 2.5: 阶段性 Git 提交：`feat(guard): provide restful crud api and toml persistence for tool slots`
 
 ---
 

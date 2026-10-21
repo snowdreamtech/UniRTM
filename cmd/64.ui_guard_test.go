@@ -51,4 +51,21 @@ func TestUIGuard_Endpoints(t *testing.T) {
 	if rrRun.Code != http.StatusOK {
 		t.Fatalf("Expected 200 on /api/guard/run, got %d", rrRun.Code)
 	}
+
+	// 4. Test GET /api/guard/slots
+	reqSlots := httptest.NewRequest("GET", "/api/guard/slots", nil)
+	rrSlots := httptest.NewRecorder()
+	handleGuardSlots(rrSlots, reqSlots)
+	if rrSlots.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on /api/guard/slots, got %d", rrSlots.Code)
+	}
+
+	// 5. Test GET /api/guard/toml
+	reqToml := httptest.NewRequest("GET", "/api/guard/toml", nil)
+	rrToml := httptest.NewRecorder()
+	handleGuardToml(rrToml, reqToml)
+	if rrToml.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on /api/guard/toml, got %d", rrToml.Code)
+	}
 }
+

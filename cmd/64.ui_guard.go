@@ -235,3 +235,127 @@ func handleGuardRules(w http.ResponseWriter, r *http.Request) {
 		"config_files":  configMetas,
 	})
 }
+
+func handleGuardSlots(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	pwd, err := os.Getwd()
+	if err != nil {
+		pwd = "."
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		cfg, _ := guard.LoadGuardConfig(pwd)
+		slots := guard.GetResolvedToolSlots(cfg)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"slots":   slots,
+		})
+
+	case http.MethodPost:
+		var slot guard.SlotConfig
+		if err := json.NewDecoder(r.Body).Decode(&slot); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid request payload: " + err.Error()})
+			return
+		}
+		if slot.ID == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "slot ID is required"})
+			return
+		}
+
+		if err := guard.SaveSlotConfig(pwd, slot); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save slot: " + err.Error()})
+			return
+		}
+
+		cfg, _ := guard.LoadGuardConfig(pwd)
+		slots := guard.GetResolvedToolSlots(cfg)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"slots":   slots,
+		})
+
+	case http.MethodDelete:
+		slotID := r.URL.Query().Get("id")
+		if slotID == "" {
+			var body struct {
+				ID string `json:"id"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err == nil {
+				slotID = body.ID
+			}
+		}
+		if slotID == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "slot ID is required"})
+			return
+		}
+
+		if err := guard.DeleteSlotConfig(pwd, slotID); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to delete slot: " + err.Error()})
+			return
+		}
+
+		cfg, _ := guard.LoadGuardConfig(pwd)
+		slots := guard.GetResolvedToolSlots(cfg)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"slots":   slots,
+		})
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+	}
+}
+
+func handleGuardToml(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	pwd, err := os.Getwd()
+	if err != nil {
+		pwd = "."
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		content, err := guard.GetGuardToml(pwd)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"content": content,
+		})
+
+	case http.MethodPost:
+		var req struct {
+			Content string `json:"content"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid payload: " + err.Error()})
+			return
+		}
+
+		if err := guard.SaveGuardToml(pwd, req.Content); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save TOML: " + err.Error()})
+			return
+		}
+
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+		})
+
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+	}
+}
+

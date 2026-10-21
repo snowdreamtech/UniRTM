@@ -3813,6 +3813,128 @@ print(json.dumps({
               });
               return;
             }
+
+            if (reqPath === "/api/guard/slots") {
+              const defaultMockSlots = [
+                {
+                  id: "go.formatter",
+                  description: "Go canonical code formatter",
+                  category: "format",
+                  phase: "formatter",
+                  default_tool_name: "gofmt",
+                  default_command: "gofmt -l {{files}}",
+                  fix_command: "gofmt -w {{files}}",
+                  default_extensions: [".go"],
+                },
+                {
+                  id: "go.imports",
+                  description: "Go imports manager and organizer",
+                  category: "hygiene",
+                  phase: "fixer",
+                  default_tool_name: "goimports",
+                  default_command: "goimports -l {{files}}",
+                  fix_command: "goimports -w {{files}}",
+                  default_extensions: [".go"],
+                },
+                {
+                  id: "go.linter",
+                  description: "Go static analysis & quality linter",
+                  category: "lint",
+                  phase: "linter",
+                  default_tool_name: "golangci-lint",
+                  default_command: "golangci-lint run",
+                  default_extensions: [".go"],
+                  standard_config_files: [".golangci.yml", ".golangci.yaml", ".golangci.toml"],
+                },
+                {
+                  id: "web.formatter",
+                  description: "Web multi-language formatter (Prettier / Biome)",
+                  category: "format",
+                  phase: "formatter",
+                  default_tool_name: "prettier",
+                  default_command: "prettier --check {{files}}",
+                  fix_command: "prettier --write {{files}}",
+                  default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue", ".json", ".css", ".md"],
+                  standard_config_files: [".prettierrc", ".prettierrc.json", "prettier.config.js"],
+                },
+                {
+                  id: "web.linter",
+                  description: "JavaScript / TypeScript / Vue linter (ESLint / Oxlint / Biome)",
+                  category: "lint",
+                  phase: "linter",
+                  default_tool_name: "eslint",
+                  default_command: "eslint {{files}}",
+                  fix_command: "eslint --fix {{files}}",
+                  default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue"],
+                  standard_config_files: ["eslint.config.js", "eslint.config.mjs", ".eslintrc.json"],
+                },
+                {
+                  id: "python.suite",
+                  description: "Python fast formatter and linter (Ruff / Black / Flake8)",
+                  category: "lint",
+                  phase: "linter",
+                  default_tool_name: "ruff",
+                  default_command: "ruff check {{files}}",
+                  fix_command: "ruff check --fix {{files}}",
+                  default_extensions: [".py"],
+                  standard_config_files: ["ruff.toml", "pyproject.toml"],
+                },
+                {
+                  id: "shell.linter",
+                  description: "Shell scripts quality checker and linter (ShellCheck)",
+                  category: "lint",
+                  phase: "linter",
+                  default_tool_name: "shellcheck",
+                  default_command: "shellcheck {{files}}",
+                  default_extensions: [".sh", ".bash"],
+                  standard_config_files: [".shellcheckrc"],
+                },
+                {
+                  id: "secret.gitleaks",
+                  description: "Secret and API key leak protector",
+                  category: "secret",
+                  phase: "linter",
+                  default_tool_name: "gitleaks",
+                  default_command: "gitleaks protect --staged --redact",
+                  standard_config_files: [".gitleaks.toml"],
+                },
+              ];
+
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ success: true, slots: defaultMockSlots }));
+              return;
+            }
+
+            if (reqPath === "/api/guard/toml") {
+              const tomlPath = path.join(rootDir, ".unirtm.toml");
+              if (req.method === "GET") {
+                let content = "";
+                if (fs.existsSync(tomlPath)) {
+                  content = fs.readFileSync(tomlPath, "utf-8");
+                }
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, content }));
+                return;
+              }
+
+              if (req.method === "POST") {
+                let bodyStr = "";
+                req.on("data", (chunk: any) => {
+                  bodyStr += chunk;
+                });
+                req.on("end", () => {
+                  try {
+                    const parsed = JSON.parse(bodyStr);
+                    if (parsed.content !== undefined) {
+                      fs.writeFileSync(tomlPath, parsed.content, "utf-8");
+                    }
+                  } catch (_) {}
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true }));
+                });
+                return;
+              }
+            }
           }
 
           // ─── Git SCM API Handlers ─────────────────────────────────────────

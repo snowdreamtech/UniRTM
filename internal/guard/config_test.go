@@ -6,6 +6,7 @@ package guard
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -91,3 +92,93 @@ enabled = false
 		t.Errorf("expected disabled slot:go.imports to NOT be in pipeline rules")
 	}
 }
+
+func TestUpsertAndRemoveGuardSlot(t *testing.T) {
+	initial := `[guard]
+enabled = true
+`
+	enabledVal := true
+	slot := SlotConfig{
+		ID:         "python.linter",
+		Tool:       "ruff",
+		Command:    "ruff check {{files}}",
+		FixCommand: "ruff check --fix {{files}}",
+		Category:   CategoryLint,
+		Phase:      PhaseLinter,
+		Extensions: []string{".py"},
+		Enabled:    &enabledVal,
+	}
+
+	updated := UpsertGuardSlot(initial, slot)
+	if !strings.Contains(updated, `[guard.slots."python.linter"]`) {
+		t.Fatalf("expected updated TOML to contain python.linter header, got: %s", updated)
+	}
+	if !strings.Contains(updated, `tool = "ruff"`) {
+		t.Fatalf("expected updated TOML to contain tool ruff")
+	}
+
+	// Update existing slot with different tool
+	slot.Tool = "flake8"
+	updated2 := UpsertGuardSlot(updated, slot)
+	if strings.Contains(updated2, `tool = "ruff"`) {
+		t.Fatalf("expected ruff to be replaced with flake8")
+	}
+	if !strings.Contains(updated2, `tool = "flake8"`) {
+		t.Fatalf("expected updated TOML to contain tool flake8")
+	}
+
+	// Remove slot
+	removed, ok := RemoveGuardSlot(updated2, "python.linter")
+	if !ok {
+		t.Fatalf("expected RemoveGuardSlot to return true")
+	}
+	if strings.Contains(removed, "python.linter") {
+		t.Fatalf("expected python.linter to be removed")
+	}
+}
+
+func TestSaveAndDeleteSlotConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	enabled := true
+	slot := SlotConfig{
+		ID:         "rust.formatter",
+		Tool:       "rustfmt",
+		Command:    "rustfmt --check {{files}}",
+		FixCommand: "rustfmt {{files}}",
+		Category:   CategoryFormat,
+		Phase:      PhaseFormatter,
+		Extensions: []string{".rs"},
+		Enabled:    &enabled,
+	}
+
+	if err := SaveSlotConfig(tmpDir, slot); err != nil {
+		t.Fatalf("SaveSlotConfig failed: %v", err)
+	}
+
+	cfg, err := LoadGuardConfig(tmpDir)
+	if err != nil {
+		t.Fatalf("LoadGuardConfig failed: %v", err)
+	}
+	if cfg.Slots == nil || cfg.Slots["rust.formatter"].Tool != "rustfmt" {
+		t.Fatalf("expected rustfmt in loaded slots")
+	}
+
+	// Test TOML Content read and write
+	content, err := GetGuardToml(tmpDir)
+	if err != nil || !strings.Contains(content, "rustfmt") {
+		t.Fatalf("GetGuardToml failed: %v", err)
+	}
+
+	if err := DeleteSlotConfig(tmpDir, "rust.formatter"); err != nil {
+		t.Fatalf("DeleteSlotConfig failed: %v", err)
+	}
+
+	cfgAfter, err := LoadGuardConfig(tmpDir)
+	if err != nil {
+		t.Fatalf("LoadGuardConfig failed: %v", err)
+	}
+	if cfgAfter.Slots != nil && len(cfgAfter.Slots) > 0 {
+		t.Fatalf("expected no slots after delete")
+	}
+}
+

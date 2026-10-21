@@ -76,4 +76,54 @@ describe("useGuard", () => {
     expect(status.value.clean).toBe(true);
     expect(status.value.fixable_count).toBe(0);
   });
+
+  it("saves slot config via POST /api/guard/slots", async () => {
+    const mockSlots = [
+      {
+        id: "web.formatter",
+        default_tool_name: "biome",
+        description: "Biome formatter",
+        category: "format",
+        phase: "formatter",
+        default_command: "biome format",
+      },
+    ];
+
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ success: true, slots: mockSlots }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ builtin_rules: [], slots: mockSlots, config_files: [] }),
+      });
+
+    const { saveSlotConfig, guardSlots } = useGuard();
+    const ok = await saveSlotConfig({ id: "web.formatter", tool: "biome" });
+
+    expect(ok).toBe(true);
+    expect(guardSlots.value.length).toBe(1);
+    expect(guardSlots.value[0].default_tool_name).toBe("biome");
+  });
+
+  it("deletes slot config via DELETE /api/guard/slots", async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ success: true, slots: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ builtin_rules: [], slots: [], config_files: [] }),
+      });
+
+    const { deleteSlotConfig, guardSlots } = useGuard();
+    const ok = await deleteSlotConfig("custom.slot");
+
+    expect(ok).toBe(true);
+    expect(guardSlots.value.length).toBe(0);
+  });
 });
