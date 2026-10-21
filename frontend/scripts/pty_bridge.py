@@ -11,7 +11,15 @@ import struct
 import select
 import json
 
+_current_rows = 0
+_current_cols = 0
+
 def set_winsize(fd, rows, cols):
+    global _current_rows, _current_cols
+    if rows == _current_rows and cols == _current_cols:
+        return
+    _current_rows = rows
+    _current_cols = cols
     try:
         fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
     except Exception:
@@ -78,7 +86,7 @@ def main():
                     chunk = os.read(stdin_fd, 4096)
                     if not chunk:
                         break
-                    
+
                     # Check if it contains a JSON control message like {"type":"resize",...}
                     if b'{"type":' in chunk:
                         # Split by closing brace or newline to safely parse concatenated frames
@@ -107,7 +115,7 @@ def main():
                             start = end_idx + 1
                         if has_control:
                             continue
-                    
+
                     os.write(master, chunk)
                 except Exception:
                     break

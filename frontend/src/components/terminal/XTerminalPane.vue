@@ -98,7 +98,7 @@ async function handlePaste() {
   }
 }
 
-const { appendChunk, getBuffer, hasBuffer, clearBuffer, exportLog } = useTerminalPersistence();
+const { appendChunk, clearBuffer, exportLog } = useTerminalPersistence();
 const { recordChunk } = useTerminalProcessWatcher();
 const { startTracking, feedOutput } = useTerminalNotifier();
 
@@ -156,8 +156,8 @@ function connectWebSocket() {
 
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const host = window.location.host;
-  const cols = term.cols || 80;
-  const rows = term.rows || 24;
+  const cols = (term && term.cols > 10) ? term.cols : 80;
+  const rows = (term && term.rows > 5) ? term.rows : 24;
 
   lastSentCols = cols;
   lastSentRows = rows;
@@ -226,7 +226,7 @@ function sendResize(immediate = false) {
   if (!term || !ws || ws.readyState !== WebSocket.OPEN) return;
   const cols = term.cols;
   const rows = term.rows;
-  if (!cols || !rows) return;
+  if (!cols || !rows || cols <= 5 || rows <= 2) return;
   if (cols === lastSentCols && rows === lastSentRows) return;
 
   const doSend = () => {
@@ -308,13 +308,6 @@ onMounted(() => {
 
   term.open(terminalContainer.value);
 
-  // Replay persistent history if available
-  if (hasBuffer(props.paneId)) {
-    const historical = getBuffer(props.paneId);
-    if (historical) {
-      term.write(historical);
-    }
-  }
 
   // Load WebGL Addon with graceful fallback
   (async () => {
@@ -363,7 +356,9 @@ onMounted(() => {
 
   // Observe container resize
   resizeObserver = new ResizeObserver(() => {
-    if (!fitAddon || !term) return;
+    if (!fitAddon || !term || !terminalContainer.value) return;
+    const rect = terminalContainer.value.getBoundingClientRect();
+    if (rect.width <= 20 || rect.height <= 20) return;
     try {
       fitAddon.fit();
       sendResize();

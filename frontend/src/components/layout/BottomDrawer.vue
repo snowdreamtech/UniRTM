@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="isOpen"
+    v-show="isOpen"
     class="bottom-drawer"
     :class="{ 'is-resizing': isDrawerHeightDragging }"
     id="app-bottom-drawer"
@@ -192,7 +192,7 @@
 
     <!-- 1. Terminal View Body with VSCode Split Panes & Tabs Sidebar -->
     <div
-      v-if="currentTab === 'terminal'"
+      v-show="currentTab === 'terminal'"
       class="terminal-wrapper font-mono"
       :class="{ 'is-resizing': isTermSidebarDragging || isDrawerHeightDragging }"
       :style="{ height: `${effectiveBodyHeight}px` }"
@@ -365,7 +365,7 @@
 
     <!-- 2. Logs Drawer Body (Output, Tasks, Doctor) -->
     <div
-      v-else-if="currentTab === 'output' || currentTab === 'tasks' || currentTab === 'doctor'"
+      v-if="currentTab === 'output' || currentTab === 'tasks' || currentTab === 'doctor'"
       class="drawer-body font-mono"
       ref="logContainerRef"
       :style="{ height: `${effectiveBodyHeight}px` }"
