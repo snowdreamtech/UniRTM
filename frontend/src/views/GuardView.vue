@@ -615,7 +615,7 @@
                             ? `! ${rule.issuesCount} 警告`
                             : `✕ ${rule.issuesCount} 阻断`
                     }}
-                    <span v-if="rule.durationMs > 0">· {{ rule.duration }}</span>
+                    <span v-if="rule.duration">· {{ rule.duration }}</span>
                   </span>
                   <span v-else class="rule-idle-badge font-mono">就绪待命</span>
                 </div>
@@ -1006,7 +1006,12 @@ import { useToast } from "../composables/useToast";
 import ExtensionSlotModal from "../components/guard/ExtensionSlotModal.vue";
 import TomlConfigDrawer from "../components/guard/TomlConfigDrawer.vue";
 import BuiltinRuleConfigModal, { type BuiltinRuleCustomConfig } from "../components/guard/BuiltinRuleConfigModal.vue";
-import { ALL_38_GUARD_RULES, BUILTIN_GUARD_RULES, type DetailedGuardRule } from "../utils/guardRulesMeta";
+import {
+  ALL_38_GUARD_RULES,
+  BUILTIN_GUARD_RULES,
+  formatGuardDuration,
+  type DetailedGuardRule,
+} from "../utils/guardRulesMeta";
 import { parseGuardConfigFromToml, updateBuiltinRuleInToml, type ParsedGuardConfig } from "../utils/tomlGuardHelper";
 
 const emit = defineEmits<{
@@ -1066,8 +1071,9 @@ const richRulesList = computed<RichGuardRuleItem[]>(() => {
   const reportsMap = new Map<string, { status: string; duration: string; durationMs: number; issuesCount: number }>();
   for (const r of reports) {
     const rawStatus = (r.status || "").toLowerCase();
-    const durMs = r.duration_ms !== undefined ? r.duration_ms : r.duration !== undefined ? r.duration : 0;
-    const dur = `${durMs}ms`;
+    const rawDur = r.duration_ms !== undefined ? r.duration_ms : r.duration !== undefined ? r.duration : undefined;
+    const dur = formatGuardDuration(rawDur);
+    const durMs = typeof rawDur === "number" && rawDur > 50000 ? Math.round(rawDur / 1_000_000) : Number(rawDur) || 0;
     const issues = r.issues_count || (r.errors_count || 0) + (r.warnings_count || 0);
     const item = { status: rawStatus, duration: dur, durationMs: durMs, issuesCount: issues };
     if (r.rule_id) {
@@ -1085,7 +1091,7 @@ const richRulesList = computed<RichGuardRuleItem[]>(() => {
     let durationMs = 0;
     let issuesCount = 0;
     if (report) {
-      duration = report.duration || "0ms";
+      duration = report.duration;
       durationMs = report.durationMs;
       issuesCount = report.issuesCount;
       if (report.status === "passed" || report.status === "pass" || report.status === "clean") {

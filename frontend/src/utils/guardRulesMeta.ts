@@ -530,3 +530,43 @@ export const ALL_38_GUARD_RULES: DetailedGuardRule[] = [
 export const BUILTIN_GUARD_RULES: DetailedGuardRule[] = ALL_38_GUARD_RULES.filter((r) => r.id.startsWith("builtin:"));
 
 export const SLOT_GUARD_RULES: DetailedGuardRule[] = ALL_38_GUARD_RULES.filter((r) => r.id.startsWith("slot:"));
+
+/**
+ * Human-friendly duration formatter for guard inspection rules:
+ * - Handles nanoseconds (from Go or mock raw timers) and converts to ms
+ * - Shows "< 1ms" instead of deceptive "0ms" when execution is ultra-fast sub-millisecond
+ * - Shows "Xms" for standard duration
+ * - Shows "X.Xs" for durations >= 1000ms
+ */
+export function formatGuardDuration(rawMsOrNs?: number | string): string {
+  if (rawMsOrNs === undefined || rawMsOrNs === null || rawMsOrNs === "") {
+    return "";
+  }
+  let ms: number;
+  if (typeof rawMsOrNs === "string") {
+    if (rawMsOrNs.endsWith("ms")) {
+      ms = parseFloat(rawMsOrNs);
+    } else if (rawMsOrNs.endsWith("s")) {
+      ms = parseFloat(rawMsOrNs) * 1000;
+    } else {
+      ms = parseFloat(rawMsOrNs);
+    }
+  } else {
+    ms = rawMsOrNs;
+  }
+
+  if (isNaN(ms) || ms < 0) return "";
+
+  // Convert raw nanoseconds (Go time.Duration / mock raw ns) to milliseconds
+  if (ms > 50000) {
+    ms = ms / 1_000_000;
+  }
+
+  if (ms === 0 || ms < 1) {
+    return "< 1ms";
+  }
+  if (ms >= 1000) {
+    return `${(ms / 1000).toFixed(1)}s`;
+  }
+  return `${Math.round(ms)}ms`;
+}
