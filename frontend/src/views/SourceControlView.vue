@@ -904,7 +904,7 @@
                 @click="guardDiagView = 'rules'"
               >
                 <span class="codicon codicon-checklist"></span>
-                <span>查看透明执行清单</span>
+                <span>{{ t("guard.diagnostics.view_checklist") }}</span>
               </button>
             </div>
           </template>
