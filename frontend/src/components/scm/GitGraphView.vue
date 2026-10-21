@@ -57,17 +57,24 @@
         </button>
       </div>
 
-      <!-- 3.1 Conventional Commit Type Filter Pills -->
-      <div class="commit-type-filter-group">
+      <!-- 3.1 Conventional Commit Type Filter (Dropdown Select) -->
+      <div class="toolbar-item type-selector-item">
+        <div class="type-select-wrapper" :class="{ 'has-filter': selectedCommitType !== 'all' }">
+          <span class="codicon codicon-tag type-select-icon"></span>
+          <select v-model="selectedCommitType" class="graph-type-select" title="按提交类型过滤 (Conventional Commits)">
+            <option v-for="tItem in commitTypeFilterOptions" :key="tItem.value" :value="tItem.value">
+              {{ tItem.label }}
+            </option>
+          </select>
+          <span class="codicon codicon-chevron-down type-select-arrow"></span>
+        </div>
         <button
-          v-for="tItem in commitTypeFilterOptions"
-          :key="tItem.value"
-          class="type-filter-btn"
-          :class="{ active: selectedCommitType === tItem.value }"
-          :title="tItem.title"
-          @click="selectedCommitType = tItem.value"
+          v-if="selectedCommitType !== 'all'"
+          class="clear-type-filter-btn"
+          title="清除类型过滤"
+          @click="selectedCommitType = 'all'"
         >
-          {{ tItem.label }}
+          <span class="codicon codicon-close"></span>
         </button>
       </div>
 
@@ -1191,18 +1198,18 @@ const searchQuery = ref("");
 const selectedCommitType = ref<string>("all");
 
 const commitTypeFilterOptions = [
-  { label: "全部", value: "all", title: "显示全部提交" },
-  { label: "feat", value: "feat", title: "仅看新功能 (Features)" },
-  { label: "fix", value: "fix", title: "仅看缺陷修复 (Bug Fixes)" },
-  { label: "docs", value: "docs", title: "仅看文档更新 (Docs)" },
-  { label: "style", value: "style", title: "仅看代码风格 (Style)" },
-  { label: "refactor", value: "refactor", title: "仅看重构 (Refactor)" },
-  { label: "perf", value: "perf", title: "仅看性能优化 (Performance)" },
-  { label: "test", value: "test", title: "仅看测试 (Test)" },
-  { label: "build", value: "build", title: "仅看构建依赖 (Build)" },
-  { label: "ci", value: "ci", title: "仅看持续集成 (CI/CD)" },
-  { label: "chore", value: "chore", title: "仅看日常维护 (Chore)" },
-  { label: "revert", value: "revert", title: "仅看代码回滚 (Revert)" },
+  { label: "全部类型", value: "all", title: "显示全部提交" },
+  { label: "feat (新功能)", value: "feat", title: "仅看新功能 (Features)" },
+  { label: "fix (缺陷修复)", value: "fix", title: "仅看缺陷修复 (Bug Fixes)" },
+  { label: "docs (文档更新)", value: "docs", title: "仅看文档更新 (Docs)" },
+  { label: "style (代码风格)", value: "style", title: "仅看代码风格 (Style)" },
+  { label: "refactor (代码重构)", value: "refactor", title: "仅看代码重构 (Refactor)" },
+  { label: "perf (性能优化)", value: "perf", title: "仅看性能优化 (Performance)" },
+  { label: "test (测试用例)", value: "test", title: "仅看测试用例 (Test)" },
+  { label: "build (构建依赖)", value: "build", title: "仅看构建依赖 (Build)" },
+  { label: "ci (持续集成)", value: "ci", title: "仅看持续集成 (CI/CD)" },
+  { label: "chore (日常维护)", value: "chore", title: "仅看日常维护 (Chore)" },
+  { label: "revert (代码回滚)", value: "revert", title: "仅看代码回滚 (Revert)" },
 ];
 const tableWrapperRef = ref<HTMLElement | null>(null);
 const isInitialLoading = ref<boolean>(graphCommits.value.length === 0);
@@ -2219,6 +2226,7 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   position: relative;
   flex: 1;
   max-width: 320px;
+  min-width: 140px;
 }
 
 .search-icon {
@@ -2243,41 +2251,127 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   border-color: var(--accent-cyan);
 }
 
-.commit-type-filter-group {
+/* ── Conventional Commit Type Selector ── */
+.type-selector-item {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
-.type-filter-btn {
-  font-size: 11px;
-  font-family: var(--font-family-mono, monospace);
-  padding: 2px 7px;
-  border-radius: 10px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--card-border);
-  color: var(--text-muted);
-  cursor: pointer;
+.type-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  background: var(--input-bg, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--card-border, #334155);
+  border-radius: 4px;
   transition: all 0.15s ease;
-  user-select: none;
 }
 
-.type-filter-btn:hover {
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
+.type-select-wrapper:hover {
+  border-color: var(--accent-cyan, #0ea5e9);
 }
 
-.type-filter-btn.active {
+.type-select-wrapper.has-filter {
   background: var(--accent-cyan-dim, rgba(14, 165, 233, 0.15));
   border-color: var(--accent-cyan, #0ea5e9);
+}
+
+:root[data-theme="light"] .type-select-wrapper {
+  background: #ffffff;
+  border-color: var(--card-border, #cbd5e1);
+}
+
+:root[data-theme="light"] .type-select-wrapper.has-filter {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+}
+
+.type-select-icon {
+  position: absolute;
+  left: 8px;
+  font-size: 13px;
+  color: var(--text-muted, #94a3b8);
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+.type-select-wrapper.has-filter .type-select-icon {
+  color: var(--accent-cyan, #0ea5e9);
+}
+
+:root[data-theme="light"] .type-select-wrapper.has-filter .type-select-icon {
+  color: #0369a1;
+}
+
+.graph-type-select {
+  appearance: none;
+  background: transparent;
+  color: var(--text-main);
+  border: none;
+  height: 100%;
+  padding: 0 24px 0 26px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.type-select-wrapper.has-filter .graph-type-select {
   color: var(--accent-cyan, #0ea5e9);
   font-weight: 600;
 }
 
-:root[data-theme="light"] .type-filter-btn.active {
-  background: #e0f2fe;
+:root[data-theme="light"] .type-select-wrapper.has-filter .graph-type-select {
   color: #0369a1;
-  border-color: #38bdf8;
+}
+
+.graph-type-select option {
+  background: var(--card-bg, #1e293b);
+  color: var(--text-main, #f8fafc);
+}
+
+:root[data-theme="light"] .graph-type-select option {
+  background: #ffffff;
+  color: #1e293b;
+}
+
+.type-select-arrow {
+  position: absolute;
+  right: 6px;
+  pointer-events: none;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.type-select-wrapper.has-filter .type-select-arrow {
+  color: var(--accent-cyan, #0ea5e9);
+}
+
+:root[data-theme="light"] .type-select-wrapper.has-filter .type-select-arrow {
+  color: #0369a1;
+}
+
+.clear-type-filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.clear-type-filter-btn:hover {
+  background: var(--hover-bg, rgba(255, 255, 255, 0.1));
+  color: var(--accent-cyan, #0ea5e9);
 }
 
 .clear-search-btn {
