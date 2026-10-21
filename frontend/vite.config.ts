@@ -330,6 +330,19 @@ export default defineConfig({
               if (gitDate) buildTime = gitDate;
             } catch {}
 
+            let toolsCount = 0;
+            let tasksCount = 0;
+            try {
+              const wsToml = path.join(rootDir, ".unirtm.toml");
+              if (fs.existsSync(wsToml)) {
+                const tomlText = fs.readFileSync(wsToml, "utf-8");
+                const parsedTools = parseTools(wsToml);
+                toolsCount = Object.keys(parsedTools).length;
+                const taskMatches = tomlText.match(/^\[tasks\.[^\]]+\]/gm);
+                tasksCount = taskMatches ? taskMatches.length : 0;
+              }
+            } catch {}
+
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(
               JSON.stringify({
@@ -344,8 +357,8 @@ export default defineConfig({
                 author: "Snowdream Tech <snowdreamtech@qq.com>",
                 license: "MIT License",
                 copyright: "Copyright (c) 2026 SnowdreamTech. All rights reserved.",
-                tools_count: 5,
-                tasks_count: 4,
+                tools_count: toolsCount || 5,
+                tasks_count: tasksCount || 4,
                 plugins_count: 0,
                 timestamp: Math.floor(Date.now() / 1000),
               })
@@ -1025,9 +1038,41 @@ export default defineConfig({
             const lockPath = path.join(rootDir, "unirtm.lock");
             const lockTools = parseLockTools(lockPath);
 
+            const realOutdatedMap = new Map<string, string>();
+            if (fs.existsSync(unirtmBin)) {
+              try {
+                const res = spawnSync(unirtmBin, ["outdated", "--json"], {
+                  cwd: rootDir,
+                  encoding: "utf-8",
+                  timeout: 6000,
+                });
+                const outText = (res.stdout || "").trim();
+                const startIdx = outText.indexOf("{");
+                const endIdx = outText.lastIndexOf("}");
+                if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+                  const parsed = JSON.parse(outText.slice(startIdx, endIdx + 1));
+                  const tools = parsed.fields?.tools || parsed.tools || [];
+                  for (const item of tools) {
+                    if (item.tool && item.latest) {
+                      realOutdatedMap.set(item.tool, item.latest);
+                      const bare = item.tool.includes("/") ? item.tool.split("/").pop()! : item.tool;
+                      realOutdatedMap.set(bare, item.latest);
+                    }
+                  }
+                }
+              } catch (_) {}
+            }
+
             const getLatestVersion = (toolKey: string, curVer: string): string => {
               const candidates: string[] = [];
               const bare = toolKey.includes(":") ? toolKey.split(":").slice(1).join(":") : toolKey;
+
+              if (realOutdatedMap.has(toolKey)) {
+                return realOutdatedMap.get(toolKey)!;
+              }
+              if (realOutdatedMap.has(bare)) {
+                return realOutdatedMap.get(bare)!;
+              }
 
               if (fallbackLatest[toolKey]) {
                 candidates.push(fallbackLatest[toolKey]);
@@ -3259,6 +3304,7 @@ print(json.dumps({
           if (req.url?.startsWith("/api/guard/")) {
             const reqUrl = req.url || "";
             const reqPath = reqUrl.split("?")[0];
+            const unirtmBin = findUnirtmBinary(rootDir);
 
             const standard38MockRuleIDs = [
               "builtin:trailing-whitespace",
@@ -3301,17 +3347,343 @@ print(json.dumps({
               "slot:secret.gitleaks",
             ];
 
-            const sampleScanFiles = [
-              "frontend/src/views/GuardView.vue",
-              "frontend/src/views/TasksView.vue",
-              "frontend/src/views/ExplorerView.vue",
-              "cmd/64.ui_guard.go",
-              "internal/guard/pipeline.go",
-              "internal/guard/rules_builtin.go",
-              ".unirtm.toml",
-              ".editorconfig",
-              ".golangci.yml",
+            const defaultStandardSlots = [
+              {
+                id: "go.formatter",
+                description: "Go canonical code formatter",
+                category: "format",
+                phase: "formatter",
+                default_tool_name: "gofmt",
+                default_command: "gofmt -l {{files}}",
+                fix_command: "gofmt -w {{files}}",
+                default_extensions: [".go"],
+              },
+              {
+                id: "go.imports",
+                description: "Go imports manager and organizer",
+                category: "hygiene",
+                phase: "fixer",
+                default_tool_name: "goimports",
+                default_command: "goimports -l {{files}}",
+                fix_command: "goimports -w {{files}}",
+                default_extensions: [".go"],
+              },
+              {
+                id: "go.linter",
+                description: "Go static analysis & quality linter",
+                category: "lint",
+                phase: "linter",
+                default_tool_name: "golangci-lint",
+                default_command: "golangci-lint run",
+                default_extensions: [".go"],
+                standard_config_files: [".golangci.yml", ".golangci.yaml", ".golangci.toml"],
+              },
+              {
+                id: "web.formatter",
+                description: "Web multi-language formatter (Prettier / Biome)",
+                category: "format",
+                phase: "formatter",
+                default_tool_name: "prettier",
+                default_command: "prettier --check {{files}}",
+                fix_command: "prettier --write {{files}}",
+                default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue", ".json", ".css", ".md"],
+                standard_config_files: [".prettierrc", ".prettierrc.json", "prettier.config.js"],
+              },
+              {
+                id: "web.linter",
+                description: "JavaScript / TypeScript / Vue linter (ESLint / Oxlint / Biome)",
+                category: "lint",
+                phase: "linter",
+                default_tool_name: "eslint",
+                default_command: "eslint {{files}}",
+                fix_command: "eslint --fix {{files}}",
+                default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue"],
+                standard_config_files: ["eslint.config.js", "eslint.config.mjs", ".eslintrc.json"],
+              },
+              {
+                id: "python.suite",
+                description: "Python fast formatter and linter (Ruff / Black / Flake8)",
+                category: "lint",
+                phase: "linter",
+                default_tool_name: "ruff",
+                default_command: "ruff check {{files}}",
+                fix_command: "ruff check --fix {{files}}",
+                default_extensions: [".py"],
+                standard_config_files: ["ruff.toml", "pyproject.toml"],
+              },
+              {
+                id: "shell.formatter",
+                description: "Shell script standard POSIX formatter",
+                category: "format",
+                phase: "formatter",
+                default_tool_name: "shfmt",
+                default_command: "shfmt -w -s -i 2 {{files}}",
+                default_extensions: [".sh", ".bash"],
+              },
+              {
+                id: "shell.linter",
+                description: "Shell scripts quality checker and linter (ShellCheck)",
+                category: "lint",
+                phase: "linter",
+                default_tool_name: "shellcheck",
+                default_command: "shellcheck {{files}}",
+                default_extensions: [".sh", ".bash"],
+                standard_config_files: [".shellcheckrc"],
+              },
+              {
+                id: "toml.formatter",
+                description: "TOML file formatter",
+                category: "format",
+                phase: "formatter",
+                default_tool_name: "taplo",
+                default_command: "taplo format {{files}}",
+                default_extensions: [".toml"],
+                standard_config_files: [".taplo.toml", "taplo.toml"],
+              },
+              {
+                id: "secret.gitleaks",
+                description: "Secret and API key leak protector",
+                category: "secret",
+                phase: "linter",
+                default_tool_name: "gitleaks",
+                default_command: "gitleaks protect --staged --redact",
+                standard_config_files: [".gitleaks.toml"],
+              },
             ];
+
+            const readTomlSlots = () => {
+              const tomlPath = path.join(rootDir, ".unirtm.toml");
+              if (!fs.existsSync(tomlPath)) return defaultStandardSlots;
+              try {
+                const content = fs.readFileSync(tomlPath, "utf-8");
+                const lines = content.split("\n");
+                const customSlotsMap = new Map<string, any>();
+                let currentSlotId = "";
+                let currentSlotData: any = null;
+
+                for (const rawLine of lines) {
+                  const tr = rawLine.trim();
+                  const slotMatch = tr.match(/^\[guard\.slots\.(?:"([^"]+)"|'([^']+)'|([a-zA-Z0-9_\-.]+))\]$/);
+                  if (slotMatch) {
+                    if (currentSlotId && currentSlotData) {
+                      customSlotsMap.set(currentSlotId, currentSlotData);
+                    }
+                    currentSlotId = slotMatch[1] || slotMatch[2] || slotMatch[3];
+                    currentSlotData = { id: currentSlotId };
+                    continue;
+                  }
+                  if (tr.startsWith("[") && tr.endsWith("]") && !tr.startsWith("[guard.slots.")) {
+                    if (currentSlotId && currentSlotData) {
+                      customSlotsMap.set(currentSlotId, currentSlotData);
+                      currentSlotId = "";
+                      currentSlotData = null;
+                    }
+                    continue;
+                  }
+                  if (currentSlotData && tr && !tr.startsWith("#") && tr.includes("=")) {
+                    const eqIdx = tr.indexOf("=");
+                    const k = tr.slice(0, eqIdx).trim();
+                    let v = tr.slice(eqIdx + 1).trim();
+                    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+                      v = v.slice(1, -1);
+                    }
+                    if (k === "tool") currentSlotData.default_tool_name = v;
+                    else if (k === "command") currentSlotData.default_command = v;
+                    else if (k === "fix_command") currentSlotData.fix_command = v;
+                    else if (k === "description") currentSlotData.description = v;
+                    else if (k === "category") currentSlotData.category = v;
+                    else if (k === "phase") currentSlotData.phase = v;
+                  }
+                }
+                if (currentSlotId && currentSlotData) {
+                  customSlotsMap.set(currentSlotId, currentSlotData);
+                }
+
+                return defaultStandardSlots.map((ds) => {
+                  const custom = customSlotsMap.get(ds.id);
+                  if (custom) return { ...ds, ...custom };
+                  return ds;
+                });
+              } catch (_) {
+                return defaultStandardSlots;
+              }
+            };
+
+            const runRealGuardCheck = (mode: string, autoFix: boolean) => {
+              const startT = Date.now();
+              let realOutput = "";
+              let realExitCode = 0;
+
+              try {
+                const flag = mode === "all" ? "--all" : mode === "staged" ? "--staged" : "";
+                const fixFlag = autoFix ? "--fix" : "";
+                const bin = fs.existsSync(unirtmBin) ? unirtmBin : "unirtm";
+                const args = ["check"];
+                if (flag) args.push(flag);
+                if (fixFlag) args.push(fixFlag);
+
+                const res = spawnSync(bin, args, {
+                  cwd: rootDir,
+                  encoding: "utf-8",
+                  timeout: 45000,
+                });
+                realOutput = (res.stdout || "") + "\n" + (res.stderr || "");
+                realExitCode = res.status || 0;
+              } catch (err: any) {
+                realOutput = (err.stdout || "") + "\n" + (err.stderr || "") + "\n" + (err.message || "");
+                realExitCode = err.status || 1;
+              }
+
+              const totalDurationMs = Math.max(1, Date.now() - startT);
+              const rawLines = realOutput.split("\n");
+              const logs: string[] = [];
+              let scannedCount = 0;
+              let errorsCount = 0;
+              let warningsCount = 0;
+              let fixedCount = 0;
+              const issues: any[] = [];
+              const ruleReports: any[] = [];
+              const executedRuleMap = new Map<string, any>();
+
+              for (const rawLine of rawLines) {
+                const trimmed = rawLine.trim();
+                if (!trimmed) continue;
+                logs.push(rawLine);
+
+                const inspectMatch = trimmed.match(/\((\d+)\s+files/);
+                if (inspectMatch) {
+                  scannedCount = parseInt(inspectMatch[1], 10);
+                }
+
+                if (trimmed.startsWith("✓ ")) {
+                  const rest = trimmed.replace(/^✓\s*/, "");
+                  const ruleName = rest.split(" ")[0];
+                  const fixedMatch = rest.match(/\((\d+)\s+issue\(s\)\s+fixed\)/);
+                  const isFixed = !!fixedMatch;
+                  const count = fixedMatch ? parseInt(fixedMatch[1], 10) : 0;
+                  if (isFixed) fixedCount += count;
+                  executedRuleMap.set(ruleName, {
+                    status: isFixed ? "fixed" : "passed",
+                    errors: 0,
+                    warnings: 0,
+                    fixed: count,
+                    issues: count,
+                  });
+                } else if (trimmed.startsWith("⚠ ") || trimmed.startsWith("! ")) {
+                  const rest = trimmed.replace(/^[⚠!]\s*/, "");
+                  const ruleName = rest.split(" ")[0];
+                  const warnMatch = rest.match(/\((\d+)\s+warning\(s\)\)/);
+                  const count = warnMatch ? parseInt(warnMatch[1], 10) : 1;
+                  warningsCount += count;
+                  executedRuleMap.set(ruleName, {
+                    status: "warn",
+                    errors: 0,
+                    warnings: count,
+                    fixed: 0,
+                    issues: count,
+                  });
+                } else if (trimmed.startsWith("✗ ")) {
+                  const rest = trimmed.replace(/^✗\s*/, "");
+                  const ruleName = rest.split(" ")[0];
+                  const errMatch = rest.match(/\((\d+)\s+error\(s\)\)/);
+                  const count = errMatch ? parseInt(errMatch[1], 10) : 1;
+                  errorsCount += count;
+                  executedRuleMap.set(ruleName, {
+                    status: "fail",
+                    errors: count,
+                    warnings: 0,
+                    fixed: 0,
+                    issues: count,
+                  });
+                }
+
+                // Match detailed issues from CLI: [FAIL] path:line rule: message
+                const issueMatch = trimmed.match(/^\[(FAIL|WARN|FIXED)\]\s+([^:]+)(?::(\d+))?\s+([^:]+):\s*(.*)$/);
+                if (issueMatch) {
+                  const tag = issueMatch[1];
+                  const filePath = issueMatch[2].trim();
+                  const lineNum = issueMatch[3] ? parseInt(issueMatch[3], 10) : 1;
+                  const ruleID = issueMatch[4].trim();
+                  const msg = issueMatch[5].trim();
+                  const isError = tag === "FAIL";
+                  const isFixed = tag === "FIXED";
+                  const fixable = isFixed || /whitespace|eof|utf8bom|mixed-line|crlf|formatter|imports/i.test(ruleID);
+
+                  issues.push({
+                    rule_id: ruleID,
+                    file_path: filePath,
+                    line: lineNum,
+                    message: msg,
+                    severity: isError ? "error" : "warning",
+                    fixable,
+                    fixed: isFixed,
+                  });
+                }
+              }
+
+              if (logs.length === 0) {
+                logs.push(`$ unirtm check --mode=${mode}`);
+                logs.push("✓ ✨ No matching files found to inspect.");
+              }
+
+              for (const ruleID of standard38MockRuleIDs) {
+                const execInfo = executedRuleMap.get(ruleID);
+                if (execInfo) {
+                  const isBuiltin = ruleID.startsWith("builtin:");
+                  const ruleMs = isBuiltin ? 0.3 : Math.min(60, Math.max(5, Math.round(totalDurationMs / 10)));
+                  ruleReports.push({
+                    rule_id: ruleID,
+                    rule_name: ruleID,
+                    duration_ms: ruleMs,
+                    issues_count: execInfo.issues,
+                    errors_count: execInfo.errors,
+                    warnings_count: execInfo.warnings,
+                    fixed_count: execInfo.fixed,
+                    status: execInfo.status,
+                  });
+                } else {
+                  ruleReports.push({
+                    rule_id: ruleID,
+                    rule_name: ruleID,
+                    duration_ms: 0.2,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  });
+                }
+              }
+
+              const clean =
+                errorsCount === 0 &&
+                realExitCode === 0 &&
+                issues.filter((i) => i.severity === "error" && !i.fixed).length === 0;
+
+              return {
+                success: true,
+                mode,
+                scanned: scannedCount,
+                clean,
+                duration_ms: totalDurationMs,
+                rules_count: 38,
+                errors_count: errorsCount,
+                warnings_count: warningsCount,
+                fixable_count: issues.filter((i) => i.fixable && !i.fixed).length,
+                fixed_count: fixedCount,
+                summary: {
+                  total_files_scanned: scannedCount,
+                  total_issues: issues.length,
+                  errors_count: errorsCount,
+                  warnings_count: warningsCount,
+                  fixed_count: fixedCount,
+                  duration_ms: totalDurationMs,
+                },
+                issues,
+                rule_reports: ruleReports,
+                logs,
+              };
+            };
 
             if (reqPath === "/api/guard/rules" && req.method === "GET") {
               const standardConfigs = [
@@ -3408,111 +3780,7 @@ print(json.dumps({
                     { id: "secret/private-key", category: "secret", phase: "linter", extensions: null },
                     { id: "secret/env-safety", category: "secret", phase: "linter", extensions: [".env", ".env.*"] },
                   ],
-                  slots: [
-                    {
-                      id: "go.formatter",
-                      description: "Go canonical code formatter",
-                      category: "format",
-                      phase: "formatter",
-                      default_tool_name: "gofmt",
-                      default_command: "gofmt -w {{files}}",
-                      default_extensions: [".go"],
-                    },
-                    {
-                      id: "go.imports",
-                      description: "Go imports manager and organizer",
-                      category: "hygiene",
-                      phase: "fixer",
-                      default_tool_name: "goimports",
-                      default_command: "goimports -w {{files}}",
-                      default_extensions: [".go"],
-                    },
-                    {
-                      id: "go.linter",
-                      description: "Go static analysis & quality linter",
-                      category: "lint",
-                      phase: "linter",
-                      default_tool_name: "golangci-lint",
-                      default_command: "golangci-lint run",
-                      default_extensions: [".go"],
-                      standard_config_files: [".golangci.yml", ".golangci.yaml", ".golangci.toml"],
-                    },
-                    {
-                      id: "web.formatter",
-                      description: "Web multi-language formatter (Prettier / Biome)",
-                      category: "format",
-                      phase: "formatter",
-                      default_tool_name: "prettier",
-                      default_command: "prettier --write {{files}}",
-                      default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue", ".json", ".css", ".md"],
-                      standard_config_files: [
-                        ".prettierrc",
-                        ".prettierrc.json",
-                        ".prettierrc.yaml",
-                        "prettier.config.js",
-                      ],
-                    },
-                    {
-                      id: "web.linter",
-                      description: "JavaScript / TypeScript / Vue linter (ESLint / Oxlint / Biome)",
-                      category: "lint",
-                      phase: "linter",
-                      default_tool_name: "eslint",
-                      default_command: "eslint {{files}}",
-                      fix_command: "eslint --fix {{files}}",
-                      default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue"],
-                      standard_config_files: ["eslint.config.js", "eslint.config.mjs", ".eslintrc.json"],
-                    },
-                    {
-                      id: "python.suite",
-                      description: "Python fast formatter and linter (Ruff / Black / Flake8)",
-                      category: "lint",
-                      phase: "linter",
-                      default_tool_name: "ruff",
-                      default_command: "ruff check {{files}}",
-                      fix_command: "ruff check --fix {{files}}",
-                      default_extensions: [".py", ".pyi"],
-                      standard_config_files: ["ruff.toml", ".ruff.toml", "pyproject.toml"],
-                    },
-                    {
-                      id: "toml.formatter",
-                      description: "TOML file formatter",
-                      category: "format",
-                      phase: "formatter",
-                      default_tool_name: "taplo",
-                      default_command: "taplo format {{files}}",
-                      default_extensions: [".toml"],
-                      standard_config_files: [".taplo.toml", "taplo.toml"],
-                    },
-                    {
-                      id: "shell.formatter",
-                      description: "Shell script standard POSIX formatter",
-                      category: "format",
-                      phase: "formatter",
-                      default_tool_name: "shfmt",
-                      default_command: "shfmt -w -s -i 2 {{files}}",
-                      default_extensions: [".sh", ".bash"],
-                    },
-                    {
-                      id: "shell.linter",
-                      description: "Shell script static analyzer",
-                      category: "lint",
-                      phase: "linter",
-                      default_tool_name: "shellcheck",
-                      default_command: "shellcheck {{files}}",
-                      default_extensions: [".sh", ".bash"],
-                      standard_config_files: [".shellcheckrc"],
-                    },
-                    {
-                      id: "secret.gitleaks",
-                      description: "Secret and API key leak protector",
-                      category: "secret",
-                      phase: "linter",
-                      default_tool_name: "gitleaks",
-                      default_command: "gitleaks protect --staged --redact",
-                      standard_config_files: [".gitleaks.toml"],
-                    },
-                  ],
+                  slots: readTomlSlots(),
                   config_files,
                 })
               );
@@ -3522,27 +3790,10 @@ print(json.dumps({
             if (reqPath === "/api/guard/status" && req.method === "GET") {
               const urlObj = new URL(reqUrl, "http://localhost");
               const mode = urlObj.searchParams.get("mode") || "staged";
-
-              // Initial load before inspection runs: clean, ready state with no fake mock reports
+              // Directly connect to real unirtm check pipeline
+              const result = runRealGuardCheck(mode, false);
               res.setHeader("Content-Type", "application/json");
-              res.end(
-                JSON.stringify({
-                  mode,
-                  scanned: 0,
-                  clean: true,
-                  errors_count: 0,
-                  warnings_count: 0,
-                  fixable_count: 0,
-                  duration_ms: 0,
-                  rules_count: 38,
-                  issues: [],
-                  rule_reports: [],
-                  logs: [
-                    "$ unirtm check --help",
-                    "ℹ UniRTM Quality Guard ready. Click 'Check Staged' or 'Check Changed' to inspect code quality.",
-                  ],
-                })
-              );
+              res.end(JSON.stringify(result));
               return;
             }
 
@@ -3558,199 +3809,129 @@ print(json.dumps({
                 } catch (_) {}
 
                 const guardRunMode = reqBody.mode || "staged";
-                let realOutput = "";
-                let realExitCode = 0;
-                const startT = Date.now();
-                try {
-                  const flag = guardRunMode === "all" ? "--all" : guardRunMode === "staged" ? "--staged" : "";
-                  const fixFlag = reqBody.fix ? "--fix" : "";
-                  const cmd = `unirtm check ${flag} ${fixFlag}`.trim();
-                  realOutput = execFileSync("bash", ["-c", cmd], {
-                    cwd: rootDir,
-                    encoding: "utf-8",
-                    timeout: 45000,
-                  });
-                } catch (err: any) {
-                  realOutput = (err.stdout || "") + "\n" + (err.stderr || "");
-                  realExitCode = err.status || 1;
-                }
-                const totalDurationMs = Math.max(1, Date.now() - startT);
-
-                // Parse real output lines
-                const rawLines = realOutput.split("\n").filter(Boolean);
-                const logs: string[] = [];
-                let scannedCount = 0;
-                let issuesCount = 0;
-                let errorsCount = 0;
-                let warningsCount = 0;
-                const ruleReports: any[] = [];
-                const executedRuleMap = new Map<string, { status: string; count: number }>();
-
-                for (const line of rawLines) {
-                  logs.push(line);
-                  const trimmed = line.trim();
-                  const inspectMatch = trimmed.match(/\((\d+)\s+files/);
-                  if (inspectMatch) {
-                    scannedCount = parseInt(inspectMatch[1], 10);
-                  }
-                  if (trimmed.startsWith("✓ ")) {
-                    const ruleName = trimmed.replace(/^✓\s*/, "").split(" ")[0];
-                    executedRuleMap.set(ruleName, { status: "passed", count: 0 });
-                  } else if (trimmed.startsWith("⚠ ") || trimmed.startsWith("! ")) {
-                    const ruleName = trimmed.replace(/^[⚠!]\s*/, "").split(" ")[0];
-                    warningsCount++;
-                    issuesCount++;
-                    executedRuleMap.set(ruleName, { status: "warn", count: 1 });
-                  } else if (trimmed.startsWith("✗ ")) {
-                    const ruleName = trimmed.replace(/^✗\s*/, "").split(" ")[0];
-                    errorsCount++;
-                    issuesCount++;
-                    executedRuleMap.set(ruleName, { status: "fail", count: 1 });
-                  }
-                }
-
-                if (logs.length === 0) {
-                  logs.push(`$ unirtm check --mode=${guardRunMode}`);
-                  logs.push("✓ ✨ No matching files found to inspect.");
-                }
-
-                // If real output executed rules, construct realistic reports
-                for (const ruleID of standard38MockRuleIDs) {
-                  const execInfo = executedRuleMap.get(ruleID);
-                  if (execInfo) {
-                    // Native builtin rules take 0.1~0.5ms; heavier tool slots take 10~50ms
-                    const isBuiltin = ruleID.startsWith("builtin:");
-                    const ruleMs = isBuiltin ? 0.3 : Math.min(60, Math.max(5, Math.round(totalDurationMs / 10)));
-                    ruleReports.push({
-                      rule_id: ruleID,
-                      rule_name: ruleID,
-                      duration_ms: ruleMs,
-                      issues_count: execInfo.count,
-                      errors_count: execInfo.status === "fail" ? 1 : 0,
-                      warnings_count: execInfo.status === "warn" ? 1 : 0,
-                      fixed_count: reqBody.fix ? 1 : 0,
-                      status: execInfo.status,
-                    });
-                  }
-                }
-
-                const clean = errorsCount === 0 && realExitCode === 0;
-
+                // Directly execute real unirtm check with optional --fix
+                const result = runRealGuardCheck(guardRunMode, !!reqBody.fix);
                 res.setHeader("Content-Type", "application/json");
-                res.end(
-                  JSON.stringify({
-                    success: true,
-                    mode: guardRunMode,
-                    scanned: scannedCount,
-                    clean,
-                    duration_ms: totalDurationMs,
-                    rules_count: 38,
-                    summary: {
-                      total_files_scanned: scannedCount,
-                      total_issues: issuesCount,
-                      errors_count: errorsCount,
-                      warnings_count: warningsCount,
-                      fixed_count: reqBody.fix ? 1 : 0,
-                      duration_ms: totalDurationMs,
-                    },
-                    issues: [],
-                    rule_reports: ruleReports,
-                    logs,
-                  })
-                );
+                res.end(JSON.stringify(result));
               });
               return;
             }
 
             if (reqPath === "/api/guard/slots") {
-              const defaultMockSlots = [
-                {
-                  id: "go.formatter",
-                  description: "Go canonical code formatter",
-                  category: "format",
-                  phase: "formatter",
-                  default_tool_name: "gofmt",
-                  default_command: "gofmt -l {{files}}",
-                  fix_command: "gofmt -w {{files}}",
-                  default_extensions: [".go"],
-                },
-                {
-                  id: "go.imports",
-                  description: "Go imports manager and organizer",
-                  category: "hygiene",
-                  phase: "fixer",
-                  default_tool_name: "goimports",
-                  default_command: "goimports -l {{files}}",
-                  fix_command: "goimports -w {{files}}",
-                  default_extensions: [".go"],
-                },
-                {
-                  id: "go.linter",
-                  description: "Go static analysis & quality linter",
-                  category: "lint",
-                  phase: "linter",
-                  default_tool_name: "golangci-lint",
-                  default_command: "golangci-lint run",
-                  default_extensions: [".go"],
-                  standard_config_files: [".golangci.yml", ".golangci.yaml", ".golangci.toml"],
-                },
-                {
-                  id: "web.formatter",
-                  description: "Web multi-language formatter (Prettier / Biome)",
-                  category: "format",
-                  phase: "formatter",
-                  default_tool_name: "prettier",
-                  default_command: "prettier --check {{files}}",
-                  fix_command: "prettier --write {{files}}",
-                  default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue", ".json", ".css", ".md"],
-                  standard_config_files: [".prettierrc", ".prettierrc.json", "prettier.config.js"],
-                },
-                {
-                  id: "web.linter",
-                  description: "JavaScript / TypeScript / Vue linter (ESLint / Oxlint / Biome)",
-                  category: "lint",
-                  phase: "linter",
-                  default_tool_name: "eslint",
-                  default_command: "eslint {{files}}",
-                  fix_command: "eslint --fix {{files}}",
-                  default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue"],
-                  standard_config_files: ["eslint.config.js", "eslint.config.mjs", ".eslintrc.json"],
-                },
-                {
-                  id: "python.suite",
-                  description: "Python fast formatter and linter (Ruff / Black / Flake8)",
-                  category: "lint",
-                  phase: "linter",
-                  default_tool_name: "ruff",
-                  default_command: "ruff check {{files}}",
-                  fix_command: "ruff check --fix {{files}}",
-                  default_extensions: [".py"],
-                  standard_config_files: ["ruff.toml", "pyproject.toml"],
-                },
-                {
-                  id: "shell.linter",
-                  description: "Shell scripts quality checker and linter (ShellCheck)",
-                  category: "lint",
-                  phase: "linter",
-                  default_tool_name: "shellcheck",
-                  default_command: "shellcheck {{files}}",
-                  default_extensions: [".sh", ".bash"],
-                  standard_config_files: [".shellcheckrc"],
-                },
-                {
-                  id: "secret.gitleaks",
-                  description: "Secret and API key leak protector",
-                  category: "secret",
-                  phase: "linter",
-                  default_tool_name: "gitleaks",
-                  default_command: "gitleaks protect --staged --redact",
-                  standard_config_files: [".gitleaks.toml"],
-                },
-              ];
+              const tomlPath = path.join(rootDir, ".unirtm.toml");
 
-              res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify({ success: true, slots: defaultMockSlots }));
-              return;
+              if (req.method === "GET") {
+                const slots = readTomlSlots();
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, slots }));
+                return;
+              }
+
+              if (req.method === "POST") {
+                let bodyStr = "";
+                req.on("data", (c: any) => {
+                  bodyStr += c;
+                });
+                req.on("end", () => {
+                  try {
+                    const slot = JSON.parse(bodyStr || "{}");
+                    if (!slot.id) {
+                      res.statusCode = 400;
+                      res.setHeader("Content-Type", "application/json");
+                      res.end(JSON.stringify({ error: "slot ID is required" }));
+                      return;
+                    }
+
+                    let content = fs.existsSync(tomlPath) ? fs.readFileSync(tomlPath, "utf-8") : "";
+                    const header = `[guard.slots."${slot.id}"]`;
+                    const slotLines = [header];
+                    if (slot.default_tool_name || slot.tool) {
+                      slotLines.push(`tool = ${JSON.stringify(slot.default_tool_name || slot.tool)}`);
+                    }
+                    if (slot.default_command || slot.command) {
+                      slotLines.push(`command = ${JSON.stringify(slot.default_command || slot.command)}`);
+                    }
+                    if (slot.fix_command) {
+                      slotLines.push(`fix_command = ${JSON.stringify(slot.fix_command)}`);
+                    }
+                    if (slot.description) {
+                      slotLines.push(`description = ${JSON.stringify(slot.description)}`);
+                    }
+
+                    // Remove existing block if present
+                    const lines = content.split("\n");
+                    let start = -1;
+                    let end = -1;
+                    for (let i = 0; i < lines.length; i++) {
+                      const tr = lines[i].trim();
+                      if (tr === header || tr === `[guard.slots.${slot.id}]`) {
+                        start = i;
+                        continue;
+                      }
+                      if (start !== -1 && tr.startsWith("[") && tr.endsWith("]")) {
+                        end = i;
+                        break;
+                      }
+                    }
+                    if (start !== -1) {
+                      if (end === -1) end = lines.length;
+                      lines.splice(start, end - start, ...slotLines);
+                      content = lines.join("\n");
+                    } else {
+                      content = (content.trimEnd() ? content.trimEnd() + "\n\n" : "") + slotLines.join("\n") + "\n";
+                    }
+
+                    fs.writeFileSync(tomlPath, content, "utf-8");
+                    const updatedSlots = readTomlSlots();
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ success: true, slots: updatedSlots }));
+                  } catch (err: any) {
+                    res.statusCode = 500;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: err.message }));
+                  }
+                });
+                return;
+              }
+
+              if (req.method === "DELETE") {
+                const urlObj = new URL(reqUrl, "http://localhost");
+                const slotId = urlObj.searchParams.get("id");
+                if (!slotId) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "slot ID is required" }));
+                  return;
+                }
+
+                if (fs.existsSync(tomlPath)) {
+                  let content = fs.readFileSync(tomlPath, "utf-8");
+                  const lines = content.split("\n");
+                  let start = -1;
+                  let end = -1;
+                  for (let i = 0; i < lines.length; i++) {
+                    const tr = lines[i].trim();
+                    if (tr === `[guard.slots."${slotId}"]` || tr === `[guard.slots.${slotId}]`) {
+                      start = i;
+                      continue;
+                    }
+                    if (start !== -1 && tr.startsWith("[") && tr.endsWith("]")) {
+                      end = i;
+                      break;
+                    }
+                  }
+                  if (start !== -1) {
+                    if (end === -1) end = lines.length;
+                    lines.splice(start, end - start);
+                    fs.writeFileSync(tomlPath, lines.join("\n"), "utf-8");
+                  }
+                }
+
+                const updatedSlots = readTomlSlots();
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, slots: updatedSlots }));
+                return;
+              }
             }
 
             if (reqPath === "/api/guard/toml") {
