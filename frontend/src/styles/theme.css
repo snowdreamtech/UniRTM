@@ -645,27 +645,41 @@ html[dir="rtl"] .opt-check {
    7. Monaco Editor Context Menu (Contrast Theme & Solid Background)
    ========================================================================== */
 
-/* Universal context menu container & scrollable container base */
+/* Universal context menu container & scrollable container base (Unified with FileContextMenu) */
 .context-view.monaco-menu-container,
 .context-view .monaco-scrollable-element,
 .context-view .monaco-menu {
-  border-radius: 8px !important;
+  border-radius: 6px !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-  font-size: 12px !important;
-  overflow: hidden !important;
+  font-size: 13px !important;
+  background-color: var(--modal-bg, var(--card-bg)) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+  padding: 4px 0 !important;
+  user-select: none;
+}
+
+:root[data-theme="light"] .context-view.monaco-menu-container,
+:root[data-theme="light"] .context-view .monaco-scrollable-element,
+:root[data-theme="light"] .context-view .monaco-menu,
+[data-theme="light"] .context-view.monaco-menu-container,
+[data-theme="light"] .context-view .monaco-scrollable-element,
+[data-theme="light"] .context-view .monaco-menu {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
 }
 
 .context-view .monaco-menu .monaco-action-bar.vertical .action-menu-item {
-  height: 26px !important;
-  line-height: 26px !important;
+  height: 28px !important;
+  line-height: 28px !important;
   border-radius: 4px !important;
   margin: 1px 4px !important;
-  padding: 0 4px !important;
+  padding: 0 8px !important;
   outline: none !important;
   border: none !important;
-  transition:
-    background-color 0.12s ease,
-    color 0.12s ease !important;
+  color: var(--text-main) !important;
+  background-color: transparent !important;
+  transition: all 0.1s ease !important;
 }
 
 .context-view .monaco-menu .monaco-action-bar.vertical .action-label {
@@ -678,177 +692,44 @@ html[dir="rtl"] .opt-check {
   line-height: 26px !important;
 }
 
-/* Universal / Fallback (Dark Theme Editor -> Light Inverted Contrast Context Menu) */
-.context-view.monaco-menu-container,
-.context-view .monaco-scrollable-element,
-.context-view .monaco-menu {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border: 1px solid #cbd5e1 !important;
-  box-shadow:
-    0 10px 25px -5px rgba(0, 0, 0, 0.2),
-    0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
+/* Keybinding & Separators (Unified with FileContextMenu design system) */
+.context-view .monaco-menu .monaco-action-bar.vertical .action-label,
+.tab-context-menu .action-label,
+.tab-submenu-independent .action-label {
 }
 
-.context-view .monaco-menu .action-menu-item {
-  color: #0f172a !important;
-  background-color: transparent !important;
+.context-view .monaco-menu .monaco-action-bar.vertical .keybinding,
+.tab-context-menu .keybinding,
+.tab-submenu-independent .keybinding {
 }
 
-.context-view .monaco-menu .action-label {
-  color: inherit !important;
+.context-view .monaco-menu .action-label.separator,
+.tab-context-menu .action-separator,
+.tab-submenu-independent .action-separator {
 }
 
-.context-view .monaco-menu .keybinding {
-  color: #64748b !important;
-}
-
-.context-view .monaco-menu .action-label.separator {
-  border-bottom: 1px solid #e2e8f0 !important;
-}
-
+/* Hover & Active / Focused: 100% 严格对齐 FileContextMenu 的 --accent-cyan-glow 与 --accent-cyan */
 .context-view .monaco-menu .action-item.focused > .action-menu-item,
 .context-view .monaco-menu .action-item:hover > .action-menu-item,
-.context-view .monaco-menu .action-menu-item:hover {
-  background-color: #0060c0 !important;
-  color: #ffffff !important;
-  outline: none !important;
-  border: none !important;
+.context-view .monaco-menu .action-menu-item:hover,
+.tab-context-menu .action-item.focused > .action-menu-item,
+.tab-context-menu .action-item:hover > .action-menu-item,
+.tab-context-menu .action-menu-item:hover,
+.tab-submenu-independent .action-item:hover > .action-menu-item,
+.tab-submenu-independent .action-menu-item:hover {
 }
 
 .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
 .context-view .monaco-menu .action-item:hover > .action-menu-item .keybinding,
-.context-view .monaco-menu .action-menu-item:hover .keybinding {
-  color: #f1f5f9 !important;
+.context-view .monaco-menu .action-item:hover .keybinding,
+.tab-context-menu .action-item.focused > .action-menu-item .keybinding,
+.tab-context-menu .action-item:hover > .action-menu-item .keybinding,
+.tab-context-menu .action-item:hover .keybinding {
 }
 
-.context-view .monaco-menu .action-item.disabled .action-menu-item {
-  color: #94a3b8 !important;
-  background-color: transparent !important;
-}
-
-/* 1. Light Theme Editor & Tab Context Menu (Unified White Card Aesthetic) */
-:root[data-theme="light"] .context-view.monaco-menu-container,
-:root[data-theme="light"] .context-view .monaco-scrollable-element,
-:root[data-theme="light"] .context-view .monaco-menu,
-[data-theme="light"] .context-view.monaco-menu-container,
-[data-theme="light"] .context-view .monaco-scrollable-element,
-[data-theme="light"] .context-view .monaco-menu {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 6px !important;
-  box-shadow:
-    0 10px 25px -5px rgba(0, 0, 0, 0.12),
-    0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
-}
-
-:root[data-theme="light"] .context-view .monaco-menu .action-menu-item,
-[data-theme="light"] .context-view .monaco-menu .action-menu-item {
-  color: #0f172a !important;
-  background-color: transparent !important;
-}
-
-:root[data-theme="light"] .context-view .monaco-menu .keybinding,
-[data-theme="light"] .context-view .monaco-menu .keybinding {
-  color: #64748b !important;
-}
-
-:root[data-theme="light"] .context-view .monaco-menu .action-label.separator,
-[data-theme="light"] .context-view .monaco-menu .action-label.separator {
-  border-bottom: 1px solid #e2e8f0 !important;
-}
-
-:root[data-theme="light"] .context-view .monaco-menu .action-label,
-[data-theme="light"] .context-view .monaco-menu .action-label {
-  color: inherit !important;
-}
-
-:root[data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
-:root[data-theme="light"] .context-view .monaco-menu .action-item:hover > .action-menu-item,
-:root[data-theme="light"] .context-view .monaco-menu .action-menu-item:hover,
-[data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
-[data-theme="light"] .context-view .monaco-menu .action-item:hover > .action-menu-item,
-[data-theme="light"] .context-view .monaco-menu .action-menu-item:hover {
-  background-color: #e0f2fe !important;
-  color: #0284c7 !important;
-  outline: none !important;
-  border: none !important;
-}
-
-:root[data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
-:root[data-theme="light"] .context-view .monaco-menu .action-menu-item:hover .keybinding,
-[data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
-[data-theme="light"] .context-view .monaco-menu .action-menu-item:hover .keybinding {
-  color: #0284c7 !important;
-}
-
-:root[data-theme="light"] .context-view .monaco-menu .action-item.disabled .action-menu-item,
-[data-theme="light"] .context-view .monaco-menu .action-item.disabled .action-menu-item {
-  color: #94a3b8 !important;
-  opacity: 0.55 !important;
-}
-
-/* 2. Dark Theme Editor & Tab Context Menu (Unified Dark Glassmorphic Aesthetic) */
-:root[data-theme="dark"] .context-view.monaco-menu-container,
-:root[data-theme="dark"] .context-view .monaco-scrollable-element,
-:root[data-theme="dark"] .context-view .monaco-menu,
-[data-theme="dark"] .context-view.monaco-menu-container,
-[data-theme="dark"] .context-view .monaco-scrollable-element,
-[data-theme="dark"] .context-view .monaco-menu {
-  background-color: #0d1626 !important;
-  color: #f8fafc !important;
-  border: 1px solid rgba(0, 229, 255, 0.18) !important;
-  border-radius: 6px !important;
-  box-shadow:
-    0 10px 25px -5px rgba(0, 0, 0, 0.5),
-    0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
-}
-
-:root[data-theme="dark"] .context-view .monaco-menu .action-menu-item,
-[data-theme="dark"] .context-view .monaco-menu .action-menu-item {
-  color: #f8fafc !important;
-  background-color: transparent !important;
-}
-
-:root[data-theme="dark"] .context-view .monaco-menu .keybinding,
-[data-theme="dark"] .context-view .monaco-menu .keybinding {
-  color: #94a3b8 !important;
-}
-
-:root[data-theme="dark"] .context-view .monaco-menu .action-label.separator,
-[data-theme="dark"] .context-view .monaco-menu .action-label.separator {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
-
-:root[data-theme="dark"] .context-view .monaco-menu .action-label,
-[data-theme="dark"] .context-view .monaco-menu .action-label {
-  color: inherit !important;
-}
-
-:root[data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
-:root[data-theme="dark"] .context-view .monaco-menu .action-item:hover > .action-menu-item,
-:root[data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover,
-[data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
-[data-theme="dark"] .context-view .monaco-menu .action-item:hover > .action-menu-item,
-[data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover {
-  background-color: rgba(0, 229, 255, 0.15) !important;
-  color: #00e5ff !important;
-  outline: none !important;
-  border: none !important;
-}
-
-:root[data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
-:root[data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover .keybinding,
-[data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
-[data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover .keybinding {
-  color: #00e5ff !important;
-}
-
-:root[data-theme="dark"] .context-view .monaco-menu .action-item.disabled .action-menu-item,
-[data-theme="dark"] .context-view .monaco-menu .action-item.disabled .action-menu-item {
-  color: #64748b !important;
-  opacity: 0.55 !important;
+.context-view .monaco-menu .action-item.disabled .action-menu-item,
+.tab-context-menu .action-item.disabled .action-menu-item,
+.tab-submenu-independent .action-item.disabled .action-menu-item {
 }
 
 /* Tab Context Menu & Submenus (VS Code Native Aligned & Responsive Robust) */
