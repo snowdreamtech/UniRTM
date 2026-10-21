@@ -10,20 +10,19 @@
           class="diff-status-pill pill-commit"
           :title="`${t('scm.diff.commit_badge')}: ${commitHash}\n${commitSubject}`"
         >
-          <span class="commit-pill-hash">{{ commitHash.slice(0, 7) }}{{ parentHash ? ' vs ' + parentHash.slice(0, 7) : '' }}</span>
+          <span class="commit-pill-hash"
+            >{{ commitHash.slice(0, 7) }}{{ parentHash ? " vs " + parentHash.slice(0, 7) : "" }}</span
+          >
           <span v-if="parsedCommitSubject" class="commit-pill-type" :class="'cc-' + parsedCommitSubject.type">
-            {{ parsedCommitSubject.type }}<span v-if="parsedCommitSubject.scope">({{ parsedCommitSubject.scope }})</span>
+            {{ parsedCommitSubject.type
+            }}<span v-if="parsedCommitSubject.scope">({{ parsedCommitSubject.scope }})</span>
           </span>
           <span v-if="parsedCommitSubject?.description || commitSubject" class="commit-pill-msg">
             {{ parsedCommitSubject?.description || commitSubject }}
           </span>
         </span>
-        <span
-          v-else
-          class="diff-status-pill"
-          :class="isStaged ? 'pill-staged' : 'pill-unstaged'"
-        >
-          {{ isStaged ? t('scm.diff.staged_badge') : t('scm.diff.unstaged_badge') }}
+        <span v-else class="diff-status-pill" :class="isStaged ? 'pill-staged' : 'pill-unstaged'">
+          {{ isStaged ? t("scm.diff.staged_badge") : t("scm.diff.unstaged_badge") }}
         </span>
       </div>
 
@@ -35,7 +34,7 @@
           @click="toggleInlineDiff"
         >
           <span class="codicon" :class="isInlineDiff ? 'codicon-split-horizontal' : 'codicon-list-flat'"></span>
-          <span>{{ isInlineDiff ? t('scm.diff.side_by_side') : t('scm.diff.inline') }}</span>
+          <span>{{ isInlineDiff ? t("scm.diff.side_by_side") : t("scm.diff.inline") }}</span>
         </button>
 
         <!-- Working Tree Stage / Unstage / Discard Actions (only when not commit diff) -->
@@ -48,16 +47,11 @@
             @click="handleStageActiveFile"
           >
             <span class="codicon codicon-add"></span>
-            <span>{{ t('scm.diff.stage_file') }}</span>
+            <span>{{ t("scm.diff.stage_file") }}</span>
           </button>
-          <button
-            v-else
-            class="diff-btn"
-            :title="t('scm.diff.unstage_file')"
-            @click="handleUnstageActiveFile"
-          >
+          <button v-else class="diff-btn" :title="t('scm.diff.unstage_file')" @click="handleUnstageActiveFile">
             <span class="codicon codicon-remove"></span>
-            <span>{{ t('scm.diff.unstage_file') }}</span>
+            <span>{{ t("scm.diff.unstage_file") }}</span>
           </button>
 
           <!-- Discard Action (unstaged only) -->
@@ -68,48 +62,31 @@
             @click="handleDiscardActiveFile"
           >
             <span class="codicon codicon-discard"></span>
-            <span>{{ t('scm.diff.discard_file') }}</span>
+            <span>{{ t("scm.diff.discard_file") }}</span>
           </button>
         </template>
 
         <!-- Open File in Editor -->
-        <button
-          class="diff-btn"
-          :title="t('scm.diff.open_file')"
-          @click="handleOpenFileInEditor"
-        >
+        <button class="diff-btn" :title="t('scm.diff.open_file')" @click="handleOpenFileInEditor">
           <span class="codicon codicon-go-to-file"></span>
-          <span>{{ t('scm.diff.open_file') }}</span>
+          <span>{{ t("scm.diff.open_file") }}</span>
         </button>
 
         <!-- Reveal File in Explorer -->
-        <button
-          class="diff-btn"
-          title="在资源管理器中揭示"
-          @click="handleRevealFileInExplorer(activeDiffFile)"
-        >
+        <button class="diff-btn" title="在资源管理器中揭示" @click="handleRevealFileInExplorer(activeDiffFile)">
           <span class="codicon codicon-folder-opened"></span>
           <span>定位</span>
         </button>
 
         <!-- Close Diff / Back to Overview or Graph -->
-        <button
-          class="diff-btn close-btn"
-          :title="t('scm.diff.close')"
-          @click="closeDiffView"
-        >
-
+        <button class="diff-btn close-btn" :title="t('scm.diff.close')" @click="closeDiffView">
           <span class="codicon codicon-close"></span>
         </button>
       </div>
     </div>
 
     <!-- 1. Active Monaco Diff Editor Container -->
-    <div
-      v-show="activeDiffFile"
-      ref="diffEditorContainer"
-      class="monaco-diff-container"
-    ></div>
+    <div v-show="activeDiffFile" ref="diffEditorContainer" class="monaco-diff-container"></div>
 
     <!-- 2. SCM Overview Hub (When no diff file is selected) -->
     <div v-if="!activeDiffFile" class="scm-overview-hub">
@@ -118,37 +95,25 @@
           <div class="title-with-icon">
             <span class="codicon codicon-source-control scm-icon-large"></span>
             <div>
-              <h2 class="repo-title">{{ t('scm.title') }}</h2>
-              <p class="repo-subtitle">{{ t('scm.subtitle') }}</p>
+              <h2 class="repo-title">{{ t("scm.title") }}</h2>
+              <p class="repo-subtitle">{{ t("scm.subtitle") }}</p>
             </div>
           </div>
 
           <div class="header-right-group">
             <!-- Segmented Mode Tabs Switcher -->
             <div class="view-mode-tabs">
-              <button
-                class="mode-tab-btn"
-                :class="{ active: currentTab === 'changes' }"
-                @click="switchTab('changes')"
-              >
+              <button class="mode-tab-btn" :class="{ active: currentTab === 'changes' }" @click="switchTab('changes')">
                 <span class="codicon codicon-diff-modified"></span>
-                <span>{{ t('scm.tabs.changes') }} ({{ totalChanges }})</span>
+                <span>{{ t("scm.tabs.changes") }} ({{ totalChanges }})</span>
               </button>
-              <button
-                class="mode-tab-btn"
-                :class="{ active: currentTab === 'graph' }"
-                @click="switchTab('graph')"
-              >
+              <button class="mode-tab-btn" :class="{ active: currentTab === 'graph' }" @click="switchTab('graph')">
                 <span class="codicon codicon-git-commit"></span>
-                <span>{{ t('scm.tabs.graph') }}</span>
+                <span>{{ t("scm.tabs.graph") }}</span>
               </button>
-              <button
-                class="mode-tab-btn"
-                :class="{ active: currentTab === 'guard' }"
-                @click="switchTab('guard')"
-              >
+              <button class="mode-tab-btn" :class="{ active: currentTab === 'guard' }" @click="switchTab('guard')">
                 <span class="codicon codicon-shield"></span>
-                <span>{{ t('guard.title') || '质量守卫' }}</span>
+                <span>{{ t("guard.title") || "质量守卫" }}</span>
                 <span
                   v-if="guardIssuesCount > 0"
                   class="tab-count-pill"
@@ -178,10 +143,17 @@
               <!-- Branch Switcher Dropdown Popover -->
               <div v-if="isBranchMenuOpen" class="header-branch-dropdown" @click.stop>
                 <div class="branch-dropdown-header">
-                  <span class="dropdown-title">{{ t('scm.branch.switch') || '切换分支' }}</span>
+                  <span class="dropdown-title">{{ t("scm.branch.switch") || "切换分支" }}</span>
                   <div class="dropdown-header-actions">
-                    <button class="branch-action-icon-btn" :title="t('scm.actions.refresh') || '刷新'" @click.stop="handleRefreshBranches">
-                      <span class="codicon codicon-refresh" :class="{ 'codicon-modifier-spin': isSwitchingBranch }"></span>
+                    <button
+                      class="branch-action-icon-btn"
+                      :title="t('scm.actions.refresh') || '刷新'"
+                      @click.stop="handleRefreshBranches"
+                    >
+                      <span
+                        class="codicon codicon-refresh"
+                        :class="{ 'codicon-modifier-spin': isSwitchingBranch }"
+                      ></span>
                     </button>
                     <button class="branch-close-btn" @click.stop="isBranchMenuOpen = false">×</button>
                   </div>
@@ -208,7 +180,7 @@
                 <!-- Branches List -->
                 <div class="branch-list-scroll">
                   <div v-if="filteredBranches.length === 0" class="branch-empty-hint">
-                    <span>{{ t('scm.branch.no_match') || '无匹配分支' }}</span>
+                    <span>{{ t("scm.branch.no_match") || "无匹配分支" }}</span>
                   </div>
                   <div
                     v-for="b in filteredBranches"
@@ -217,9 +189,12 @@
                     :class="{ 'is-current': b.current }"
                     @click="handleSelectBranch(b.name)"
                   >
-                    <span class="codicon" :class="b.current ? 'codicon-check current-check' : 'codicon-git-branch'"></span>
+                    <span
+                      class="codicon"
+                      :class="b.current ? 'codicon-check current-check' : 'codicon-git-branch'"
+                    ></span>
                     <span class="branch-item-name font-mono">{{ b.name }}</span>
-                    <span v-if="b.remote" class="branch-remote-tag">{{ t('scm.branch.remote') || '远程' }}</span>
+                    <span v-if="b.remote" class="branch-remote-tag">{{ t("scm.branch.remote") || "远程" }}</span>
                   </div>
                 </div>
               </div>
@@ -238,7 +213,7 @@
             </div>
             <div class="stat-details">
               <span class="stat-value">{{ currentBranch }}</span>
-              <span class="stat-label">{{ t('scm.branch.active') }}</span>
+              <span class="stat-label">{{ t("scm.branch.active") }}</span>
             </div>
           </div>
 
@@ -248,7 +223,7 @@
             </div>
             <div class="stat-details">
               <span class="stat-value">{{ status.staged.length }}</span>
-              <span class="stat-label">{{ t('scm.changes.staged') }}</span>
+              <span class="stat-label">{{ t("scm.changes.staged") }}</span>
             </div>
           </div>
 
@@ -258,7 +233,7 @@
             </div>
             <div class="stat-details">
               <span class="stat-value">{{ status.unstaged.length }}</span>
-              <span class="stat-label">{{ t('scm.changes.unstaged') }}</span>
+              <span class="stat-label">{{ t("scm.changes.unstaged") }}</span>
             </div>
           </div>
 
@@ -268,7 +243,7 @@
             </div>
             <div class="stat-details">
               <span class="stat-value">{{ totalChanges }}</span>
-              <span class="stat-label">{{ t('scm.changes.total') }}</span>
+              <span class="stat-label">{{ t("scm.changes.total") }}</span>
             </div>
           </div>
 
@@ -278,7 +253,7 @@
             </div>
             <div class="stat-details">
               <span class="stat-value">{{ guardCardValue }}</span>
-              <span class="stat-label">{{ t('guard.title') || '质量守卫' }}</span>
+              <span class="stat-label">{{ t("guard.title") || "质量守卫" }}</span>
             </div>
           </div>
         </div>
@@ -292,39 +267,27 @@
               :disabled="isGuardFixing"
               @click="handleRunGuardFix"
             >
-              <span class="codicon" :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"></span>
-              <span>{{ t('guard.actions.auto_fix') || '一键自动修复' }} ({{ guardStatus.fixable_count }})</span>
+              <span
+                class="codicon"
+                :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"
+              ></span>
+              <span>{{ t("guard.actions.auto_fix") || "一键自动修复" }} ({{ guardStatus.fixable_count }})</span>
             </button>
-            <button
-              class="action-pill primary"
-              :disabled="status.unstaged.length === 0"
-              @click="stage([])"
-            >
+            <button class="action-pill primary" :disabled="status.unstaged.length === 0" @click="stage([])">
               <span class="codicon codicon-add"></span>
-              <span>{{ t('scm.actions.stage_all') }}</span>
+              <span>{{ t("scm.actions.stage_all") }}</span>
             </button>
-            <button
-              class="action-pill"
-              :disabled="status.staged.length === 0"
-              @click="unstage([])"
-            >
+            <button class="action-pill" :disabled="status.staged.length === 0" @click="unstage([])">
               <span class="codicon codicon-remove"></span>
-              <span>{{ t('scm.actions.unstage_all') }}</span>
+              <span>{{ t("scm.actions.unstage_all") }}</span>
             </button>
-            <button
-              class="action-pill"
-              @click="handleManualRefresh"
-            >
+            <button class="action-pill" @click="handleManualRefresh">
               <span class="codicon codicon-refresh"></span>
-              <span>{{ t('scm.actions.refresh') }}</span>
+              <span>{{ t("scm.actions.refresh") }}</span>
             </button>
-            <button
-              class="action-pill"
-              :title="t('scm.actions.more')"
-              @click.stop="toggleMoreMenu"
-            >
+            <button class="action-pill" :title="t('scm.actions.more')" @click.stop="toggleMoreMenu">
               <span class="codicon codicon-ellipsis"></span>
-              <span>{{ t('scm.actions.more') }}</span>
+              <span>{{ t("scm.actions.more") }}</span>
             </button>
           </div>
         </div>
@@ -335,17 +298,13 @@
           <div class="changes-box">
             <div class="box-header">
               <div class="box-header-left">
-                <span class="box-title">{{ t('scm.staged.title') }} ({{ status.staged.length }})</span>
-                <span v-if="status.staged.length > 0" class="box-badge green">{{ t('scm.diff.staged_badge') }}</span>
+                <span class="box-title">{{ t("scm.staged.title") }} ({{ status.staged.length }})</span>
+                <span v-if="status.staged.length > 0" class="box-badge green">{{ t("scm.diff.staged_badge") }}</span>
               </div>
               <div v-if="status.staged.length > 0" class="box-header-actions" @click.stop>
-                <button
-                  class="box-header-btn"
-                  :title="t('scm.actions.unstage_all')"
-                  @click="unstage([])"
-                >
+                <button class="box-header-btn" :title="t('scm.actions.unstage_all')" @click="unstage([])">
                   <span class="codicon codicon-remove"></span>
-                  <span>{{ t('scm.actions.unstage_all') }}</span>
+                  <span>{{ t("scm.actions.unstage_all") }}</span>
                 </button>
               </div>
             </div>
@@ -388,12 +347,11 @@
                       <span class="codicon codicon-remove"></span>
                     </button>
                   </div>
-
                 </div>
               </div>
               <div v-if="status.staged.length === 0" class="empty-state">
                 <span class="codicon codicon-inbox"></span>
-                <span>{{ t('scm.staged.empty') }}</span>
+                <span>{{ t("scm.staged.empty") }}</span>
               </div>
             </div>
           </div>
@@ -402,7 +360,7 @@
           <div class="changes-box">
             <div class="box-header">
               <div class="box-header-left">
-                <span class="box-title">{{ t('scm.unstaged.title') }} ({{ status.unstaged.length }})</span>
+                <span class="box-title">{{ t("scm.unstaged.title") }} ({{ status.unstaged.length }})</span>
               </div>
               <div v-if="status.unstaged.length > 0" class="box-header-actions" @click.stop>
                 <button
@@ -411,15 +369,11 @@
                   @click="handleDiscardAllUnstaged"
                 >
                   <span class="codicon codicon-discard"></span>
-                  <span>{{ t('scm.actions.discard_all') }}</span>
+                  <span>{{ t("scm.actions.discard_all") }}</span>
                 </button>
-                <button
-                  class="box-header-btn primary"
-                  :title="t('scm.actions.stage_all')"
-                  @click="stage([])"
-                >
+                <button class="box-header-btn primary" :title="t('scm.actions.stage_all')" @click="stage([])">
                   <span class="codicon codicon-add"></span>
-                  <span>{{ t('scm.actions.stage_all') }}</span>
+                  <span>{{ t("scm.actions.stage_all") }}</span>
                 </button>
               </div>
             </div>
@@ -469,12 +423,11 @@
                       <span class="codicon codicon-add"></span>
                     </button>
                   </div>
-
                 </div>
               </div>
               <div v-if="status.unstaged.length === 0" class="empty-state">
                 <span class="codicon codicon-pass"></span>
-                <span>{{ t('scm.unstaged.empty') }}</span>
+                <span>{{ t("scm.unstaged.empty") }}</span>
               </div>
             </div>
           </div>
@@ -485,11 +438,11 @@
           <div class="box-header">
             <div class="title-with-icon">
               <span class="codicon codicon-history"></span>
-              <span class="box-title">{{ t('scm.history.title') }}</span>
+              <span class="box-title">{{ t("scm.history.title") }}</span>
             </div>
             <button class="action-pill small" @click="fetchLog">
               <span class="codicon codicon-refresh"></span>
-              <span>{{ t('common.refresh') }}</span>
+              <span>{{ t("common.refresh") }}</span>
             </button>
           </div>
           <div class="commits-list">
@@ -499,10 +452,17 @@
                 v-if="c.gpg && c.gpg.status !== 'none'"
                 class="gpg-mini-badge"
                 :class="'gpg-' + c.gpg.status"
-                :title="c.gpg.status === 'verified' ? (t('scm.gpg.verified') + ' • ' + (c.gpg.signer || c.gpg.keyId || '')) : (t('scm.gpg.unverified') + ': ' + c.gpg.status)"
+                :title="
+                  c.gpg.status === 'verified'
+                    ? t('scm.gpg.verified') + ' • ' + (c.gpg.signer || c.gpg.keyId || '')
+                    : t('scm.gpg.unverified') + ': ' + c.gpg.status
+                "
               >
-                <span class="codicon" :class="c.gpg.status === 'verified' ? 'codicon-verified' : 'codicon-shield'"></span>
-                <span>{{ c.gpg.status === 'verified' ? t('scm.gpg.verified') : c.gpg.status }}</span>
+                <span
+                  class="codicon"
+                  :class="c.gpg.status === 'verified' ? 'codicon-verified' : 'codicon-shield'"
+                ></span>
+                <span>{{ c.gpg.status === "verified" ? t("scm.gpg.verified") : c.gpg.status }}</span>
               </span>
               <span class="commit-message">{{ c.message }}</span>
               <div class="commit-meta">
@@ -512,7 +472,7 @@
             </div>
             <div v-if="commits.length === 0" class="empty-state">
               <span class="codicon codicon-history"></span>
-              <span>{{ t('scm.history.empty') }}</span>
+              <span>{{ t("scm.history.empty") }}</span>
             </div>
           </div>
         </div>
@@ -536,9 +496,10 @@
               <span class="codicon" :class="guardCardIcon"></span>
             </div>
             <div class="guard-hub-title-text">
-              <h2 class="guard-hub-title">{{ t('guard.title') || '质量守卫与合规中心' }}</h2>
+              <h2 class="guard-hub-title">{{ t("guard.title") || "质量守卫与合规中心" }}</h2>
               <p class="guard-hub-desc">
-                Pre-commit & CI 双守卫流水线：Phase 1 Fixer 原生自愈 ➔ Phase 2 Formatter 格式化 ➔ Phase 3 Linter & Security 门禁阻断与密钥防泄漏
+                Pre-commit & CI 双守卫流水线：Phase 1 Fixer 原生自愈 ➔ Phase 2 Formatter 格式化 ➔ Phase 3 Linter &
+                Security 门禁阻断与密钥防泄漏
               </p>
             </div>
           </div>
@@ -549,14 +510,14 @@
                 :class="{ active: currentGuardScope === 'staged' }"
                 @click="handleChangeGuardScope('staged')"
               >
-                {{ t('scm.sidebar.staged') || '暂存区' }} ({{ status.staged.length }})
+                {{ t("scm.sidebar.staged") || "暂存区" }} ({{ status.staged.length }})
               </button>
               <button
                 class="scope-btn"
                 :class="{ active: currentGuardScope === 'all' }"
                 @click="handleChangeGuardScope('all')"
               >
-                {{ t('scm.changes.total') || '所有变更' }} ({{ totalChanges }})
+                {{ t("scm.changes.total") || "所有变更" }} ({{ totalChanges }})
               </button>
             </div>
             <button
@@ -565,16 +526,15 @@
               :disabled="isGuardFixing"
               @click="handleRunGuardFix"
             >
-              <span class="codicon" :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"></span>
-              <span>{{ t('guard.actions.auto_fix') || '一键自动修复' }} ({{ guardStatus.fixable_count }})</span>
+              <span
+                class="codicon"
+                :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"
+              ></span>
+              <span>{{ t("guard.actions.auto_fix") || "一键自动修复" }} ({{ guardStatus.fixable_count }})</span>
             </button>
-            <button
-              class="action-pill primary"
-              :disabled="isGuardLoading"
-              @click="handleRefreshGuard"
-            >
+            <button class="action-pill primary" :disabled="isGuardLoading" @click="handleRefreshGuard">
               <span class="codicon codicon-refresh" :class="{ 'codicon-modifier-spin': isGuardLoading }"></span>
-              <span>{{ t('guard.actions.rescan') || '质检' }}</span>
+              <span>{{ t("guard.actions.rescan") || "质检" }}</span>
             </button>
           </div>
         </div>
@@ -586,9 +546,7 @@
               <span class="step-badge">Phase 1</span>
               <span class="step-title">Fixer (自愈修复)</span>
             </div>
-            <div class="step-desc">
-              Go 原生极速自愈：末尾换行符补全、行尾多余空白清除、统一换行符、行尾空行收敛。
-            </div>
+            <div class="step-desc">Go 原生极速自愈：末尾换行符补全、行尾多余空白清除、统一换行符、行尾空行收敛。</div>
             <div class="step-status">
               <span class="codicon codicon-check text-green"></span>
               <span>内置 {{ guardBuiltinRules.length || 22 }} 项 Go 原生规则</span>
@@ -602,9 +560,7 @@
               <span class="step-badge">Phase 2</span>
               <span class="step-title">Formatter (代码格式化)</span>
             </div>
-            <div class="step-desc">
-              标杆格式化工具插槽：gofumpt (Go)、prettier (Web/TS/CSS/JSON)、shfmt (Shell)。
-            </div>
+            <div class="step-desc">标杆格式化工具插槽：gofumpt (Go)、prettier (Web/TS/CSS/JSON)、shfmt (Shell)。</div>
             <div class="step-status">
               <span class="codicon codicon-check text-green"></span>
               <span>自动识别语言格式化</span>
@@ -618,9 +574,7 @@
               <span class="step-badge">Phase 3</span>
               <span class="step-title">Linter & Security (门禁阻断)</span>
             </div>
-            <div class="step-desc">
-              静态代码门禁与安全卡点：gitleaks 密钥敏感凭证防泄漏扫描 + golangci-lint。
-            </div>
+            <div class="step-desc">静态代码门禁与安全卡点：gitleaks 密钥敏感凭证防泄漏扫描 + golangci-lint。</div>
             <div class="step-status">
               <span class="codicon codicon-shield text-blue"></span>
               <span>Pre-commit & CI 双守卫</span>
@@ -633,17 +587,24 @@
           <div class="matrix-header">
             <div class="matrix-title-group">
               <span class="codicon codicon-settings-gear"></span>
-              <span class="matrix-title">{{ t('guard.config.title') }}</span>
-              <span class="matrix-badge">{{ guardConfigFiles.filter(c => c.exists).length }}/{{ guardConfigFiles.length }} {{ t('guard.config.active') }}</span>
+              <span class="matrix-title">{{ t("guard.config.title") }}</span>
+              <span class="matrix-badge"
+                >{{ guardConfigFiles.filter((c) => c.exists).length }}/{{ guardConfigFiles.length }}
+                {{ t("guard.config.active") }}</span
+              >
             </div>
             <div class="matrix-actions">
-              <button class="matrix-btn-output" @click="emit('open-drawer', 'output')" :title="t('guard.actions.view_output')">
+              <button
+                class="matrix-btn-output"
+                @click="emit('open-drawer', 'output')"
+                :title="t('guard.actions.view_output')"
+              >
                 <span class="codicon codicon-output"></span>
-                <span>{{ t('guard.actions.view_output') }}</span>
+                <span>{{ t("guard.actions.view_output") }}</span>
               </button>
               <button class="matrix-btn-primary" @click="handleOpenConfigFile('.unirtm.toml')" title=".unirtm.toml">
                 <span class="codicon codicon-edit"></span>
-                <span>{{ t('guard.config.edit_main') || '编辑' }}</span>
+                <span>{{ t("guard.config.edit_main") || "编辑" }}</span>
               </button>
             </div>
           </div>
@@ -665,9 +626,11 @@
               <div class="chip-desc">{{ cfg.description }}</div>
               <div class="chip-bottom">
                 <span class="chip-status-text" :class="cfg.exists ? 'text-green' : 'text-muted'">
-                  {{ cfg.exists ? ('● ' + t('guard.config.detected')) : ('○ ' + t('guard.config.unconfigured')) }}
+                  {{ cfg.exists ? "● " + t("guard.config.detected") : "○ " + t("guard.config.unconfigured") }}
                 </span>
-                <span class="chip-action-btn">{{ cfg.exists ? t('guard.config.open_edit') : t('guard.config.create_template') }}</span>
+                <span class="chip-action-btn">{{
+                  cfg.exists ? t("guard.config.open_edit") : t("guard.config.create_template")
+                }}</span>
               </div>
             </div>
           </div>
@@ -675,11 +638,13 @@
 
         <!-- Built-in Native Rules Explorer Card -->
         <div class="guard-rules-matrix-card">
-          <div class="matrix-header" @click="isRulesExpanded = !isRulesExpanded" style="cursor: pointer;">
+          <div class="matrix-header" @click="isRulesExpanded = !isRulesExpanded" style="cursor: pointer">
             <div class="matrix-title-group">
               <span class="codicon" :class="isRulesExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
               <span class="matrix-title">纯 Go 原生内置智能规则库</span>
-              <span class="matrix-badge">{{ filteredBuiltinRules.length }}/{{ guardBuiltinRules.length }} 规则已就绪</span>
+              <span class="matrix-badge"
+                >{{ filteredBuiltinRules.length }}/{{ guardBuiltinRules.length }} 规则已就绪</span
+              >
             </div>
             <div class="matrix-actions" @click.stop>
               <div class="rules-filter-capsules">
@@ -714,21 +679,13 @@
               </div>
               <div class="rules-search-wrapper">
                 <span class="codicon codicon-search"></span>
-                <input
-                  v-model="guardRuleSearchQuery"
-                  class="rules-search-input"
-                  placeholder="搜索规则 ID 或后缀..."
-                />
+                <input v-model="guardRuleSearchQuery" class="rules-search-input" placeholder="搜索规则 ID 或后缀..." />
               </div>
             </div>
           </div>
 
           <div v-show="isRulesExpanded" class="builtin-rules-grid">
-            <div
-              v-for="rule in filteredBuiltinRules"
-              :key="rule.id"
-              class="builtin-rule-item"
-            >
+            <div v-for="rule in filteredBuiltinRules" :key="rule.id" class="builtin-rule-item">
               <div class="rule-item-top">
                 <span class="rule-id font-mono">{{ rule.id }}</span>
                 <span class="rule-phase-tag" :class="'phase-' + rule.phase">{{ rule.phase }}</span>
@@ -736,11 +693,7 @@
               <div class="rule-item-meta">
                 <span class="rule-category-pill">{{ rule.category }}</span>
                 <div class="rule-exts" v-if="rule.extensions && rule.extensions.length > 0">
-                  <span
-                    v-for="ext in rule.extensions.slice(0, 5)"
-                    :key="ext"
-                    class="ext-pill"
-                  >
+                  <span v-for="ext in rule.extensions.slice(0, 5)" :key="ext" class="ext-pill">
                     {{ ext }}
                   </span>
                   <span v-if="rule.extensions.length > 5" class="ext-pill-more">
@@ -754,7 +707,7 @@
 
         <!-- Extension to ToolSlot Dispatcher Matrix Card -->
         <div class="guard-slots-matrix-card">
-          <div class="matrix-header" @click="isSlotsExpanded = !isSlotsExpanded" style="cursor: pointer;">
+          <div class="matrix-header" @click="isSlotsExpanded = !isSlotsExpanded" style="cursor: pointer">
             <div class="matrix-title-group">
               <span class="codicon" :class="isSlotsExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
               <span class="codicon codicon-symbol-class text-primary"></span>
@@ -804,11 +757,7 @@
           </div>
 
           <div v-show="isSlotsExpanded" class="slots-grid">
-            <div
-              v-for="slot in filteredSlots"
-              :key="slot.id"
-              class="slot-card"
-            >
+            <div v-for="slot in filteredSlots" :key="slot.id" class="slot-card">
               <div class="slot-card-top">
                 <div class="slot-tool-group">
                   <span class="slot-tool-name">{{ slot.default_tool_name }}</span>
@@ -819,11 +768,7 @@
               <div class="slot-desc">{{ slot.description }}</div>
               <div class="slot-card-meta">
                 <div class="slot-exts" v-if="slot.default_extensions && slot.default_extensions.length > 0">
-                  <span
-                    v-for="ext in slot.default_extensions"
-                    :key="ext"
-                    class="ext-pill font-mono"
-                  >
+                  <span v-for="ext in slot.default_extensions" :key="ext" class="ext-pill font-mono">
                     {{ ext }}
                   </span>
                 </div>
@@ -849,10 +794,41 @@
         <div class="guard-diagnostics-section">
           <div class="diagnostics-bar">
             <div class="diagnostics-summary">
-              <span class="diag-title">{{ t('guard.diagnostics.title') }}</span>
+              <span class="diag-title">{{ t("guard.diagnostics.title") || "质检诊断与清单" }}</span>
+              <div class="diag-tabs">
+                <button
+                  class="diag-tab-btn"
+                  :class="{ active: guardDiagView === 'issues' }"
+                  @click="guardDiagView = 'issues'"
+                >
+                  <span class="codicon codicon-issues"></span>
+                  <span>{{ t("guard.diagnostics.issues") || "违规与问题" }}</span>
+                  <span
+                    v-if="guardStatus.issues.length > 0"
+                    class="diag-tab-badge"
+                    :class="guardStatus.errors_count > 0 ? 'badge-error' : 'badge-warning'"
+                  >
+                    {{ guardStatus.issues.length }}
+                  </span>
+                </button>
+                <button
+                  class="diag-tab-btn"
+                  :class="{ active: guardDiagView === 'rules' }"
+                  @click="guardDiagView = 'rules'"
+                >
+                  <span class="codicon codicon-checklist"></span>
+                  <span>{{ t("guard.diagnostics.checklist") || "透明执行清单" }}</span>
+                  <span
+                    v-if="guardStatus.rule_reports && guardStatus.rule_reports.length > 0"
+                    class="diag-tab-badge badge-neutral"
+                  >
+                    {{ guardStatus.rule_reports.length }}
+                  </span>
+                </button>
+              </div>
               <span class="diag-badge-clean" v-if="guardStatus.clean">
                 <span class="codicon codicon-pass text-green"></span>
-                <span>{{ t('guard.status.passed') }}</span>
+                <span>{{ t("guard.status.passed") }}</span>
               </span>
               <span class="diag-badge-errors" v-if="guardStatus.errors_count > 0">
                 <span class="codicon codicon-error text-red"></span>
@@ -864,53 +840,120 @@
               </span>
             </div>
             <div class="diag-bar-right">
-              <button class="diag-output-btn" @click="emit('open-drawer', 'output')" :title="t('guard.actions.view_output')">
+              <button
+                class="diag-output-btn"
+                @click="emit('open-drawer', 'output')"
+                :title="t('guard.actions.view_output')"
+              >
                 <span class="codicon codicon-output"></span>
-                <span>{{ t('guard.actions.output') }}</span>
+                <span>{{ t("guard.actions.output") }}</span>
               </button>
               <span class="diag-files-count">已扫描 {{ guardStatus.scanned }} 个文件</span>
             </div>
           </div>
 
-          <!-- Issues Table / List -->
-          <div v-if="guardStatus.issues.length > 0" class="guard-issues-table">
-            <div
-              v-for="(issue, idx) in guardStatus.issues"
-              :key="idx"
-              class="issue-row"
-              :class="'severity-' + issue.severity"
-              @click="handleOpenIssueFile(issue.file_path, issue.line)"
-            >
-              <div class="issue-left">
-                <span class="codicon" :class="issue.severity === 'error' ? 'codicon-error' : 'codicon-warning'"></span>
-                <span class="issue-file font-mono">{{ issue.file_path }}<span v-if="issue.line" class="issue-line">:{{ issue.line }}</span></span>
-                <span class="issue-rule font-mono">{{ issue.rule_id }}</span>
-              </div>
-              <div class="issue-msg">{{ issue.message }}</div>
-              <div class="issue-right">
-                <button
-                  v-if="issue.fixable"
-                  class="issue-fixable-action-btn"
-                  :title="t('guard.actions.auto_fix') || '自动修复此文件'"
-                  @click.stop="runGuardFix(currentGuardScope, [issue.file_path])"
-                >
-                  ⚡ {{ t('guard.fixable') }}
-                </button>
-                <span class="issue-phase-tag font-mono">{{ issue.phase }}</span>
+          <!-- View 1: Issues View -->
+          <template v-if="guardDiagView === 'issues'">
+            <!-- Issues Table / List -->
+            <div v-if="guardStatus.issues.length > 0" class="guard-issues-table">
+              <div
+                v-for="(issue, idx) in guardStatus.issues"
+                :key="idx"
+                class="issue-row"
+                :class="'severity-' + issue.severity"
+                @click="handleOpenIssueFile(issue.file_path, issue.line)"
+              >
+                <div class="issue-left">
+                  <span
+                    class="codicon"
+                    :class="issue.severity === 'error' ? 'codicon-error' : 'codicon-warning'"
+                  ></span>
+                  <span class="issue-file font-mono"
+                    >{{ issue.file_path }}<span v-if="issue.line" class="issue-line">:{{ issue.line }}</span></span
+                  >
+                  <span class="issue-rule font-mono">{{ issue.rule_id }}</span>
+                </div>
+                <div class="issue-msg">{{ issue.message }}</div>
+                <div class="issue-right">
+                  <button
+                    v-if="issue.fixable"
+                    class="issue-fixable-action-btn"
+                    :title="t('guard.actions.auto_fix') || '自动修复此文件'"
+                    @click.stop="runGuardFix(currentGuardScope, [issue.file_path])"
+                  >
+                    ⚡ {{ t("guard.fixable") }}
+                  </button>
+                  <span class="issue-phase-tag font-mono">{{ issue.phase }}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Clean State Illustration -->
-          <div v-else class="guard-clean-state">
-            <span class="codicon codicon-verified clean-icon"></span>
-            <div class="clean-text-group">
-              <h3 class="clean-title">{{ t('guard.status.passed') }}</h3>
-              <p class="clean-subtitle">
-                当前扫描范围内未发现任何格式违规、代码坏味道或泄密风险，符合提交规范。
-              </p>
+            <!-- Clean State Illustration -->
+            <div v-else class="guard-clean-state">
+              <span class="codicon codicon-verified clean-icon"></span>
+              <div class="clean-text-group">
+                <h3 class="clean-title">{{ t("guard.status.passed") }}</h3>
+                <p class="clean-subtitle">
+                  当前扫描范围内未发现任何格式违规、代码坏味道或泄密风险，已执行全部
+                  {{ guardStatus.rule_reports?.length || 0 }} 项守卫规则并通过验证。
+                </p>
+              </div>
+              <button
+                v-if="guardStatus.rule_reports && guardStatus.rule_reports.length > 0"
+                class="clean-view-rules-btn"
+                @click="guardDiagView = 'rules'"
+              >
+                <span class="codicon codicon-checklist"></span>
+                <span>查看透明执行清单</span>
+              </button>
             </div>
-          </div>
+          </template>
+
+          <!-- View 2: Transparent Rules Checklist View -->
+          <template v-else>
+            <div class="guard-rules-table" v-if="guardStatus.rule_reports && guardStatus.rule_reports.length > 0">
+              <div
+                v-for="rep in guardStatus.rule_reports"
+                :key="rep.rule_id"
+                class="rule-report-row"
+                :class="'status-' + rep.status"
+              >
+                <div class="rule-report-left">
+                  <span
+                    class="codicon"
+                    :class="{
+                      'codicon-pass text-green': rep.status === 'passed',
+                      'codicon-warning text-amber': rep.status === 'warn',
+                      'codicon-error text-red': rep.status === 'fail',
+                      'codicon-tools text-cyan': rep.status === 'fixed',
+                    }"
+                  ></span>
+                  <span class="rule-report-id font-mono">{{ rep.rule_id }}</span>
+                  <span class="rule-report-phase-badge font-mono">{{ rep.phase }}</span>
+                  <span class="rule-report-cat-badge font-mono">{{ rep.category }}</span>
+                </div>
+                <div class="rule-report-msg">
+                  <span v-if="rep.status === 'passed'" class="report-status-badge passed">✓ 验证通过 (0 违规)</span>
+                  <span v-else-if="rep.status === 'warn'" class="report-status-badge warn"
+                    >⚠ {{ rep.warnings_count }} 项待优化</span
+                  >
+                  <span v-else-if="rep.status === 'fail'" class="report-status-badge fail"
+                    >✕ {{ rep.errors_count }} 处阻断违规</span
+                  >
+                  <span v-else-if="rep.status === 'fixed'" class="report-status-badge fixed"
+                    >⚡ 已自愈修复 {{ rep.fixed_count }} 处</span
+                  >
+                </div>
+                <div class="rule-report-right">
+                  <span class="rule-report-duration font-mono">{{ formatDuration(rep.duration) }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="guard-rules-empty">
+              <span class="codicon codicon-info"></span>
+              <span>暂无规则执行记录，请点击上方“刷新守卫”或执行扫描</span>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -955,13 +998,21 @@
                 <div class="file-desc">{{ activeEditingConfig.title }} · {{ activeEditingConfig.description }}</div>
               </div>
               <span class="config-badge" :class="activeEditingConfig.exists ? 'badge-active' : 'badge-draft'">
-                {{ activeEditingConfig.exists ? (t('guard.config.active') || '已生效') : (t('guard.config.unconfigured') || '未创建 (保存将创建)') }}
+                {{
+                  activeEditingConfig.exists
+                    ? t("guard.config.active") || "已生效"
+                    : t("guard.config.unconfigured") || "未创建 (保存将创建)"
+                }}
               </span>
             </div>
             <div class="header-actions">
-              <button class="modal-action-btn secondary" @click="handleOpenInExplorer(activeEditingConfig.name)" :title="t('guard.config.open_in_explorer_title') || '在资源管理器以完整编辑器打开'">
+              <button
+                class="modal-action-btn secondary"
+                @click="handleOpenInExplorer(activeEditingConfig.name)"
+                :title="t('guard.config.open_in_explorer_title') || '在资源管理器以完整编辑器打开'"
+              >
                 <span class="codicon codicon-screen-full"></span>
-                <span>{{ t('guard.config.open_in_explorer') || '全屏' }}</span>
+                <span>{{ t("guard.config.open_in_explorer") || "全屏" }}</span>
               </button>
               <button class="modal-action-btn close" @click="handleCloseConfigEditor" title="关闭 (Esc)">
                 <span class="codicon codicon-close"></span>
@@ -972,29 +1023,29 @@
           <div class="config-editor-body">
             <div v-if="isConfigEditorLoading" class="editor-loading">
               <span class="codicon codicon-loading codicon-modifier-spin"></span>
-              <span>{{ t('guard.config.loading') }}</span>
+              <span>{{ t("guard.config.loading") }}</span>
             </div>
             <div ref="configMonacoContainer" class="config-monaco-host" v-show="!isConfigEditorLoading"></div>
           </div>
 
           <div class="config-editor-footer">
             <div class="footer-status">
-              <span v-if="isConfigDirty" class="status-dirty">● {{ t('guard.config.unsaved_changes') }}</span>
-              <span v-else class="status-clean">✔ {{ t('guard.config.all_saved') }}</span>
+              <span v-if="isConfigDirty" class="status-dirty">● {{ t("guard.config.unsaved_changes") }}</span>
+              <span v-else class="status-clean">✔ {{ t("guard.config.all_saved") }}</span>
             </div>
             <div class="footer-actions">
               <button class="modal-btn secondary" @click="handleCloseConfigEditor">
-                {{ t('common.close') }}
+                {{ t("common.close") }}
               </button>
               <button class="modal-btn primary" :disabled="isConfigSaving" @click="handleSaveConfig(false)">
                 <span v-if="isConfigSaving" class="codicon codicon-loading codicon-modifier-spin"></span>
                 <span v-else class="codicon codicon-save"></span>
-                <span>{{ t('common.save') }}</span>
+                <span>{{ t("common.save") }}</span>
               </button>
               <button class="modal-btn success" :disabled="isConfigSaving" @click="handleSaveConfig(true)">
                 <span v-if="isConfigSaving" class="codicon codicon-loading codicon-modifier-spin"></span>
                 <span v-else class="codicon codicon-play"></span>
-                <span>{{ t('guard.config.save_and_recheck') }}</span>
+                <span>{{ t("guard.config.save_and_recheck") }}</span>
               </button>
             </div>
           </div>
@@ -1017,13 +1068,22 @@ import TechIcon from "../components/common/TechIcon.vue";
 import GitGraphView from "../components/scm/GitGraphView.vue";
 import GitMoreActionsMenu from "../components/scm/GitMoreActionsMenu.vue";
 import { useGuard } from "../composables/useGuard";
-import GitFileContextMenu, { type ContextMenuTargetFile, type FileMenuActionType } from "../components/scm/GitFileContextMenu.vue";
+import GitFileContextMenu, {
+  type ContextMenuTargetFile,
+  type FileMenuActionType,
+} from "../components/scm/GitFileContextMenu.vue";
 import GitActionModal, { type GitModalActionType } from "../components/scm/GitActionModal.vue";
 import { useToast } from "../composables/useToast";
 import { t } from "../i18n";
 
 const emit = defineEmits<{
-  (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, category?: "output" | "tasks" | "doctor"): void;
+  (
+    e: "log-event",
+    level: "INFO" | "SUCCESS" | "WARN" | "ERROR",
+    msg: string,
+    detail?: string,
+    category?: "output" | "tasks" | "doctor"
+  ): void;
   (e: "open-drawer", tab?: "terminal" | "output" | "tasks" | "doctor" | "ports"): void;
 }>();
 
@@ -1118,7 +1178,6 @@ function handleWindowClick(e: MouseEvent) {
   }
 }
 
-
 const currentTab = ref<"changes" | "graph" | "guard">(
   route.query.tab === "graph" ? "graph" : route.query.tab === "guard" ? "guard" : "changes"
 );
@@ -1182,6 +1241,16 @@ const guardIssuesCount = computed(() => {
   return (guardStatus.value.errors_count || 0) + (guardStatus.value.warnings_count || 0);
 });
 
+const guardDiagView = ref<"issues" | "rules">("issues");
+
+function formatDuration(ns?: number): string {
+  if (ns === undefined || ns === null) return "0ms";
+  const ms = ns / 1_000_000;
+  if (ms < 1) return "<1ms";
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
+}
+
 function streamGuardLogs(logs?: string[]) {
   if (!logs || logs.length === 0) return;
   for (let rawLine of logs) {
@@ -1196,7 +1265,8 @@ function streamGuardLogs(logs?: string[]) {
       lower.includes("all compliant") ||
       lower.includes("self-healing completed") ||
       lower.includes("守卫检查通过") ||
-      lower.includes("守卫自愈完成")
+      lower.includes("守卫自愈完成") ||
+      lower.includes("clean (0 issues)")
     ) {
       level = "SUCCESS";
     }
@@ -1212,9 +1282,20 @@ function streamGuardLogs(logs?: string[]) {
     // 3. Genuine warnings: only if positive non-zero issues/warnings exist
     else if (
       /\b([1-9]\d*)\s+(?:issues?|deviations?|warnings?|violations?)\b/i.test(line) ||
-      (lower.includes("warn") && !lower.includes("0 warn") && !lower.includes("0 warnings") && !lower.includes("0 warning")) ||
-      (line.includes("警告") && !line.includes("0 处") && !line.includes("0 个") && !line.includes("0处") && !line.includes("0个")) ||
-      (line.includes("问题") && !line.includes("0 处") && !line.includes("0 个") && !line.includes("0处") && !line.includes("0个"))
+      (lower.includes("warn") &&
+        !lower.includes("0 warn") &&
+        !lower.includes("0 warnings") &&
+        !lower.includes("0 warning")) ||
+      (line.includes("警告") &&
+        !line.includes("0 处") &&
+        !line.includes("0 个") &&
+        !line.includes("0处") &&
+        !line.includes("0个")) ||
+      (line.includes("问题") &&
+        !line.includes("0 处") &&
+        !line.includes("0 个") &&
+        !line.includes("0处") &&
+        !line.includes("0个"))
     ) {
       level = "WARN";
     }
@@ -1350,7 +1431,7 @@ async function handleOpenConfigFile(fileName: string) {
     const res = await fetch(`/api/fs/read?path=${encodeURIComponent(fileName)}`);
     if (res.ok) {
       const data = await res.json();
-      content = data.content !== undefined ? data.content : data.data?.content ?? "";
+      content = data.content !== undefined ? data.content : (data.data?.content ?? "");
       if (activeEditingConfig.value) activeEditingConfig.value.exists = true;
     } else {
       content = getStarterTemplateForFile(fileName);
@@ -1751,7 +1832,6 @@ function formatTime(ts: number): string {
 const { openTab } = useEditorTabs();
 const { revealInExplorer } = useWorkspaceBus();
 
-
 const diffEditorContainer = ref<HTMLElement | null>(null);
 let monacoDiffEditor: any = null;
 let originalModel: any = null;
@@ -1788,7 +1868,9 @@ const commitSubject = computed(() => {
 
 const parsedCommitSubject = computed(() => {
   if (!commitSubject.value) return null;
-  const m = commitSubject.value.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(([a-zA-Z0-9_.\-/]+)\))?(!)?: (.+)$/);
+  const m = commitSubject.value.match(
+    /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(([a-zA-Z0-9_.\-/]+)\))?(!)?: (.+)$/
+  );
   if (!m) return null;
   return {
     type: m[1],
@@ -1815,9 +1897,11 @@ async function renderDiff(filePath: string, staged: boolean) {
   let diff: any = null;
   if (isCommitDiff.value) {
     diff = await fetchCommitDiff(commitHash.value, filePath, parentHash.value || undefined);
-    fetchCommitDetail(commitHash.value).then((d) => {
-      currentCommitDetail.value = d;
-    }).catch(() => {});
+    fetchCommitDetail(commitHash.value)
+      .then((d) => {
+        currentCommitDetail.value = d;
+      })
+      .catch(() => {});
   } else {
     currentCommitDetail.value = null;
     diff = await fetchDiff(filePath, staged);
@@ -2118,7 +2202,6 @@ onBeforeUnmount(() => {
     modifiedModel = null;
   }
 });
-
 </script>
 
 <style scoped>
@@ -2130,7 +2213,9 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background-color: var(--bg-color);
   color: var(--text-main);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 /* Diff Header Bar */
@@ -2344,7 +2429,9 @@ onBeforeUnmount(() => {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.15),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
   z-index: 100;
   overflow: hidden;
   display: flex;
@@ -2398,7 +2485,9 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .branch-action-icon-btn:hover,
@@ -2500,7 +2589,6 @@ onBeforeUnmount(() => {
   border-radius: 10px;
 }
 
-
 /* Stats Grid */
 .scm-stats-grid {
   display: grid;
@@ -2517,7 +2605,9 @@ onBeforeUnmount(() => {
   border: 1px solid var(--card-border);
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .stat-card:hover {
@@ -3108,7 +3198,9 @@ onBeforeUnmount(() => {
 
 .clickable-guard-card {
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .clickable-guard-card:hover {
@@ -4172,6 +4264,271 @@ onBeforeUnmount(() => {
 
 :root[data-theme="light"] .guard-clean-state .clean-subtitle {
   color: #64748b;
+}
+
+/* Diagnostics Sub-Tabs */
+.diag-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+}
+
+:root[data-theme="light"] .diag-tabs {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.diag-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.diag-tab-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:root[data-theme="light"] .diag-tab-btn:hover {
+  background: #e2e8f0;
+}
+
+.diag-tab-btn.active {
+  background: var(--card-bg);
+  color: var(--text-main);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="light"] .diag-tab-btn.active {
+  background: #ffffff;
+}
+
+.diag-tab-badge {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.diag-tab-badge.badge-error {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+:root[data-theme="light"] .diag-tab-badge.badge-error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.diag-tab-badge.badge-warning {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+:root[data-theme="light"] .diag-tab-badge.badge-warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.diag-tab-badge.badge-neutral {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .diag-tab-badge.badge-neutral {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.clean-view-rules-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.clean-view-rules-btn:hover {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #34d399;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .clean-view-rules-btn {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+:root[data-theme="light"] .clean-view-rules-btn:hover {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+/* Guard Rules Checklist Table */
+.guard-rules-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.rule-report-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 12px;
+  line-height: 1.5;
+  transition: background 0.1s ease;
+}
+
+:root[data-theme="light"] .rule-report-row {
+  border-bottom-color: #f1f5f9;
+}
+
+.rule-report-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+:root[data-theme="light"] .rule-report-row:hover {
+  background: #f8fafc;
+}
+
+.rule-report-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 320px;
+}
+
+.rule-report-id {
+  font-weight: 500;
+  color: var(--text-main);
+  font-size: 12px;
+}
+
+.rule-report-phase-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  text-transform: uppercase;
+}
+
+:root[data-theme="light"] .rule-report-phase-badge {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.rule-report-cat-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+:root[data-theme="light"] .rule-report-cat-badge {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.rule-report-msg {
+  flex: 1;
+}
+
+.report-status-badge {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.report-status-badge.passed {
+  color: #34d399;
+}
+
+:root[data-theme="light"] .report-status-badge.passed {
+  color: #059669;
+}
+
+.report-status-badge.warn {
+  color: #fbbf24;
+}
+
+:root[data-theme="light"] .report-status-badge.warn {
+  color: #d97706;
+}
+
+.report-status-badge.fail {
+  color: #f87171;
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .report-status-badge.fail {
+  color: #dc2626;
+}
+
+.report-status-badge.fixed {
+  color: #38bdf8;
+}
+
+:root[data-theme="light"] .report-status-badge.fixed {
+  color: #0284c7;
+}
+
+.rule-report-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rule-report-duration {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+:root[data-theme="light"] .rule-report-duration {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.guard-rules-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 /* In-Place Config Editor Modal Styles */

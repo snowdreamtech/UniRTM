@@ -16,6 +16,18 @@ export interface GuardIssue {
   fixed?: boolean;
 }
 
+export interface GuardRuleReport {
+  rule_id: string;
+  category: string;
+  phase: string;
+  duration: number; // nanoseconds
+  issues_count: number;
+  errors_count: number;
+  warnings_count: number;
+  fixed_count: number;
+  status: "passed" | "warn" | "fail" | "fixed";
+}
+
 export interface GuardStatus {
   mode: string;
   scanned: number;
@@ -24,6 +36,7 @@ export interface GuardStatus {
   warnings_count: number;
   fixable_count: number;
   issues: GuardIssue[];
+  rule_reports?: GuardRuleReport[];
   logs?: string[];
 }
 

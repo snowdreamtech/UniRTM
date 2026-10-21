@@ -75,6 +75,7 @@ func handleGuardStatus(w http.ResponseWriter, r *http.Request) {
 		"warnings_count": res.Summary.WarningsCount,
 		"fixable_count":  fixableCount,
 		"issues":         res.Issues,
+		"rule_reports":   res.RuleReports,
 		"logs":           res.Logs,
 	})
 }
@@ -143,10 +144,11 @@ func handleGuardRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"summary": res.Summary,
-		"issues":  res.Issues,
-		"logs":    res.Logs,
+		"success":      true,
+		"summary":      res.Summary,
+		"issues":       res.Issues,
+		"rule_reports": res.RuleReports,
+		"logs":         res.Logs,
 	})
 }
 
