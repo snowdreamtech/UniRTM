@@ -90,7 +90,15 @@ func runShell(cmd *cobra.Command, args []string) error {
 	// Emit export statements based on shell type
 	var sb strings.Builder
 	for _, p := range pairs {
-		envKey := fmt.Sprintf("UNIRTM_%s_VERSION", strings.ToUpper(strings.ReplaceAll(p.tool, "-", "_")))
+		var b strings.Builder
+		for _, r := range strings.ToUpper(p.tool) {
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+			} else {
+				b.WriteRune('_')
+			}
+		}
+		envKey := fmt.Sprintf("UNIRTM_%s_VERSION", b.String())
 		switch shellType {
 		case "fish":
 			sb.WriteString(fmt.Sprintf("set -gx %s %q;\n", envKey, p.version))

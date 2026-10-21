@@ -72,7 +72,7 @@ func injectOrUpdateBlock(content string, hasShebang bool) string {
 	// Block doesn't exist, inject it
 	if !hasShebang {
 		if content == "" {
-			return "#!/bin/sh\n" + managedBlock
+			return "#!/bin/sh\n" + managedBlock + "\n# Execute UniRTM Quality Guard to scan staged files before commit\nexec unirtm check --staged \"$@\"\n"
 		}
 		// Prepend shebang and block if no shebang is present but content exists
 		return "#!/bin/sh\n" + managedBlock + content

@@ -319,8 +319,15 @@ func isSelfReferential(shimPath, unirtmPath, tool, executable string) bool {
 // toolVersionEnvVar returns the environment variable name for a tool's active version.
 // e.g. "node" → "UNIRTM_NODE_VERSION"
 func toolVersionEnvVar(tool string) string {
-	upper := strings.ToUpper(strings.ReplaceAll(tool, "-", "_"))
-	return fmt.Sprintf("UNIRTM_%s_VERSION", upper)
+	var b strings.Builder
+	for _, r := range strings.ToUpper(tool) {
+		if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('_')
+		}
+	}
+	return fmt.Sprintf("UNIRTM_%s_VERSION", b.String())
 }
 
 // isHashbangScript reports whether the file at path begins with '#!'.

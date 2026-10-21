@@ -144,7 +144,15 @@ func runEnv(cmd *cobra.Command, args []string) error {
 		}
 
 		// Add version variables
-		varName := "UNIRTM_" + strings.ToUpper(strings.ReplaceAll(fsToolName, "-", "_")) + "_VERSION"
+		var b strings.Builder
+		for _, r := range strings.ToUpper(fsToolName) {
+			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+			} else {
+				b.WriteRune('_')
+			}
+		}
+		varName := "UNIRTM_" + b.String() + "_VERSION"
 		vars = append(vars, envVarEntry{Name: varName, Value: version, Source: "tool:" + toolNameKey})
 
 		// Add provider env vars
