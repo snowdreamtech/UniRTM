@@ -16,5 +16,4 @@
 # Protects the GitHub Action workflows, dependency management config, and pre-commit hooks
 /.github/workflows/         @snowdreamtech
 /.github/dependabot.yml     @snowdreamtech
-/.pre-commit-config.yaml    @snowdreamtech
 /.goreleaser.yaml           @snowdreamtech

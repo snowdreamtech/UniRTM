@@ -36,7 +36,6 @@ name: "🤖 Dependabot Smart Sync"
       - "Package.swift"
       - "**/*.tf"
       - "**/devcontainer.json"
-      - ".pre-commit-config.yaml"
       - "Chart.yaml"
       - ".unirtm.toml"
       # UniRTM toolchain configuration

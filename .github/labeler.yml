@@ -17,7 +17,6 @@
       - any-glob-to-any-file:
           - ".github/workflows/**"
           - ".github/dependabot.yml"
-          - ".pre-commit-config.yaml"
           - ".goreleaser.yaml"
 
 "Documentation 📝":
