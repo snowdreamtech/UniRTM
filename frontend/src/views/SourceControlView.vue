@@ -539,6 +539,26 @@
           </div>
         </div>
 
+        <!-- First-Class Guard Center Notice Banner -->
+        <div class="guard-upgrade-banner" @click="router.push('/guard')">
+          <div class="banner-left">
+            <span class="codicon codicon-shield banner-shield-icon"></span>
+            <div class="banner-text">
+              <span class="banner-title">{{
+                t("guard.banner.title") || "Quality Guard has upgraded to a 1st-Class Hub"
+              }}</span>
+              <span class="banner-desc">{{
+                t("guard.banner.desc") ||
+                "Manage file extension pipelines, tool slots, and visual CRUD settings in the dedicated hub."
+              }}</span>
+            </div>
+          </div>
+          <button class="banner-btn">
+            <span>{{ t("guard.banner.open_hub") || "Open Quality Guard" }}</span>
+            <span class="codicon codicon-arrow-right"></span>
+          </button>
+        </div>
+
         <!-- 3-Phase Pipeline Architecture Cards -->
         <div class="guard-pipeline-grid">
           <div class="pipeline-step-card">
@@ -3816,6 +3836,73 @@ onBeforeUnmount(() => {
 .ext-pill-more {
   font-size: 9px;
   color: var(--text-muted);
+}
+
+/* First-Class Guard Upgrade Banner */
+.guard-upgrade-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, rgba(56, 139, 253, 0.12) 0%, rgba(187, 128, 255, 0.08) 100%);
+  border: 1px solid rgba(56, 139, 253, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 12px;
+}
+
+.guard-upgrade-banner:hover {
+  background: linear-gradient(90deg, rgba(56, 139, 253, 0.2) 0%, rgba(187, 128, 255, 0.14) 100%);
+  border-color: rgba(56, 139, 253, 0.5);
+  transform: translateY(-1px);
+}
+
+.banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.banner-shield-icon {
+  font-size: 20px;
+  color: #58a6ff;
+}
+
+.banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.banner-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.banner-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.banner-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(56, 139, 253, 0.2);
+  color: #58a6ff;
+  border: 1px solid rgba(56, 139, 253, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.banner-btn:hover {
+  background: rgba(56, 139, 253, 0.3);
 }
 
 /* ToolSlots Dispatcher Matrix */

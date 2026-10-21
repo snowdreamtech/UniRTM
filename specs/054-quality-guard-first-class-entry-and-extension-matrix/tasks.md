@@ -7,11 +7,11 @@
 ---
 
 ## Phase 1: 升级 ActivityBar 与路由，确立 Quality Guard 一级入口
-- [ ] Task 1.1: 在 `frontend/src/router/index.ts` 中注册 `/guard` 路由，指向 `views/GuardView.vue`
-- [ ] Task 1.2: 在 `frontend/src/components/layout/ActivityBar.vue` 中增加专属一级盾牌图标导航项与徽章
-- [ ] Task 1.3: 在 `frontend/src/components/layout/SidebarPanel.vue` 中配置 Guard 侧边栏面板容器
-- [ ] Task 1.4: 在 `frontend/src/views/SourceControlView.vue` 中加入指向一级 Guard 视图的轻量引导条
-- [ ] Task 1.5: 阶段性 Git 提交：`feat(ui): elevate quality guard to first-class navigation entry`
+- [x] Task 1.1: 在 `frontend/src/router/index.ts` 中注册 `/guard` 路由，指向 `views/GuardView.vue`
+- [x] Task 1.2: 在 `frontend/src/components/layout/ActivityBar.vue` 中增加专属一级盾牌图标导航项与徽章
+- [x] Task 1.3: 在 `frontend/src/components/layout/SidebarPanel.vue` 中配置 Guard 侧边栏面板容器
+- [x] Task 1.4: 在 `frontend/src/views/SourceControlView.vue` 中加入指向一级 Guard 视图的轻量引导条
+- [x] Task 1.5: 阶段性 Git 提交：`feat(ui): elevate quality guard to first-class navigation entry`
 
 ---
 

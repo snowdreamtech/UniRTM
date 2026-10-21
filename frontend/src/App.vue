@@ -244,6 +244,8 @@ const currentTabLabel = computed(() => {
       return t("nav.explorer") || "Explorer";
     case "scm":
       return t("nav.scm") || "Source Control";
+    case "guard":
+      return t("nav.guard") || "Quality Guard";
     case "tools":
       return t("nav.tools") || "Toolchains";
     case "tasks":

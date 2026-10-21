@@ -31,6 +31,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import("../views/SourceControlView.vue"),
   },
   {
+    path: "/guard",
+    name: "guard",
+    component: () => import("../views/GuardView.vue"),
+  },
+  {
     path: "/tools",
     name: "tools",
     component: ToolsView,

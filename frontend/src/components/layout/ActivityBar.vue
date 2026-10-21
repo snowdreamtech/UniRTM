@@ -70,9 +70,11 @@ import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useToolUpdates } from "../../composables/useToolUpdates";
 import { useGit } from "../../composables/useGit";
+import { useGuard } from "../../composables/useGuard";
 
 const { updatableCount } = useToolUpdates();
 const { totalChanges, fetchStatus } = useGit();
+const { guardStatus } = useGuard();
 
 onMounted(() => {
   fetchStatus().catch(() => {});
@@ -114,6 +116,13 @@ const primaryTabs = computed<ActivityTab[]>(() => [
     icon: "workbench:scm",
     label: t("nav.scm") || "源代码管理",
     badge: totalChanges.value > 0 ? totalChanges.value : undefined,
+  },
+  {
+    id: "guard",
+    icon: "workbench:shield",
+    label: t("nav.guard") || "Quality Guard",
+    badge:
+      !guardStatus.value.clean && guardStatus.value.issues.length > 0 ? guardStatus.value.issues.length : undefined,
   },
   {
     id: "tools",

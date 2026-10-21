@@ -49,6 +49,11 @@
         <SourceControlSidebar />
       </template>
 
+      <!-- GUARD Navigation Items -->
+      <template v-if="currentTab === 'guard'">
+        <GuardSidebar />
+      </template>
+
       <!-- TOOLS Navigation Items -->
       <template v-if="currentTab === 'tools'">
         <div class="nav-group-title">
@@ -338,6 +343,7 @@ import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import ExplorerSidebar from "../explorer/ExplorerSidebar.vue";
 import SourceControlSidebar from "../scm/SourceControlSidebar.vue";
+import GuardSidebar from "../guard/GuardSidebar.vue";
 import { useFileTree } from "../../composables/useFileTree";
 import { useToolUpdates } from "../../composables/useToolUpdates";
 import { useToolScope } from "../../composables/useToolScope";
@@ -453,6 +459,8 @@ const headerTitle = computed(() => {
       return t("nav.explorer") || "EXPLORER";
     case "scm":
       return t("nav.scm") || "SOURCE CONTROL";
+    case "guard":
+      return t("nav.guard") || "QUALITY GUARD";
     case "tools":
       return t("nav.tools") || "TOOLCHAINS";
     case "tasks":
