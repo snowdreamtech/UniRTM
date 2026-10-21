@@ -74,18 +74,18 @@
           }}</span>
         </button>
 
-        <!-- Run Check All -->
+        <!-- Run Check All (Check Project) -->
         <button
           class="btn-action secondary"
           :disabled="isChecking"
           @click="handleCheck('all')"
-          title="Run full repository scan"
+          title="Run project quality scan"
         >
           <span
             class="codicon"
             :class="isChecking && checkingMode === 'all' ? 'codicon-loading spin' : 'codicon-run-all'"
           ></span>
-          <span>{{ t("guard.actions.check_all") || "Check Entire Repo" }}</span>
+          <span>{{ t("guard.actions.check_all") || "Check Project" }}</span>
         </button>
 
         <!-- One-click Auto Fix -->
@@ -1529,7 +1529,7 @@ function getModeLabel(mode: "changed" | "staged" | "all"): string {
     case "staged":
       return t("guard.modes.staged") || "Staged Changes";
     case "all":
-      return t("guard.modes.all") || "Entire Repository";
+      return t("guard.modes.all") || "Project";
   }
 }
 

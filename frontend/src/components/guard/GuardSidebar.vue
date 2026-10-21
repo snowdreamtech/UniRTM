@@ -69,7 +69,7 @@
             class="codicon"
             :class="isChecking && checkingMode === 'all' ? 'codicon-loading spin' : 'codicon-run-all'"
           ></span>
-          <span>{{ t("guard.actions.check_all") || "Check Entire Repo" }}</span>
+          <span>{{ t("guard.actions.check_all") || "Check Project" }}</span>
         </button>
         <button class="sidebar-action-btn secondary" :disabled="isFixing" @click="handleRunFix">
           <span class="codicon" :class="isFixing ? 'codicon-loading spin' : 'codicon-wand'"></span>
