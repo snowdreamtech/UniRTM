@@ -224,9 +224,12 @@ func handleGuardRules(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	cfg, _ := guard.LoadGuardConfig(pwd)
+	resolvedSlots := guard.GetResolvedToolSlots(cfg)
+
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"builtin_rules": meta,
-		"slots":         guard.DefaultToolSlots,
+		"slots":         resolvedSlots,
 		"config_files":  configMetas,
 	})
 }

@@ -53,62 +53,10 @@ type Pipeline struct {
 
 // NewPipeline creates a Pipeline populated with all builtin rules and configured slots
 func NewPipeline(workspaceDir string, cfg GuardConfig) *Pipeline {
-	// Build map of slots starting from standard defaults
-	slotsMap := make(map[string]ToolSlot)
-	var slotOrder []string
-	for _, slot := range DefaultToolSlots {
-		slotsMap[slot.ID] = slot
-		slotOrder = append(slotOrder, slot.ID)
-	}
-
-	// Apply user overrides and custom slots from config
-	for id, sCfg := range cfg.Slots {
-		slotID := id
-		if sCfg.ID != "" {
-			slotID = sCfg.ID
-		}
-		existing, found := slotsMap[slotID]
-		if !found {
-			existing = ToolSlot{
-				ID:       slotID,
-				Category: sCfg.Category,
-				Phase:    sCfg.Phase,
-			}
-			if existing.Category == "" {
-				existing.Category = CategoryLint
-			}
-			if existing.Phase == "" {
-				existing.Phase = PhaseLinter
-			}
-			slotOrder = append(slotOrder, slotID)
-		}
-		if sCfg.Tool != "" {
-			existing.DefaultToolName = sCfg.Tool
-		}
-		if sCfg.Command != "" {
-			existing.DefaultCommand = sCfg.Command
-		}
-		if sCfg.FixCommand != "" {
-			existing.FixCommand = sCfg.FixCommand
-		}
-		if len(sCfg.Extensions) > 0 {
-			existing.DefaultExtensions = sCfg.Extensions
-		}
-		if sCfg.Category != "" {
-			existing.Category = sCfg.Category
-		}
-		if sCfg.Phase != "" {
-			existing.Phase = sCfg.Phase
-		}
-		slotsMap[slotID] = existing
-	}
-
+	resolvedSlots := GetResolvedToolSlots(cfg)
 	rules := GetAllBuiltinRules()
-	for _, id := range slotOrder {
-		if sCfg, ok := cfg.Slots[id]; ok && sCfg.Enabled != nil && !*sCfg.Enabled {
-			continue
-		}
-		rules = append(rules, NewSlotRule(slotsMap[id]))
+	for _, slot := range resolvedSlots {
+		rules = append(rules, NewSlotRule(slot))
 	}
 
 	return &Pipeline{

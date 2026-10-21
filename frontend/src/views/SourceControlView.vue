@@ -752,6 +752,99 @@
           </div>
         </div>
 
+        <!-- Extension to ToolSlot Dispatcher Matrix Card -->
+        <div class="guard-slots-matrix-card">
+          <div class="matrix-header" @click="isSlotsExpanded = !isSlotsExpanded" style="cursor: pointer;">
+            <div class="matrix-title-group">
+              <span class="codicon" :class="isSlotsExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+              <span class="codicon codicon-symbol-class text-primary"></span>
+              <span class="matrix-title">文件后缀与外部专业工具槽位映射 (ToolSlots)</span>
+              <span class="matrix-badge">{{ filteredSlots.length }}/{{ guardSlots.length }} 插槽已就绪</span>
+            </div>
+            <div class="matrix-actions" @click.stop>
+              <div class="rules-filter-capsules">
+                <button
+                  class="rules-filter-capsule"
+                  :class="{ active: selectedSlotCategory === 'all' }"
+                  @click="selectedSlotCategory = 'all'"
+                >
+                  全部
+                </button>
+                <button
+                  class="rules-filter-capsule"
+                  :class="{ active: selectedSlotCategory === 'format' }"
+                  @click="selectedSlotCategory = 'format'"
+                >
+                  格式化
+                </button>
+                <button
+                  class="rules-filter-capsule"
+                  :class="{ active: selectedSlotCategory === 'lint' }"
+                  @click="selectedSlotCategory = 'lint'"
+                >
+                  静态检查
+                </button>
+                <button
+                  class="rules-filter-capsule"
+                  :class="{ active: selectedSlotCategory === 'secret' }"
+                  @click="selectedSlotCategory = 'secret'"
+                >
+                  密钥防护
+                </button>
+              </div>
+              <div class="rules-search-wrapper">
+                <span class="codicon codicon-search"></span>
+                <input
+                  v-model="slotSearchQuery"
+                  class="rules-search-input"
+                  placeholder="搜索扩展名 (.go, .ts) 或工具名..."
+                />
+              </div>
+            </div>
+          </div>
+
+          <div v-show="isSlotsExpanded" class="slots-grid">
+            <div
+              v-for="slot in filteredSlots"
+              :key="slot.id"
+              class="slot-card"
+            >
+              <div class="slot-card-top">
+                <div class="slot-tool-group">
+                  <span class="slot-tool-name">{{ slot.default_tool_name }}</span>
+                  <span class="slot-id font-mono">{{ slot.id }}</span>
+                </div>
+                <span class="slot-phase-tag" :class="'phase-' + slot.phase">{{ slot.phase }}</span>
+              </div>
+              <div class="slot-desc">{{ slot.description }}</div>
+              <div class="slot-card-meta">
+                <div class="slot-exts" v-if="slot.default_extensions && slot.default_extensions.length > 0">
+                  <span
+                    v-for="ext in slot.default_extensions"
+                    :key="ext"
+                    class="ext-pill font-mono"
+                  >
+                    {{ ext }}
+                  </span>
+                </div>
+                <div class="slot-exts" v-else>
+                  <span class="ext-pill font-mono">全局扫描 (Git)</span>
+                </div>
+              </div>
+              <div class="slot-card-commands">
+                <div class="command-row" v-if="slot.default_command">
+                  <span class="command-label">校验:</span>
+                  <code class="command-code">{{ slot.default_command }}</code>
+                </div>
+                <div class="command-row" v-if="slot.fix_command">
+                  <span class="command-label">自愈:</span>
+                  <code class="command-code text-green">{{ slot.fix_command }}</code>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Diagnostics Panel (VS Code Problems Explorer) -->
         <div class="guard-diagnostics-section">
           <div class="diagnostics-bar">
@@ -1033,6 +1126,7 @@ const currentTab = ref<"changes" | "graph" | "guard">(
 const {
   status: guardStatus,
   builtinRules: guardBuiltinRules,
+  slots: guardSlots,
   isLoading: isGuardLoading,
   isFixing: isGuardFixing,
   fetchStatus: fetchGuardStatus,
@@ -1045,6 +1139,28 @@ const currentGuardScope = ref<"staged" | "all">("staged");
 const guardRuleSearchQuery = ref("");
 const selectedGuardCategory = ref<string>("all");
 const isRulesExpanded = ref(true);
+
+const selectedSlotCategory = ref<string>("all");
+const slotSearchQuery = ref("");
+const isSlotsExpanded = ref(true);
+
+const filteredSlots = computed(() => {
+  let list = guardSlots.value || [];
+  if (selectedSlotCategory.value !== "all") {
+    list = list.filter((s) => s.category === selectedSlotCategory.value);
+  }
+  if (slotSearchQuery.value.trim()) {
+    const q = slotSearchQuery.value.trim().toLowerCase();
+    list = list.filter(
+      (s) =>
+        s.id.toLowerCase().includes(q) ||
+        s.default_tool_name.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q) ||
+        (s.default_extensions && s.default_extensions.some((ext: string) => ext.toLowerCase().includes(q)))
+    );
+  }
+  return list;
+});
 
 const filteredBuiltinRules = computed(() => {
   let list = guardBuiltinRules.value || [];
@@ -3608,6 +3724,146 @@ onBeforeUnmount(() => {
 .ext-pill-more {
   font-size: 9px;
   color: var(--text-muted);
+}
+
+/* ToolSlots Dispatcher Matrix */
+.guard-slots-matrix-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+:root[data-theme="light"] .guard-slots-matrix-card {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.slot-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.slot-card:hover {
+  border-color: var(--accent-cyan, #0ea5e9);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.slot-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.slot-tool-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slot-tool-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.slot-id {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.slot-phase-tag {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.slot-phase-tag.phase-formatter {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+}
+
+.slot-phase-tag.phase-linter {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.slot-phase-tag.phase-fixer {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.slot-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.slot-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.slot-exts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.slot-card-commands {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--card-border);
+}
+
+.command-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+}
+
+.command-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.command-code {
+  font-family: var(--font-family-mono, monospace);
+  font-size: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
 }
 
 .diag-bar-right {

@@ -153,3 +153,64 @@ func DetectStandardConfig(workspaceDir string, candidates []string) string {
 	}
 	return ""
 }
+
+// GetResolvedToolSlots returns the active tool slot catalog after applying user configuration
+func GetResolvedToolSlots(cfg GuardConfig) []ToolSlot {
+	slotsMap := make(map[string]ToolSlot)
+	var slotOrder []string
+	for _, slot := range DefaultToolSlots {
+		slotsMap[slot.ID] = slot
+		slotOrder = append(slotOrder, slot.ID)
+	}
+
+	for id, sCfg := range cfg.Slots {
+		slotID := id
+		if sCfg.ID != "" {
+			slotID = sCfg.ID
+		}
+		existing, found := slotsMap[slotID]
+		if !found {
+			existing = ToolSlot{
+				ID:       slotID,
+				Category: sCfg.Category,
+				Phase:    sCfg.Phase,
+			}
+			if existing.Category == "" {
+				existing.Category = CategoryLint
+			}
+			if existing.Phase == "" {
+				existing.Phase = PhaseLinter
+			}
+			slotOrder = append(slotOrder, slotID)
+		}
+		if sCfg.Tool != "" {
+			existing.DefaultToolName = sCfg.Tool
+		}
+		if sCfg.Command != "" {
+			existing.DefaultCommand = sCfg.Command
+		}
+		if sCfg.FixCommand != "" {
+			existing.FixCommand = sCfg.FixCommand
+		}
+		if len(sCfg.Extensions) > 0 {
+			existing.DefaultExtensions = sCfg.Extensions
+		}
+		if sCfg.Category != "" {
+			existing.Category = sCfg.Category
+		}
+		if sCfg.Phase != "" {
+			existing.Phase = sCfg.Phase
+		}
+		slotsMap[slotID] = existing
+	}
+
+	var resolved []ToolSlot
+	for _, id := range slotOrder {
+		if sCfg, ok := cfg.Slots[id]; ok && sCfg.Enabled != nil && !*sCfg.Enabled {
+			continue
+		}
+		resolved = append(resolved, slotsMap[id])
+	}
+	return resolved
+}
+
