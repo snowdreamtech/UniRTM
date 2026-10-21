@@ -1536,12 +1536,12 @@ onUnmounted(() => {
 /* Tab 右键上下文菜单 (VS Code style) */
 .tab-context-menu {
   position: fixed;
-  z-index: 100000;
+  z-index: var(--z-context-menu-popover, 1001);
   background: var(--card-bg, #111827);
   border: 1px solid var(--card-border, #1f2937);
   box-shadow:
-    0 10px 25px -5px rgba(0, 0, 0, 0.6),
-    0 8px 10px -6px rgba(0, 0, 0, 0.4);
+    0 10px 25px -5px rgba(0, 0, 0, 0.45),
+    0 8px 10px -6px rgba(0, 0, 0, 0.3);
   border-radius: 6px;
   padding: 4px;
   min-width: 155px;
@@ -1549,6 +1549,12 @@ onUnmounted(() => {
   color: var(--text-main, #f3f4f6);
   user-select: none;
   animation: tab-context-menu-fade 0.12s ease-out;
+}
+
+:root[data-theme="light"] .tab-context-menu {
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.12),
+    0 8px 10px -6px rgba(0, 0, 0, 0.08);
 }
 
 @keyframes tab-context-menu-fade {
@@ -1571,6 +1577,10 @@ onUnmounted(() => {
   color: var(--text-muted, #9ca3af);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   margin-bottom: 3px;
+}
+
+:root[data-theme="light"] .context-menu-header {
+  border-bottom-color: #e2e8f0;
 }
 
 .context-menu-divider {
@@ -1608,6 +1618,11 @@ onUnmounted(() => {
 .tab-context-menu-item:hover:not(.disabled) {
   background: rgba(0, 229, 255, 0.12);
   color: var(--accent-cyan, #00e5ff);
+}
+
+:root[data-theme="light"] .tab-context-menu-item:hover:not(.disabled) {
+  background: #e0f2fe;
+  color: #0284c7;
 }
 
 .tab-context-menu-item.disabled {
