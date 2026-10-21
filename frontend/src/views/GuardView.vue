@@ -1250,13 +1250,12 @@ function parseLogLine(raw: string): FormattedLogItem {
   } else if (
     clean.startsWith("✓ ✨") ||
     clean.includes("Quality Guard passed") ||
-    clean.includes("All 38 guard rules") ||
     clean.includes("No matching files found")
   ) {
     type = "pass";
     tag = "PASS";
     icon = "codicon-check-all text-green";
-    displayText = clean.replace(/^✓\s*/, "");
+    displayText = clean.replace(/^✓\s*✨?\s*/, "");
   } else if (clean.startsWith("✓ ") || clean.startsWith("✓")) {
     type = "rule";
     tag = "RULE";
@@ -1545,8 +1544,10 @@ async function handleCheck(mode: "changed" | "staged" | "all") {
 
   currentScanningTarget.value = `Initiating quality guard inspection (${modeLabel})...`;
   scanProgressPct.value = 5;
+  const cliCmd =
+    mode === "all" ? "$ unirtm check --all" : mode === "staged" ? "$ unirtm check --staged" : "$ unirtm check";
   localLogs.value = [
-    parseLogLine(`$ unirtm check --mode=${mode}`),
+    parseLogLine(cliCmd),
     parseLogLine(`ℹ Inspecting workspace files with UniRTM Quality Guard (mode: ${mode})...`),
   ];
   scrollToBottom();
@@ -1652,8 +1653,10 @@ async function handleFix() {
 
   currentScanningTarget.value = `Initiating auto-repair & formatting pipeline (${modeLabel})...`;
   scanProgressPct.value = 5;
+  const fixFlag = checkingMode.value === "all" ? "--all" : checkingMode.value === "staged" ? "--staged" : "";
+  const cliCmd = fixFlag ? `$ unirtm check ${fixFlag} --fix` : "$ unirtm check --fix";
   localLogs.value = [
-    parseLogLine(`$ unirtm check --mode=${checkingMode.value} --fix`),
+    parseLogLine(cliCmd),
     parseLogLine(`ℹ Running automated fixers and style convergence (${modeLabel})...`),
   ];
   scrollToBottom();
