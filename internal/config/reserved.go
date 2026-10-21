@@ -16,6 +16,7 @@ var ReservedCoreTables = map[string]bool{
 	"tasks":        true,
 	"format":       true,
 	"lint":         true,
+	"guard":        true,
 	"hooks":        true,
 	"env":          true,
 	"settings":     true,

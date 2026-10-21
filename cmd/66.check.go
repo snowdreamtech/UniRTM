@@ -96,10 +96,11 @@ func runGuard(ctx context.Context, explicitFiles []string, autoFix bool) error {
 		return nil
 	}
 
-	cfg := guard.GuardConfig{
-		Enabled: true,
-		Mode:    mode,
+	cfg, err := guard.LoadGuardConfig(pwd)
+	if err != nil {
+		cfg = guard.GuardConfig{Enabled: true}
 	}
+	cfg.Mode = mode
 
 	pipeline := guard.NewPipeline(pwd, cfg)
 	res, err := pipeline.Run(ctx, files, guard.ExecuteOptions{

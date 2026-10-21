@@ -247,3 +247,10 @@ cache_dir = ""
 cache_ttl = 86400
 jobs = 0
 data_dir = ""
+
+[guard]
+enabled = true
+
+[guard.slots."go.linter"]
+tool = "go"
+command = "go vet ./..."

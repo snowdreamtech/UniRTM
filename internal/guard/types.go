@@ -89,6 +89,18 @@ type ProfileConfig struct {
 	Tools     []string `toml:"tools" json:"tools"`
 }
 
+// SlotConfig allows user customization or overriding of tool slots from .unirtm.toml
+type SlotConfig struct {
+	ID         string   `toml:"id" json:"id"`
+	Tool       string   `toml:"tool" json:"tool"`
+	Command    string   `toml:"command" json:"command"`
+	FixCommand string   `toml:"fix_command" json:"fix_command"`
+	Extensions []string `toml:"extensions" json:"extensions"`
+	Category   Category `toml:"category" json:"category"`
+	Phase      Phase    `toml:"phase" json:"phase"`
+	Enabled    *bool    `toml:"enabled" json:"enabled"`
+}
+
 // GuardConfig represents the top-level [guard] section in .unirtm.toml
 type GuardConfig struct {
 	Enabled      bool                     `toml:"enabled" json:"enabled"`
@@ -97,7 +109,7 @@ type GuardConfig struct {
 	IncludeDirs  []string                 `toml:"include_dirs" json:"include_dirs"`
 	ExcludeDirs  []string                 `toml:"exclude_dirs" json:"exclude_dirs"`
 	ExcludeFiles []string                 `toml:"exclude_files" json:"exclude_files"`
-	Slots        map[string]string        `toml:"slots" json:"slots"`
+	Slots        map[string]SlotConfig    `toml:"slots" json:"slots"`
 	Rules        map[string]RuleConfig    `toml:"rules" json:"rules"`
 	Profiles     map[string]ProfileConfig `toml:"profiles" json:"profiles"`
 }

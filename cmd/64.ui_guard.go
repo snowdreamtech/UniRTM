@@ -44,10 +44,11 @@ func handleGuardStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg := guard.GuardConfig{
-		Enabled: true,
-		Mode:    mode,
+	cfg, err := guard.LoadGuardConfig(pwd)
+	if err != nil {
+		cfg = guard.GuardConfig{Enabled: true}
 	}
+	cfg.Mode = mode
 
 	pipeline := guard.NewPipeline(pwd, cfg)
 	res, err := pipeline.Run(r.Context(), files, guard.ExecuteOptions{
@@ -124,10 +125,11 @@ func handleGuardRun(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	cfg := guard.GuardConfig{
-		Enabled: true,
-		Mode:    req.Mode,
+	cfg, err := guard.LoadGuardConfig(pwd)
+	if err != nil {
+		cfg = guard.GuardConfig{Enabled: true}
 	}
+	cfg.Mode = req.Mode
 
 	pipeline := guard.NewPipeline(pwd, cfg)
 	res, err := pipeline.Run(r.Context(), files, guard.ExecuteOptions{
