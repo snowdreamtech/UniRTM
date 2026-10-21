@@ -53,10 +53,14 @@ type Pipeline struct {
 
 // NewPipeline creates a Pipeline populated with all builtin rules and configured slots
 func NewPipeline(workspaceDir string, cfg GuardConfig) *Pipeline {
+	rules := GetAllBuiltinRules()
+	for _, slot := range DefaultToolSlots {
+		rules = append(rules, NewSlotRule(slot))
+	}
 	p := &Pipeline{
 		WorkspaceDir: workspaceDir,
 		Config:       cfg,
-		Rules:        GetAllBuiltinRules(),
+		Rules:        rules,
 	}
 	return p
 }
@@ -112,6 +116,12 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	var ruleReports []RuleReport
 
 	executeRule := func(r Rule, phaseName string) {
+		if checker, ok := r.(interface{ ShouldRun([]string) bool }); ok {
+			if !checker.ShouldRun(files) {
+				return
+			}
+		}
+
 		rStart := time.Now()
 		rBefore := len(allIssues)
 		issues, err := r.Execute(ctx, files, opts)
