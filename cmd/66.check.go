@@ -102,27 +102,25 @@ func runGuard(ctx context.Context, explicitFiles []string, autoFix bool) error {
 	}
 	cfg.Mode = mode
 
+	output.Infof("Inspecting workspace files with UniRTM Quality Guard (%d files, mode: %s)", len(files), mode)
+
 	pipeline := guard.NewPipeline(pwd, cfg)
 	res, err := pipeline.Run(ctx, files, guard.ExecuteOptions{
 		Fix: autoFix,
+		OnRuleComplete: func(rep guard.RuleReport) {
+			if rep.Status == "fail" {
+				output.Errorf("%s (%d error(s))", rep.RuleID, rep.ErrorsCount)
+			} else if rep.Status == "warn" {
+				output.Warningf("%s (%d warning(s))", rep.RuleID, rep.WarningsCount)
+			} else if rep.Status == "fixed" {
+				output.Successf("%s (%d issue(s) fixed)", rep.RuleID, rep.FixedCount)
+			} else {
+				output.Successf("%s", rep.RuleID)
+			}
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("guard pipeline failed: %w", err)
-	}
-
-	output.Infof("Inspecting workspace files with UniRTM Quality Guard (%d files, mode: %s)", len(files), mode)
-
-	// Print individual rule status lines matching unirtm install style
-	for _, rep := range res.RuleReports {
-		if rep.Status == "fail" {
-			output.Errorf("%s (%d error(s))", rep.RuleID, rep.ErrorsCount)
-		} else if rep.Status == "warn" {
-			output.Warningf("%s (%d warning(s))", rep.RuleID, rep.WarningsCount)
-		} else if rep.Status == "fixed" {
-			output.Successf("%s (%d issue(s) fixed)", rep.RuleID, rep.FixedCount)
-		} else {
-			output.Successf("%s", rep.RuleID)
-		}
 	}
 
 	if len(res.Issues) > 0 {

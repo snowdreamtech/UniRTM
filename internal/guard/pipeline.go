@@ -159,6 +159,9 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 			rep.Status = "fixed"
 		}
 		ruleReports = append(ruleReports, rep)
+		if opts.OnRuleComplete != nil {
+			opts.OnRuleComplete(rep)
+		}
 
 		if rIssues == 0 {
 			logs = append(logs, fmt.Sprintf("[%s] Checking rule '%s': clean (0 issues)", phaseName, r.ID()))

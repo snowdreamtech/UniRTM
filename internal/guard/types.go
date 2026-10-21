@@ -53,11 +53,12 @@ type Issue struct {
 
 // ExecuteOptions specifies runtime configuration for rule execution
 type ExecuteOptions struct {
-	WorkspaceDir string
-	Mode         string // "staged", "changed", "all"
-	Fix          bool   // If true, rules that support fixing will mutate files in-place
-	DryRun       bool   // If true, report what would be fixed without modifying disk
-	MaxFileSize  int64
+	WorkspaceDir   string
+	Mode           string // "staged", "changed", "all"
+	Fix            bool   // If true, rules that support fixing will mutate files in-place
+	DryRun         bool   // If true, report what would be fixed without modifying disk
+	MaxFileSize    int64
+	OnRuleComplete func(report RuleReport)
 }
 
 // Rule defines the execution contract for any builtin or custom guard rule
