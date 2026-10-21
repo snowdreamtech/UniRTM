@@ -138,12 +138,103 @@ export function useGuard() {
     return null;
   }
 
-  async function runCheck(opts?: { mode?: "staged" | "changed" | "all"; files?: string[] }): Promise<boolean> {
+  function applyCheckResult(data: any, mode: "staged" | "changed" | "all", startTime: number) {
+    const duration = data.duration_ms || Math.max(1, Date.now() - startTime);
+    const scanned = data.scanned ?? (data.summary ? data.summary.total_files_scanned : 0);
+    const issues = data.issues || [];
+    const clean = data.clean !== undefined ? data.clean : issues.length === 0;
+
+    status.value = {
+      mode,
+      scanned,
+      clean,
+      errors_count: data.errors_count ?? (data.summary ? data.summary.errors_count : 0),
+      warnings_count: data.warnings_count ?? (data.summary ? data.summary.warnings_count : 0),
+      fixable_count: data.fixable_count ?? (data.summary ? data.summary.fixed_count : 0),
+      duration_ms: duration,
+      rules_count: data.rules_count || status.value.rules_count || 38,
+      issues,
+      rule_reports: data.rule_reports || status.value.rule_reports,
+      logs: data.logs || [],
+    };
+
+    lastRunResult.value = {
+      success: true,
+      mode,
+      scanned,
+      issuesCount: issues.length,
+      errorsCount: status.value.errors_count,
+      warningsCount: status.value.warnings_count,
+      fixedCount: data.fixed_count ?? (data.summary ? data.summary.fixed_count : 0),
+      durationMs: duration,
+      clean,
+      logs: data.logs || [],
+    };
+  }
+
+  async function runCheckViaStream(
+    mode: "staged" | "changed" | "all",
+    fix: boolean,
+    onLog?: (line: string) => void,
+    startTime: number = Date.now()
+  ): Promise<boolean> {
+    if (typeof window === "undefined" || typeof window.EventSource === "undefined") {
+      return false;
+    }
+
+    return new Promise((resolve) => {
+      let resolved = false;
+      let sse: EventSource | null = null;
+      try {
+        sse = new EventSource(`/api/guard/run-stream?mode=${mode}&fix=${fix}`);
+      } catch (_) {
+        return resolve(false);
+      }
+
+      const finishStream = (success: boolean) => {
+        if (!resolved) {
+          resolved = true;
+          try {
+            sse?.close();
+          } catch (_) {}
+          resolve(success);
+        }
+      };
+
+      sse.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === "log" && payload.line) {
+            onLog?.(payload.line);
+          } else if (payload.type === "done" && payload.result) {
+            applyCheckResult(payload.result, mode, startTime);
+            finishStream(true);
+          }
+        } catch (_) {}
+      };
+
+      sse.onerror = () => {
+        finishStream(false);
+      };
+    });
+  }
+
+  async function runCheck(opts?: {
+    mode?: "staged" | "changed" | "all";
+    files?: string[];
+    onLog?: (line: string) => void;
+  }): Promise<boolean> {
     isLoading.value = true;
     const mode = opts?.mode || "staged";
     const startTime = Date.now();
     try {
-      // Ensure smooth perceived feedback by ensuring at least 250ms of visual transition
+      if (opts?.onLog) {
+        const streamOk = await runCheckViaStream(mode, false, opts.onLog, startTime);
+        if (streamOk) {
+          return true;
+        }
+      }
+
       const minDelay = new Promise((resolve) => setTimeout(resolve, 250));
       const fetchPromise = fetch("/api/guard/run", {
         method: "POST",
@@ -154,38 +245,12 @@ export function useGuard() {
       const [res] = await Promise.all([fetchPromise, minDelay]);
       if (res.ok) {
         const data = await res.json();
-        const duration = data.duration_ms || Math.max(1, Date.now() - startTime);
-        const scanned = data.scanned ?? (data.summary ? data.summary.total_files_scanned : 0);
-        const issues = data.issues || [];
-        const clean = data.clean !== undefined ? data.clean : issues.length === 0;
-
-        status.value = {
-          mode,
-          scanned,
-          clean,
-          errors_count: data.errors_count ?? (data.summary ? data.summary.errors_count : 0),
-          warnings_count: data.warnings_count ?? (data.summary ? data.summary.warnings_count : 0),
-          fixable_count: data.fixable_count ?? (data.summary ? data.summary.fixed_count : 0),
-          duration_ms: duration,
-          rules_count: data.rules_count || status.value.rules_count || 38,
-          issues,
-          rule_reports: data.rule_reports || status.value.rule_reports,
-          logs: data.logs || [],
-        };
-
-        lastRunResult.value = {
-          success: true,
-          mode,
-          scanned,
-          issuesCount: issues.length,
-          errorsCount: status.value.errors_count,
-          warningsCount: status.value.warnings_count,
-          fixedCount: 0,
-          durationMs: duration,
-          clean,
-          logs: data.logs || [],
-        };
-
+        applyCheckResult(data, mode, startTime);
+        if (opts?.onLog && data.logs) {
+          for (const line of data.logs) {
+            opts.onLog(line);
+          }
+        }
         return true;
       }
     } catch (e) {
@@ -209,10 +274,21 @@ export function useGuard() {
     return false;
   }
 
-  async function runFix(mode: "staged" | "changed" | "all" = "staged", files: string[] = []): Promise<boolean> {
+  async function runFix(
+    mode: "staged" | "changed" | "all" = "staged",
+    files: string[] = [],
+    onLog?: (line: string) => void
+  ): Promise<boolean> {
     isFixing.value = true;
     const startTime = Date.now();
     try {
+      if (onLog) {
+        const streamOk = await runCheckViaStream(mode, true, onLog, startTime);
+        if (streamOk) {
+          return true;
+        }
+      }
+
       const minDelay = new Promise((resolve) => setTimeout(resolve, 300));
       const fetchPromise = fetch("/api/guard/run", {
         method: "POST",
@@ -223,38 +299,12 @@ export function useGuard() {
       const [res] = await Promise.all([fetchPromise, minDelay]);
       if (res.ok) {
         const data = await res.json();
-        const duration = data.duration_ms || Math.max(1, Date.now() - startTime);
-        const scanned = data.scanned ?? (data.summary ? data.summary.total_files_scanned : 0);
-        const issues = data.issues || [];
-        const fixedCount = data.summary?.fixed_count ?? 1;
-
-        status.value = {
-          mode,
-          scanned,
-          clean: true,
-          errors_count: 0,
-          warnings_count: 0,
-          fixable_count: 0,
-          duration_ms: duration,
-          rules_count: data.rules_count || status.value.rules_count || 38,
-          issues,
-          rule_reports: data.rule_reports || status.value.rule_reports,
-          logs: data.logs || [],
-        };
-
-        lastRunResult.value = {
-          success: true,
-          mode,
-          scanned,
-          issuesCount: issues.length,
-          errorsCount: 0,
-          warningsCount: 0,
-          fixedCount,
-          durationMs: duration,
-          clean: true,
-          logs: data.logs || [],
-        };
-
+        applyCheckResult(data, mode, startTime);
+        if (onLog && data.logs) {
+          for (const line of data.logs) {
+            onLog(line);
+          }
+        }
         return true;
       }
     } catch (e) {

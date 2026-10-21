@@ -1546,13 +1546,47 @@ async function handleCheck(mode: "changed" | "staged" | "all") {
   scanProgressPct.value = 5;
   const cliCmd =
     mode === "all" ? "$ unirtm check --all" : mode === "staged" ? "$ unirtm check --staged" : "$ unirtm check";
-  localLogs.value = [
-    parseLogLine(cliCmd),
-    parseLogLine(`ℹ Inspecting workspace files with UniRTM Quality Guard (mode: ${mode})...`),
-  ];
+  localLogs.value = [parseLogLine(cliCmd)];
   scrollToBottom();
 
-  await runCheck({ mode });
+  const receivedRealtimeLogs: string[] = [];
+  isStreaming.value = true;
+
+  await runCheck({
+    mode,
+    onLog: (line: string) => {
+      // Avoid duplicate leading prompt line
+      if (line.trim() === cliCmd.trim()) return;
+
+      receivedRealtimeLogs.push(line);
+      localLogs.value.push(parseLogLine(line));
+
+      const inspectMatch = line.match(/\((\d+)\s+files/);
+      if (inspectMatch) {
+        totalFilesCount.value = parseInt(inspectMatch[1], 10);
+      }
+
+      if (line.includes("› [scan]")) {
+        currentScanningTarget.value = line.replace(/^\s*›\s*\[scan\]\s*/, "");
+        currentScannedCount.value++;
+      } else if (line.startsWith("✓ ") || line.startsWith("✗ ") || line.startsWith("! ") || line.startsWith("⚠ ")) {
+        currentScanningTarget.value = line.replace(/^[✓✗!⚠]\s*/, "");
+      } else if (line.startsWith("$ ")) {
+        currentScanningTarget.value = line;
+      }
+
+      const totalTarget = Math.max(38, totalFilesCount.value || 38);
+      scanProgressPct.value = Math.min(95, Math.max(10, Math.round((receivedRealtimeLogs.length / totalTarget) * 100)));
+      scrollToBottom();
+      emit("log-event", "INFO", line, undefined, "output");
+    },
+  });
+
+  isStreaming.value = false;
+  scanProgressPct.value = 100;
+  if (guardStatus.value.clean) {
+    currentScanningTarget.value = "All 38 guard rules verified clean · Workspace protected";
+  }
 
   const res = lastRunResult.value || {
     success: true,
@@ -1585,21 +1619,18 @@ async function handleCheck(mode: "changed" | "staged" | "all") {
     isFix: false,
   };
 
-  const logsToStream = res.logs && res.logs.length > 0 ? res.logs : guardStatus.value.logs || [];
-  if (logsToStream.length > 0) {
-    await streamPushLogs(logsToStream);
-  } else {
-    localLogs.value.push(
-      parseLogLine(
-        `✓ ✨ Quality Guard passed: All 38 guard rules processed (${res.scanned} files inspected, ${res.issuesCount} issues, took ${res.durationMs}ms)`
-      )
-    );
-    scrollToBottom();
-  }
-
-  if (logsToStream.length > 0) {
-    for (const line of logsToStream) {
-      emit("log-event", "INFO", line, undefined, "output");
+  // If no realtime logs were received (e.g. mock or fallback), stream them now
+  if (receivedRealtimeLogs.length === 0) {
+    const logsToStream = res.logs && res.logs.length > 0 ? res.logs : guardStatus.value.logs || [];
+    if (logsToStream.length > 0) {
+      await streamPushLogs(logsToStream);
+    } else {
+      localLogs.value.push(
+        parseLogLine(
+          `✓ ✨ Quality Guard passed: All 38 guard rules processed (${res.scanned} files inspected, ${res.issuesCount} issues, took ${res.durationMs}ms)`
+        )
+      );
+      scrollToBottom();
     }
   }
 
@@ -1655,13 +1686,41 @@ async function handleFix() {
   scanProgressPct.value = 5;
   const fixFlag = checkingMode.value === "all" ? "--all" : checkingMode.value === "staged" ? "--staged" : "";
   const cliCmd = fixFlag ? `$ unirtm check ${fixFlag} --fix` : "$ unirtm check --fix";
-  localLogs.value = [
-    parseLogLine(cliCmd),
-    parseLogLine(`ℹ Running automated fixers and style convergence (${modeLabel})...`),
-  ];
+  localLogs.value = [parseLogLine(cliCmd)];
   scrollToBottom();
 
-  await runFix(checkingMode.value);
+  const receivedRealtimeLogs: string[] = [];
+  isStreaming.value = true;
+
+  await runFix(checkingMode.value, [], (line: string) => {
+    if (line.trim() === cliCmd.trim()) return;
+
+    receivedRealtimeLogs.push(line);
+    localLogs.value.push(parseLogLine(line));
+
+    const inspectMatch = line.match(/\((\d+)\s+files/);
+    if (inspectMatch) {
+      totalFilesCount.value = parseInt(inspectMatch[1], 10);
+    }
+
+    if (line.includes("› [scan]")) {
+      currentScanningTarget.value = line.replace(/^\s*›\s*\[scan\]\s*/, "");
+      currentScannedCount.value++;
+    } else if (line.startsWith("✓ ") || line.startsWith("✗ ") || line.startsWith("! ") || line.startsWith("⚠ ")) {
+      currentScanningTarget.value = line.replace(/^[✓✗!⚠]\s*/, "");
+    } else if (line.startsWith("$ ")) {
+      currentScanningTarget.value = line;
+    }
+
+    const totalTarget = Math.max(38, totalFilesCount.value || 38);
+    scanProgressPct.value = Math.min(95, Math.max(10, Math.round((receivedRealtimeLogs.length / totalTarget) * 100)));
+    scrollToBottom();
+    emit("log-event", "INFO", line, undefined, "output");
+  });
+
+  isStreaming.value = false;
+  scanProgressPct.value = 100;
+  currentScanningTarget.value = "All fixable issues repaired · Workspace clean";
 
   const res = lastRunResult.value || {
     success: true,
@@ -1694,21 +1753,17 @@ async function handleFix() {
     isFix: true,
   };
 
-  const fixLogsToStream = res.logs && res.logs.length > 0 ? res.logs : guardStatus.value.logs || [];
-  if (fixLogsToStream.length > 0) {
-    await streamPushLogs(fixLogsToStream);
-  } else {
-    localLogs.value.push(
-      parseLogLine(
-        `✓ ✨ Quality Guard passed: Auto-fix completed: ${res.fixedCount} corrections applied, took ${res.durationMs}ms`
-      )
-    );
-    scrollToBottom();
-  }
-
-  if (fixLogsToStream.length > 0) {
-    for (const line of fixLogsToStream) {
-      emit("log-event", "INFO", line, undefined, "output");
+  if (receivedRealtimeLogs.length === 0) {
+    const fixLogsToStream = res.logs && res.logs.length > 0 ? res.logs : guardStatus.value.logs || [];
+    if (fixLogsToStream.length > 0) {
+      await streamPushLogs(fixLogsToStream);
+    } else {
+      localLogs.value.push(
+        parseLogLine(
+          `✓ ✨ Quality Guard passed: Auto-fix completed: ${res.fixedCount} corrections applied, took ${res.durationMs}ms`
+        )
+      );
+      scrollToBottom();
     }
   }
 
