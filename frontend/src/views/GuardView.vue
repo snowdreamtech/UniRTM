@@ -486,54 +486,174 @@
       <!-- 2. Transparent Rule Execution Checklist (Reports Tab) -->
       <section v-if="activeTab === 'reports'" class="tab-section reports-section">
         <div class="reports-container">
-          <div class="reports-header">
-            <h3 class="reports-title">{{ t("guard.diagnostics.checklist") || "Transparent Execution Checklist" }}</h3>
-            <span class="reports-sub">
-              {{ t("guard.reports_desc") || "Real-time streaming validation status and execution duration per rule." }}
-            </span>
+          <div class="reports-header-row">
+            <div class="reports-header-titles">
+              <h3 class="reports-title">
+                <span class="codicon codicon-checklist text-cyan"></span>
+                <span>{{ t("guard.diagnostics.checklist") || "质量守卫全套规则清单与执行状态" }}</span>
+                <span class="rules-total-count font-mono">{{ filteredRichRules.length }} / 38</span>
+              </h3>
+              <p class="reports-sub">
+                涵盖代码卫生清洗、格式化对齐、深层语法门禁与凭据安全防泄露全套流水线，实时展示执行耗时与检测结论。
+              </p>
+            </div>
+
+            <div class="reports-controls-bar">
+              <!-- Category Filter Chips -->
+              <div class="rule-category-pills">
+                <button
+                  class="cat-pill-btn"
+                  :class="{ active: selectedRuleCategory === 'all' }"
+                  @click="selectedRuleCategory = 'all'"
+                >
+                  全部 (38)
+                </button>
+                <button
+                  class="cat-pill-btn"
+                  :class="{ active: selectedRuleCategory === 'hygiene' }"
+                  @click="selectedRuleCategory = 'hygiene'"
+                >
+                  <span class="codicon codicon-wand text-green"></span>
+                  原生自愈 (8)
+                </button>
+                <button
+                  class="cat-pill-btn"
+                  :class="{ active: selectedRuleCategory === 'formatting' }"
+                  @click="selectedRuleCategory = 'formatting'"
+                >
+                  <span class="codicon codicon-diff-modified text-blue"></span>
+                  格式排版 (5)
+                </button>
+                <button
+                  class="cat-pill-btn"
+                  :class="{ active: selectedRuleCategory === 'linter' }"
+                  @click="selectedRuleCategory = 'linter'"
+                >
+                  <span class="codicon codicon-pass text-amber"></span>
+                  规范门禁 (19)
+                </button>
+                <button
+                  class="cat-pill-btn"
+                  :class="{ active: selectedRuleCategory === 'security' }"
+                  @click="selectedRuleCategory = 'security'"
+                >
+                  <span class="codicon codicon-shield text-purple"></span>
+                  凭据安全 (6)
+                </button>
+              </div>
+
+              <!-- Rule Search Box -->
+              <div class="rule-search-box">
+                <span class="codicon codicon-search search-icon"></span>
+                <input
+                  v-model="ruleSearchKeyword"
+                  type="text"
+                  class="rule-search-input"
+                  placeholder="搜索规则名称、ID、扩展名 (.go, .ts) 或工具..."
+                />
+                <span
+                  v-if="ruleSearchKeyword"
+                  class="codicon codicon-close clear-icon"
+                  @click="ruleSearchKeyword = ''"
+                ></span>
+              </div>
+            </div>
           </div>
 
-          <div v-if="guardStatus.rule_reports && guardStatus.rule_reports.length > 0" class="checklist-items-grid">
+          <!-- Rich Rule Cards Grid -->
+          <div v-if="filteredRichRules.length > 0" class="rich-rules-cards-grid">
             <div
-              v-for="report in guardStatus.rule_reports"
-              :key="report.rule_name"
-              class="checklist-item"
-              :class="
-                report.status === 'error' || report.status === 'fail'
-                  ? 'item-error'
-                  : report.status === 'warn'
-                    ? 'item-warning'
-                    : 'item-pass'
-              "
+              v-for="rule in filteredRichRules"
+              :key="rule.id"
+              class="rich-rule-card"
+              :class="[
+                'category-' + rule.category,
+                rule.status === 'fail' || rule.status === 'error'
+                  ? 'is-fail'
+                  : rule.status === 'warn'
+                    ? 'is-warn'
+                    : rule.status === 'fixed'
+                      ? 'is-fixed'
+                      : rule.status === 'passed'
+                        ? 'is-passed'
+                        : 'is-idle',
+              ]"
             >
-              <div class="item-left">
-                <span
-                  class="codicon"
-                  :class="
-                    report.status === 'error' || report.status === 'fail'
-                      ? 'codicon-error text-red'
-                      : report.status === 'warn'
-                        ? 'codicon-warning text-amber'
-                        : 'codicon-pass text-green'
-                  "
-                ></span>
-                <span class="item-rule-name font-mono">{{ report.rule_name }}</span>
+              <!-- Card Header -->
+              <div class="rule-card-top">
+                <div class="rule-title-group">
+                  <div class="rule-status-indicator">
+                    <span
+                      class="codicon"
+                      :class="
+                        rule.status === 'fail' || rule.status === 'error'
+                          ? 'codicon-error text-red'
+                          : rule.status === 'warn'
+                            ? 'codicon-warning text-amber'
+                            : rule.status === 'fixed'
+                              ? 'codicon-wand text-green'
+                              : rule.status === 'passed'
+                                ? 'codicon-pass text-green'
+                                : 'codicon-circle-outline text-muted'
+                      "
+                    ></span>
+                  </div>
+                  <div class="rule-names">
+                    <div class="rule-chinese-name">{{ rule.name }}</div>
+                    <code class="rule-id-code font-mono">{{ rule.id }}</code>
+                  </div>
+                </div>
+
+                <div class="rule-badges-group">
+                  <span v-if="rule.status !== 'idle'" class="rule-run-badge font-mono" :class="'badge-' + rule.status">
+                    {{
+                      rule.status === "passed"
+                        ? "✔ 通过"
+                        : rule.status === "fixed"
+                          ? "⚡ 已自愈"
+                          : rule.status === "warn"
+                            ? `! ${rule.issuesCount} 警告`
+                            : `✕ ${rule.issuesCount} 阻断`
+                    }}
+                    <span v-if="rule.durationMs > 0">· {{ rule.duration }}</span>
+                  </span>
+                  <span v-else class="rule-idle-badge font-mono">就绪待命</span>
+                </div>
               </div>
-              <div class="item-right">
-                <span class="item-phase-badge" :class="'phase-' + report.phase">{{ report.phase }}</span>
-                <span class="item-duration font-mono">{{ report.duration_ms }}ms</span>
+
+              <!-- Card Description (实质内容) -->
+              <p class="rule-description">{{ rule.description }}</p>
+
+              <!-- Card Meta & Extension Tags -->
+              <div class="rule-card-bottom">
+                <div class="rule-meta-chips">
+                  <span class="meta-chip phase-chip" :class="'phase-' + rule.phase">{{ rule.phaseLabel }}</span>
+                  <span class="meta-chip tool-chip font-mono">{{ rule.toolName }}</span>
+                  <span v-if="rule.fixable" class="meta-chip fixable-chip">⚡ 可自愈</span>
+                  <span v-if="rule.severity === 'blocker'" class="meta-chip blocker-chip">🛑 阻断门禁</span>
+                  <span v-else class="meta-chip warn-chip">⚠️ 建议告警</span>
+                </div>
+
+                <div class="rule-extensions-row">
+                  <span class="ext-label font-mono">适用:</span>
+                  <span v-for="ext in rule.extensions" :key="ext" class="ext-badge font-mono">{{ ext }}</span>
+                </div>
               </div>
             </div>
           </div>
 
           <div v-else class="empty-reports-box">
-            <span class="codicon codicon-checklist empty-reports-icon"></span>
-            <p>
-              {{
-                t("guard.no_reports") ||
-                "No inspection reports yet. Run 'Check Staged' or 'Check Entire Repo' to see live results."
-              }}
-            </p>
+            <span class="codicon codicon-search empty-reports-icon"></span>
+            <p>未找到匹配 "{{ ruleSearchKeyword }}" 的守卫规则</p>
+            <button
+              class="btn-clear-filter"
+              @click="
+                ruleSearchKeyword = '';
+                selectedRuleCategory = 'all';
+              "
+            >
+              重置筛选条件
+            </button>
           </div>
         </div>
       </section>
@@ -742,6 +862,7 @@ import { useEditorTabs } from "../composables/useEditorTabs";
 import { useToast } from "../composables/useToast";
 import ExtensionSlotModal from "../components/guard/ExtensionSlotModal.vue";
 import TomlConfigDrawer from "../components/guard/TomlConfigDrawer.vue";
+import { ALL_38_GUARD_RULES, type DetailedGuardRule } from "../utils/guardRulesMeta";
 
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, channel?: string): void;
@@ -776,6 +897,86 @@ const checkingMode = ref<"changed" | "staged" | "all">("staged");
 const activeTab = ref<"workbench" | "reports" | "settings">("workbench");
 const settingsSubTab = ref<"matrix" | "slots">("matrix");
 const searchKeyword = ref("");
+
+// Rich Rule Checklist Reactive State & Filtering
+const selectedRuleCategory = ref<"all" | "hygiene" | "formatting" | "linter" | "security">("all");
+const ruleSearchKeyword = ref("");
+
+export interface RichGuardRuleItem extends DetailedGuardRule {
+  status: "passed" | "fixed" | "fail" | "error" | "warn" | "idle";
+  duration: string;
+  durationMs: number;
+  issuesCount: number;
+}
+
+const richRulesList = computed<RichGuardRuleItem[]>(() => {
+  const reports = guardStatus.value.rule_reports || [];
+  const reportsMap = new Map<string, { status: string; duration: string; durationMs: number; issuesCount: number }>();
+  for (const r of reports) {
+    const rawStatus = (r.status || "").toLowerCase();
+    const durMs = r.duration_ms !== undefined ? r.duration_ms : r.duration !== undefined ? r.duration : 0;
+    const dur = `${durMs}ms`;
+    const issues = r.issues_count || (r.errors_count || 0) + (r.warnings_count || 0);
+    const item = { status: rawStatus, duration: dur, durationMs: durMs, issuesCount: issues };
+    if (r.rule_id) {
+      reportsMap.set(r.rule_id, item);
+    }
+    if (r.rule_name) {
+      reportsMap.set(r.rule_name, item);
+    }
+  }
+
+  return ALL_38_GUARD_RULES.map((rule) => {
+    const report = reportsMap.get(rule.id) || reportsMap.get(rule.name);
+    let status: RichGuardRuleItem["status"] = "idle";
+    let duration = "";
+    let durationMs = 0;
+    let issuesCount = 0;
+    if (report) {
+      duration = report.duration || "0ms";
+      durationMs = report.durationMs;
+      issuesCount = report.issuesCount;
+      if (report.status === "passed" || report.status === "pass" || report.status === "clean") {
+        status = "passed";
+      } else if (report.status === "fixed") {
+        status = "fixed";
+      } else if (report.status === "fail" || report.status === "error") {
+        status = "fail";
+      } else if (report.status === "warn" || report.status === "warning") {
+        status = "warn";
+      } else {
+        status = "passed";
+      }
+    }
+    return {
+      ...rule,
+      status,
+      duration,
+      durationMs,
+      issuesCount,
+    };
+  });
+});
+
+const filteredRichRules = computed(() => {
+  let list = richRulesList.value;
+  if (selectedRuleCategory.value !== "all") {
+    list = list.filter((r) => r.category === selectedRuleCategory.value);
+  }
+  const kw = ruleSearchKeyword.value.trim().toLowerCase();
+  if (kw) {
+    list = list.filter((r) => {
+      return (
+        r.name.toLowerCase().includes(kw) ||
+        r.id.toLowerCase().includes(kw) ||
+        r.description.toLowerCase().includes(kw) ||
+        r.toolName.toLowerCase().includes(kw) ||
+        r.extensions.some((ext) => ext.toLowerCase().includes(kw))
+      );
+    });
+  }
+  return list;
+});
 
 // Last inspection tracking for high visibility and transparency
 const lastCheckedTime = ref<string>("");
@@ -2673,73 +2874,424 @@ async function onTomlSaved() {
   white-space: nowrap;
 }
 
-/* Reports Section */
+/* Reports & Rich Rules Section */
 .reports-container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
-.reports-header {
+.reports-header-row {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+@media (min-width: 900px) {
+  .reports-header-row {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.reports-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .reports-title {
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
   font-weight: 600;
   margin: 0;
   color: var(--text-main);
 }
 
+.rules-total-count {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  background: rgba(6, 182, 212, 0.15);
+  color: #06b6d4;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 12px;
+  margin-left: 0.25rem;
+}
+
 .reports-sub {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
 }
 
-.checklist-items-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 0.625rem;
-}
-
-.checklist-item {
+.reports-controls-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.625rem 0.75rem;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 6px;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.item-left {
+@media (min-width: 768px) {
+  .reports-controls-bar {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+}
+
+.rule-category-pills {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.item-rule-name {
-  font-size: 0.75rem;
-  color: var(--text-main);
-}
-
-.item-right {
-  display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 0.375rem;
 }
 
-.item-phase-badge {
-  font-size: 0.625rem;
-  padding: 0.1rem 0.25rem;
-  border-radius: 3px;
+.cat-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 20px;
+  background: var(--card-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
 }
 
-.item-duration {
-  font-size: 0.6875rem;
+.cat-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.cat-pill-btn.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.rule-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 260px;
+}
+
+.rule-search-input {
+  width: 100%;
+  padding: 0.4rem 1.8rem 0.4rem 2rem;
+  font-size: 0.75rem;
+  background: var(--card-bg, rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  color: var(--text-main);
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.rule-search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.rule-search-box .search-icon {
+  position: absolute;
+  left: 0.6rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
+  pointer-events: none;
+}
+
+.rule-search-box .clear-icon {
+  position: absolute;
+  right: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rule-search-box .clear-icon:hover {
+  color: var(--text-main);
+}
+
+/* Rich Rules Cards Grid */
+.rich-rules-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 1rem;
+}
+
+.rich-rule-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.15rem;
+  background: var(--card-bg, rgba(30, 30, 30, 0.7));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.rich-rule-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.rich-rule-card.is-fail {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.rich-rule-card.is-warn {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.rich-rule-card.is-fixed {
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.rich-rule-card.is-passed {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.rule-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+}
+
+.rule-id-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  overflow: hidden;
+}
+
+.rule-id {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.rule-category-tag {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.cat-hygiene {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.cat-formatting {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.cat-linter {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.cat-security {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.rule-status-badge {
+  display: flex;
+  align-items: center;
+}
+
+.rule-passed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.rule-fixed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.rule-failed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.rule-warn-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.rule-idle-badge {
+  font-size: 0.6875rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rule-title-cn {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem 0;
+  color: var(--text-main);
+  line-height: 1.35;
+}
+
+.rule-description {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 0.85rem 0;
+  flex-grow: 1;
+}
+
+.rule-card-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rule-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.meta-chip {
+  font-size: 0.65rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.phase-chip.phase-fixer {
+  background: rgba(34, 197, 94, 0.1);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.phase-chip.phase-formatter {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.phase-chip.phase-linter {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.tool-chip {
+  background: rgba(147, 51, 234, 0.1);
+  color: #c084fc;
+  border-color: rgba(147, 51, 234, 0.2);
+}
+
+.fixable-chip {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.25);
+  font-weight: 500;
+}
+
+.blocker-chip {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.25);
+  font-weight: 500;
+}
+
+.warn-chip {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.rule-extensions-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+}
+
+.ext-label {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+
+.ext-badge {
+  font-size: 0.65rem;
+  padding: 0.08rem 0.3rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .empty-reports-box {
@@ -2747,13 +3299,33 @@ async function onTomlSaved() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem 1rem;
+  padding: 3.5rem 1rem;
   background: var(--card-bg);
   border: 1px dashed var(--card-border);
   border-radius: 8px;
   color: var(--text-muted);
-  font-size: 0.8125rem;
-  gap: 0.5rem;
+  font-size: 0.85rem;
+  gap: 0.75rem;
+}
+
+.empty-reports-icon {
+  font-size: 2.25rem;
+  opacity: 0.4;
+}
+
+.btn-clear-filter {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  background: #3b82f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-clear-filter:hover {
+  opacity: 0.88;
 }
 
 .empty-reports-icon {
@@ -3019,9 +3591,72 @@ async function onTomlSaved() {
   color: #0369a1;
 }
 
-:root[data-theme="light"] .checklist-item,
-[data-theme="light"] .checklist-item {
+:root[data-theme="light"] .rich-rule-card,
+[data-theme="light"] .rich-rule-card {
   background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .rich-rule-card:hover,
+[data-theme="light"] .rich-rule-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="light"] .rule-search-input,
+[data-theme="light"] .rule-search-input {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .cat-pill-btn,
+[data-theme="light"] .cat-pill-btn {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+:root[data-theme="light"] .cat-pill-btn:hover,
+[data-theme="light"] .cat-pill-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .cat-pill-btn.active,
+[data-theme="light"] .cat-pill-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .rule-title-cn,
+[data-theme="light"] .rule-title-cn {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .rule-description,
+[data-theme="light"] .rule-description {
+  color: #475569;
+}
+
+:root[data-theme="light"] .rule-card-bottom,
+[data-theme="light"] .rule-card-bottom {
+  border-top-color: #f1f5f9;
+}
+
+:root[data-theme="light"] .ext-badge,
+[data-theme="light"] .ext-badge {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+:root[data-theme="light"] .rule-idle-badge,
+[data-theme="light"] .rule-idle-badge {
+  background: #f1f5f9;
+  color: #64748b;
   border-color: #e2e8f0;
 }
 </style>
