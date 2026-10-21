@@ -3626,11 +3626,13 @@ print(json.dumps({
               res.end(
                 JSON.stringify({
                   mode,
-                  scanned: 0,
+                  scanned: 5,
                   clean: true,
                   errors_count: 0,
                   warnings_count: 0,
                   fixable_count: 0,
+                  duration_ms: 18,
+                  rules_count: 38,
                   issues: [],
                   rule_reports: defaultRuleReports,
                   logs,
@@ -3793,17 +3795,27 @@ print(json.dumps({
                   },
                 ];
 
+                const runMode = reqBody.mode || "staged";
+                const mockScanned = runMode === "all" ? 142 : runMode === "changed" ? 9 : 4;
+                const latency = runMode === "all" ? 120 : runMode === "changed" ? 28 : 16;
+
                 res.setHeader("Content-Type", "application/json");
                 res.end(
                   JSON.stringify({
                     success: true,
+                    mode: runMode,
+                    scanned: mockScanned,
+                    clean: true,
+                    duration_ms: latency,
+                    rules_count: 38,
                     summary: {
-                      total_files_scanned: 0,
+                      total_files_scanned: mockScanned,
                       total_issues: 0,
                       errors_count: 0,
                       warnings_count: 0,
-                      fixed_count: 0,
-                      duration: 2000000,
+                      fixed_count: reqBody.fix ? 2 : 0,
+                      duration: latency * 1000000,
+                      duration_ms: latency,
                     },
                     issues: [],
                     rule_reports: defaultRuleReports,

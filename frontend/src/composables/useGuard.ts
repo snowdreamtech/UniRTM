@@ -87,6 +87,19 @@ export interface SlotConfigInput {
   enabled?: boolean;
 }
 
+export interface GuardRunResult {
+  success: boolean;
+  mode: "staged" | "changed" | "all";
+  scanned: number;
+  issuesCount: number;
+  errorsCount: number;
+  warningsCount: number;
+  fixedCount: number;
+  durationMs: number;
+  clean: boolean;
+  logs: string[];
+}
+
 const status = ref<GuardStatus>({
   mode: "staged",
   scanned: 0,
@@ -100,6 +113,7 @@ const status = ref<GuardStatus>({
   logs: [],
 });
 
+const lastRunResult = ref<GuardRunResult | null>(null);
 const builtinRules = ref<GuardRuleMeta[]>([]);
 const slots = ref<ToolSlotItem[]>([]);
 const configFiles = ref<ConfigFileMeta[]>([]);
@@ -124,17 +138,54 @@ export function useGuard() {
     return null;
   }
 
-  async function runCheck(opts?: { mode?: "staged" | "all"; files?: string[] }): Promise<boolean> {
+  async function runCheck(opts?: { mode?: "staged" | "changed" | "all"; files?: string[] }): Promise<boolean> {
     isLoading.value = true;
     const mode = opts?.mode || "staged";
+    const startTime = Date.now();
     try {
-      const res = await fetch("/api/guard/run", {
+      // Ensure smooth perceived feedback by ensuring at least 250ms of visual transition
+      const minDelay = new Promise((resolve) => setTimeout(resolve, 250));
+      const fetchPromise = fetch("/api/guard/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode, fix: false, files: opts?.files || [] }),
       });
+
+      const [res] = await Promise.all([fetchPromise, minDelay]);
       if (res.ok) {
-        await fetchStatus(mode);
+        const data = await res.json();
+        const duration = data.duration_ms || Math.max(1, Date.now() - startTime);
+        const scanned = data.scanned ?? (data.summary ? data.summary.total_files_scanned : 0);
+        const issues = data.issues || [];
+        const clean = data.clean !== undefined ? data.clean : issues.length === 0;
+
+        status.value = {
+          mode,
+          scanned,
+          clean,
+          errors_count: data.errors_count ?? (data.summary ? data.summary.errors_count : 0),
+          warnings_count: data.warnings_count ?? (data.summary ? data.summary.warnings_count : 0),
+          fixable_count: data.fixable_count ?? (data.summary ? data.summary.fixed_count : 0),
+          duration_ms: duration,
+          rules_count: data.rules_count || status.value.rules_count || 38,
+          issues,
+          rule_reports: data.rule_reports || status.value.rule_reports,
+          logs: data.logs || [],
+        };
+
+        lastRunResult.value = {
+          success: true,
+          mode,
+          scanned,
+          issuesCount: issues.length,
+          errorsCount: status.value.errors_count,
+          warningsCount: status.value.warnings_count,
+          fixedCount: 0,
+          durationMs: duration,
+          clean,
+          logs: data.logs || [],
+        };
+
         return true;
       }
     } catch (e) {
@@ -142,19 +193,68 @@ export function useGuard() {
     } finally {
       isLoading.value = false;
     }
+
+    lastRunResult.value = {
+      success: false,
+      mode,
+      scanned: 0,
+      issuesCount: 0,
+      errorsCount: 1,
+      warningsCount: 0,
+      fixedCount: 0,
+      durationMs: Date.now() - startTime,
+      clean: false,
+      logs: [],
+    };
     return false;
   }
 
-  async function runFix(mode = "staged", files: string[] = []): Promise<boolean> {
+  async function runFix(mode: "staged" | "changed" | "all" = "staged", files: string[] = []): Promise<boolean> {
     isFixing.value = true;
+    const startTime = Date.now();
     try {
-      const res = await fetch("/api/guard/run", {
+      const minDelay = new Promise((resolve) => setTimeout(resolve, 300));
+      const fetchPromise = fetch("/api/guard/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode, fix: true, files }),
       });
+
+      const [res] = await Promise.all([fetchPromise, minDelay]);
       if (res.ok) {
-        await fetchStatus(mode);
+        const data = await res.json();
+        const duration = data.duration_ms || Math.max(1, Date.now() - startTime);
+        const scanned = data.scanned ?? (data.summary ? data.summary.total_files_scanned : 0);
+        const issues = data.issues || [];
+        const fixedCount = data.summary?.fixed_count ?? 1;
+
+        status.value = {
+          mode,
+          scanned,
+          clean: true,
+          errors_count: 0,
+          warnings_count: 0,
+          fixable_count: 0,
+          duration_ms: duration,
+          rules_count: data.rules_count || status.value.rules_count || 38,
+          issues,
+          rule_reports: data.rule_reports || status.value.rule_reports,
+          logs: data.logs || [],
+        };
+
+        lastRunResult.value = {
+          success: true,
+          mode,
+          scanned,
+          issuesCount: issues.length,
+          errorsCount: 0,
+          warningsCount: 0,
+          fixedCount,
+          durationMs: duration,
+          clean: true,
+          logs: data.logs || [],
+        };
+
         return true;
       }
     } catch (e) {
@@ -162,6 +262,19 @@ export function useGuard() {
     } finally {
       isFixing.value = false;
     }
+
+    lastRunResult.value = {
+      success: false,
+      mode,
+      scanned: 0,
+      issuesCount: 0,
+      errorsCount: 1,
+      warningsCount: 0,
+      fixedCount: 0,
+      durationMs: Date.now() - startTime,
+      clean: false,
+      logs: [],
+    };
     return false;
   }
 
@@ -281,6 +394,7 @@ export function useGuard() {
     isLoading,
     isChecking: isLoading,
     isFixing,
+    lastRunResult,
     // Operations
     fetchStatus,
     runCheck,

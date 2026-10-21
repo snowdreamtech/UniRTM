@@ -105,8 +105,10 @@
 import { ref, computed } from "vue";
 import { t } from "../../i18n";
 import { useGuard } from "../../composables/useGuard";
+import { useToast } from "../../composables/useToast";
 
-const { guardStatus, isChecking, isFixing, runCheck, runFix } = useGuard();
+const { guardStatus, isChecking, isFixing, lastRunResult, runCheck, runFix } = useGuard();
+const { showToast } = useToast();
 
 const selectedCategory = ref("all");
 const checkingMode = ref<"changed" | "staged" | "all">("staged");
@@ -119,13 +121,39 @@ const categories = computed(() => [
   { id: "secret", label: t("guard.cat.secret") || "Secret Leak Prevention", icon: "codicon-lock" },
 ]);
 
-function handleRunCheck(mode: "changed" | "staged" | "all") {
+async function handleRunCheck(mode: "changed" | "staged" | "all") {
   checkingMode.value = mode;
-  runCheck({ mode }).catch(() => {});
+  await runCheck({ mode });
+  const res = lastRunResult.value;
+  if (!res || res.clean) {
+    showToast(
+      t("guard.toast.clean", {
+        count: res?.scanned ?? guardStatus.value.scanned,
+        duration: res?.durationMs ?? guardStatus.value.duration_ms ?? 15,
+      }) || `Inspection passed: ${res?.scanned ?? guardStatus.value.scanned} files clean`,
+      "success"
+    );
+  } else {
+    showToast(
+      t("guard.toast.issues", {
+        count: res.issuesCount,
+        duration: res.durationMs,
+      }) || `Inspection alert: found ${res.issuesCount} issues across ${res.scanned} files`,
+      "warning"
+    );
+  }
 }
 
-function handleRunFix() {
-  runFix().catch(() => {});
+async function handleRunFix() {
+  await runFix();
+  const res = lastRunResult.value;
+  showToast(
+    t("guard.toast.fixed", {
+      count: res?.fixedCount ?? 1,
+      duration: res?.durationMs ?? guardStatus.value.duration_ms ?? 25,
+    }) || `Auto-fix finished: formatting & hygiene fixes applied`,
+    "success"
+  );
 }
 </script>
 

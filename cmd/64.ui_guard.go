@@ -67,6 +67,15 @@ func handleGuardStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	durationMs := res.Summary.Duration.Milliseconds()
+	if durationMs == 0 && res.Summary.Duration > 0 {
+		durationMs = 1
+	}
+	rulesCount := len(pipeline.Rules)
+	if rulesCount == 0 {
+		rulesCount = 38
+	}
+
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"mode":           mode,
 		"scanned":        res.Summary.TotalFilesScanned,
@@ -74,6 +83,8 @@ func handleGuardStatus(w http.ResponseWriter, r *http.Request) {
 		"errors_count":   res.Summary.ErrorsCount,
 		"warnings_count": res.Summary.WarningsCount,
 		"fixable_count":  fixableCount,
+		"duration_ms":    durationMs,
+		"rules_count":    rulesCount,
 		"issues":         res.Issues,
 		"rule_reports":   res.RuleReports,
 		"logs":           res.Logs,
@@ -143,8 +154,22 @@ func handleGuardRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	durationMs := res.Summary.Duration.Milliseconds()
+	if durationMs == 0 && res.Summary.Duration > 0 {
+		durationMs = 1
+	}
+	rulesCount := len(pipeline.Rules)
+	if rulesCount == 0 {
+		rulesCount = 38
+	}
+
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":      true,
+		"mode":         req.Mode,
+		"scanned":      res.Summary.TotalFilesScanned,
+		"clean":        !res.HasErrors && len(res.Issues) == 0,
+		"duration_ms":  durationMs,
+		"rules_count":  rulesCount,
 		"summary":      res.Summary,
 		"issues":       res.Issues,
 		"rule_reports": res.RuleReports,

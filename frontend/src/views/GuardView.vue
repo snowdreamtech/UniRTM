@@ -14,6 +14,20 @@
                 : `${guardStatus.issues.length} Issues Found`
             }}</span>
           </span>
+
+          <!-- Last Inspected Pill -->
+          <div
+            v-if="lastCheckedTime"
+            class="last-checked-pill"
+            :class="{ 'pill-pulse': justInspected }"
+            :title="t('guard.last_checked_tooltip') || 'Timestamp of last code quality execution'"
+          >
+            <span class="codicon codicon-history"></span>
+            <span
+              >{{ t("guard.last_checked") || "Last Checked" }}: <strong>{{ lastCheckedTime }}</strong></span
+            >
+            <span class="last-mode font-mono">({{ getModeLabel(lastCheckedMode) }})</span>
+          </div>
         </div>
         <p class="header-subtitle">
           {{
@@ -105,6 +119,25 @@
       </div>
     </header>
 
+    <!-- Running Scanning Glow Bar -->
+    <transition name="fade">
+      <div v-if="isChecking || isFixing" class="guard-scanning-banner">
+        <div class="scanning-glow-bar">
+          <div class="scanning-glow-thumb"></div>
+        </div>
+        <div class="scanning-info">
+          <span class="codicon codicon-loading spin"></span>
+          <span v-if="isFixing">{{
+            t("guard.running.fixing") || "Running automated fixers and style convergence..."
+          }}</span>
+          <span v-else>{{
+            t("guard.running.checking", { mode: getModeLabel(checkingMode) }) ||
+            `Scanning ${getModeLabel(checkingMode)} files across 38 rules...`
+          }}</span>
+        </div>
+      </div>
+    </transition>
+
     <!-- Key Metrics Stat Row -->
     <div class="metrics-row">
       <div class="metric-card">
@@ -151,6 +184,104 @@
         </div>
       </div>
     </div>
+
+    <!-- Latest Inspection Outcome Feedback Banner -->
+    <transition name="slide-down">
+      <div
+        v-if="latestInspection"
+        class="inspection-outcome-card"
+        :class="latestInspection.clean ? 'outcome-clean' : 'outcome-warning'"
+      >
+        <div class="outcome-main">
+          <div class="outcome-icon-wrap">
+            <span class="codicon" :class="latestInspection.clean ? 'codicon-pass-filled' : 'codicon-warning'"></span>
+          </div>
+          <div class="outcome-details">
+            <div class="outcome-title-row">
+              <span class="outcome-headline">
+                {{
+                  latestInspection.isFix
+                    ? t("guard.banner.fix_done") || "Auto-repair pipeline successfully finished"
+                    : latestInspection.clean
+                      ? t("guard.banner.clean_title") || "Inspection Passed · All rules and pipelines healthy"
+                      : t("guard.banner.issues_title", { count: latestInspection.issuesCount }) ||
+                        `Inspection alert: ${latestInspection.issuesCount} issues detected`
+                }}
+              </span>
+              <span class="outcome-badge font-mono" :class="latestInspection.clean ? 'badge-clean' : 'badge-warn'">
+                {{
+                  latestInspection.clean
+                    ? t("guard.status.passed") || "PASSED"
+                    : `${latestInspection.issuesCount} ISSUES`
+                }}
+              </span>
+            </div>
+            <div class="outcome-meta-row">
+              <span class="meta-item">
+                <span class="codicon codicon-eye"></span>
+                <span
+                  >{{ t("guard.banner.scope") || "Scope" }}:
+                  <strong>{{ getModeLabel(latestInspection.mode) }}</strong></span
+                >
+              </span>
+              <span class="meta-dot">•</span>
+              <span class="meta-item">
+                <span class="codicon codicon-files"></span>
+                <span
+                  >{{ t("guard.banner.scanned") || "Scanned" }}: <strong>{{ latestInspection.scanned }}</strong></span
+                >
+              </span>
+              <span class="meta-dot">•</span>
+              <span class="meta-item">
+                <span class="codicon codicon-watch"></span>
+                <span
+                  >{{ t("guard.banner.latency") || "Latency" }}:
+                  <strong>{{ latestInspection.durationMs }}ms</strong></span
+                >
+              </span>
+              <span class="meta-dot">•</span>
+              <span class="meta-item">
+                <span class="codicon codicon-clock"></span>
+                <span
+                  >{{ t("guard.banner.time") || "Checked at" }}: <strong>{{ latestInspection.time }}</strong></span
+                >
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="outcome-actions">
+          <button
+            v-if="!latestInspection.clean && activeTab !== 'reports'"
+            class="btn-outcome-action"
+            @click="activeTab = 'reports'"
+            title="Switch to detailed Checklist tab"
+          >
+            <span class="codicon codicon-checklist"></span>
+            <span>{{ t("guard.banner.view_reports") || "View Checklist" }}</span>
+          </button>
+
+          <button
+            v-if="!latestInspection.clean"
+            class="btn-outcome-action primary"
+            :disabled="isFixing"
+            @click="handleFix"
+            title="Run one-click automatic fixes"
+          >
+            <span class="codicon codicon-wand"></span>
+            <span>{{ t("guard.actions.auto_fix") || "Auto-Fix Now" }}</span>
+          </button>
+
+          <button
+            class="btn-outcome-dismiss"
+            @click="latestInspection = null"
+            :title="t('guard.banner.dismiss') || 'Dismiss'"
+          >
+            <span class="codicon codicon-close"></span>
+          </button>
+        </div>
+      </div>
+    </transition>
 
     <!-- View Switcher Tabs -->
     <div class="guard-view-tabs-bar">
@@ -410,17 +541,24 @@ import { useRouter } from "vue-router";
 import { t } from "../i18n";
 import { useGuard, type ToolSlotItem, type SlotConfigInput } from "../composables/useGuard";
 import { useEditorTabs } from "../composables/useEditorTabs";
+import { useToast } from "../composables/useToast";
 import ExtensionSlotModal from "../components/guard/ExtensionSlotModal.vue";
 import TomlConfigDrawer from "../components/guard/TomlConfigDrawer.vue";
 
+const emit = defineEmits<{
+  (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, channel?: string): void;
+}>();
+
 const router = useRouter();
 const { openTab } = useEditorTabs();
+const { showToast } = useToast();
 
 const {
   guardStatus,
   guardSlots,
   isChecking,
   isFixing,
+  lastRunResult,
   fetchStatus,
   fetchSlots,
   runCheck,
@@ -439,6 +577,23 @@ const checkingMode = ref<"changed" | "staged" | "all">("staged");
 const activeTab = ref<"matrix" | "slots" | "reports">("matrix");
 const searchKeyword = ref("");
 
+// Last inspection tracking for high visibility and transparency
+const lastCheckedTime = ref<string>("");
+const lastCheckedMode = ref<"changed" | "staged" | "all">("staged");
+const justInspected = ref(false);
+
+export interface LatestInspectionInfo {
+  time: string;
+  mode: "changed" | "staged" | "all";
+  scanned: number;
+  clean: boolean;
+  issuesCount: number;
+  fixedCount: number;
+  durationMs: number;
+  isFix?: boolean;
+}
+const latestInspection = ref<LatestInspectionInfo | null>(null);
+
 export interface ExtensionPipelineRow {
   extension: string;
   languages: string[];
@@ -447,6 +602,17 @@ export interface ExtensionPipelineRow {
   fixer?: ToolSlotItem;
   auditor?: ToolSlotItem;
   allSlots: ToolSlotItem[];
+}
+
+function getModeLabel(mode: "changed" | "staged" | "all"): string {
+  switch (mode) {
+    case "changed":
+      return t("guard.modes.changed") || "Workspace Changes";
+    case "staged":
+      return t("guard.modes.staged") || "Staged Changes";
+    case "all":
+      return t("guard.modes.all") || "Entire Repository";
+  }
 }
 
 onMounted(() => {
@@ -459,9 +625,77 @@ onActivated(() => {
   fetchSlots().catch(() => {});
 });
 
-function handleCheck(mode: "changed" | "staged" | "all") {
+async function handleCheck(mode: "changed" | "staged" | "all") {
   checkingMode.value = mode;
-  runCheck({ mode }).catch(() => {});
+  const modeLabel = getModeLabel(mode);
+  emit("log-event", "INFO", `[Quality Guard] Starting inspection (${modeLabel})...`, undefined, "output");
+
+  await runCheck({ mode });
+
+  const res = lastRunResult.value || {
+    success: true,
+    mode,
+    scanned: guardStatus.value.scanned,
+    clean: guardStatus.value.clean,
+    issuesCount: guardStatus.value.issues.length,
+    fixedCount: 0,
+    durationMs: guardStatus.value.duration_ms || 15,
+    logs: guardStatus.value.logs || [],
+  };
+
+  const now = new Date();
+  const timeStr = now.toTimeString().split(" ")[0];
+  lastCheckedTime.value = timeStr;
+  lastCheckedMode.value = mode;
+  justInspected.value = true;
+  setTimeout(() => {
+    justInspected.value = false;
+  }, 2500);
+
+  latestInspection.value = {
+    time: timeStr,
+    mode,
+    scanned: res.scanned,
+    clean: res.clean,
+    issuesCount: res.issuesCount,
+    fixedCount: 0,
+    durationMs: res.durationMs,
+    isFix: false,
+  };
+
+  if (res.logs && res.logs.length > 0) {
+    for (const line of res.logs) {
+      emit("log-event", "INFO", line, undefined, "output");
+    }
+  }
+
+  if (res.clean) {
+    emit(
+      "log-event",
+      "SUCCESS",
+      `[Quality Guard] Inspection passed: ${res.scanned} files verified clean, ${res.durationMs}ms`,
+      undefined,
+      "output"
+    );
+    showToast(
+      t("guard.toast.clean", { count: res.scanned, duration: res.durationMs }) ||
+        `Inspection passed: ${res.scanned} files verified, all rules healthy (${res.durationMs}ms)`,
+      "success"
+    );
+  } else {
+    emit(
+      "log-event",
+      "WARN",
+      `[Quality Guard] Inspection found ${res.issuesCount} issues across ${res.scanned} files (${res.durationMs}ms)`,
+      undefined,
+      "output"
+    );
+    showToast(
+      t("guard.toast.issues", { count: res.issuesCount, duration: res.durationMs }) ||
+        `Inspection alert: found ${res.issuesCount} issues across ${res.scanned} files`,
+      "warning"
+    );
+  }
 }
 
 async function openTomlInEditor() {
@@ -479,8 +713,61 @@ async function openTomlInEditor() {
   });
 }
 
-function handleFix() {
-  runFix().catch(() => {});
+async function handleFix() {
+  const modeLabel = getModeLabel(checkingMode.value);
+  emit("log-event", "INFO", `[Quality Guard] Starting auto-fix pipeline (${modeLabel})...`, undefined, "output");
+
+  await runFix(checkingMode.value);
+
+  const res = lastRunResult.value || {
+    success: true,
+    mode: checkingMode.value,
+    scanned: guardStatus.value.scanned,
+    clean: true,
+    issuesCount: 0,
+    fixedCount: 1,
+    durationMs: guardStatus.value.duration_ms || 25,
+    logs: guardStatus.value.logs || [],
+  };
+
+  const now = new Date();
+  const timeStr = now.toTimeString().split(" ")[0];
+  lastCheckedTime.value = timeStr;
+  lastCheckedMode.value = checkingMode.value;
+  justInspected.value = true;
+  setTimeout(() => {
+    justInspected.value = false;
+  }, 2500);
+
+  latestInspection.value = {
+    time: timeStr,
+    mode: checkingMode.value,
+    scanned: res.scanned,
+    clean: true,
+    issuesCount: 0,
+    fixedCount: res.fixedCount,
+    durationMs: res.durationMs,
+    isFix: true,
+  };
+
+  if (res.logs && res.logs.length > 0) {
+    for (const line of res.logs) {
+      emit("log-event", "INFO", line, undefined, "output");
+    }
+  }
+
+  emit(
+    "log-event",
+    "SUCCESS",
+    `[Quality Guard] Auto-fix completed: ${res.fixedCount} formatting & hygiene repairs applied (${res.durationMs}ms)`,
+    undefined,
+    "output"
+  );
+  showToast(
+    t("guard.toast.fixed", { count: res.fixedCount, duration: res.durationMs }) ||
+      `Auto-fix finished: ${res.fixedCount} formatting & hygiene fixes applied (${res.durationMs}ms)`,
+    "success"
+  );
 }
 
 // Map extensions to human readable language tags
@@ -705,6 +992,271 @@ async function onTomlSaved() {
   background: rgba(248, 81, 73, 0.15);
   color: #f85149;
   border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+/* Last Inspected Pill in Header */
+.last-checked-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--card-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--card-border, #333);
+  padding: 0.2rem 0.625rem;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+.last-checked-pill .last-mode {
+  opacity: 0.8;
+  font-size: 0.6875rem;
+}
+
+.last-checked-pill.pill-pulse {
+  border-color: #388bfd;
+  background: rgba(56, 139, 253, 0.15);
+  color: var(--text-main);
+  box-shadow: 0 0 10px rgba(56, 139, 253, 0.35);
+  animation: pulse-border 1.5s ease-in-out;
+}
+
+@keyframes pulse-border {
+  0% {
+    transform: scale(0.98);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Scanning Progress Bar Banner */
+.guard-scanning-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  background: rgba(56, 139, 253, 0.08);
+  border: 1px solid rgba(56, 139, 253, 0.25);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  overflow: hidden;
+}
+
+.scanning-glow-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(56, 139, 253, 0.2);
+  border-radius: 9999px;
+  position: relative;
+  overflow: hidden;
+}
+
+.scanning-glow-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, #388bfd, #58a6ff, transparent);
+  border-radius: 9999px;
+  animation: scanning-slide 1.2s infinite ease-in-out;
+}
+
+@keyframes scanning-slide {
+  0% {
+    left: -30%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.scanning-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: #58a6ff;
+  font-weight: 500;
+}
+
+/* Inspection Outcome Feedback Banner */
+.inspection-outcome-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  gap: 1rem;
+  flex-wrap: wrap;
+  transition: all 0.25s ease;
+}
+
+.outcome-clean {
+  background: rgba(46, 160, 67, 0.1);
+  border: 1px solid rgba(46, 160, 67, 0.3);
+}
+
+.outcome-warning {
+  background: rgba(210, 153, 34, 0.1);
+  border: 1px solid rgba(210, 153, 34, 0.3);
+}
+
+.outcome-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 280px;
+}
+
+.outcome-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.outcome-clean .outcome-icon-wrap {
+  color: #3fb950;
+}
+
+.outcome-warning .outcome-icon-wrap {
+  color: #d29922;
+}
+
+.outcome-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.outcome-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.outcome-headline {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.outcome-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.badge-clean {
+  background: rgba(46, 160, 67, 0.2);
+  color: #3fb950;
+}
+
+.badge-warn {
+  background: rgba(210, 153, 34, 0.2);
+  color: #d29922;
+}
+
+.outcome-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.outcome-meta-row .meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.outcome-meta-row .meta-item strong {
+  color: var(--text-main);
+}
+
+.outcome-meta-row .meta-dot {
+  opacity: 0.4;
+}
+
+.outcome-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-outcome-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--card-bg, #252526);
+  color: var(--text-main);
+  border: 1px solid var(--card-border, #333);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-outcome-action:hover {
+  background: var(--hover-bg, #333);
+}
+
+.btn-outcome-action.primary {
+  background: var(--vscode-button-background, #0e639c);
+  color: #fff;
+  border-color: transparent;
+}
+
+.btn-outcome-action.primary:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+.btn-outcome-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.btn-outcome-dismiss:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 .header-subtitle {
