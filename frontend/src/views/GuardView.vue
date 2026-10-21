@@ -449,6 +449,9 @@
                 <div v-for="(item, idx) in formattedLogs" :key="idx" class="log-line" :class="'log-' + item.type">
                   <span class="log-ts font-mono">{{ item.time }}</span>
                   <span class="log-badge font-mono" :class="'badge-' + item.type">{{ item.tag }}</span>
+                  <span class="log-icon-wrap" :class="'icon-wrap-' + item.type">
+                    <span class="codicon" :class="item.icon"></span>
+                  </span>
                   <span class="log-content font-mono">{{ item.text }}</span>
                 </div>
               </div>
@@ -1145,6 +1148,7 @@ export interface FormattedLogItem {
   time: string;
   tag: string;
   type: "info" | "pass" | "warn" | "error" | "config" | "phase" | "cmd" | "scan" | "rule";
+  icon: string;
   text: string;
 }
 
@@ -1161,50 +1165,75 @@ const scanProgressPct = ref(100);
 function parseLogLine(raw: string): FormattedLogItem {
   const now = new Date();
   const time = now.toTimeString().split(" ")[0];
+
+  // Strip ANSI escape sequences (e.g. \u001b[32m or [32m)
+  const clean = raw
+    .replace(/\u001b\[[0-9;]*[a-zA-Z]/g, "")
+    .replace(/\[\d{1,2}(?:;\d{1,2})*m/g, "")
+    .trim();
+
   let type: FormattedLogItem["type"] = "info";
   let tag = "GUARD";
+  let icon = "codicon-info text-blue";
+  let displayText = clean;
 
-  if (raw.startsWith("$ ")) {
+  if (clean.startsWith("$ ")) {
     type = "cmd";
     tag = "CLI";
-  } else if (raw.startsWith("ℹ ") || raw.startsWith("ℹ") || raw.includes("Inspecting workspace files")) {
+    icon = "codicon-terminal text-cyan";
+  } else if (clean.startsWith("ℹ") || clean.includes("Inspecting workspace files")) {
     type = "info";
     tag = "INFO";
-  } else if (raw.includes("› [scan]") || raw.includes("more files in inspection queue")) {
+    icon = "codicon-info text-blue";
+  } else if (clean.includes("› [scan]") || clean.includes("more files in inspection queue")) {
     type = "scan";
     tag = "SCAN";
-  } else if (raw.startsWith("✓ ✨") || raw.includes("Quality Guard passed") || raw.includes("All 38 guard rules")) {
-    type = "pass";
-    tag = "PASS";
-  } else if (raw.startsWith("✓ ") || raw.startsWith("✓")) {
-    type = "rule";
-    tag = "RULE";
-  } else if (raw.startsWith("✗ ") || raw.startsWith("✗") || raw.includes("[FAIL]")) {
-    type = "error";
-    tag = "FAIL";
-  } else if (raw.startsWith("! ") || raw.startsWith("!") || raw.includes("[WARN]")) {
-    type = "warn";
-    tag = "WARN";
-  } else if (raw.includes("[Config:")) {
-    type = "config";
-    tag = "CONFIG";
-  } else if (raw.includes("[Phase")) {
-    type = "phase";
-    tag = "PHASE";
+    icon = "codicon-search text-cyan";
   } else if (
-    raw.toLowerCase().includes("passed") ||
-    raw.toLowerCase().includes("clean") ||
-    raw.toLowerCase().includes("compliant")
+    clean.startsWith("✓ ✨") ||
+    clean.includes("Quality Guard passed") ||
+    clean.includes("All 38 guard rules") ||
+    clean.includes("No matching files found")
   ) {
     type = "pass";
     tag = "PASS";
+    icon = "codicon-check-all text-green";
+  } else if (clean.startsWith("✓ ") || clean.startsWith("✓")) {
+    type = "rule";
+    tag = "RULE";
+    icon = "codicon-pass text-green";
+  } else if (clean.startsWith("✗ ") || clean.startsWith("✗") || clean.includes("[FAIL]")) {
+    type = "error";
+    tag = "FAIL";
+    icon = "codicon-error text-red";
+  } else if (clean.startsWith("! ") || clean.startsWith("!") || clean.startsWith("⚠") || clean.includes("[WARN]")) {
+    type = "warn";
+    tag = "WARN";
+    icon = "codicon-warning text-amber";
+  } else if (clean.includes("[Config:")) {
+    type = "config";
+    tag = "CONFIG";
+    icon = "codicon-settings-gear text-purple";
+  } else if (clean.includes("[Phase")) {
+    type = "phase";
+    tag = "PHASE";
+    icon = "codicon-layers text-indigo";
+  } else if (
+    clean.toLowerCase().includes("passed") ||
+    clean.toLowerCase().includes("clean") ||
+    clean.toLowerCase().includes("compliant")
+  ) {
+    type = "pass";
+    tag = "PASS";
+    icon = "codicon-pass text-green";
   }
 
   return {
     time,
     tag,
     type,
-    text: raw,
+    icon,
+    text: displayText,
   };
 }
 
@@ -2653,6 +2682,44 @@ function getBuiltinRuleForExtAndCategory(
   padding: 0.05rem 0.35rem;
   border-radius: 3px;
   flex-shrink: 0;
+}
+
+.log-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  line-height: 1;
+  margin-top: 0.05rem;
+}
+
+.text-green {
+  color: #3fb950 !important;
+}
+
+.text-red {
+  color: #f85149 !important;
+}
+
+.text-amber {
+  color: #d29922 !important;
+}
+
+.text-blue {
+  color: #58a6ff !important;
+}
+
+.text-cyan {
+  color: #39c5cf !important;
+}
+
+.text-purple {
+  color: #bc8cff !important;
+}
+
+.text-indigo {
+  color: #79c0ff !important;
 }
 
 .badge-info {

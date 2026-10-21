@@ -3546,9 +3546,14 @@ print(json.dumps({
               const executedRuleMap = new Map<string, any>();
 
               for (const rawLine of rawLines) {
-                const trimmed = rawLine.trim();
+                // Strip ANSI escape sequences (e.g. \u001b[32m or [32m)
+                const cleanLine = rawLine
+                  .replace(/\u001b\[[0-9;]*[a-zA-Z]/g, "")
+                  .replace(/\[\d{1,2}(?:;\d{1,2})*m/g, "")
+                  .trimEnd();
+                const trimmed = cleanLine.trim();
                 if (!trimmed) continue;
-                logs.push(rawLine);
+                logs.push(cleanLine);
 
                 const inspectMatch = trimmed.match(/\((\d+)\s+files/);
                 if (inspectMatch) {
