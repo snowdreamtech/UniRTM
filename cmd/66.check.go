@@ -109,42 +109,53 @@ func runGuard(ctx context.Context, explicitFiles []string, autoFix bool) error {
 		return fmt.Errorf("guard pipeline failed: %w", err)
 	}
 
-	// Output structured reports
-	if len(res.Issues) == 0 {
-		output.Success(fmt.Sprintf("✨ Quality Guard passed! (%d files inspected in %v, 0 issues)",
-			res.Summary.TotalFilesScanned, res.Summary.Duration.Round(100*1000))) // Round to 0.1ms
-		return nil
+	output.Infof("Inspecting workspace files with UniRTM Quality Guard (%d files, mode: %s)", len(files), mode)
+
+	// Print individual rule status lines matching unirtm install style
+	for _, rep := range res.RuleReports {
+		if rep.Status == "fail" {
+			output.Errorf("%s (%d error(s))", rep.RuleID, rep.ErrorsCount)
+		} else if rep.Status == "warn" {
+			output.Warningf("%s (%d warning(s))", rep.RuleID, rep.WarningsCount)
+		} else if rep.Status == "fixed" {
+			output.Successf("%s (%d issue(s) fixed)", rep.RuleID, rep.FixedCount)
+		} else {
+			output.Successf("%s", rep.RuleID)
+		}
 	}
 
-	pterm.Println()
-	for _, iss := range res.Issues {
-		badge := pterm.Yellow("WARN")
-		if iss.Severity == guard.SeverityError {
-			badge = pterm.Red("FAIL")
-		} else if iss.Fixed {
-			badge = pterm.Green("FIXED")
-		}
+	if len(res.Issues) > 0 {
+		pterm.Println()
+		for _, iss := range res.Issues {
+			badge := pterm.Yellow("WARN")
+			if iss.Severity == guard.SeverityError {
+				badge = pterm.Red("FAIL")
+			} else if iss.Fixed {
+				badge = pterm.Green("FIXED")
+			}
 
-		location := iss.FilePath
-		if iss.Line > 0 {
-			location = fmt.Sprintf("%s:%d", iss.FilePath, iss.Line)
-		}
+			location := iss.FilePath
+			if iss.Line > 0 {
+				location = fmt.Sprintf("%s:%d", iss.FilePath, iss.Line)
+			}
 
-		pterm.Printf("  [%s] %s  %s: %s\n",
-			badge,
-			pterm.Cyan(location),
-			pterm.Gray(iss.RuleID),
-			iss.Message,
-		)
+			pterm.Printf("  [%s] %s  %s: %s\n",
+				badge,
+				pterm.Cyan(location),
+				pterm.Gray(iss.RuleID),
+				iss.Message,
+			)
+		}
+		pterm.Println()
 	}
-	pterm.Println()
 
-	summaryStr := fmt.Sprintf("Guard Summary: %d files scanned, %d errors, %d warnings, %d fixed (%v)",
+	durationStr := res.Summary.Duration.Round(100 * 1000).String()
+	summaryStr := fmt.Sprintf("Quality Guard passed: All %d guard rules processed (%d files inspected, %d errors, %d warnings, took %s)",
+		len(res.RuleReports),
 		res.Summary.TotalFilesScanned,
 		res.Summary.ErrorsCount,
 		res.Summary.WarningsCount,
-		res.Summary.FixedCount,
-		res.Summary.Duration.Round(100*1000),
+		durationStr,
 	)
 
 	if res.HasErrors {
@@ -152,10 +163,10 @@ func runGuard(ctx context.Context, explicitFiles []string, autoFix bool) error {
 		return fmt.Errorf("quality guard check failed with %d error(s)", res.Summary.ErrorsCount)
 	}
 
-	if res.Summary.FixedCount > 0 {
-		output.Success("✨ " + summaryStr)
-	} else {
+	if res.Summary.WarningsCount > 0 {
 		output.Warning("⚠️  " + summaryStr)
+	} else {
+		output.Success("✨ " + summaryStr)
 	}
 
 	return nil

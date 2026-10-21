@@ -22,12 +22,26 @@ type PipelineSummary struct {
 	Duration          time.Duration `json:"duration"`
 }
 
+// RuleReport records execution statistics and outcome for an individual rule
+type RuleReport struct {
+	RuleID        string        `json:"rule_id"`
+	Category      Category      `json:"category"`
+	Phase         Phase         `json:"phase"`
+	Duration      time.Duration `json:"duration"`
+	IssuesCount   int           `json:"issues_count"`
+	ErrorsCount   int           `json:"errors_count"`
+	WarningsCount int           `json:"warnings_count"`
+	FixedCount    int           `json:"fixed_count"`
+	Status        string        `json:"status"` // "passed", "warn", "fail", "fixed"
+}
+
 // PipelineResult aggregates issues and summaries across all executed phases
 type PipelineResult struct {
-	Issues    []Issue         `json:"issues"`
-	Summary   PipelineSummary `json:"summary"`
-	HasErrors bool            `json:"has_errors"`
-	Logs      []string        `json:"logs"`
+	Issues      []Issue         `json:"issues"`
+	Summary     PipelineSummary `json:"summary"`
+	HasErrors   bool            `json:"has_errors"`
+	Logs        []string        `json:"logs"`
+	RuleReports []RuleReport    `json:"rule_reports"`
 }
 
 // Pipeline orchestrates rule execution across the 3 phases
@@ -95,6 +109,53 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 		}
 	}
 
+	var ruleReports []RuleReport
+
+	executeRule := func(r Rule, phaseName string) {
+		rStart := time.Now()
+		rBefore := len(allIssues)
+		issues, err := r.Execute(ctx, files, opts)
+		rDuration := time.Since(rStart)
+		if err == nil && len(issues) > 0 {
+			allIssues = append(allIssues, issues...)
+		}
+		rIssues := len(allIssues) - rBefore
+
+		rep := RuleReport{
+			RuleID:      r.ID(),
+			Category:    r.Category(),
+			Phase:       r.Phase(),
+			Duration:    rDuration,
+			IssuesCount: rIssues,
+			Status:      "passed",
+		}
+		for i := rBefore; i < len(allIssues); i++ {
+			iss := allIssues[i]
+			if iss.Fixed {
+				rep.FixedCount++
+			}
+			if iss.Severity == SeverityError {
+				rep.ErrorsCount++
+			} else if iss.Severity == SeverityWarning {
+				rep.WarningsCount++
+			}
+		}
+		if rep.ErrorsCount > 0 {
+			rep.Status = "fail"
+		} else if rep.WarningsCount > 0 {
+			rep.Status = "warn"
+		} else if rep.FixedCount > 0 {
+			rep.Status = "fixed"
+		}
+		ruleReports = append(ruleReports, rep)
+
+		if rIssues == 0 {
+			logs = append(logs, fmt.Sprintf("[%s] Checking rule '%s': clean (0 issues)", phaseName, r.ID()))
+		} else {
+			logs = append(logs, fmt.Sprintf("[%s] Checking rule '%s': detected %d issues", phaseName, r.ID(), rIssues))
+		}
+	}
+
 	// Phase 1: Fixer (Text & AST Repairs) - line-by-line evaluation
 	phase1Start := time.Now()
 	phase1Before := len(allIssues)
@@ -104,17 +165,7 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 			return nil, ctx.Err()
 		default:
 		}
-		rBefore := len(allIssues)
-		issues, err := r.Execute(ctx, files, opts)
-		if err == nil && len(issues) > 0 {
-			allIssues = append(allIssues, issues...)
-		}
-		rIssues := len(allIssues) - rBefore
-		if rIssues == 0 {
-			logs = append(logs, fmt.Sprintf("[Phase 1 Fixer] Checking rule '%s': clean (0 issues)", r.ID()))
-		} else {
-			logs = append(logs, fmt.Sprintf("[Phase 1 Fixer] Checking rule '%s': detected %d issues", r.ID(), rIssues))
-		}
+		executeRule(r, "Phase 1 Fixer")
 	}
 	phase1Issues := len(allIssues) - phase1Before
 	logs = append(logs, fmt.Sprintf("[Phase 1 Fixer] Completed native hygiene check: %d rules evaluated, %d issues found (%v)", len(fixerRules), phase1Issues, time.Since(phase1Start).Round(time.Millisecond)))
@@ -128,17 +179,7 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 			return nil, ctx.Err()
 		default:
 		}
-		rBefore := len(allIssues)
-		issues, err := r.Execute(ctx, files, opts)
-		if err == nil && len(issues) > 0 {
-			allIssues = append(allIssues, issues...)
-		}
-		rIssues := len(allIssues) - rBefore
-		if rIssues == 0 {
-			logs = append(logs, fmt.Sprintf("[Phase 2 Formatter] Checking rule '%s': compliant (0 deviations)", r.ID()))
-		} else {
-			logs = append(logs, fmt.Sprintf("[Phase 2 Formatter] Checking rule '%s': detected %d deviations", r.ID(), rIssues))
-		}
+		executeRule(r, "Phase 2 Formatter")
 	}
 	phase2Issues := len(allIssues) - phase2Before
 	logs = append(logs, fmt.Sprintf("[Phase 2 Formatter] Completed code formatting: %d rules evaluated, %d deviations found (%v)", len(formatterRules), phase2Issues, time.Since(phase2Start).Round(time.Millisecond)))
@@ -152,17 +193,7 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 			return nil, ctx.Err()
 		default:
 		}
-		rBefore := len(allIssues)
-		issues, err := r.Execute(ctx, files, opts)
-		if err == nil && len(issues) > 0 {
-			allIssues = append(allIssues, issues...)
-		}
-		rIssues := len(allIssues) - rBefore
-		if rIssues == 0 {
-			logs = append(logs, fmt.Sprintf("[Phase 3 Linter] Checking rule '%s': passed (0 issues)", r.ID()))
-		} else {
-			logs = append(logs, fmt.Sprintf("[Phase 3 Linter] Checking rule '%s': detected %d issues", r.ID(), rIssues))
-		}
+		executeRule(r, "Phase 3 Linter")
 	}
 	phase3Issues := len(allIssues) - phase3Before
 	logs = append(logs, fmt.Sprintf("[Phase 3 Linter] Completed static analysis & secret protection: %d rules evaluated, %d issues found (%v)", len(linterRules), phase3Issues, time.Since(phase3Start).Round(time.Millisecond)))
@@ -202,9 +233,10 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	}
 
 	return &PipelineResult{
-		Issues:    allIssues,
-		Summary:   summary,
-		HasErrors: hasErrors,
-		Logs:      logs,
+		Issues:      allIssues,
+		Summary:     summary,
+		HasErrors:   hasErrors,
+		Logs:        logs,
+		RuleReports: ruleReports,
 	}, nil
 }
