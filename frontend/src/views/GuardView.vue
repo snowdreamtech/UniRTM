@@ -291,32 +291,32 @@
     <!-- View Switcher Tabs -->
     <div class="guard-view-tabs-bar">
       <div class="tabs-group">
-        <!-- 1. Primary Default Tab: Live Guard & Inspection Logs Workbench -->
+        <!-- 1. Primary Default Tab: Logs Workbench -->
         <button class="view-tab-btn" :class="{ active: activeTab === 'workbench' }" @click="activeTab = 'workbench'">
           <span class="codicon codicon-terminal"></span>
-          <span>{{ t("guard.tabs.workbench") || "Live Guard & Inspection Logs" }}</span>
+          <span>{{ t("guard.tabs.workbench") || "Logs" }}</span>
           <span class="tab-badge-pulse" :class="guardStatus.clean ? 'badge-clean' : 'badge-warn'">
             {{ guardStatus.clean ? "CLEAN" : `${guardStatus.issues.length} ISSUES` }}
           </span>
         </button>
 
-        <!-- 2. Transparent Rule Execution Checklist -->
+        <!-- 2. Rule Checklist -->
         <button class="view-tab-btn" :class="{ active: activeTab === 'reports' }" @click="activeTab = 'reports'">
           <span class="codicon codicon-checklist"></span>
-          <span>{{ t("guard.tabs.reports") || "Rule Execution Checklist" }}</span>
+          <span>{{ t("guard.tabs.reports") || "Checklist" }}</span>
           <span v-if="guardStatus.rule_reports && guardStatus.rule_reports.length > 0" class="tab-badge font-mono">
             {{ guardStatus.rule_reports.length }}
           </span>
         </button>
 
-        <!-- 3. Hidden Secondary Tab: Pipeline & Tool Mapping Settings (Advanced) -->
+        <!-- 3. Hidden Secondary Tab: Settings -->
         <button
           class="view-tab-btn tab-settings"
           :class="{ active: activeTab === 'settings' }"
           @click="activeTab = 'settings'"
         >
           <span class="codicon codicon-settings-gear"></span>
-          <span>{{ t("guard.tabs.settings") || "Pipeline & Tool Settings" }}</span>
+          <span>{{ t("guard.tabs.settings") || "Settings" }}</span>
           <span class="tab-badge font-mono">{{ extensionRows.length }}</span>
         </button>
       </div>
@@ -343,20 +343,14 @@
             <div class="console-card-header">
               <div class="console-header-left">
                 <span class="codicon codicon-terminal console-icon"></span>
-                <span class="console-title">{{ t("guard.logs.title") || "Live Inspection Output Stream" }}</span>
+                <span class="console-title">{{ t("guard.logs.title") || "Logs" }}</span>
                 <span
                   class="console-status-dot"
                   :class="isChecking || isFixing ? 'dot-running' : guardStatus.clean ? 'dot-clean' : 'dot-warn'"
                 ></span>
                 <span class="console-status-text font-mono">
                   {{
-                    isChecking
-                      ? "RUNNING INSPECTION..."
-                      : isFixing
-                        ? "FIXING PIPELINE..."
-                        : guardStatus.clean
-                          ? "WORKSPACE CLEAN & HEALTHY"
-                          : "ATTENTION: ISSUES FOUND"
+                    isChecking ? "INSPECTING..." : isFixing ? "FIXING..." : guardStatus.clean ? "CLEAN" : "ISSUES FOUND"
                   }}
                 </span>
               </div>
@@ -432,11 +426,11 @@
             <div class="console-body" ref="logViewerRef">
               <div v-if="formattedLogs.length === 0" class="console-empty-placeholder">
                 <span class="codicon codicon-shield-check placeholder-shield"></span>
-                <p class="placeholder-title">UniRTM Quality Guard Ready</p>
+                <p class="placeholder-title">Quality Guard Ready</p>
                 <p class="placeholder-desc">
                   {{
                     t("guard.logs.empty") ||
-                    "No inspection logs yet. Click 'Check Staged' or 'Check Changed' above to inspect files and stream live logs."
+                    "No logs yet. Click 'Check Staged' or 'Check Changed' above to inspect files."
                   }}
                 </p>
                 <div class="placeholder-quick-actions">
