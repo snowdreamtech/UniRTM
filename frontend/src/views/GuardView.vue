@@ -88,18 +88,84 @@
           <span>{{ t("guard.actions.check_all") || "Check Project" }}</span>
         </button>
 
-        <!-- One-click Auto Fix -->
-        <button
-          class="btn-action secondary"
-          :disabled="isFixing"
-          @click="handleFix"
-          title="Automatically fix formatting and whitespace errors"
-        >
-          <span class="codicon" :class="isFixing ? 'codicon-loading spin' : 'codicon-wand'"></span>
-          <span>{{
-            isFixing ? t("guard.actions.fixing") || "Fixing..." : t("guard.actions.auto_fix") || "Auto-Fix"
-          }}</span>
-        </button>
+        <!-- One-click Auto Fix with Scope Selector -->
+        <div ref="fixDropdownRef" class="split-btn-group">
+          <button
+            class="split-main-btn"
+            :disabled="isFixing || isChecking"
+            @click="handleFix()"
+            :title="getFixButtonTooltip()"
+          >
+            <span class="codicon" :class="isFixing ? 'codicon-loading spin' : 'codicon-wand'"></span>
+            <span>{{ getFixButtonLabel() }}</span>
+          </button>
+          <button
+            class="split-arrow-btn"
+            :disabled="isFixing || isChecking"
+            @click.stop="isFixDropdownOpen = !isFixDropdownOpen"
+            :aria-expanded="isFixDropdownOpen"
+            title="Switch fix scope (Staged, Changed, or Project)"
+          >
+            <span class="codicon codicon-chevron-down"></span>
+          </button>
+
+          <!-- Fix Scope Dropdown Menu -->
+          <transition name="dropdown-fade">
+            <div v-if="isFixDropdownOpen" class="fix-dropdown-menu">
+              <div class="fix-dropdown-header">
+                {{ t("guard.actions.fix_scope_title") || "Select Auto-Fix Scope" }}
+              </div>
+              <button
+                class="fix-dropdown-item"
+                :class="{ active: checkingMode === 'staged' }"
+                @click="selectFixScope('staged')"
+              >
+                <div class="item-title-row">
+                  <span class="codicon codicon-git-stage"></span>
+                  <span class="item-name">{{ t("guard.actions.fix_staged") || "Fix Staged" }}</span>
+                  <span v-if="checkingMode === 'staged'" class="current-badge">Active</span>
+                </div>
+                <div class="item-desc">
+                  {{ t("guard.actions.fix_staged_desc") || "Fix staged files only ($ unirtm check --staged --fix)" }}
+                </div>
+              </button>
+              <button
+                class="fix-dropdown-item"
+                :class="{ active: checkingMode === 'changed' }"
+                @click="selectFixScope('changed')"
+              >
+                <div class="item-title-row">
+                  <span class="codicon codicon-diff-modified"></span>
+                  <span class="item-name">{{ t("guard.actions.fix_changed") || "Fix Changed" }}</span>
+                  <span v-if="checkingMode === 'changed'" class="current-badge">Active</span>
+                </div>
+                <div class="item-desc">
+                  {{
+                    t("guard.actions.fix_changed_desc") ||
+                    "Fix all uncommitted workspace changes ($ unirtm check --fix)"
+                  }}
+                </div>
+              </button>
+              <button
+                class="fix-dropdown-item"
+                :class="{ active: checkingMode === 'all' }"
+                @click="selectFixScope('all')"
+              >
+                <div class="item-title-row">
+                  <span class="codicon codicon-run-all"></span>
+                  <span class="item-name">{{ t("guard.actions.fix_all") || "Fix Project" }}</span>
+                  <span v-if="checkingMode === 'all'" class="current-badge">Active</span>
+                </div>
+                <div class="item-desc">
+                  {{
+                    t("guard.actions.fix_all_desc") ||
+                    "Auto-format and fix all project files ($ unirtm check --all --fix)"
+                  }}
+                </div>
+              </button>
+            </div>
+          </transition>
+        </div>
 
         <!-- Toggle Pipeline Settings -->
         <button
@@ -270,11 +336,11 @@
             v-if="!latestInspection.clean"
             class="btn-outcome-action primary"
             :disabled="isFixing"
-            @click="handleFix"
-            title="Run one-click automatic fixes"
+            @click="handleFix()"
+            :title="getFixButtonTooltip()"
           >
-            <span class="codicon codicon-wand"></span>
-            <span>{{ t("guard.actions.auto_fix") || "Auto-Fix Now" }}</span>
+            <span class="codicon" :class="isFixing ? 'codicon-loading spin' : 'codicon-wand'"></span>
+            <span>{{ getFixButtonLabel() }}</span>
           </button>
 
           <button
@@ -523,9 +589,14 @@
                   {{ t("guard.diagnostics.issues") || "Quality Violations Detected" }} ({{ guardStatus.issues.length }})
                 </h3>
               </div>
-              <button class="btn-action primary compact" :disabled="isFixing" @click="handleFix">
-                <span class="codicon codicon-wand"></span>
-                <span>{{ t("guard.actions.auto_fix") || "Auto-Fix Now" }}</span>
+              <button
+                class="btn-action primary compact"
+                :disabled="isFixing"
+                @click="handleFix()"
+                :title="getFixButtonTooltip()"
+              >
+                <span class="codicon" :class="isFixing ? 'codicon-loading spin' : 'codicon-wand'"></span>
+                <span>{{ getFixButtonLabel() }}</span>
               </button>
             </div>
 
@@ -1056,7 +1127,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onActivated } from "vue";
+import { ref, computed, onMounted, onActivated, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "../i18n";
 import { useGuard, type ToolSlotItem, type SlotConfigInput } from "../composables/useGuard";
@@ -1108,6 +1179,46 @@ const parsedGuardConfig = ref<ParsedGuardConfig>({ skip: [], rules: {} });
 
 const isTomlDrawerOpen = ref(false);
 const checkingMode = ref<"changed" | "staged" | "all">("staged");
+
+// Auto-fix scope dropdown state
+const isFixDropdownOpen = ref(false);
+const fixDropdownRef = ref<HTMLElement | null>(null);
+
+function handleDocClick(e: MouseEvent) {
+  if (fixDropdownRef.value && !fixDropdownRef.value.contains(e.target as Node)) {
+    isFixDropdownOpen.value = false;
+  }
+}
+
+function getFixButtonLabel(mode?: "staged" | "changed" | "all") {
+  const targetMode = mode || checkingMode.value;
+  if (isFixing.value) {
+    return t("guard.actions.fixing") || "Fixing...";
+  }
+  if (targetMode === "staged") {
+    return t("guard.actions.fix_staged") || "Fix Staged";
+  }
+  if (targetMode === "all") {
+    return t("guard.actions.fix_all") || "Fix Project";
+  }
+  return t("guard.actions.fix_changed") || "Fix Changed";
+}
+
+function getFixButtonTooltip(mode?: "staged" | "changed" | "all") {
+  const targetMode = mode || checkingMode.value;
+  if (targetMode === "staged") {
+    return t("guard.actions.fix_staged_desc") || "Fix staged files only ($ unirtm check --staged --fix)";
+  }
+  if (targetMode === "all") {
+    return t("guard.actions.fix_all_desc") || "Auto-format and fix all project files ($ unirtm check --all --fix)";
+  }
+  return t("guard.actions.fix_changed_desc") || "Fix all uncommitted workspace changes ($ unirtm check --fix)";
+}
+
+function selectFixScope(mode: "staged" | "changed" | "all") {
+  isFixDropdownOpen.value = false;
+  handleFix(mode);
+}
 
 // Default primary tab is now the transparent Live Guard & Logs Workbench!
 const activeTab = ref<"workbench" | "reports" | "settings">("workbench");
@@ -1534,9 +1645,14 @@ function getModeLabel(mode: "changed" | "staged" | "all"): string {
 }
 
 onMounted(() => {
+  document.addEventListener("click", handleDocClick);
   fetchStatus().catch(() => {});
   fetchSlots().catch(() => {});
   loadGuardTomlConfig().catch(() => {});
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleDocClick);
 });
 
 onActivated(() => {
@@ -1693,7 +1809,11 @@ async function openTomlInEditor() {
   });
 }
 
-async function handleFix() {
+async function handleFix(overrideMode?: "staged" | "changed" | "all") {
+  if (overrideMode) {
+    checkingMode.value = overrideMode;
+  }
+  isFixDropdownOpen.value = false;
   const modeLabel = getModeLabel(checkingMode.value);
   emit("log-event", "INFO", `[Quality Guard] Starting auto-fix pipeline (${modeLabel})...`, undefined, "output");
 
@@ -2492,6 +2612,165 @@ function getBuiltinRuleForExtAndCategory(
 .btn-action:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Split Dropdown Button for Auto-Fix */
+.split-btn-group {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 6px;
+}
+
+.split-main-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4375rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  cursor: pointer;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  border-right: none;
+  transition: all 0.15s ease;
+}
+
+.split-main-btn:hover:not(:disabled) {
+  background: var(--btn-secondary-hover-bg);
+}
+
+.split-main-btn:disabled,
+.split-arrow-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.split-arrow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4375rem 0.5rem;
+  font-size: 0.75rem;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+  cursor: pointer;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  border-left: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  transition: all 0.15s ease;
+}
+
+.split-arrow-btn:hover:not(:disabled) {
+  background: var(--btn-secondary-hover-bg);
+  color: var(--accent-cyan, #0284c7);
+}
+
+.fix-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 310px;
+  background: var(--card-bg, #1e1e1e);
+  border: 1px solid var(--card-border, #333);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  padding: 0.5rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fix-dropdown-header {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #888);
+  padding: 0.375rem 0.625rem;
+  border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  margin-bottom: 0.25rem;
+}
+
+.fix-dropdown-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all 0.15s ease;
+}
+
+.fix-dropdown-item:hover {
+  background: var(--hover-bg, rgba(255, 255, 255, 0.08));
+  border-color: var(--card-border, rgba(255, 255, 255, 0.1));
+}
+
+.fix-dropdown-item.active {
+  background: rgba(2, 132, 199, 0.1);
+  border-color: rgba(2, 132, 199, 0.3);
+}
+
+.item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-main, #fff);
+  width: 100%;
+}
+
+.item-title-row .codicon {
+  font-size: 0.875rem;
+  color: var(--accent-cyan, #0284c7);
+}
+
+.current-badge {
+  margin-left: auto;
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(2, 132, 199, 0.2);
+  color: var(--accent-cyan, #0284c7);
+  text-transform: uppercase;
+}
+
+.item-desc {
+  font-size: 0.6875rem;
+  color: var(--text-muted, #888);
+  padding-left: 1.3rem;
+  line-height: 1.35;
+  font-family: var(--font-mono, monospace);
+}
+
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 /* Metrics Row */
