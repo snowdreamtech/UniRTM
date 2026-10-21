@@ -3626,7 +3626,7 @@ print(json.dumps({
                 }
               }
 
-              const isNoMatchingFiles = rawOutput.includes("No matching files found to inspect") || logs.length === 0;
+              const isNoMatchingFiles = realOutput.includes("No matching files found to inspect") || logs.length === 0;
               if (isNoMatchingFiles) {
                 logs.length = 0;
                 logs.push(`ℹ Inspecting workspace files with UniRTM Quality Guard (0 files, mode: ${mode})`);
