@@ -25,6 +25,19 @@
   --btn-secondary-hover-bg: rgba(255, 255, 255, 0.14);
   --btn-secondary-text: var(--text-main);
   --btn-secondary-border: var(--card-border);
+  /* Global Layer Hierarchy & Z-Index Tokens */
+  --z-base: 1;
+  --z-sidebar: 25;
+  --z-activity-bar: 50;
+  --z-status-bar: 60;
+  --z-drawer: 70;
+  --z-title-bar: 100;
+  --z-dropdown: 500;
+  --z-context-menu: 1000;
+  --z-context-menu-popover: 1001;
+  --z-modal: 1500;
+  --z-toast: 2500;
+  --z-tooltip: 3000;
   /* Inverted context menu: Dark editor -> Light contrast menu */
   --vscode-menu-background: #ffffff;
   --vscode-menu-foreground: #0f172a;
@@ -1013,4 +1026,16 @@ html[dir="rtl"] .opt-check {
 [data-theme="light"] .tab-context-menu .action-separator,
 [data-theme="light"] .tab-submenu-independent .action-separator {
   background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Global Context Menu Backdrop & Layering Architecture */
+.context-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-context-menu, 1000);
+  background: transparent;
+  cursor: default;
 }

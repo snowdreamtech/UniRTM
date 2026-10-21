@@ -51,102 +51,109 @@ function handleItemClick(action: () => void) {
   action();
 }
 
-function handleOutsideClick(e: MouseEvent) {
-  if (props.visible && menuRef.value && !menuRef.value.contains(e.target as Node)) {
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape" && props.visible) {
     emit("close");
   }
 }
 
 onMounted(() => {
-  window.addEventListener("click", handleOutsideClick);
-  window.addEventListener("contextmenu", handleOutsideClick);
+  window.addEventListener("keydown", handleKeydown);
+  window.addEventListener("resize", () => {
+    if (props.visible) emit("close");
+  });
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("click", handleOutsideClick);
-  window.removeEventListener("contextmenu", handleOutsideClick);
+  window.removeEventListener("keydown", handleKeydown);
+  window.removeEventListener("resize", () => {
+    if (props.visible) emit("close");
+  });
 });
 </script>
 
 <template>
-  <div
-    v-if="visible"
-    ref="menuRef"
-    class="terminal-context-menu"
-    :style="adjustedStyle"
-    role="menu"
-    aria-label="Terminal Context Menu"
-    @click.stop
-  >
-    <!-- Copy -->
-    <div
-      class="menu-item"
-      :class="{ disabled: !hasSelection }"
-      role="menuitem"
-      tabindex="0"
-      @click="hasSelection && handleItemClick(() => emit('copy'))"
-    >
-      <span class="menu-icon codicon codicon-copy"></span>
-      <span class="menu-label">{{ t("terminal.menu.copy") }}</span>
-      <span class="menu-shortcut">Ctrl+Shift+C</span>
+  <Teleport to="body">
+    <div v-if="visible" class="context-menu-backdrop" @click="emit('close')" @contextmenu.prevent="emit('close')">
+      <div
+        ref="menuRef"
+        class="terminal-context-menu"
+        :style="adjustedStyle"
+        role="menu"
+        aria-label="Terminal Context Menu"
+        @click.stop
+      >
+        <!-- Copy -->
+        <div
+          class="menu-item"
+          :class="{ disabled: !hasSelection }"
+          role="menuitem"
+          tabindex="0"
+          @click="hasSelection && handleItemClick(() => emit('copy'))"
+        >
+          <span class="menu-icon codicon codicon-copy"></span>
+          <span class="menu-label">{{ t("terminal.menu.copy") }}</span>
+          <span class="menu-shortcut">Ctrl+Shift+C</span>
+        </div>
+
+        <!-- Paste -->
+        <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('paste'))">
+          <span class="menu-icon codicon codicon-clippy"></span>
+          <span class="menu-label">{{ t("terminal.menu.paste") }}</span>
+          <span class="menu-shortcut">Ctrl+Shift+V</span>
+        </div>
+
+        <div class="menu-separator"></div>
+
+        <!-- Find -->
+        <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('find'))">
+          <span class="menu-icon codicon codicon-search"></span>
+          <span class="menu-label">{{ t("terminal.menu.find") }}</span>
+          <span class="menu-shortcut">Ctrl+F</span>
+        </div>
+
+        <!-- Select All -->
+        <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('select-all'))">
+          <span class="menu-icon codicon codicon-check-all"></span>
+          <span class="menu-label">{{ t("terminal.menu.select_all") }}</span>
+          <span class="menu-shortcut">Ctrl+A</span>
+        </div>
+
+        <!-- Export Log -->
+        <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('export-log'))">
+          <span class="menu-icon codicon codicon-cloud-download"></span>
+          <span class="menu-label">{{ t("terminal.menu.export_log") }}</span>
+        </div>
+
+        <!-- Clear Buffer -->
+        <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('clear'))">
+          <span class="menu-icon codicon codicon-clear-all"></span>
+          <span class="menu-label">{{ t("terminal.menu.clear") }}</span>
+          <span class="menu-shortcut">Ctrl+K</span>
+        </div>
+
+        <!-- Clear Persistent Buffer -->
+        <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('clear-history'))">
+          <span class="menu-icon codicon codicon-trash"></span>
+          <span class="menu-label">{{ t("terminal.menu.clear_history") }}</span>
+        </div>
+
+        <div class="menu-separator"></div>
+
+        <!-- Restart Session -->
+        <div class="menu-item danger" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('restart'))">
+          <span class="menu-icon codicon codicon-refresh"></span>
+          <span class="menu-label">{{ t("terminal.menu.restart") }}</span>
+        </div>
+      </div>
     </div>
-
-    <!-- Paste -->
-    <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('paste'))">
-      <span class="menu-icon codicon codicon-clippy"></span>
-      <span class="menu-label">{{ t("terminal.menu.paste") }}</span>
-      <span class="menu-shortcut">Ctrl+Shift+V</span>
-    </div>
-
-    <div class="menu-separator"></div>
-
-    <!-- Find -->
-    <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('find'))">
-      <span class="menu-icon codicon codicon-search"></span>
-      <span class="menu-label">{{ t("terminal.menu.find") }}</span>
-      <span class="menu-shortcut">Ctrl+F</span>
-    </div>
-
-    <!-- Select All -->
-    <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('select-all'))">
-      <span class="menu-icon codicon codicon-check-all"></span>
-      <span class="menu-label">{{ t("terminal.menu.select_all") }}</span>
-      <span class="menu-shortcut">Ctrl+A</span>
-    </div>
-
-    <!-- Export Log -->
-    <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('export-log'))">
-      <span class="menu-icon codicon codicon-cloud-download"></span>
-      <span class="menu-label">{{ t("terminal.menu.export_log") }}</span>
-    </div>
-
-    <!-- Clear Buffer -->
-    <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('clear'))">
-      <span class="menu-icon codicon codicon-clear-all"></span>
-      <span class="menu-label">{{ t("terminal.menu.clear") }}</span>
-      <span class="menu-shortcut">Ctrl+K</span>
-    </div>
-
-    <!-- Clear Persistent Buffer -->
-    <div class="menu-item" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('clear-history'))">
-      <span class="menu-icon codicon codicon-trash"></span>
-      <span class="menu-label">{{ t("terminal.menu.clear_history") }}</span>
-    </div>
-
-    <div class="menu-separator"></div>
-
-    <!-- Restart Session -->
-    <div class="menu-item danger" role="menuitem" tabindex="0" @click="handleItemClick(() => emit('restart'))">
-      <span class="menu-icon codicon codicon-refresh"></span>
-      <span class="menu-label">{{ t("terminal.menu.restart") }}</span>
-    </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
 .terminal-context-menu {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--z-context-menu-popover, 1001);
   min-width: 180px;
   background-color: var(--vscode-menu-background, #1e1e1e);
   color: var(--vscode-menu-foreground, #cccccc);

@@ -152,7 +152,7 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9999;
+  z-index: var(--z-context-menu, 1000);
   background: transparent;
 }
 
@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: var(--text-main, #e2e8f0);
   user-select: none;
-  z-index: 10000;
+  z-index: var(--z-context-menu-popover, 1001);
   min-width: 210px;
 }
 

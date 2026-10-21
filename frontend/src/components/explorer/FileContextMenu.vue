@@ -1,119 +1,122 @@
 <template>
-  <div
-    v-if="contextMenu.visible"
-    ref="menuRef"
-    class="file-context-menu"
-    :style="{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }"
-    @click.stop
-  >
-    <!-- New File / New Folder (if directory, create inside; if file, create in parent directory) -->
-    <div class="menu-item" @click="handleNewFile">
-      <span class="menu-icon codicon codicon-new-file"></span>
-      <span class="menu-label">新建文件</span>
-    </div>
-    <div class="menu-item" @click="handleNewFolder">
-      <span class="menu-icon codicon codicon-new-folder"></span>
-      <span class="menu-label">新建文件夹</span>
-    </div>
+  <Teleport to="body">
+    <div
+      v-if="contextMenu.visible"
+      class="context-menu-backdrop"
+      @click="closeContextMenu"
+      @contextmenu.prevent="closeContextMenu"
+    >
+      <div ref="menuRef" class="file-context-menu" :style="adjustedStyle" @click.stop>
+        <!-- New File / New Folder (if directory, create inside; if file, create in parent directory) -->
+        <div class="menu-item" @click="handleNewFile">
+          <span class="menu-icon codicon codicon-new-file"></span>
+          <span class="menu-label">新建文件</span>
+        </div>
+        <div class="menu-item" @click="handleNewFolder">
+          <span class="menu-icon codicon codicon-new-folder"></span>
+          <span class="menu-label">新建文件夹</span>
+        </div>
 
-    <div class="menu-separator"></div>
+        <div class="menu-separator"></div>
 
-    <!-- Copy Path -->
-    <div class="menu-item" @click="handleCopyPath">
-      <span class="menu-icon codicon codicon-copy"></span>
-      <span class="menu-label">复制路径</span>
-    </div>
+        <!-- Copy Path -->
+        <div class="menu-item" @click="handleCopyPath">
+          <span class="menu-icon codicon codicon-copy"></span>
+          <span class="menu-label">复制路径</span>
+        </div>
 
-    <!-- Copy Relative Path -->
-    <div class="menu-item" @click="handleCopyRelativePath">
-      <span class="menu-icon codicon codicon-copy"></span>
-      <span class="menu-label">复制相对路径</span>
-    </div>
+        <!-- Copy Relative Path -->
+        <div class="menu-item" @click="handleCopyRelativePath">
+          <span class="menu-icon codicon codicon-copy"></span>
+          <span class="menu-label">复制相对路径</span>
+        </div>
 
-    <!-- Copy Name -->
-    <div class="menu-item" @click="handleCopyName">
-      <span class="menu-icon codicon codicon-files"></span>
-      <span class="menu-label">复制名称</span>
-    </div>
+        <!-- Copy Name -->
+        <div class="menu-item" @click="handleCopyName">
+          <span class="menu-icon codicon codicon-files"></span>
+          <span class="menu-label">复制名称</span>
+        </div>
 
-    <div class="menu-separator"></div>
+        <div class="menu-separator"></div>
 
-    <!-- Rename -->
-    <div class="menu-item" @click="handleRename">
-      <span class="menu-icon codicon codicon-edit"></span>
-      <span class="menu-label">重命名</span>
-      <span class="menu-shortcut">F2</span>
-    </div>
+        <!-- Rename -->
+        <div class="menu-item" @click="handleRename">
+          <span class="menu-icon codicon codicon-edit"></span>
+          <span class="menu-label">重命名</span>
+          <span class="menu-shortcut">F2</span>
+        </div>
 
-    <!-- Delete -->
-    <div class="menu-item danger" @click="handleDelete">
-      <span class="menu-icon codicon codicon-trash"></span>
-      <span class="menu-label">删除</span>
-      <span class="menu-shortcut">Del</span>
-    </div>
+        <!-- Delete -->
+        <div class="menu-item danger" @click="handleDelete">
+          <span class="menu-icon codicon codicon-trash"></span>
+          <span class="menu-label">删除</span>
+          <span class="menu-shortcut">Del</span>
+        </div>
 
-    <div class="menu-separator"></div>
+        <div class="menu-separator"></div>
 
-    <!-- Open in Integrated Terminal -->
-    <div class="menu-item" @click="handleOpenTerminal">
-      <span class="menu-icon codicon codicon-terminal"></span>
-      <span class="menu-label">{{ t("explorer.context_menu.open_terminal") }}</span>
-    </div>
+        <!-- Open in Integrated Terminal -->
+        <div class="menu-item" @click="handleOpenTerminal">
+          <span class="menu-icon codicon codicon-terminal"></span>
+          <span class="menu-label">{{ t("explorer.context_menu.open_terminal") }}</span>
+        </div>
 
-    <!-- Workspace Multi-root Actions -->
-    <template v-if="contextMenu.node?.is_dir">
-      <div class="menu-separator"></div>
+        <!-- Workspace Multi-root Actions -->
+        <template v-if="contextMenu.node?.is_dir">
+          <div class="menu-separator"></div>
 
-      <div class="menu-item" @click="handleAddToWorkspace">
-        <span class="menu-icon codicon codicon-folder-library"></span>
-        <span class="menu-label">{{ t("explorer.add_folder_to_workspace") || "将文件夹添加到工作区..." }}</span>
+          <div class="menu-item" @click="handleAddToWorkspace">
+            <span class="menu-icon codicon codicon-folder-library"></span>
+            <span class="menu-label">{{ t("explorer.add_folder_to_workspace") || "将文件夹添加到工作区..." }}</span>
+          </div>
+
+          <div v-if="isWorkspaceRoot(contextMenu.node)" class="menu-item danger" @click="handleRemoveFromWorkspace">
+            <span class="menu-icon codicon codicon-close"></span>
+            <span class="menu-label">{{ t("explorer.remove_folder_from_workspace") || "将文件夹从工作区删除" }}</span>
+          </div>
+        </template>
+
+        <div class="menu-separator"></div>
+
+        <!-- Git SCM & Git Graph Actions -->
+        <div class="menu-item" @click="handleViewGitHistory">
+          <span class="menu-icon codicon codicon-git-commit"></span>
+          <span class="menu-label">在 Git Graph 中查看提交历史</span>
+        </div>
+
+        <!-- Local History Action -->
+        <div v-if="!contextMenu.node?.is_dir" class="menu-item" @click="handleOpenLocalHistory">
+          <span class="menu-icon codicon codicon-history"></span>
+          <span class="menu-label">本地历史记录 (Local History)</span>
+        </div>
+
+        <!-- Git Changes Group -->
+        <template v-if="gitStateInfo.hasGitChanges">
+          <div class="menu-separator"></div>
+
+          <div class="menu-item" @click="handleOpenDiff">
+            <span class="menu-icon codicon codicon-diff"></span>
+            <span class="menu-label">打开差异比对 (Diff)</span>
+          </div>
+
+          <div v-if="gitStateInfo.isStaged" class="menu-item" @click="handleUnstageFile">
+            <span class="menu-icon codicon codicon-remove"></span>
+            <span class="menu-label">取消暂存更改 (Unstage)</span>
+          </div>
+
+          <div v-if="gitStateInfo.isUnstaged" class="menu-item" @click="handleStageFile">
+            <span class="menu-icon codicon codicon-add"></span>
+            <span class="menu-label">暂存更改 (Stage)</span>
+          </div>
+
+          <div v-if="gitStateInfo.isUnstaged" class="menu-item danger" @click="handleDiscardFile">
+            <span class="menu-icon codicon codicon-discard"></span>
+            <span class="menu-label">放弃更改 (Discard)</span>
+          </div>
+        </template>
       </div>
-
-      <div v-if="isWorkspaceRoot(contextMenu.node)" class="menu-item danger" @click="handleRemoveFromWorkspace">
-        <span class="menu-icon codicon codicon-close"></span>
-        <span class="menu-label">{{ t("explorer.remove_folder_from_workspace") || "将文件夹从工作区删除" }}</span>
-      </div>
-    </template>
-
-    <div class="menu-separator"></div>
-
-    <!-- Git SCM & Git Graph Actions -->
-    <div class="menu-item" @click="handleViewGitHistory">
-      <span class="menu-icon codicon codicon-git-commit"></span>
-      <span class="menu-label">在 Git Graph 中查看提交历史</span>
     </div>
-
-    <!-- Local History Action -->
-    <div v-if="!contextMenu.node?.is_dir" class="menu-item" @click="handleOpenLocalHistory">
-      <span class="menu-icon codicon codicon-history"></span>
-      <span class="menu-label">本地历史记录 (Local History)</span>
-    </div>
-
-    <!-- Git Changes Group -->
-    <template v-if="gitStateInfo.hasGitChanges">
-      <div class="menu-separator"></div>
-
-      <div class="menu-item" @click="handleOpenDiff">
-        <span class="menu-icon codicon codicon-diff"></span>
-        <span class="menu-label">打开差异比对 (Diff)</span>
-      </div>
-
-      <div v-if="gitStateInfo.isStaged" class="menu-item" @click="handleUnstageFile">
-        <span class="menu-icon codicon codicon-remove"></span>
-        <span class="menu-label">取消暂存更改 (Unstage)</span>
-      </div>
-
-      <div v-if="gitStateInfo.isUnstaged" class="menu-item" @click="handleStageFile">
-        <span class="menu-icon codicon codicon-add"></span>
-        <span class="menu-label">暂存更改 (Stage)</span>
-      </div>
-
-      <div v-if="gitStateInfo.isUnstaged" class="menu-item danger" @click="handleDiscardFile">
-        <span class="menu-icon codicon codicon-discard"></span>
-        <span class="menu-label">放弃更改 (Discard)</span>
-      </div>
-    </template>
-  </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -323,33 +326,55 @@ function handleOpenLocalHistory() {
   }
 }
 
-function handleClickOutside(e: MouseEvent) {
-  if (contextMenu.value.visible && menuRef.value && !menuRef.value.contains(e.target as Node)) {
+const MENU_WIDTH = 220;
+const ESTIMATED_HEIGHT = 400;
+
+const adjustedStyle = computed(() => {
+  let left = contextMenu.value.x;
+  let top = contextMenu.value.y;
+
+  if (typeof window !== "undefined") {
+    if (left + MENU_WIDTH > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - MENU_WIDTH - 8);
+    }
+    if (top + ESTIMATED_HEIGHT > window.innerHeight - 8) {
+      top = Math.max(8, window.innerHeight - ESTIMATED_HEIGHT - 8);
+    }
+  }
+
+  return {
+    top: `${Math.max(8, top)}px`,
+    left: `${Math.max(8, left)}px`,
+  };
+});
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape" && contextMenu.value.visible) {
     closeContextMenu();
   }
 }
 
 onMounted(() => {
-  window.addEventListener("click", handleClickOutside);
-  window.addEventListener("contextmenu", handleClickOutside);
+  window.addEventListener("keydown", handleKeydown);
+  window.addEventListener("resize", closeContextMenu);
 });
 
 onUnmounted(() => {
-  window.removeEventListener("click", handleClickOutside);
-  window.removeEventListener("contextmenu", handleClickOutside);
+  window.removeEventListener("keydown", handleKeydown);
+  window.removeEventListener("resize", closeContextMenu);
 });
 </script>
 
 <style scoped>
 .file-context-menu {
   position: fixed;
-  z-index: 9999;
+  z-index: var(--z-context-menu-popover, 1001);
   background-color: var(--modal-bg, var(--card-bg));
   border: 1px solid var(--card-border);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   border-radius: 6px;
   padding: 4px 0;
-  min-width: 190px;
+  min-width: 200px;
   font-size: 13px;
   color: var(--text-main);
   user-select: none;
