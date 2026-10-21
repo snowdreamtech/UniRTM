@@ -40,9 +40,7 @@ function findUnirtmBinary(rootDir: string): string {
 export default defineConfig({
   resolve: {
     alias: {
-      "monaco-editor/min": fileURLToPath(
-        new URL("./node_modules/monaco-editor/min", import.meta.url)
-      ),
+      "monaco-editor/min": fileURLToPath(new URL("./node_modules/monaco-editor/min", import.meta.url)),
       "monaco-editor/min/vs/editor/editor.main.css": fileURLToPath(
         new URL("./node_modules/monaco-editor/min/vs/editor/editor.main.css", import.meta.url)
       ),
@@ -2821,7 +2819,17 @@ print(json.dumps({
             };
 
             const isCommonIgnored = (name: string) => {
-              return [".git", "node_modules", ".DS_Store", "dist", "target", ".turbo", ".idea", ".vscode", ".unirtm"].includes(name);
+              return [
+                ".git",
+                "node_modules",
+                ".DS_Store",
+                "dist",
+                "target",
+                ".turbo",
+                ".idea",
+                ".vscode",
+                ".unirtm",
+              ].includes(name);
             };
 
             const getGitIgnoredPaths = (cwd: string): Set<string> => {
@@ -2846,7 +2854,12 @@ print(json.dumps({
               return ignored;
             };
 
-            const isPathIgnored = (relPath: string, name: string, ignoredSet: Set<string>, parentIgnored: boolean): boolean => {
+            const isPathIgnored = (
+              relPath: string,
+              name: string,
+              ignoredSet: Set<string>,
+              parentIgnored: boolean
+            ): boolean => {
               if (parentIgnored || isCommonIgnored(name)) return true;
               const cleanRel = relPath.replace(/\\/g, "/");
               if (ignoredSet.has(cleanRel)) return true;
@@ -2859,7 +2872,15 @@ print(json.dumps({
               return false;
             };
 
-            const buildFSTree = (dirPath: string, currentRel: string, currentDepth: number, maxDepth: number, showHidden: boolean, ignoredSet: Set<string>, parentIgnored: boolean): any[] => {
+            const buildFSTree = (
+              dirPath: string,
+              currentRel: string,
+              currentDepth: number,
+              maxDepth: number,
+              showHidden: boolean,
+              ignoredSet: Set<string>,
+              parentIgnored: boolean
+            ): any[] => {
               if (!fs.existsSync(dirPath)) return [];
               const items = fs.readdirSync(dirPath, { withFileTypes: true });
               const dirs: any[] = [];
@@ -2867,7 +2888,13 @@ print(json.dumps({
 
               for (const item of items) {
                 const name = item.name;
-                if (!showHidden && name.startsWith(".") && name !== ".unirtm.toml" && name !== ".gitignore" && name !== ".env") {
+                if (
+                  !showHidden &&
+                  name.startsWith(".") &&
+                  name !== ".unirtm.toml" &&
+                  name !== ".gitignore" &&
+                  name !== ".env"
+                ) {
                   continue;
                 }
                 const entryRel = currentRel ? `${currentRel}/${name}` : name;
@@ -2894,7 +2921,15 @@ print(json.dumps({
 
                 if (isDir) {
                   if (currentDepth < maxDepth && name !== ".git" && name !== "node_modules") {
-                    entry.children = buildFSTree(fullEntryPath, entryRel, currentDepth + 1, maxDepth, showHidden, ignoredSet, isIgnored);
+                    entry.children = buildFSTree(
+                      fullEntryPath,
+                      entryRel,
+                      currentDepth + 1,
+                      maxDepth,
+                      showHidden,
+                      ignoredSet,
+                      isIgnored
+                    );
                   }
                   dirs.push(entry);
                 } else {
@@ -2940,7 +2975,9 @@ print(json.dumps({
             // POST /api/workspace/roots/add
             if (req.url === "/api/workspace/roots/add" && req.method === "POST") {
               let bodyStr = "";
-              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("data", (c: any) => {
+                bodyStr += c;
+              });
               req.on("end", () => {
                 try {
                   const { path: folderPath, name } = JSON.parse(bodyStr || "{}");
@@ -2953,11 +2990,11 @@ print(json.dumps({
                   const roots = loadWorkspaceRoots();
                   const cleanPath = String(folderPath).trim();
                   const folderName = name || path.basename(cleanPath) || "Folder";
-                  if (!roots.some(r => r.path === cleanPath)) {
+                  if (!roots.some((r) => r.path === cleanPath)) {
                     roots.push({
                       id: `root-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                       name: folderName,
-                      path: cleanPath
+                      path: cleanPath,
                     });
                     saveWorkspaceRoots(roots);
                   }
@@ -2975,7 +3012,9 @@ print(json.dumps({
             // POST /api/workspace/roots/remove
             if (req.url === "/api/workspace/roots/remove" && req.method === "POST") {
               let bodyStr = "";
-              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("data", (c: any) => {
+                bodyStr += c;
+              });
               req.on("end", () => {
                 try {
                   const { path: folderPath } = JSON.parse(bodyStr || "{}");
@@ -2986,7 +3025,7 @@ print(json.dumps({
                     res.end(JSON.stringify({ error: "Cannot remove the only root folder" }));
                     return;
                   }
-                  roots = roots.filter(r => r.path !== folderPath);
+                  roots = roots.filter((r) => r.path !== folderPath);
                   saveWorkspaceRoots(roots);
                   res.setHeader("Content-Type", "application/json");
                   res.end(JSON.stringify({ success: true, roots }));
@@ -3016,17 +3055,27 @@ print(json.dumps({
                 }
 
                 const ignoredSet = getGitIgnoredPaths(rd);
-                const entries = buildFSTree(safePath, relPath, 1, Math.min(depth || 3, 10), showHidden, ignoredSet, false);
+                const entries = buildFSTree(
+                  safePath,
+                  relPath,
+                  1,
+                  Math.min(depth || 3, 10),
+                  showHidden,
+                  ignoredSet,
+                  false
+                );
 
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({
-                  success: true,
-                  root: rd,
-                  name: path.basename(rd),
-                  path: relPath,
-                  entries,
-                  children: entries,
-                }));
+                res.end(
+                  JSON.stringify({
+                    success: true,
+                    root: rd,
+                    name: path.basename(rd),
+                    path: relPath,
+                    entries,
+                    children: entries,
+                  })
+                );
               } catch (err: any) {
                 res.statusCode = err.message.includes("Access denied") ? 403 : 500;
                 res.setHeader("Content-Type", "application/json");
@@ -3038,7 +3087,9 @@ print(json.dumps({
             // POST /api/fs/create
             if (req.url.startsWith("/api/fs/create") && req.method === "POST") {
               let bodyStr = "";
-              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("data", (c: any) => {
+                bodyStr += c;
+              });
               req.on("end", () => {
                 try {
                   const body = JSON.parse(bodyStr || "{}");
@@ -3071,7 +3122,9 @@ print(json.dumps({
             // POST /api/fs/rename
             if (req.url.startsWith("/api/fs/rename") && req.method === "POST") {
               let bodyStr = "";
-              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("data", (c: any) => {
+                bodyStr += c;
+              });
               req.on("end", () => {
                 try {
                   const body = JSON.parse(bodyStr || "{}");
@@ -3096,9 +3149,14 @@ print(json.dumps({
             }
 
             // POST /api/fs/delete
-            if ((req.url.startsWith("/api/fs/delete") || req.url === "/api/fs") && (req.method === "POST" || req.method === "DELETE")) {
+            if (
+              (req.url.startsWith("/api/fs/delete") || req.url === "/api/fs") &&
+              (req.method === "POST" || req.method === "DELETE")
+            ) {
               let bodyStr = "";
-              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("data", (c: any) => {
+                bodyStr += c;
+              });
               req.on("end", () => {
                 try {
                   const urlObj = new URL(req.url!, "http://localhost");
@@ -3151,7 +3209,9 @@ print(json.dumps({
                 if (stat.size > 10 * 1024 * 1024) {
                   res.statusCode = 400;
                   res.setHeader("Content-Type", "application/json");
-                  res.end(JSON.stringify({ error: "File too large (exceeds 10MB)", size: stat.size, is_too_large: true }));
+                  res.end(
+                    JSON.stringify({ error: "File too large (exceeds 10MB)", size: stat.size, is_too_large: true })
+                  );
                   return;
                 }
                 const content = fs.readFileSync(safePath, "utf-8");
@@ -3168,7 +3228,9 @@ print(json.dumps({
             // POST /api/fs/write
             if (req.url.startsWith("/api/fs/write") && (req.method === "POST" || req.method === "PUT")) {
               let bodyStr = "";
-              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("data", (c: any) => {
+                bodyStr += c;
+              });
               req.on("end", () => {
                 try {
                   const body = JSON.parse(bodyStr || "{}");
@@ -3200,49 +3262,207 @@ print(json.dumps({
 
             if (reqPath === "/api/guard/rules" && req.method === "GET") {
               const standardConfigs = [
-                { name: ".unirtm.toml", title: "UniRTM 守卫总配置", description: "定义质量守卫运行模式、排除路径与工具槽位绑定", category: "core", phase: "all" },
-                { name: ".golangci.yml", title: "Go 静态检查门禁", description: "Go 语言代码质量规则集与静态分析配置", category: "lint", phase: "Phase 3" },
-                { name: ".prettierrc", title: "Web 统一格式化", description: "JavaScript/TypeScript/Vue/JSON 视觉排版规范", category: "format", phase: "Phase 2" },
-                { name: ".gitleaks.toml", title: "密钥泄露防护规则", description: "密码、私钥、API Key 与 Token 泄露拦截策略", category: "secret", phase: "Phase 3" },
-                { name: ".editorconfig", title: "跨编辑器基础规范", description: "统一文件编码、换行符及缩进风格", category: "hygiene", phase: "Phase 1" },
-                { name: "eslint.config.mjs", title: "Web 前端代码质量", description: "TypeScript 与 Vue 语法规约与静态拦截", category: "lint", phase: "Phase 3" },
-                { name: ".shellcheckrc", title: "Shell 脚本检查规范", description: "POSIX / Bash 陷阱与质量规范配置", category: "lint", phase: "Phase 3" },
-                { name: "ruff.toml", title: "Python 快速检查排版", description: "Python 代码语法树排版与规范拦截配置", category: "lint", phase: "Phase 2/3" },
+                {
+                  name: ".unirtm.toml",
+                  title: "UniRTM 守卫总配置",
+                  description: "定义质量守卫运行模式、排除路径与工具槽位绑定",
+                  category: "core",
+                  phase: "all",
+                },
+                {
+                  name: ".golangci.yml",
+                  title: "Go 静态检查门禁",
+                  description: "Go 语言代码质量规则集与静态分析配置",
+                  category: "lint",
+                  phase: "Phase 3",
+                },
+                {
+                  name: ".prettierrc",
+                  title: "Web 统一格式化",
+                  description: "JavaScript/TypeScript/Vue/JSON 视觉排版规范",
+                  category: "format",
+                  phase: "Phase 2",
+                },
+                {
+                  name: ".gitleaks.toml",
+                  title: "密钥泄露防护规则",
+                  description: "密码、私钥、API Key 与 Token 泄露拦截策略",
+                  category: "secret",
+                  phase: "Phase 3",
+                },
+                {
+                  name: ".editorconfig",
+                  title: "跨编辑器基础规范",
+                  description: "统一文件编码、换行符及缩进风格",
+                  category: "hygiene",
+                  phase: "Phase 1",
+                },
+                {
+                  name: "eslint.config.mjs",
+                  title: "Web 前端代码质量",
+                  description: "TypeScript 与 Vue 语法规约与静态拦截",
+                  category: "lint",
+                  phase: "Phase 3",
+                },
+                {
+                  name: ".shellcheckrc",
+                  title: "Shell 脚本检查规范",
+                  description: "POSIX / Bash 陷阱与质量规范配置",
+                  category: "lint",
+                  phase: "Phase 3",
+                },
+                {
+                  name: "ruff.toml",
+                  title: "Python 快速检查排版",
+                  description: "Python 代码语法树排版与规范拦截配置",
+                  category: "lint",
+                  phase: "Phase 2/3",
+                },
               ];
 
-              const config_files = standardConfigs.map(sc => {
+              const config_files = standardConfigs.map((sc) => {
                 const fullPath = path.join(rootDir, sc.name);
                 const exists = fs.existsSync(fullPath) && !fs.statSync(fullPath).isDirectory();
                 return { ...sc, exists, path: sc.name };
               });
 
               res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify({
-                builtin_rules: [
-                  { id: "hygiene/whitespace", category: "hygiene", phase: "fixer", extensions: [".go", ".ts", ".js", ".vue", ".json", ".yaml", ".yml", ".md", ".toml", ".sh"] },
-                  { id: "hygiene/eof", category: "hygiene", phase: "fixer", extensions: [".go", ".ts", ".js", ".vue", ".json", ".yaml", ".yml", ".md", ".toml", ".sh"] },
-                  { id: "hygiene/utf8bom", category: "hygiene", phase: "fixer", extensions: null },
-                  { id: "hygiene/large-files", category: "hygiene", phase: "linter", extensions: null },
-                  { id: "hygiene/merge-conflict", category: "hygiene", phase: "linter", extensions: null },
-                  { id: "hygiene/case-conflict", category: "hygiene", phase: "linter", extensions: null },
-                  { id: "hygiene/lockfiles", category: "hygiene", phase: "linter", extensions: ["unirtm.lock", "package-lock.json", "go.sum"] },
-                  { id: "secret/private-key", category: "secret", phase: "linter", extensions: null },
-                  { id: "secret/env-safety", category: "secret", phase: "linter", extensions: [".env", ".env.*"] },
-                ],
-                slots: [
-                  { id: "go.formatter", description: "Go canonical code formatter", category: "format", phase: "formatter", default_tool_name: "gofmt", default_command: "gofmt -w {{files}}", default_extensions: [".go"] },
-                  { id: "go.imports", description: "Go imports manager and organizer", category: "hygiene", phase: "fixer", default_tool_name: "goimports", default_command: "goimports -w {{files}}", default_extensions: [".go"] },
-                  { id: "go.linter", description: "Go static analysis & quality linter", category: "lint", phase: "linter", default_tool_name: "golangci-lint", default_command: "golangci-lint run", default_extensions: [".go"], standard_config_files: [".golangci.yml", ".golangci.yaml", ".golangci.toml"] },
-                  { id: "web.formatter", description: "Web multi-language formatter (Prettier / Biome)", category: "format", phase: "formatter", default_tool_name: "prettier", default_command: "prettier --write {{files}}", default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue", ".json", ".css", ".md"], standard_config_files: [".prettierrc", ".prettierrc.json", ".prettierrc.yaml", "prettier.config.js"] },
-                  { id: "web.linter", description: "JavaScript / TypeScript / Vue linter (ESLint / Oxlint / Biome)", category: "lint", phase: "linter", default_tool_name: "eslint", default_command: "eslint {{files}}", fix_command: "eslint --fix {{files}}", default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue"], standard_config_files: ["eslint.config.js", "eslint.config.mjs", ".eslintrc.json"] },
-                  { id: "python.suite", description: "Python fast formatter and linter (Ruff / Black / Flake8)", category: "lint", phase: "linter", default_tool_name: "ruff", default_command: "ruff check {{files}}", fix_command: "ruff check --fix {{files}}", default_extensions: [".py", ".pyi"], standard_config_files: ["ruff.toml", ".ruff.toml", "pyproject.toml"] },
-                  { id: "toml.formatter", description: "TOML file formatter", category: "format", phase: "formatter", default_tool_name: "taplo", default_command: "taplo format {{files}}", default_extensions: [".toml"], standard_config_files: [".taplo.toml", "taplo.toml"] },
-                  { id: "shell.formatter", description: "Shell script standard POSIX formatter", category: "format", phase: "formatter", default_tool_name: "shfmt", default_command: "shfmt -w -s -i 2 {{files}}", default_extensions: [".sh", ".bash"] },
-                  { id: "shell.linter", description: "Shell script static analyzer", category: "lint", phase: "linter", default_tool_name: "shellcheck", default_command: "shellcheck {{files}}", default_extensions: [".sh", ".bash"], standard_config_files: [".shellcheckrc"] },
-                  { id: "secret.gitleaks", description: "Secret and API key leak protector", category: "secret", phase: "linter", default_tool_name: "gitleaks", default_command: "gitleaks protect --staged --redact", standard_config_files: [".gitleaks.toml"] },
-                ],
-                config_files,
-              }));
+              res.end(
+                JSON.stringify({
+                  builtin_rules: [
+                    {
+                      id: "hygiene/whitespace",
+                      category: "hygiene",
+                      phase: "fixer",
+                      extensions: [".go", ".ts", ".js", ".vue", ".json", ".yaml", ".yml", ".md", ".toml", ".sh"],
+                    },
+                    {
+                      id: "hygiene/eof",
+                      category: "hygiene",
+                      phase: "fixer",
+                      extensions: [".go", ".ts", ".js", ".vue", ".json", ".yaml", ".yml", ".md", ".toml", ".sh"],
+                    },
+                    { id: "hygiene/utf8bom", category: "hygiene", phase: "fixer", extensions: null },
+                    { id: "hygiene/large-files", category: "hygiene", phase: "linter", extensions: null },
+                    { id: "hygiene/merge-conflict", category: "hygiene", phase: "linter", extensions: null },
+                    { id: "hygiene/case-conflict", category: "hygiene", phase: "linter", extensions: null },
+                    {
+                      id: "hygiene/lockfiles",
+                      category: "hygiene",
+                      phase: "linter",
+                      extensions: ["unirtm.lock", "package-lock.json", "go.sum"],
+                    },
+                    { id: "secret/private-key", category: "secret", phase: "linter", extensions: null },
+                    { id: "secret/env-safety", category: "secret", phase: "linter", extensions: [".env", ".env.*"] },
+                  ],
+                  slots: [
+                    {
+                      id: "go.formatter",
+                      description: "Go canonical code formatter",
+                      category: "format",
+                      phase: "formatter",
+                      default_tool_name: "gofmt",
+                      default_command: "gofmt -w {{files}}",
+                      default_extensions: [".go"],
+                    },
+                    {
+                      id: "go.imports",
+                      description: "Go imports manager and organizer",
+                      category: "hygiene",
+                      phase: "fixer",
+                      default_tool_name: "goimports",
+                      default_command: "goimports -w {{files}}",
+                      default_extensions: [".go"],
+                    },
+                    {
+                      id: "go.linter",
+                      description: "Go static analysis & quality linter",
+                      category: "lint",
+                      phase: "linter",
+                      default_tool_name: "golangci-lint",
+                      default_command: "golangci-lint run",
+                      default_extensions: [".go"],
+                      standard_config_files: [".golangci.yml", ".golangci.yaml", ".golangci.toml"],
+                    },
+                    {
+                      id: "web.formatter",
+                      description: "Web multi-language formatter (Prettier / Biome)",
+                      category: "format",
+                      phase: "formatter",
+                      default_tool_name: "prettier",
+                      default_command: "prettier --write {{files}}",
+                      default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue", ".json", ".css", ".md"],
+                      standard_config_files: [
+                        ".prettierrc",
+                        ".prettierrc.json",
+                        ".prettierrc.yaml",
+                        "prettier.config.js",
+                      ],
+                    },
+                    {
+                      id: "web.linter",
+                      description: "JavaScript / TypeScript / Vue linter (ESLint / Oxlint / Biome)",
+                      category: "lint",
+                      phase: "linter",
+                      default_tool_name: "eslint",
+                      default_command: "eslint {{files}}",
+                      fix_command: "eslint --fix {{files}}",
+                      default_extensions: [".js", ".jsx", ".ts", ".tsx", ".vue"],
+                      standard_config_files: ["eslint.config.js", "eslint.config.mjs", ".eslintrc.json"],
+                    },
+                    {
+                      id: "python.suite",
+                      description: "Python fast formatter and linter (Ruff / Black / Flake8)",
+                      category: "lint",
+                      phase: "linter",
+                      default_tool_name: "ruff",
+                      default_command: "ruff check {{files}}",
+                      fix_command: "ruff check --fix {{files}}",
+                      default_extensions: [".py", ".pyi"],
+                      standard_config_files: ["ruff.toml", ".ruff.toml", "pyproject.toml"],
+                    },
+                    {
+                      id: "toml.formatter",
+                      description: "TOML file formatter",
+                      category: "format",
+                      phase: "formatter",
+                      default_tool_name: "taplo",
+                      default_command: "taplo format {{files}}",
+                      default_extensions: [".toml"],
+                      standard_config_files: [".taplo.toml", "taplo.toml"],
+                    },
+                    {
+                      id: "shell.formatter",
+                      description: "Shell script standard POSIX formatter",
+                      category: "format",
+                      phase: "formatter",
+                      default_tool_name: "shfmt",
+                      default_command: "shfmt -w -s -i 2 {{files}}",
+                      default_extensions: [".sh", ".bash"],
+                    },
+                    {
+                      id: "shell.linter",
+                      description: "Shell script static analyzer",
+                      category: "lint",
+                      phase: "linter",
+                      default_tool_name: "shellcheck",
+                      default_command: "shellcheck {{files}}",
+                      default_extensions: [".sh", ".bash"],
+                      standard_config_files: [".shellcheckrc"],
+                    },
+                    {
+                      id: "secret.gitleaks",
+                      description: "Secret and API key leak protector",
+                      category: "secret",
+                      phase: "linter",
+                      default_tool_name: "gitleaks",
+                      default_command: "gitleaks protect --staged --redact",
+                      standard_config_files: [".gitleaks.toml"],
+                    },
+                  ],
+                  config_files,
+                })
+              );
               return;
             }
 
@@ -3261,7 +3481,7 @@ print(json.dumps({
                 { file: ".gitleaks.toml", label: ".gitleaks.toml (secret.gitleaks -> gitleaks)" },
                 { file: "eslint.config.mjs", label: "eslint.config.mjs (web.linter -> eslint)" },
                 { file: ".shellcheckrc", label: ".shellcheckrc (shell.linter -> shellcheck)" },
-                { file: "ruff.toml", label: "ruff.toml (python.suite -> ruff)" }
+                { file: "ruff.toml", label: "ruff.toml (python.suite -> ruff)" },
               ];
               for (const item of possibleConfigs) {
                 const fullP = path.join(rootDir, item.file);
@@ -3270,9 +3490,7 @@ print(json.dumps({
                 }
               }
 
-              const logs = [
-                `[Quality Guard] Starting quality guard pipeline (mode: ${mode}, scanned files: 0)`,
-              ];
+              const logs = [`[Quality Guard] Starting quality guard pipeline (mode: ${mode}, scanned files: 0)`];
               for (const item of possibleConfigs) {
                 const fullP = path.join(rootDir, item.file);
                 if (fs.existsSync(fullP) && !fs.statSync(fullP).isDirectory()) {
@@ -3291,26 +3509,146 @@ print(json.dumps({
                 `[Phase 3 Linter] Completed static analysis & secret protection: 5 rules evaluated, 0 issues found (0ms)`,
                 `[Quality Guard] Guard checks passed: 0 blocking violations, all compliant (total: 1ms)`
               );
+              const defaultRuleReports = [
+                {
+                  rule_id: "builtin:trailing-whitespace",
+                  category: "hygiene",
+                  phase: "fixer",
+                  duration: 250000,
+                  issues_count: 0,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixed_count: 0,
+                  status: "passed",
+                },
+                {
+                  rule_id: "builtin:end-of-file",
+                  category: "hygiene",
+                  phase: "fixer",
+                  duration: 180000,
+                  issues_count: 0,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixed_count: 0,
+                  status: "passed",
+                },
+                {
+                  rule_id: "builtin:check-utf8-bom",
+                  category: "hygiene",
+                  phase: "fixer",
+                  duration: 120000,
+                  issues_count: 0,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixed_count: 0,
+                  status: "passed",
+                },
+                {
+                  rule_id: "builtin:check-merge-conflict",
+                  category: "git",
+                  phase: "linter",
+                  duration: 310000,
+                  issues_count: 0,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixed_count: 0,
+                  status: "passed",
+                },
+                {
+                  rule_id: "builtin:detect-private-key",
+                  category: "security",
+                  phase: "linter",
+                  duration: 420000,
+                  issues_count: 0,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixed_count: 0,
+                  status: "passed",
+                },
+                {
+                  rule_id: "slot:go.formatter",
+                  category: "format",
+                  phase: "formatter",
+                  duration: 4200000,
+                  issues_count: 0,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixed_count: 0,
+                  status: "passed",
+                },
+                {
+                  rule_id: "slot:web.formatter",
+                  category: "format",
+                  phase: "formatter",
+                  duration: 8500000,
+                  issues_count: 0,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixed_count: 0,
+                  status: "passed",
+                },
+                {
+                  rule_id: "slot:go.linter",
+                  category: "lint",
+                  phase: "linter",
+                  duration: 12000000,
+                  issues_count: 0,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixed_count: 0,
+                  status: "passed",
+                },
+                {
+                  rule_id: "slot:web.linter",
+                  category: "lint",
+                  phase: "linter",
+                  duration: 9000000,
+                  issues_count: 0,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixed_count: 0,
+                  status: "passed",
+                },
+                {
+                  rule_id: "slot:secret.gitleaks",
+                  category: "security",
+                  phase: "linter",
+                  duration: 15000000,
+                  issues_count: 0,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixed_count: 0,
+                  status: "passed",
+                },
+              ];
+
               res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify({
-                mode,
-                scanned: 0,
-                clean: true,
-                errors_count: 0,
-                warnings_count: 0,
-                fixable_count: 0,
-                issues: [],
-                logs,
-              }));
+              res.end(
+                JSON.stringify({
+                  mode,
+                  scanned: 0,
+                  clean: true,
+                  errors_count: 0,
+                  warnings_count: 0,
+                  fixable_count: 0,
+                  issues: [],
+                  rule_reports: defaultRuleReports,
+                  logs,
+                })
+              );
               return;
             }
 
             if (reqPath === "/api/guard/run" && req.method === "POST") {
               let bodyStr = "";
-              req.on("data", chunk => { bodyStr += chunk; });
+              req.on("data", (chunk) => {
+                bodyStr += chunk;
+              });
               req.on("end", () => {
                 let reqBody = { mode: "staged", fix: true };
-                try { reqBody = JSON.parse(bodyStr); } catch (_) {}
+                try {
+                  reqBody = JSON.parse(bodyStr);
+                } catch (_) {}
 
                 const possibleConfigs = [
                   { file: ".unirtm.toml", label: ".unirtm.toml (guard manifest)" },
@@ -3320,12 +3658,10 @@ print(json.dumps({
                   { file: ".gitleaks.toml", label: ".gitleaks.toml (secret.gitleaks -> gitleaks)" },
                   { file: "eslint.config.mjs", label: "eslint.config.mjs (web.linter -> eslint)" },
                   { file: ".shellcheckrc", label: ".shellcheckrc (shell.linter -> shellcheck)" },
-                  { file: "ruff.toml", label: "ruff.toml (python.suite -> ruff)" }
+                  { file: "ruff.toml", label: "ruff.toml (python.suite -> ruff)" },
                 ];
 
-                const logs = [
-                  `[Quality Guard] Starting self-healing pipeline (mode: ${reqBody.mode || "staged"})`,
-                ];
+                const logs = [`[Quality Guard] Starting self-healing pipeline (mode: ${reqBody.mode || "staged"})`];
                 for (const item of possibleConfigs) {
                   const fullP = path.join(rootDir, item.file);
                   if (fs.existsSync(fullP) && !fs.statSync(fullP).isDirectory()) {
@@ -3343,13 +3679,137 @@ print(json.dumps({
                   `[Phase 3 Linter] Static gate re-verification passed (0ms)`,
                   `[Quality Guard] Guard self-healing completed: 0 blocking violations, workspace clean and healthy`
                 );
+
+                const defaultRuleReports = [
+                  {
+                    rule_id: "builtin:trailing-whitespace",
+                    category: "hygiene",
+                    phase: "fixer",
+                    duration: 250000,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  },
+                  {
+                    rule_id: "builtin:end-of-file",
+                    category: "hygiene",
+                    phase: "fixer",
+                    duration: 180000,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  },
+                  {
+                    rule_id: "builtin:check-utf8-bom",
+                    category: "hygiene",
+                    phase: "fixer",
+                    duration: 120000,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  },
+                  {
+                    rule_id: "builtin:check-merge-conflict",
+                    category: "git",
+                    phase: "linter",
+                    duration: 310000,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  },
+                  {
+                    rule_id: "builtin:detect-private-key",
+                    category: "security",
+                    phase: "linter",
+                    duration: 420000,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  },
+                  {
+                    rule_id: "slot:go.formatter",
+                    category: "format",
+                    phase: "formatter",
+                    duration: 4200000,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  },
+                  {
+                    rule_id: "slot:web.formatter",
+                    category: "format",
+                    phase: "formatter",
+                    duration: 8500000,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  },
+                  {
+                    rule_id: "slot:go.linter",
+                    category: "lint",
+                    phase: "linter",
+                    duration: 12000000,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  },
+                  {
+                    rule_id: "slot:web.linter",
+                    category: "lint",
+                    phase: "linter",
+                    duration: 9000000,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  },
+                  {
+                    rule_id: "slot:secret.gitleaks",
+                    category: "security",
+                    phase: "linter",
+                    duration: 15000000,
+                    issues_count: 0,
+                    errors_count: 0,
+                    warnings_count: 0,
+                    fixed_count: 0,
+                    status: "passed",
+                  },
+                ];
+
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({
-                  success: true,
-                  summary: { total_files_scanned: 0, total_issues: 0, errors_count: 0, warnings_count: 0, fixed_count: 0, duration: 2000000 },
-                  issues: [],
-                  logs,
-                }));
+                res.end(
+                  JSON.stringify({
+                    success: true,
+                    summary: {
+                      total_files_scanned: 0,
+                      total_issues: 0,
+                      errors_count: 0,
+                      warnings_count: 0,
+                      fixed_count: 0,
+                      duration: 2000000,
+                    },
+                    issues: [],
+                    rule_reports: defaultRuleReports,
+                    logs,
+                  })
+                );
               });
               return;
             }
@@ -3461,7 +3921,10 @@ print(json.dumps({
                 for (const c of candidates) {
                   const name = path.basename(c);
                   try {
-                    const porcelain = execFileSync("git", ["status", "--porcelain=v1", "-b"], { cwd: c, encoding: "utf-8" }).trim();
+                    const porcelain = execFileSync("git", ["status", "--porcelain=v1", "-b"], {
+                      cwd: c,
+                      encoding: "utf-8",
+                    }).trim();
                     const lines = porcelain ? porcelain.split("\n").filter(Boolean) : [];
                     let branch = "HEAD";
                     let upstream = "";
@@ -3472,7 +3935,9 @@ print(json.dumps({
                     for (const line of lines) {
                       if (line.startsWith("## ")) {
                         const header = line.slice(3).trim();
-                        const branchMatch = header.match(/^([^.\s]+)(?:\.\.\.([^\s]+))?(?:\s+\[ahead\s+(\d+)(?:,\s+behind\s+(\d+))?\]|\s+\[behind\s+(\d+)\])?/);
+                        const branchMatch = header.match(
+                          /^([^.\s]+)(?:\.\.\.([^\s]+))?(?:\s+\[ahead\s+(\d+)(?:,\s+behind\s+(\d+))?\]|\s+\[behind\s+(\d+)\])?/
+                        );
                         if (branchMatch) {
                           branch = branchMatch[1] || "HEAD";
                           upstream = branchMatch[2] || "";
@@ -3540,7 +4005,9 @@ print(json.dumps({
                   const line = lines[i];
                   if (line.startsWith("## ")) {
                     const header = line.slice(3).trim();
-                    const branchMatch = header.match(/^([^.\s]+)(?:\.\.\.([^\s]+))?(?:\s+\[ahead\s+(\d+)(?:,\s+behind\s+(\d+))?\]|\s+\[behind\s+(\d+)\])?/);
+                    const branchMatch = header.match(
+                      /^([^.\s]+)(?:\.\.\.([^\s]+))?(?:\s+\[ahead\s+(\d+)(?:,\s+behind\s+(\d+))?\]|\s+\[behind\s+(\d+)\])?/
+                    );
                     if (branchMatch) {
                       branch = branchMatch[1] || "HEAD";
                       upstream = branchMatch[2] || "";
@@ -3570,17 +4037,19 @@ print(json.dumps({
                 }
 
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({
-                  success: true,
-                  branch,
-                  upstream,
-                  ahead,
-                  behind,
-                  staged,
-                  unstaged,
-                  untracked,
-                  totalChanges: staged.length + unstaged.length + untracked.length,
-                }));
+                res.end(
+                  JSON.stringify({
+                    success: true,
+                    branch,
+                    upstream,
+                    ahead,
+                    behind,
+                    staged,
+                    unstaged,
+                    untracked,
+                    totalChanges: staged.length + unstaged.length + untracked.length,
+                  })
+                );
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");
@@ -3848,19 +4317,28 @@ print(json.dumps({
 
             if (reqPath.startsWith("/api/git/log") && req.method === "GET") {
               try {
-                const out = runGit(["log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s%x09%G?%x09%GK%x09%GS%x09%GF"]);
-                const commits = out.split("\n").filter(Boolean).map((line: string) => {
-                  const [hash, shortHash, author, email, timestamp, message, gpgStatus, gpgKeyId, gpgSigner, gpgFp] = line.split("\t");
-                  return {
-                    hash,
-                    shortHash,
-                    author,
-                    email,
-                    timestamp: parseInt(timestamp || "0", 10),
-                    message: message || "",
-                    gpg: parseGpgInfo(gpgStatus, gpgKeyId, gpgSigner, gpgFp),
-                  };
-                });
+                const out = runGit([
+                  "log",
+                  "-n",
+                  "30",
+                  "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s%x09%G?%x09%GK%x09%GS%x09%GF",
+                ]);
+                const commits = out
+                  .split("\n")
+                  .filter(Boolean)
+                  .map((line: string) => {
+                    const [hash, shortHash, author, email, timestamp, message, gpgStatus, gpgKeyId, gpgSigner, gpgFp] =
+                      line.split("\t");
+                    return {
+                      hash,
+                      shortHash,
+                      author,
+                      email,
+                      timestamp: parseInt(timestamp || "0", 10),
+                      message: message || "",
+                      gpg: parseGpgInfo(gpgStatus, gpgKeyId, gpgSigner, gpgFp),
+                    };
+                  });
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ success: true, commits }));
               } catch (err: any) {
@@ -3889,7 +4367,13 @@ print(json.dumps({
                 const filePath = parsedUrl.searchParams.get("path");
                 const limit = parseInt(parsedUrl.searchParams.get("limit") || "200", 10);
 
-                const args = ["log", "--date-order", "-n", String(limit), "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%D%x09%G?%x09%GK%x09%GS%x09%GF"];
+                const args = [
+                  "log",
+                  "--date-order",
+                  "-n",
+                  String(limit),
+                  "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%D%x09%G?%x09%GK%x09%GS%x09%GF",
+                ];
                 if (!isAll && validBranches.length > 0) {
                   args.push(...validBranches);
                 } else {
@@ -3910,12 +4394,29 @@ print(json.dumps({
                   .split("\n")
                   .filter(Boolean)
                   .map((line: string) => {
-                    const [hash, shortHash, parentsStr, author, email, timestamp, message, refsStr, gpgStatus, gpgKeyId, gpgSigner, gpgFp] = line.split("\t");
+                    const [
+                      hash,
+                      shortHash,
+                      parentsStr,
+                      author,
+                      email,
+                      timestamp,
+                      message,
+                      refsStr,
+                      gpgStatus,
+                      gpgKeyId,
+                      gpgSigner,
+                      gpgFp,
+                    ] = line.split("\t");
                     const parents = (parentsStr || "").trim().split(/\s+/).filter(Boolean);
-                    const refs: Array<{ name: string; type: "head" | "branch" | "remote" | "tag"; current: boolean }> = [];
+                    const refs: Array<{ name: string; type: "head" | "branch" | "remote" | "tag"; current: boolean }> =
+                      [];
 
                     if (refsStr) {
-                      const rawRefs = refsStr.split(",").map((s) => s.trim()).filter(Boolean);
+                      const rawRefs = refsStr
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean);
                       for (const raw of rawRefs) {
                         if (raw.startsWith("HEAD -> ")) {
                           const name = raw.slice(8).trim();
@@ -3950,7 +4451,11 @@ print(json.dumps({
                 const showStashes = parsedUrl.searchParams.get("showStashes");
                 if (showStashes !== "false") {
                   try {
-                    const stashOut = runGit(["stash", "list", "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%gd"]);
+                    const stashOut = runGit([
+                      "stash",
+                      "list",
+                      "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%gd",
+                    ]);
                     if (stashOut && stashOut.trim()) {
                       for (const sLine of stashOut.split("\n")) {
                         const trimmed = sLine.trim();
@@ -4041,7 +4546,15 @@ print(json.dumps({
                 // 2. File Statuses
                 let nameStatusOut = "";
                 try {
-                  nameStatusOut = runGit(["diff-tree", "--no-commit-id", "--name-status", "-r", "-m", "--first-parent", hash]);
+                  nameStatusOut = runGit([
+                    "diff-tree",
+                    "--no-commit-id",
+                    "--name-status",
+                    "-r",
+                    "-m",
+                    "--first-parent",
+                    hash,
+                  ]);
                 } catch (_) {
                   nameStatusOut = "";
                 }
@@ -4939,7 +5452,9 @@ print(json.dumps({
                         pid = parseInt(fields[fields.length - 1], 10);
                         if (pid) {
                           try {
-                            const tlOut = execFileSync("tasklist", ["/FI", `PID eq ${pid}`, "/FO", "CSV", "/NH"], { encoding: "utf8" });
+                            const tlOut = execFileSync("tasklist", ["/FI", `PID eq ${pid}`, "/FO", "CSV", "/NH"], {
+                              encoding: "utf8",
+                            });
                             const parts = tlOut.split(",");
                             if (parts.length > 0) {
                               cmdline = parts[0].replace(/["\r\n]/g, "").trim();
@@ -5186,9 +5701,7 @@ print(json.dumps({
               const gitBashPaths = [
                 "C:\\Program Files\\Git\\bin\\bash.exe",
                 "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
-                process.env.LOCALAPPDATA
-                  ? path.join(process.env.LOCALAPPDATA, "Programs\\Git\\bin\\bash.exe")
-                  : "",
+                process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Programs\\Git\\bin\\bash.exe") : "",
                 process.env.USERPROFILE
                   ? path.join(process.env.USERPROFILE, "AppData\\Local\\Programs\\Git\\bin\\bash.exe")
                   : "",
