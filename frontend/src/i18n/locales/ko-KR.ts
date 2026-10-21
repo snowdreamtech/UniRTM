@@ -1263,6 +1263,8 @@ export const koKr: TranslationDict = {
   "guard.cat.format": "Code Formatting",
   "guard.cat.lint": "Static Analysis",
   "guard.cat.secret": "Secret Leak Prevention",
+  "guard.radar.clean_status": "All 38 quality rules healthy · Real-time inspection idle",
+  "guard.radar.issues_status": "{count} quality alerts detected · Ready to inspect or fix",
   "guard.banner.title": "Quality Guard has upgraded to a 1st-Class Hub",
   "guard.banner.desc": "Manage file extension pipelines, tool slots, and visual CRUD settings in the dedicated hub.",
   "guard.banner.open_hub": "Open Quality Guard",

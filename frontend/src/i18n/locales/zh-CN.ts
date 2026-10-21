@@ -1256,6 +1256,8 @@ export const zhCn: TranslationDict = {
   "guard.cat.format": "代码排版格式化",
   "guard.cat.lint": "静态代码审查",
   "guard.cat.secret": "敏感凭据防泄密",
+  "guard.radar.clean_status": "所有 38 项守卫规则均健康 · 实时质检就绪",
+  "guard.radar.issues_status": "检测到 {count} 项代码质量告警 · 可点击检查或自动修复",
   "guard.banner.title": "Quality Guard 现已升级为一级独立工作台",
   "guard.banner.desc": "在专属工作台中管理文件扩展名管线、工具槽位与可视化配置。",
   "guard.banner.open_hub": "前往质量守卫中心",

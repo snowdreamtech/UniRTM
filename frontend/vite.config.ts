@@ -3260,6 +3260,59 @@ print(json.dumps({
             const reqUrl = req.url || "";
             const reqPath = reqUrl.split("?")[0];
 
+            const standard38MockRuleIDs = [
+              "builtin:trailing-whitespace",
+              "builtin:end-of-file",
+              "builtin:check-utf8-bom",
+              "builtin:check-shebang-scripts-are-executable",
+              "builtin:mixed-line-endings",
+              "builtin:forbid-crlf-in-scripts",
+              "slot:go.imports",
+              "slot:go.formatter",
+              "slot:web.formatter",
+              "slot:toml.formatter",
+              "slot:shell.formatter",
+              "builtin:check-merge-conflict",
+              "builtin:detect-private-key",
+              "builtin:check-env-safety",
+              "builtin:check-added-large-files",
+              "builtin:check-case-conflict",
+              "builtin:check-lockfile-coexistence",
+              "builtin:check-lockfile-conflicts",
+              "builtin:forbidden-files",
+              "builtin:check-symlinks",
+              "builtin:check-executables-have-shebangs",
+              "builtin:check-svg-safety",
+              "builtin:check-json",
+              "builtin:check-toml",
+              "builtin:check-xml",
+              "builtin:detect-cloud-secrets",
+              "builtin:commit-msg",
+              "builtin:check-yaml",
+              "builtin:forbid-debug-statements",
+              "builtin:forbid-binary-artifacts",
+              "builtin:forbid-empty-code-files",
+              "builtin:check-markdown",
+              "builtin:forbid-ip-addresses",
+              "slot:go.linter",
+              "slot:web.linter",
+              "slot:python.suite",
+              "slot:shell.linter",
+              "slot:secret.gitleaks",
+            ];
+
+            const sampleScanFiles = [
+              "frontend/src/views/GuardView.vue",
+              "frontend/src/views/TasksView.vue",
+              "frontend/src/views/ExplorerView.vue",
+              "cmd/64.ui_guard.go",
+              "internal/guard/pipeline.go",
+              "internal/guard/rules_builtin.go",
+              ".unirtm.toml",
+              ".editorconfig",
+              ".golangci.yml",
+            ];
+
             if (reqPath === "/api/guard/rules" && req.method === "GET") {
               const standardConfigs = [
                 {
@@ -3490,24 +3543,22 @@ print(json.dumps({
                 }
               }
 
-              const logs = [`[Quality Guard] Starting quality guard pipeline (mode: ${mode}, scanned files: 0)`];
-              for (const item of possibleConfigs) {
-                const fullP = path.join(rootDir, item.file);
-                if (fs.existsSync(fullP) && !fs.statSync(fullP).isDirectory()) {
-                  logs.push(`[Config: ${item.file}] Verified bound to ${item.label.replace(item.file + " ", "")}`);
-                }
+              const filesCount = mode === "all" ? 2619 : mode === "changed" ? 14 : 9;
+              const logs = [
+                `$ unirtm check --mode=${mode}`,
+                `ℹ Inspecting workspace files with UniRTM Quality Guard (${filesCount} files, mode: ${mode})`,
+              ];
+              for (const f of sampleScanFiles) {
+                logs.push(`  › [scan] ${f}`);
+              }
+              if (filesCount > sampleScanFiles.length) {
+                logs.push(`  › ... and ${filesCount - sampleScanFiles.length} more files in inspection queue`);
+              }
+              for (const r of standard38MockRuleIDs) {
+                logs.push(`✓ ${r}`);
               }
               logs.push(
-                `[Phase 1 Fixer] Checking rule 'hygiene/whitespace': clean (0 issues)`,
-                `[Phase 1 Fixer] Checking rule 'hygiene/eof': clean (0 issues)`,
-                `[Phase 1 Fixer] Checking rule 'hygiene/utf8bom': clean (0 issues)`,
-                `[Phase 1 Fixer] Completed native hygiene check: 3 rules evaluated, 0 issues found (0ms)`,
-                `[Phase 2 Formatter] Checking rule 'web.formatter': compliant (0 deviations)`,
-                `[Phase 2 Formatter] Completed code formatting: 1 rule evaluated, 0 deviations found (0ms)`,
-                `[Phase 3 Linter] Checking rule 'go.linter': passed (0 issues)`,
-                `[Phase 3 Linter] Checking rule 'secret.gitleaks': passed (0 secrets detected)`,
-                `[Phase 3 Linter] Completed static analysis & secret protection: 5 rules evaluated, 0 issues found (0ms)`,
-                `[Quality Guard] Guard checks passed: 0 blocking violations, all compliant (total: 1ms)`
+                `✓ ✨ Quality Guard passed: All 38 guard rules processed (${filesCount} files inspected, 0 errors, 0 warnings, took 0.0519s)`
               );
               const defaultRuleReports = [
                 {
@@ -3663,23 +3714,27 @@ print(json.dumps({
                   { file: "ruff.toml", label: "ruff.toml (python.suite -> ruff)" },
                 ];
 
-                const logs = [`[Quality Guard] Starting self-healing pipeline (mode: ${reqBody.mode || "staged"})`];
-                for (const item of possibleConfigs) {
-                  const fullP = path.join(rootDir, item.file);
-                  if (fs.existsSync(fullP) && !fs.statSync(fullP).isDirectory()) {
-                    logs.push(`[Config: ${item.file}] Verified bound to ${item.label.replace(item.file + " ", "")}`);
+                const guardRunMode = reqBody.mode || "staged";
+                const runFilesCount = guardRunMode === "all" ? 2619 : guardRunMode === "changed" ? 14 : 9;
+                const logs = [
+                  `$ unirtm check --mode=${guardRunMode}`,
+                  `ℹ Inspecting workspace files with UniRTM Quality Guard (${runFilesCount} files, mode: ${guardRunMode})`,
+                ];
+                for (const f of sampleScanFiles) {
+                  logs.push(`  › [scan] ${f}`);
+                }
+                if (runFilesCount > sampleScanFiles.length) {
+                  logs.push(`  › ... and ${runFilesCount - sampleScanFiles.length} more files in inspection queue`);
+                }
+                for (const r of standard38MockRuleIDs) {
+                  if (reqBody.fix && (r.includes("whitespace") || r.includes("eof") || r.includes("bom"))) {
+                    logs.push(`✓ ${r} (auto-formatting applied)`);
+                  } else {
+                    logs.push(`✓ ${r}`);
                   }
                 }
                 logs.push(
-                  `[Phase 1 Fixer] Auto-repair 'hygiene/whitespace': clean (0 fixes needed)`,
-                  `[Phase 1 Fixer] Auto-repair 'hygiene/eof': clean (0 fixes needed)`,
-                  `[Phase 1 Fixer] Auto-repair 'hygiene/utf8bom': clean (0 fixes needed)`,
-                  `[Phase 1 Fixer] Completed native auto-repair: whitespace convergence and newline normalization applied (1ms)`,
-                  `[Phase 2 Formatter] Executing formatter 'prettier' with configuration .prettierrc`,
-                  `[Phase 2 Formatter] Completed canonical formatting (2ms)`,
-                  `[Phase 3 Linter] Executing gate re-verification: golangci-lint (.golangci.yml), gitleaks (.gitleaks.toml)`,
-                  `[Phase 3 Linter] Static gate re-verification passed (0ms)`,
-                  `[Quality Guard] Guard self-healing completed: 0 blocking violations, workspace clean and healthy`
+                  `✓ ✨ Quality Guard passed: All 38 guard rules processed (${runFilesCount} files inspected, 0 errors, 0 warnings, took 0.0482s)`
                 );
 
                 const defaultRuleReports = [
@@ -3795,15 +3850,14 @@ print(json.dumps({
                   },
                 ];
 
-                const runMode = reqBody.mode || "staged";
-                const mockScanned = runMode === "all" ? 142 : runMode === "changed" ? 9 : 4;
-                const latency = runMode === "all" ? 120 : runMode === "changed" ? 28 : 16;
+                const mockScanned = guardRunMode === "all" ? 2619 : guardRunMode === "changed" ? 14 : 9;
+                const latency = guardRunMode === "all" ? 52 : guardRunMode === "changed" ? 28 : 18;
 
                 res.setHeader("Content-Type", "application/json");
                 res.end(
                   JSON.stringify({
                     success: true,
-                    mode: runMode,
+                    mode: guardRunMode,
                     scanned: mockScanned,
                     clean: true,
                     duration_ms: latency,
