@@ -167,6 +167,10 @@
           <span class="codicon" :class="guardIconClass"></span>
           <span class="guard-capsule-text">{{ guardLabelText }}</span>
           <span v-if="guardIssuesCount > 0" class="guard-count-pill">{{ guardIssuesCount }}</span>
+          <span
+            class="codicon codicon-link-external capsule-link-hint"
+            :title="t('guard.open_guard_hub') || '前往质量守卫中心'"
+          ></span>
         </div>
         <div class="guard-actions-group">
           <button
@@ -185,7 +189,7 @@
           <button
             class="guard-btn-refresh"
             :disabled="isGuardLoading"
-            :title="t('guard.actions.rescan') || '质检'"
+            :title="t('guard.actions.rescan') || '重新质检'"
             @click.stop="handleRefreshGuard"
           >
             <span class="codicon codicon-refresh" :class="{ 'codicon-modifier-spin': isGuardLoading }"></span>
@@ -196,7 +200,17 @@
       <!-- Expandable Guard Diagnostics Dropdown (Only when there are issues) -->
       <div v-if="isGuardDetailsOpen && guardStatus.issues.length > 0" class="guard-diagnostics-drawer">
         <div class="guard-drawer-header">
-          <span class="guard-drawer-title">{{ t("guard.diagnostics.title") || "质量守卫诊断结果" }}</span>
+          <div class="drawer-header-left">
+            <span class="guard-drawer-title">{{ t("guard.diagnostics.title") || "质量守卫诊断结果" }}</span>
+            <button
+              class="drawer-guard-hub-link"
+              @click="navigateToGuard"
+              :title="t('guard.open_guard_hub') || '前往质量守卫中心'"
+            >
+              <span>{{ t("guard.title") || "守卫中心" }}</span>
+              <span class="codicon codicon-link-external"></span>
+            </button>
+          </div>
           <button class="guard-close-btn" @click="isGuardDetailsOpen = false">×</button>
         </div>
         <div class="guard-issues-list">
@@ -226,10 +240,44 @@
         </div>
       </div>
 
-      <button class="commit-btn" :disabled="isCommitting || !commitMessage.trim()" @click="handleCommit">
+      <!-- Quality Guard Blocking Warning Banner -->
+      <div v-if="guardStatus.errors_count > 0" class="guard-commit-block-banner">
+        <div class="block-banner-left">
+          <span class="codicon codicon-error block-error-icon"></span>
+          <div class="block-banner-text">
+            <span class="block-banner-title">
+              {{ t("guard.status.blocked") || "质量守卫阻断提交" }} ({{ guardStatus.errors_count }})
+            </span>
+            <span class="block-banner-sub">
+              {{ t("guard.toast.blocked_desc") || "检测到门禁阻断违规，请先在守卫中心修复" }}
+            </span>
+          </div>
+        </div>
+        <button
+          class="block-banner-action-btn"
+          @click="navigateToGuard"
+          :title="t('guard.open_guard_hub') || '前往质量守卫中心'"
+        >
+          <span>{{ t("guard.view_details") || "前往查看" }}</span>
+          <span class="codicon codicon-arrow-right"></span>
+        </button>
+      </div>
+
+      <button
+        class="commit-btn"
+        :class="{ 'commit-btn-blocked': guardStatus.errors_count > 0 }"
+        :disabled="isCommitting || !commitMessage.trim() || guardStatus.errors_count > 0"
+        :title="
+          guardStatus.errors_count > 0 ? t('guard.toast.blocked') || '质量守卫阻断提交：请先解决违规项' : undefined
+        "
+        @click="handleCommit"
+      >
         <span v-if="isCommitting" class="codicon codicon-loading codicon-modifier-spin"></span>
+        <span v-else-if="guardStatus.errors_count > 0" class="codicon codicon-error"></span>
         <span v-else class="codicon codicon-check"></span>
-        <span>{{ t("scm.sidebar.commit") }}</span>
+        <span>{{
+          guardStatus.errors_count > 0 ? t("guard.status.blocked") || "守卫阻断中" : t("scm.sidebar.commit")
+        }}</span>
       </button>
     </div>
 
@@ -389,7 +437,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useGit, type GitRepositoryItem } from "../../composables/useGit";
 import { useEditorTabs } from "../../composables/useEditorTabs";
@@ -512,7 +560,15 @@ const commitPlaceholder = computed(() => {
 onMounted(async () => {
   await fetchRepositories();
   await Promise.all([fetchStatus(), fetchBranches()]);
+  fetchGuardStatus("staged").catch(() => {});
 });
+
+watch(
+  () => status.value.staged.length,
+  () => {
+    fetchGuardStatus("staged").catch(() => {});
+  }
+);
 
 async function handleSelectRepo(repo: GitRepositoryItem) {
   if (activeRepo.value?.id === repo.id || activeRepo.value?.rootPath === repo.rootPath) {
@@ -606,13 +662,17 @@ const guardTooltip = computed(() => {
   return `${guardLabelText.value} (${guardStatus.value.scanned} files inspected)`;
 });
 
+function navigateToGuard() {
+  router.push({
+    path: "/guard",
+    query: {
+      scope: (route.query.scope as string) || "workspace",
+    },
+  });
+}
+
 function handleCapsuleClick() {
-  if (guardIssuesCount.value === 0) {
-    showToast(t("guard.status.passed") || "质量守卫通过，未检测到违规项", "success");
-    isGuardDetailsOpen.value = false;
-  } else {
-    isGuardDetailsOpen.value = !isGuardDetailsOpen.value;
-  }
+  navigateToGuard();
 }
 
 async function handleRunGuardFix(targetFiles?: string[]) {
@@ -628,9 +688,14 @@ async function handleRefreshGuard() {
 }
 
 async function handleCommit() {
-  if (guardStatus.value.errors_count > 0) {
+  const latest = await fetchGuardStatus("staged");
+  if ((latest?.errors_count ?? guardStatus.value.errors_count) > 0) {
     isGuardDetailsOpen.value = true;
-    showToast(t("guard.toast.blocked") || "质量守卫检测到阻断违规，请先解决或修复后提交", "error");
+    showToast(
+      t("guard.toast.blocked") ||
+        `质量守卫拦截：存在 ${guardStatus.value.errors_count} 处阻断违规，请在质量守卫中心处理`,
+      "error"
+    );
     return;
   }
   await commit(undefined, false, signCommit.value);
@@ -1935,5 +2000,167 @@ async function handleModalConfirm(payload: {
   color: #047857;
   background: #ecfdf5;
   border-color: #a7f3d0;
+}
+
+.capsule-link-hint {
+  font-size: 10px;
+  opacity: 0.6;
+  margin-left: 2px;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.guard-status-capsule:hover .capsule-link-hint {
+  opacity: 1;
+  transform: translate(1px, -1px);
+}
+
+.drawer-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-guard-hub-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(0, 210, 255, 0.12);
+  color: #00d2ff;
+  border: 1px solid rgba(0, 210, 255, 0.25);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.drawer-guard-hub-link:hover {
+  background: rgba(0, 210, 255, 0.25);
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .drawer-guard-hub-link {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+:root[data-theme="light"] .drawer-guard-hub-link:hover {
+  background: #bae6fd;
+  color: #0c4a6e;
+}
+
+/* Guard Commit Blocking Banner */
+.guard-commit-block-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  animation: bannerFadeIn 0.2s ease;
+}
+
+:root[data-theme="light"] .guard-commit-block-banner {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+@keyframes bannerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.block-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.block-error-icon {
+  font-size: 16px;
+  color: #f87171;
+  flex-shrink: 0;
+}
+
+:root[data-theme="light"] .block-error-icon {
+  color: #dc2626;
+}
+
+.block-banner-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.block-banner-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f87171;
+  line-height: 1.3;
+}
+
+:root[data-theme="light"] .block-banner-title {
+  color: #b91c1c;
+}
+
+.block-banner-sub {
+  font-size: 10px;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+:root[data-theme="light"] .block-banner-sub {
+  color: #64748b;
+}
+
+.block-banner-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.block-banner-action-btn:hover {
+  background: #b91c1c;
+  transform: translateX(1px);
+}
+
+.commit-btn.commit-btn-blocked {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+  border: 1px dashed rgba(239, 68, 68, 0.4) !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+}
+
+:root[data-theme="light"] .commit-btn.commit-btn-blocked {
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+  border-color: #fca5a5 !important;
 }
 </style>
