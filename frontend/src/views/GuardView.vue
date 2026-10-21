@@ -470,7 +470,7 @@ async function openTomlInEditor() {
     name: ".unirtm.toml",
   });
   router.push({
-    path: "/",
+    name: "explorer",
     query: {
       from: "guard",
       file: ".unirtm.toml",
