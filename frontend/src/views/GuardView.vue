@@ -1150,6 +1150,7 @@ export interface FormattedLogItem {
   type: "info" | "pass" | "warn" | "error" | "config" | "phase" | "cmd" | "scan" | "rule";
   icon: string;
   text: string;
+  rawText?: string;
 }
 
 const logViewerRef = ref<HTMLElement | null>(null);
@@ -1181,14 +1182,17 @@ function parseLogLine(raw: string): FormattedLogItem {
     type = "cmd";
     tag = "CLI";
     icon = "codicon-terminal text-cyan";
+    displayText = clean.replace(/^\$\s*/, "");
   } else if (clean.startsWith("ℹ") || clean.includes("Inspecting workspace files")) {
     type = "info";
     tag = "INFO";
     icon = "codicon-info text-blue";
+    displayText = clean.replace(/^ℹ\s*/, "");
   } else if (clean.includes("› [scan]") || clean.includes("more files in inspection queue")) {
     type = "scan";
     tag = "SCAN";
     icon = "codicon-search text-cyan";
+    displayText = clean.replace(/^\s*›\s*\[scan\]\s*/, "");
   } else if (
     clean.startsWith("✓ ✨") ||
     clean.includes("Quality Guard passed") ||
@@ -1198,18 +1202,23 @@ function parseLogLine(raw: string): FormattedLogItem {
     type = "pass";
     tag = "PASS";
     icon = "codicon-check-all text-green";
+    displayText = clean.replace(/^✓\s*/, "");
   } else if (clean.startsWith("✓ ") || clean.startsWith("✓")) {
     type = "rule";
     tag = "RULE";
     icon = "codicon-pass text-green";
+    // The UI icon already represents the passed checkmark, so trim the duplicate symbol from display text
+    displayText = clean.replace(/^✓\s*/, "");
   } else if (clean.startsWith("✗ ") || clean.startsWith("✗") || clean.includes("[FAIL]")) {
     type = "error";
     tag = "FAIL";
     icon = "codicon-error text-red";
+    displayText = clean.replace(/^✗\s*/, "");
   } else if (clean.startsWith("! ") || clean.startsWith("!") || clean.startsWith("⚠") || clean.includes("[WARN]")) {
     type = "warn";
     tag = "WARN";
     icon = "codicon-warning text-amber";
+    displayText = clean.replace(/^[!⚠]\s*/, "");
   } else if (clean.includes("[Config:")) {
     type = "config";
     tag = "CONFIG";
@@ -1234,6 +1243,7 @@ function parseLogLine(raw: string): FormattedLogItem {
     type,
     icon,
     text: displayText,
+    rawText: clean,
   };
 }
 
@@ -1297,7 +1307,8 @@ function scrollToBottom() {
 }
 
 function copyAllLogs() {
-  const fullText = formattedLogs.value.map((l) => `[${l.time}] [${l.tag}] ${l.text}`).join("\n");
+  // Preserve full CLI text including native checkmarks when copying to clipboard
+  const fullText = formattedLogs.value.map((l) => l.rawText || l.text).join("\n");
   if (!fullText) return;
   navigator.clipboard
     .writeText(fullText)
