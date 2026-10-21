@@ -355,9 +355,33 @@
                 </span>
               </div>
               <div class="console-header-actions">
-                <button class="console-btn" @click="copyAllLogs" title="Copy inspection logs to clipboard">
+                <button
+                  v-if="selectedLogIndices.size > 0"
+                  class="console-btn text-muted"
+                  @click="clearSelectedLogs"
+                  title="Deselect all lines"
+                >
+                  <span class="codicon codicon-close"></span>
+                  <span>{{ t("guard.logs.cancel_select") || "Deselect" }}</span>
+                </button>
+                <button
+                  class="console-btn"
+                  :class="{ 'btn-highlight': selectedLogIndices.size > 0 }"
+                  @click="copySelectedOrAllLogs"
+                  :title="
+                    selectedLogIndices.size > 0
+                      ? 'Copy selected lines to clipboard'
+                      : 'Copy inspection logs to clipboard'
+                  "
+                >
                   <span class="codicon codicon-copy"></span>
-                  <span>{{ t("guard.logs.copy") || "Copy" }}</span>
+                  <span>
+                    {{
+                      selectedLogIndices.size > 0
+                        ? (t("guard.logs.copy_selected") || "Copy Selected") + ` (${selectedLogIndices.size})`
+                        : t("guard.logs.copy") || "Copy"
+                    }}
+                  </span>
                 </button>
                 <button class="console-btn" @click="clearLogs" title="Clear console output">
                   <span class="codicon codicon-clear-all"></span>
@@ -445,14 +469,38 @@
                 </div>
               </div>
 
-              <div v-else class="console-log-lines">
-                <div v-for="(item, idx) in formattedLogs" :key="idx" class="log-line" :class="'log-' + item.type">
+              <div v-else class="console-log-lines" @copy="handleConsoleCopy">
+                <div
+                  v-for="(item, idx) in formattedLogs"
+                  :key="idx"
+                  class="log-line"
+                  :class="{
+                    ['log-' + item.type]: true,
+                    'is-selected': selectedLogIndices.has(idx),
+                    'is-flashed': flashedLineIndex === idx,
+                  }"
+                  @click="handleLogLineClick(idx, $event)"
+                  @dblclick="handleLogLineDblClick(item, idx)"
+                  :title="t('guard.logs.line_tip') || 'Click to select, double-click to copy this line'"
+                >
                   <span class="log-ts font-mono">{{ item.time }}</span>
                   <span class="log-badge font-mono" :class="'badge-' + item.type">{{ item.tag }}</span>
                   <span class="log-icon-wrap" :class="'icon-wrap-' + item.type">
                     <span class="codicon" :class="item.icon"></span>
                   </span>
                   <span class="log-content font-mono">{{ item.text }}</span>
+
+                  <!-- Hover Quick Action: Copy Single Line -->
+                  <button
+                    class="log-line-copy-btn"
+                    @click.stop="copySingleLog(item, idx, $event)"
+                    :title="t('guard.logs.copy_single') || 'Copy this line'"
+                  >
+                    <span
+                      class="codicon"
+                      :class="copiedLineIndex === idx ? 'codicon-check text-green' : 'codicon-copy'"
+                    ></span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1156,6 +1204,12 @@ export interface FormattedLogItem {
 const logViewerRef = ref<HTMLElement | null>(null);
 const localLogs = ref<FormattedLogItem[]>([]);
 
+// Interactive Log Line Selection and Copy States
+const selectedLogIndices = ref<Set<number>>(new Set());
+const lastSelectedLogIndex = ref<number | null>(null);
+const copiedLineIndex = ref<number | null>(null);
+const flashedLineIndex = ref<number | null>(null);
+
 // Anti-Virus style real-time scanner dynamic states
 const isStreaming = ref(false);
 const currentScanningTarget = ref("");
@@ -1306,6 +1360,117 @@ function scrollToBottom() {
   }, 50);
 }
 
+function copySingleLog(item: FormattedLogItem, idx: number, e?: MouseEvent) {
+  if (e) e.stopPropagation();
+  const textToCopy = item.rawText || item.text;
+  if (!textToCopy) return;
+  navigator.clipboard
+    .writeText(textToCopy)
+    .then(() => {
+      copiedLineIndex.value = idx;
+      setTimeout(() => {
+        if (copiedLineIndex.value === idx) copiedLineIndex.value = null;
+      }, 1500);
+      showToast(t("guard.logs.copied_single") || "Log line copied to clipboard", "success");
+    })
+    .catch(() => {});
+}
+
+function handleLogLineDblClick(item: FormattedLogItem, idx: number) {
+  const textToCopy = item.rawText || item.text;
+  if (!textToCopy) return;
+  navigator.clipboard
+    .writeText(textToCopy)
+    .then(() => {
+      flashedLineIndex.value = idx;
+      copiedLineIndex.value = idx;
+      setTimeout(() => {
+        if (flashedLineIndex.value === idx) flashedLineIndex.value = null;
+        if (copiedLineIndex.value === idx) copiedLineIndex.value = null;
+      }, 1500);
+      showToast(t("guard.logs.copied_double") || "Double-click: Log line copied to clipboard", "success");
+    })
+    .catch(() => {});
+}
+
+function handleLogLineClick(idx: number, e: MouseEvent) {
+  // If user is selecting text with mouse, do not toggle row selection
+  const selection = window.getSelection();
+  if (selection && selection.toString().length > 1) {
+    return;
+  }
+
+  if (e.shiftKey && lastSelectedLogIndex.value !== null) {
+    const start = Math.min(lastSelectedLogIndex.value, idx);
+    const end = Math.max(lastSelectedLogIndex.value, idx);
+    const newSet = new Set(selectedLogIndices.value);
+    for (let i = start; i <= end; i++) {
+      newSet.add(i);
+    }
+    selectedLogIndices.value = newSet;
+  } else if (e.ctrlKey || e.metaKey) {
+    const newSet = new Set(selectedLogIndices.value);
+    if (newSet.has(idx)) {
+      newSet.delete(idx);
+    } else {
+      newSet.add(idx);
+    }
+    selectedLogIndices.value = newSet;
+    lastSelectedLogIndex.value = idx;
+  } else {
+    // Single click: toggle selection if clicked again, or select single
+    const newSet = new Set<number>();
+    if (!selectedLogIndices.value.has(idx) || selectedLogIndices.value.size > 1) {
+      newSet.add(idx);
+      lastSelectedLogIndex.value = idx;
+    } else {
+      lastSelectedLogIndex.value = null;
+    }
+    selectedLogIndices.value = newSet;
+  }
+}
+
+function clearSelectedLogs() {
+  selectedLogIndices.value = new Set();
+  lastSelectedLogIndex.value = null;
+}
+
+function copySelectedOrAllLogs() {
+  if (selectedLogIndices.value.size > 0) {
+    const indices = Array.from(selectedLogIndices.value).sort((a, b) => a - b);
+    const selectedTexts = indices
+      .map((i) => formattedLogs.value[i])
+      .filter(Boolean)
+      .map((l) => l.rawText || l.text);
+    const fullText = selectedTexts.join("\n");
+    if (!fullText) return;
+    navigator.clipboard
+      .writeText(fullText)
+      .then(() => {
+        showToast(
+          t("guard.logs.copied_selected", { count: indices.length }) ||
+            `Copied ${indices.length} selected lines to clipboard`,
+          "success"
+        );
+      })
+      .catch(() => {});
+  } else {
+    copyAllLogs();
+  }
+}
+
+function handleConsoleCopy(e: ClipboardEvent) {
+  const selection = window.getSelection();
+  if (selection && selection.toString().trim()) {
+    // Native selection handles drag text copy
+    return;
+  }
+  if (selectedLogIndices.value.size > 0) {
+    e.preventDefault();
+    copySelectedOrAllLogs();
+  }
+}
+
 function copyAllLogs() {
   // Preserve full CLI text including native checkmarks when copying to clipboard
   const fullText = formattedLogs.value.map((l) => l.rawText || l.text).join("\n");
@@ -1320,6 +1485,8 @@ function copyAllLogs() {
 
 function clearLogs() {
   localLogs.value = [];
+  selectedLogIndices.value = new Set();
+  lastSelectedLogIndex.value = null;
   if (guardStatus.value) {
     guardStatus.value.logs = [];
   }
@@ -2673,12 +2840,76 @@ function getBuiltinRuleForExtAndCategory(
   display: flex;
   align-items: flex-start;
   gap: 0.625rem;
-  padding: 0.125rem 0;
-  border-radius: 3px;
+  padding: 0.1875rem 0.5rem;
+  margin: 0 -0.5rem;
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+  user-select: text;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .log-line:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.log-line.is-selected {
+  background: rgba(56, 139, 253, 0.16) !important;
+  box-shadow: inset 3px 0 0 #388bfd;
+}
+
+.log-line.is-flashed {
+  animation: logLineFlash 1.4s ease-out;
+}
+
+@keyframes logLineFlash {
+  0% {
+    background: rgba(63, 185, 80, 0.35);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.log-line-copy-btn {
+  opacity: 0;
+  pointer-events: none;
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  color: #8b949e;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.75rem;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.log-line:hover .log-line-copy-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.log-line-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #f0f6fc;
+}
+
+.btn-highlight {
+  background: rgba(56, 139, 253, 0.22) !important;
+  color: #58a6ff !important;
+  border-color: rgba(56, 139, 253, 0.4) !important;
 }
 
 .log-ts {
@@ -3832,6 +4063,32 @@ function getBuiltinRuleForExtAndCategory(
 :root[data-theme="light"] .log-line:hover,
 [data-theme="light"] .log-line:hover {
   background: rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="light"] .log-line.is-selected,
+[data-theme="light"] .log-line.is-selected {
+  background: rgba(9, 105, 218, 0.12) !important;
+  box-shadow: inset 3px 0 0 #0969da;
+}
+
+:root[data-theme="light"] .log-line-copy-btn,
+[data-theme="light"] .log-line-copy-btn {
+  background: #f6f8fa;
+  border-color: #d0d7de;
+  color: #57606a;
+}
+
+:root[data-theme="light"] .log-line-copy-btn:hover,
+[data-theme="light"] .log-line-copy-btn:hover {
+  background: #eaeef2;
+  color: #24292f;
+}
+
+:root[data-theme="light"] .btn-highlight,
+[data-theme="light"] .btn-highlight {
+  background: rgba(9, 105, 218, 0.12) !important;
+  color: #0969da !important;
+  border-color: rgba(9, 105, 218, 0.3) !important;
 }
 
 :root[data-theme="light"] .log-ts,
