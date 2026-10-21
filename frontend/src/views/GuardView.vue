@@ -680,7 +680,7 @@
           </div>
         </div>
 
-        <!-- Sub Tabs inside Settings: Pipelines Matrix vs CLI Slots -->
+        <!-- Sub Tabs inside Settings: Pipelines Matrix vs Built-in Rules vs CLI Slots -->
         <div class="settings-sub-tabs">
           <button
             class="sub-tab-btn"
@@ -689,6 +689,14 @@
           >
             <span class="codicon codicon-table"></span>
             <span>{{ t("guard.tabs.matrix") || "Extension Pipelines (Matrix)" }}</span>
+          </button>
+          <button
+            class="sub-tab-btn"
+            :class="{ active: settingsSubTab === 'builtin' }"
+            @click="settingsSubTab = 'builtin'"
+          >
+            <span class="codicon codicon-shield text-cyan"></span>
+            <span>{{ t("guard.tabs.builtin") || "Built-in Rules (原生)" }} ({{ BUILTIN_GUARD_RULES.length }})</span>
           </button>
           <button class="sub-tab-btn" :class="{ active: settingsSubTab === 'slots' }" @click="settingsSubTab = 'slots'">
             <span class="codicon codicon-symbol-class"></span>
@@ -725,6 +733,18 @@
                     <span class="tool-name">{{ row.linter.default_tool_name }}</span>
                     <code class="tool-cmd font-mono">{{ row.linter.default_command }}</code>
                   </div>
+                  <div
+                    v-else-if="getBuiltinRuleForExtAndCategory(row.extension, 'linter')"
+                    class="tool-cell builtin-cell"
+                    @click="openConfigureBuiltinRule(getBuiltinRuleForExtAndCategory(row.extension, 'linter')!)"
+                    title="点击配置该原生内置规则参数"
+                  >
+                    <span class="tool-name text-cyan"
+                      ><span class="codicon codicon-shield"></span>
+                      {{ getBuiltinRuleForExtAndCategory(row.extension, "linter")!.name }}</span
+                    >
+                    <span class="builtin-note font-mono">原生守卫 (点击配置)</span>
+                  </div>
                   <span v-else class="cell-empty font-mono">—</span>
                 </td>
 
@@ -745,6 +765,18 @@
                       row.fixer.fix_command || row.fixer.default_command
                     }}</code>
                   </div>
+                  <div
+                    v-else-if="getBuiltinRuleForExtAndCategory(row.extension, 'fixer')"
+                    class="tool-cell builtin-cell"
+                    @click="openConfigureBuiltinRule(getBuiltinRuleForExtAndCategory(row.extension, 'fixer')!)"
+                    title="点击配置该原生自愈规则参数"
+                  >
+                    <span class="tool-name text-green"
+                      ><span class="codicon codicon-wand"></span>
+                      {{ getBuiltinRuleForExtAndCategory(row.extension, "fixer")!.name }}</span
+                    >
+                    <span class="builtin-note font-mono">原生自愈 (点击配置)</span>
+                  </div>
                   <span v-else class="cell-empty font-mono">—</span>
                 </td>
 
@@ -753,6 +785,18 @@
                   <div v-if="row.auditor" class="tool-cell" @click="editSlot(row.auditor)">
                     <span class="tool-name text-purple">{{ row.auditor.default_tool_name }}</span>
                     <code class="tool-cmd font-mono">{{ row.auditor.default_command }}</code>
+                  </div>
+                  <div
+                    v-else-if="getBuiltinRuleForExtAndCategory(row.extension, 'security')"
+                    class="tool-cell builtin-cell"
+                    @click="openConfigureBuiltinRule(getBuiltinRuleForExtAndCategory(row.extension, 'security')!)"
+                    title="点击配置该原生安全规则参数"
+                  >
+                    <span class="tool-name text-purple"
+                      ><span class="codicon codicon-shield text-purple"></span>
+                      {{ getBuiltinRuleForExtAndCategory(row.extension, "security")!.name }}</span
+                    >
+                    <span class="builtin-note font-mono">原生凭据安全 (点击配置)</span>
                   </div>
                   <span v-else class="cell-empty font-mono">—</span>
                 </td>
@@ -790,7 +834,96 @@
           </table>
         </div>
 
-        <!-- 3B. Tool Slots Grid (CLI Tool Cards) -->
+        <!-- 3B. Built-in Rules Settings View (Configurable, Modifiable, Non-deletable) -->
+        <div v-if="settingsSubTab === 'builtin'" class="builtin-rules-settings-view">
+          <div class="builtin-settings-header-banner">
+            <div class="banner-left">
+              <span class="codicon codicon-shield banner-icon text-cyan"></span>
+              <div>
+                <h4 class="banner-title">UniRTM Go 原生引擎核心内置规则 (25项)</h4>
+                <p class="banner-subtitle">
+                  所有内置规则均由轻量级原生引擎驱动，零外部依赖、极速毫秒级执行。
+                  <strong>系统核心预置规则·不可删除</strong>，但支持在此自由修改参数、排除目录/文件或灵活开启/跳过。
+                </p>
+              </div>
+            </div>
+            <div class="banner-stats">
+              <span class="stat-pill active-pill">
+                <span class="dot dot-green"></span>
+                <span>已启用: {{ activeBuiltinCount }}</span>
+              </span>
+              <span class="stat-pill skip-pill">
+                <span class="dot dot-amber"></span>
+                <span>已跳过: {{ skippedBuiltinCount }}</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Builtin Rules Grid -->
+          <div class="builtin-cards-grid">
+            <div
+              v-for="rule in filteredSettingsBuiltinRules"
+              :key="rule.id"
+              class="builtin-card"
+              :class="{ 'is-skipped': isRuleSkipped(rule.id) }"
+            >
+              <div class="builtin-card-top">
+                <div class="builtin-title-group">
+                  <span class="builtin-cn-name">{{ rule.name }}</span>
+                  <code class="builtin-id-code font-mono">{{ rule.id }}</code>
+                </div>
+
+                <div class="builtin-actions-group">
+                  <!-- Non-deletable lock badge -->
+                  <span class="badge-lock-tag font-mono" title="系统核心内置规则，无法被删除">
+                    <span class="codicon codicon-lock"></span> 不可删除
+                  </span>
+
+                  <!-- Status Toggle Switch -->
+                  <button
+                    class="btn-toggle-switch"
+                    :class="{ active: !isRuleSkipped(rule.id) }"
+                    :title="isRuleSkipped(rule.id) ? '点击恢复启用此规则' : '点击跳过此规则'"
+                    @click.stop="toggleBuiltinRule(rule.id)"
+                  >
+                    <span class="toggle-thumb"></span>
+                    <span class="toggle-label font-mono">{{ isRuleSkipped(rule.id) ? "已跳过" : "已启用" }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <p class="builtin-desc">{{ rule.description }}</p>
+
+              <!-- Custom configured indicator if any -->
+              <div v-if="hasRuleCustomConfig(rule.id)" class="builtin-custom-tag-row">
+                <span class="codicon codicon-check text-cyan"></span>
+                <span class="custom-hint font-mono">已配置: {{ getRuleCustomSummary(rule.id) }}</span>
+              </div>
+
+              <div class="builtin-card-footer">
+                <div class="builtin-chips">
+                  <span class="chip phase-chip" :class="'phase-' + rule.phase">{{ rule.phaseLabel }}</span>
+                  <span v-if="rule.fixable" class="chip fix-chip">⚡ 可自愈</span>
+                  <span v-if="rule.severity === 'blocker'" class="chip blocker-chip">🛑 阻断</span>
+                  <span v-else class="chip warn-chip">⚠️ 告警</span>
+                </div>
+
+                <div class="builtin-footer-right">
+                  <button
+                    class="btn-configure-builtin"
+                    title="配置此内置规则的运行参数与排除路径"
+                    @click="openConfigureBuiltinRule(rule)"
+                  >
+                    <span class="codicon codicon-settings"></span>
+                    <span>配置规则</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3C. Tool Slots Grid (CLI Tool Cards) -->
         <div v-if="settingsSubTab === 'slots'" class="slots-cards-grid">
           <div v-for="slot in filteredSlots" :key="slot.id" class="slot-card">
             <div class="slot-card-header">
@@ -848,6 +981,16 @@
       @delete="onDeleteSlot"
     />
 
+    <!-- Built-in Rule Config Modal (Configurable, Modifiable, Non-deletable) -->
+    <BuiltinRuleConfigModal
+      :isOpen="isBuiltinModalOpen"
+      :rule="activeEditingBuiltinRule"
+      :initialConfig="currentEditingRuleCustomConfig"
+      :isSkipped="activeEditingBuiltinRule ? isRuleSkipped(activeEditingBuiltinRule.id) : false"
+      @close="isBuiltinModalOpen = false"
+      @save="onSaveBuiltinRule"
+    />
+
     <!-- Toml Config Fallback Drawer -->
     <TomlConfigDrawer :isOpen="isTomlDrawerOpen" @close="isTomlDrawerOpen = false" @saved="onTomlSaved" />
   </div>
@@ -862,7 +1005,9 @@ import { useEditorTabs } from "../composables/useEditorTabs";
 import { useToast } from "../composables/useToast";
 import ExtensionSlotModal from "../components/guard/ExtensionSlotModal.vue";
 import TomlConfigDrawer from "../components/guard/TomlConfigDrawer.vue";
-import { ALL_38_GUARD_RULES, type DetailedGuardRule } from "../utils/guardRulesMeta";
+import BuiltinRuleConfigModal, { type BuiltinRuleCustomConfig } from "../components/guard/BuiltinRuleConfigModal.vue";
+import { ALL_38_GUARD_RULES, BUILTIN_GUARD_RULES, type DetailedGuardRule } from "../utils/guardRulesMeta";
+import { parseGuardConfigFromToml, updateBuiltinRuleInToml, type ParsedGuardConfig } from "../utils/tomlGuardHelper";
 
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, channel?: string): void;
@@ -884,18 +1029,25 @@ const {
   runFix,
   saveSlotConfig,
   deleteSlotConfig,
+  fetchRawTomlConfig,
+  saveRawTomlConfig,
 } = useGuard();
 
 const isSlotModalOpen = ref(false);
 const activeEditingSlot = ref<ToolSlotItem | null>(null);
 const targetExtForAdd = ref<string>("");
 
+// Built-in Rules Configuration State (Configurable, Modifiable, Non-deletable)
+const isBuiltinModalOpen = ref(false);
+const activeEditingBuiltinRule = ref<DetailedGuardRule | null>(null);
+const parsedGuardConfig = ref<ParsedGuardConfig>({ skip: [], rules: {} });
+
 const isTomlDrawerOpen = ref(false);
 const checkingMode = ref<"changed" | "staged" | "all">("staged");
 
 // Default primary tab is now the transparent Live Guard & Logs Workbench!
 const activeTab = ref<"workbench" | "reports" | "settings">("workbench");
-const settingsSubTab = ref<"matrix" | "slots">("matrix");
+const settingsSubTab = ref<"matrix" | "builtin" | "slots">("matrix");
 const searchKeyword = ref("");
 
 // Rich Rule Checklist Reactive State & Filtering
@@ -1164,11 +1316,13 @@ function getModeLabel(mode: "changed" | "staged" | "all"): string {
 onMounted(() => {
   fetchStatus().catch(() => {});
   fetchSlots().catch(() => {});
+  loadGuardTomlConfig().catch(() => {});
 });
 
 onActivated(() => {
   fetchStatus().catch(() => {});
   fetchSlots().catch(() => {});
+  loadGuardTomlConfig().catch(() => {});
 });
 
 async function handleCheck(mode: "changed" | "staged" | "all") {
@@ -1504,6 +1658,139 @@ async function onDeleteSlot(slotId: string) {
 async function onTomlSaved() {
   await fetchSlots();
   await fetchStatus();
+  await loadGuardTomlConfig();
+}
+
+// Built-in Rules Helpers & Config Handlers (Configurable, Modifiable, Non-deletable)
+async function loadGuardTomlConfig() {
+  const content = await fetchRawTomlConfig();
+  if (content) {
+    parsedGuardConfig.value = parseGuardConfigFromToml(content);
+  }
+}
+
+function isRuleSkipped(ruleId: string): boolean {
+  return parsedGuardConfig.value.skip.includes(ruleId);
+}
+
+function hasRuleCustomConfig(ruleId: string): boolean {
+  const r = parsedGuardConfig.value.rules[ruleId];
+  if (!r) return false;
+  return Boolean(
+    (r.severity && r.severity !== "default") ||
+    (r.max_file_size && r.max_file_size > 0) ||
+    (r.exclude_dirs && r.exclude_dirs.length > 0) ||
+    (r.exclude_files && r.exclude_files.length > 0) ||
+    (r.extensions && r.extensions.length > 0)
+  );
+}
+
+function getRuleCustomSummary(ruleId: string): string {
+  const r = parsedGuardConfig.value.rules[ruleId];
+  if (!r) return "";
+  const parts: string[] = [];
+  if (r.severity && r.severity !== "default") {
+    parts.push(`级别: ${r.severity}`);
+  }
+  if (r.max_file_size && r.max_file_size > 0) {
+    const mb = Math.round((r.max_file_size / (1024 * 1024)) * 10) / 10;
+    parts.push(`体积上限: ${mb}MB`);
+  }
+  if (r.exclude_dirs && r.exclude_dirs.length > 0) {
+    parts.push(`排除目录: ${r.exclude_dirs.join(",")}`);
+  }
+  if (r.exclude_files && r.exclude_files.length > 0) {
+    parts.push(`排除文件: ${r.exclude_files.join(",")}`);
+  }
+  return parts.join(" · ");
+}
+
+const activeBuiltinCount = computed(() => {
+  return BUILTIN_GUARD_RULES.filter((r) => !isRuleSkipped(r.id)).length;
+});
+
+const skippedBuiltinCount = computed(() => {
+  return BUILTIN_GUARD_RULES.filter((r) => isRuleSkipped(r.id)).length;
+});
+
+const filteredSettingsBuiltinRules = computed(() => {
+  let list = BUILTIN_GUARD_RULES;
+  if (!searchKeyword.value.trim()) return list;
+  const q = searchKeyword.value.toLowerCase().trim();
+  return list.filter((r) => {
+    return (
+      r.id.toLowerCase().includes(q) ||
+      r.name.toLowerCase().includes(q) ||
+      r.description.toLowerCase().includes(q) ||
+      r.extensions.some((ext) => ext.toLowerCase().includes(q))
+    );
+  });
+});
+
+function openConfigureBuiltinRule(rule: DetailedGuardRule) {
+  activeEditingBuiltinRule.value = rule;
+  isBuiltinModalOpen.value = true;
+}
+
+const currentEditingRuleCustomConfig = computed(() => {
+  if (!activeEditingBuiltinRule.value) return null;
+  return parsedGuardConfig.value.rules[activeEditingBuiltinRule.value.id] || null;
+});
+
+async function toggleBuiltinRule(ruleId: string) {
+  const currentlySkipped = isRuleSkipped(ruleId);
+  const targetEnabled = currentlySkipped;
+  const content = await fetchRawTomlConfig();
+  const ruleMeta = BUILTIN_GUARD_RULES.find((r) => r.id === ruleId);
+
+  const existingCustom = parsedGuardConfig.value.rules[ruleId] || {};
+  const newConfig: BuiltinRuleCustomConfig = {
+    id: ruleId,
+    enabled: targetEnabled,
+    severity: (existingCustom.severity as any) || "default",
+    max_file_size: existingCustom.max_file_size,
+    exclude_dirs: existingCustom.exclude_dirs || [],
+    exclude_files: existingCustom.exclude_files || [],
+    extensions: existingCustom.extensions || [],
+  };
+
+  const updatedToml = updateBuiltinRuleInToml(content, newConfig);
+  const ok = await saveRawTomlConfig(updatedToml);
+  if (ok) {
+    await loadGuardTomlConfig();
+    showToast(
+      targetEnabled
+        ? `内置规则 "${ruleMeta ? ruleMeta.name : ruleId}" 已恢复启用`
+        : `内置规则 "${ruleMeta ? ruleMeta.name : ruleId}" 已加入跳过列表 (Skip)`,
+      "success"
+    );
+  }
+}
+
+async function onSaveBuiltinRule(config: BuiltinRuleCustomConfig) {
+  const content = await fetchRawTomlConfig();
+  const updatedToml = updateBuiltinRuleInToml(content, config);
+  const ok = await saveRawTomlConfig(updatedToml);
+  if (ok) {
+    isBuiltinModalOpen.value = false;
+    await loadGuardTomlConfig();
+    showToast(`内置规则 "${config.id}" 配置已成功保存至 .unirtm.toml`, "success");
+  }
+}
+
+function getBuiltinRuleForExtAndCategory(
+  ext: string,
+  type: "fixer" | "linter" | "security"
+): DetailedGuardRule | undefined {
+  return BUILTIN_GUARD_RULES.find((r) => {
+    const isGlobal = r.extensions.some((e) => e.includes("*"));
+    const matchesExt = isGlobal || r.extensions.includes(ext) || r.extensions.some((e) => e.includes(ext));
+    if (!matchesExt) return false;
+    if (type === "fixer") return r.phase === "fixer";
+    if (type === "linter") return r.phase === "linter" && r.category !== "security";
+    if (type === "security") return r.category === "security";
+    return false;
+  });
 }
 </script>
 
@@ -3658,5 +3945,346 @@ async function onTomlSaved() {
   background: #f1f5f9;
   color: #64748b;
   border-color: #e2e8f0;
+}
+
+/* Built-in Rules Settings View Styling */
+.builtin-rules-settings-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.builtin-settings-header-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 8px;
+}
+
+.banner-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  max-width: 750px;
+}
+
+.banner-icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.banner-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: var(--text-main, #ffffff);
+}
+
+.banner-subtitle {
+  font-size: 0.775rem;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.banner-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 14px;
+  font-size: 0.725rem;
+  font-weight: 500;
+}
+
+.stat-pill.active-pill {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.stat-pill.skip-pill {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.stat-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.dot-green {
+  background: #22c55e;
+}
+
+.dot-amber {
+  background: #f59e0b;
+}
+
+/* Builtin Cards Grid */
+.builtin-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1rem;
+}
+
+.builtin-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.15rem;
+  background: var(--card-bg, rgba(30, 30, 30, 0.6));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.builtin-card:hover {
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.builtin-card.is-skipped {
+  opacity: 0.68;
+  border-style: dashed;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.02);
+}
+
+.builtin-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.builtin-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  overflow: hidden;
+}
+
+.builtin-cn-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main, #ffffff);
+}
+
+.builtin-id-code {
+  font-size: 0.725rem;
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.builtin-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.badge-lock-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+/* Switch Button */
+.btn-toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.45rem 0.15rem 0.25rem;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-switch .toggle-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  transition: transform 0.2s;
+}
+
+.btn-toggle-switch.active {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+}
+
+.btn-toggle-switch.active .toggle-thumb {
+  background: #22c55e;
+}
+
+.builtin-desc {
+  font-size: 0.775rem;
+  color: var(--text-muted, #94a3b8);
+  margin: 0 0 0.75rem 0;
+  line-height: 1.45;
+  flex-grow: 1;
+}
+
+.builtin-custom-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(6, 182, 212, 0.08);
+  border-radius: 4px;
+}
+
+.custom-hint {
+  font-size: 0.6875rem;
+  color: #38bdf8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.builtin-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 0.5rem;
+}
+
+.builtin-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.builtin-chips .chip {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+
+.chip.fix-chip {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+}
+
+.chip.blocker-chip {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+.chip.warn-chip {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+}
+
+.btn-configure-builtin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.725rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.12));
+  border-radius: 4px;
+  color: var(--text-main, #ffffff);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-configure-builtin:hover {
+  background: #2563eb;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* Builtin Matrix Cell */
+.tool-cell.builtin-cell {
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(6, 182, 212, 0.05);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  transition: all 0.15s ease;
+}
+
+.tool-cell.builtin-cell:hover {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+.builtin-note {
+  font-size: 0.65rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* Light Theme for Built-in Settings */
+:root[data-theme="light"] .builtin-settings-header-banner,
+[data-theme="light"] .builtin-settings-header-banner {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+}
+
+:root[data-theme="light"] .banner-title,
+[data-theme="light"] .banner-title,
+:root[data-theme="light"] .builtin-cn-name,
+[data-theme="light"] .builtin-cn-name {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .builtin-card,
+[data-theme="light"] .builtin-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .btn-configure-builtin,
+[data-theme="light"] .btn-configure-builtin {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+:root[data-theme="light"] .btn-configure-builtin:hover,
+[data-theme="light"] .btn-configure-builtin:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
 }
 </style>

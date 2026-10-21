@@ -526,3 +526,7 @@ export const ALL_38_GUARD_RULES: DetailedGuardRule[] = [
     toolName: "Gitleaks",
   },
 ];
+
+export const BUILTIN_GUARD_RULES: DetailedGuardRule[] = ALL_38_GUARD_RULES.filter((r) => r.id.startsWith("builtin:"));
+
+export const SLOT_GUARD_RULES: DetailedGuardRule[] = ALL_38_GUARD_RULES.filter((r) => r.id.startsWith("slot:"));
