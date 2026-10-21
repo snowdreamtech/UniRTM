@@ -645,10 +645,12 @@ html[dir="rtl"] .opt-check {
    7. Monaco Editor Context Menu (Contrast Theme & Solid Background)
    ========================================================================== */
 
-/* Universal context menu container & scrollable container base (Unified with FileContextMenu) */
+/* Universal context menu container & scrollable container base (100% Unified with FileContextMenu) */
 .context-view.monaco-menu-container,
 .context-view .monaco-scrollable-element,
-.context-view .monaco-menu {
+.context-view .monaco-menu,
+.tab-context-menu,
+.tab-submenu-independent {
   border-radius: 6px !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 13px !important;
@@ -658,92 +660,242 @@ html[dir="rtl"] .opt-check {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
   padding: 4px 0 !important;
   user-select: none;
+  min-width: 200px !important;
+  box-sizing: border-box !important;
 }
 
 :root[data-theme="light"] .context-view.monaco-menu-container,
 :root[data-theme="light"] .context-view .monaco-scrollable-element,
 :root[data-theme="light"] .context-view .monaco-menu,
+:root[data-theme="light"] .tab-context-menu,
+:root[data-theme="light"] .tab-submenu-independent,
 [data-theme="light"] .context-view.monaco-menu-container,
 [data-theme="light"] .context-view .monaco-scrollable-element,
-[data-theme="light"] .context-view .monaco-menu {
+[data-theme="light"] .context-view .monaco-menu,
+[data-theme="light"] .tab-context-menu,
+[data-theme="light"] .tab-submenu-independent {
+  background-color: var(--modal-bg, #ffffff) !important;
+  color: var(--text-main, #0f172a) !important;
+  border: 1px solid var(--card-border, #cbd5e1) !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
 }
 
-.context-view .monaco-menu .monaco-action-bar.vertical .action-menu-item {
-  height: 28px !important;
-  line-height: 28px !important;
-  border-radius: 4px !important;
-  margin: 1px 4px !important;
-  padding: 0 8px !important;
+.context-view .monaco-menu .monaco-action-bar.vertical,
+.tab-context-menu .monaco-action-bar.vertical,
+.tab-submenu-independent .monaco-action-bar.vertical {
+  width: 100% !important;
+  overflow: visible !important;
+}
+
+.context-view .monaco-menu .actions-container,
+.tab-context-menu .actions-container,
+.tab-submenu-independent .actions-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.context-view .monaco-menu .action-item,
+.tab-context-menu .action-item,
+.tab-submenu-independent .action-item {
+  display: block !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.tab-context-menu .action-item.has-submenu {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* Row Layout: edge-to-edge hover, identical to FileContextMenu's .menu-item */
+.context-view .monaco-menu .monaco-action-bar.vertical .action-menu-item,
+.tab-context-menu .action-menu-item,
+.tab-submenu-independent .action-menu-item {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  padding: 6px 12px !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  gap: 8px !important;
+  cursor: pointer !important;
   outline: none !important;
   border: none !important;
   color: var(--text-main) !important;
   background-color: transparent !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  min-height: 30px !important;
+  box-sizing: border-box !important;
   transition: all 0.1s ease !important;
+  text-decoration: none !important;
+  width: 100% !important;
+  white-space: nowrap !important;
 }
 
-.context-view .monaco-menu .monaco-action-bar.vertical .action-label {
-  font-size: 12px !important;
-  line-height: 26px !important;
+/* Icons inside menu items (100% matching FileContextMenu .menu-icon) */
+.context-view .monaco-menu .menu-icon,
+.tab-context-menu .menu-icon,
+.tab-submenu-independent .menu-icon {
+  font-size: 14px !important;
+  width: 16px !important;
+  min-width: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  color: inherit !important;
 }
 
-.context-view .monaco-menu .monaco-action-bar.vertical .keybinding {
-  font-size: 11px !important;
-  line-height: 26px !important;
-}
-
-/* Keybinding & Separators (Unified with FileContextMenu design system) */
+/* Action Label: Left-aligned, flexible width, ellipsis */
 .context-view .monaco-menu .monaco-action-bar.vertical .action-label,
 .tab-context-menu .action-label,
 .tab-submenu-independent .action-label {
+  display: inline-block !important;
+  flex: 1 1 auto !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  color: inherit !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
+/* Keybinding: Right-aligned, fixed width, strictly nowrap, safe spacing */
 .context-view .monaco-menu .monaco-action-bar.vertical .keybinding,
 .tab-context-menu .keybinding,
 .tab-submenu-independent .keybinding {
+  display: inline-flex !important;
+  float: none !important;
+  flex: 0 0 auto !important;
+  font-size: 11px !important;
+  line-height: 18px !important;
+  color: var(--text-muted) !important;
+  margin-left: 12px !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  font-family: inherit !important;
+  padding: 0 !important;
 }
 
+/* Submenu Arrow: Right-aligned chevron icon */
+.tab-context-menu .submenu-arrow,
+.tab-submenu-independent .submenu-arrow {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  font-size: 12px !important;
+  margin-left: 12px !important;
+  color: var(--text-muted) !important;
+  align-items: center !important;
+}
+
+/* Compact 1px Separator: Completely eliminates Monaco red borders and matches FileContextMenu */
+.context-view .monaco-menu .monaco-action-bar.vertical .action-item.separator,
+.monaco-menu .monaco-action-bar.vertical .action-item.separator,
+.context-view .monaco-menu .action-item.separator,
+.context-view .monaco-menu .action-menu-item.separator,
 .context-view .monaco-menu .action-label.separator,
+.tab-context-menu .action-item.separator,
 .tab-context-menu .action-separator,
+.tab-submenu-independent .action-item.separator,
 .tab-submenu-independent .action-separator {
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
+  line-height: 1px !important;
+  background-color: var(--card-border) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--card-border) !important;
+  margin: 4px 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  overflow: hidden !important;
+  list-style: none !important;
+  pointer-events: none !important;
 }
 
 /* Hover & Active / Focused: 100% 严格对齐 FileContextMenu 的 --accent-cyan-glow 与 --accent-cyan */
+.context-view .monaco-menu .action-item.focused,
+.context-view .monaco-menu .action-item:hover,
 .context-view .monaco-menu .action-item.focused > .action-menu-item,
 .context-view .monaco-menu .action-item:hover > .action-menu-item,
 .context-view .monaco-menu .action-menu-item:hover,
+.tab-context-menu .action-item.focused,
+.tab-context-menu .action-item:hover,
 .tab-context-menu .action-item.focused > .action-menu-item,
 .tab-context-menu .action-item:hover > .action-menu-item,
 .tab-context-menu .action-menu-item:hover,
+.tab-submenu-independent .action-item.focused,
+.tab-submenu-independent .action-item:hover,
+.tab-submenu-independent .action-item.focused > .action-menu-item,
 .tab-submenu-independent .action-item:hover > .action-menu-item,
 .tab-submenu-independent .action-menu-item:hover {
+  background-color: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15)) !important;
+  color: var(--accent-cyan) !important;
 }
 
-.context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
-.context-view .monaco-menu .action-item:hover > .action-menu-item .keybinding,
+.context-view .monaco-menu .action-item.focused .action-label,
+.context-view .monaco-menu .action-item:hover .action-label,
+.context-view .monaco-menu .action-item.focused .menu-icon,
+.context-view .monaco-menu .action-item:hover .menu-icon,
+.context-view .monaco-menu .action-item.focused .action-menu-item,
+.context-view .monaco-menu .action-item:hover .action-menu-item,
+.tab-context-menu .action-item.focused .action-label,
+.tab-context-menu .action-item:hover .action-label,
+.tab-context-menu .action-item.focused .menu-icon,
+.tab-context-menu .action-item:hover .menu-icon,
+.tab-context-menu .action-item.focused .action-menu-item,
+.tab-context-menu .action-item:hover .action-menu-item,
+.tab-submenu-independent .action-item.focused .action-label,
+.tab-submenu-independent .action-item:hover .action-label,
+.tab-submenu-independent .action-item.focused .menu-icon,
+.tab-submenu-independent .action-item:hover .menu-icon,
+.tab-submenu-independent .action-item.focused .action-menu-item,
+.tab-submenu-independent .action-item:hover .action-menu-item {
+  color: var(--accent-cyan) !important;
+}
+
+.context-view .monaco-menu .action-item.focused .keybinding,
 .context-view .monaco-menu .action-item:hover .keybinding,
-.tab-context-menu .action-item.focused > .action-menu-item .keybinding,
-.tab-context-menu .action-item:hover > .action-menu-item .keybinding,
-.tab-context-menu .action-item:hover .keybinding {
+.tab-context-menu .action-item.focused .keybinding,
+.tab-context-menu .action-item:hover .keybinding,
+.tab-submenu-independent .action-item.focused .keybinding,
+.tab-submenu-independent .action-item:hover .keybinding,
+.tab-context-menu .action-item.focused .submenu-arrow,
+.tab-context-menu .action-item:hover .submenu-arrow,
+.tab-submenu-independent .action-item.focused .submenu-arrow,
+.tab-submenu-independent .action-item:hover .submenu-arrow {
+  color: var(--accent-cyan) !important;
+  opacity: 0.9 !important;
 }
 
 .context-view .monaco-menu .action-item.disabled .action-menu-item,
 .tab-context-menu .action-item.disabled .action-menu-item,
 .tab-submenu-independent .action-item.disabled .action-menu-item {
+  color: var(--text-muted) !important;
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  background-color: transparent !important;
 }
 
-/* Tab Context Menu & Submenus (VS Code Native Aligned & Responsive Robust) */
+/* Tab Context Menu & Submenus Fixed Positioning & Animations */
 .tab-context-menu,
 .tab-submenu-independent {
   position: fixed !important;
   z-index: 99999 !important;
-  user-select: none;
-  min-width: 260px !important;
+  min-width: 240px !important;
   max-width: 360px !important;
   width: max-content !important;
-  box-sizing: border-box !important;
-  border-radius: 6px !important;
-  padding: 4px 0 !important;
   overflow: visible !important;
   animation: tabMenuFadeIn 0.12s ease-out;
 }
@@ -774,143 +926,6 @@ html[dir="rtl"] .opt-check {
     opacity: 1;
     transform: scale(1);
   }
-}
-
-.tab-context-menu .monaco-menu,
-.tab-submenu-independent .monaco-menu {
-  overflow: visible !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-.tab-context-menu .monaco-action-bar.vertical,
-.tab-submenu-independent .monaco-action-bar.vertical {
-  overflow: visible !important;
-  width: 100% !important;
-}
-
-.tab-context-menu .actions-container,
-.tab-submenu-independent .actions-container {
-  overflow: visible !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  list-style: none !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-.tab-context-menu .action-item,
-.tab-submenu-independent .action-item {
-  display: block !important;
-  list-style: none !important;
-  margin: 0 !important;
-  padding: 0 4px !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-.tab-context-menu .action-item.has-submenu {
-  position: relative !important;
-  overflow: visible !important;
-}
-
-/* Row Layout: strictly single line, flex nowrap, space-between */
-.tab-context-menu .action-menu-item,
-.tab-submenu-independent .action-menu-item {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-  min-height: 26px !important;
-  height: 26px !important;
-  line-height: 26px !important;
-  padding: 0 8px !important;
-  margin: 1px 0 !important;
-  border-radius: 4px !important;
-  box-sizing: border-box !important;
-  text-decoration: none !important;
-  cursor: pointer !important;
-  white-space: nowrap !important;
-  outline: none !important;
-  border: none !important;
-  transition:
-    background-color 0.12s ease,
-    color 0.12s ease !important;
-}
-
-/* Action Label: Left-aligned, flexible width, ellipsis, strictly nowrap */
-.tab-context-menu .action-label,
-.tab-submenu-independent .action-label {
-  display: inline-block !important;
-  flex: 1 1 auto !important;
-  text-align: left !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  font-size: 12px !important;
-  line-height: 26px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* Keybinding: Right-aligned, fixed width, strictly nowrap, safe spacing */
-.tab-context-menu .keybinding,
-.tab-submenu-independent .keybinding {
-  display: inline-flex !important;
-  flex: 0 0 auto !important;
-  margin-left: 24px !important;
-  text-align: right !important;
-  white-space: nowrap !important;
-  font-size: 11px !important;
-  line-height: 26px !important;
-  font-family: inherit !important;
-  padding: 0 !important;
-}
-
-/* Submenu Arrow: Right-aligned chevron icon */
-.tab-context-menu .submenu-arrow,
-.tab-submenu-independent .submenu-arrow {
-  display: inline-flex !important;
-  flex: 0 0 auto !important;
-  font-size: 14px !important;
-  margin-left: 16px !important;
-  opacity: 0.7 !important;
-  align-items: center !important;
-}
-
-/* Compact 1px Separators */
-.tab-context-menu .action-separator,
-.tab-submenu-independent .action-separator {
-  display: block !important;
-  height: 1px !important;
-  min-height: 1px !important;
-  max-height: 1px !important;
-  line-height: 1px !important;
-  padding: 0 !important;
-  margin: 4px 6px !important;
-  border: none !important;
-  list-style: none !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-}
-
-:root[data-theme="dark"] .tab-context-menu .action-separator,
-:root[data-theme="dark"] .tab-submenu-independent .action-separator,
-[data-theme="dark"] .tab-context-menu .action-separator,
-[data-theme="dark"] .tab-submenu-independent .action-separator {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-:root[data-theme="light"] .tab-context-menu .action-separator,
-:root[data-theme="light"] .tab-submenu-independent .action-separator,
-[data-theme="light"] .tab-context-menu .action-separator,
-[data-theme="light"] .tab-submenu-independent .action-separator {
-  background-color: #e2e8f0 !important;
 }
 
 /* Global Context Menu Backdrop & Layering Architecture */

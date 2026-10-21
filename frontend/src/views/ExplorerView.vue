@@ -412,29 +412,34 @@
               <!-- Group 1: Close Actions -->
               <li class="action-item" role="none" @click="handleCloseCurrent">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-close"></span>
                   <span class="action-label">关闭</span>
                   <span class="keybinding">{{ isMac ? "⌘W" : "Ctrl+W" }}</span>
                 </a>
               </li>
               <li class="action-item" :class="{ disabled: !canCloseOthers }" role="none" @click="handleCloseOthers">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-close-all"></span>
                   <span class="action-label">关闭其他</span>
                   <span class="keybinding">{{ isMac ? "⌥⌘T" : "Alt+Ctrl+T" }}</span>
                 </a>
               </li>
               <li class="action-item" :class="{ disabled: !canCloseToRight }" role="none" @click="handleCloseToRight">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-arrow-right"></span>
                   <span class="action-label">关闭右侧标签页</span>
                 </a>
               </li>
               <li class="action-item" :class="{ disabled: !canCloseSaved }" role="none" @click="handleCloseSaved">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-check"></span>
                   <span class="action-label">关闭已保存</span>
                   <span class="keybinding">{{ isMac ? "[⌘K U]" : "[Ctrl+K U]" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click="handleCloseAll">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-clear-all"></span>
                   <span class="action-label">全部关闭</span>
                   <span class="keybinding">{{ isMac ? "[⌘K W]" : "[Ctrl+K W]" }}</span>
                 </a>
@@ -446,12 +451,14 @@
               <!-- Group 2: Copy Paths -->
               <li class="action-item" role="none" @click="handleCopyAbsolutePath">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-copy"></span>
                   <span class="action-label">复制路径</span>
                   <span class="keybinding">{{ isMac ? "⌥⌘C" : "Shift+Alt+C" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click="handleCopyRelativePath">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-copy"></span>
                   <span class="action-label">复制相对路径</span>
                   <span class="keybinding">{{ isMac ? "⌥⇧⌘C" : "Ctrl+K Ctrl+C" }}</span>
                 </a>
@@ -463,6 +470,7 @@
               <!-- Group 3: Reveal in Explorer View -->
               <li class="action-item" role="none" @click="handleRevealInExplorer">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-files"></span>
                   <span class="action-label">在资源管理器视图中显示</span>
                 </a>
               </li>
@@ -473,11 +481,13 @@
               <!-- Git Graph & Diff Actions -->
               <li class="action-item" role="none" @click="handleViewFileGitGraph">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-git-commit"></span>
                   <span class="action-label">在 Git Graph 中查看该文件提交历史</span>
                 </a>
               </li>
               <li v-if="targetTabHasGitChanges" class="action-item" role="none" @click="handleOpenTabDiff">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-diff"></span>
                   <span class="action-label">打开差异比对 (Diff)</span>
                 </a>
               </li>
@@ -488,6 +498,7 @@
               <!-- Group 4: Pin / Unpin Tab -->
               <li class="action-item" role="none" @click="handleTogglePin">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-pin"></span>
                   <span class="action-label">{{ targetTab?.isPinned ? "取消固定" : "固定" }}</span>
                   <span class="keybinding">{{
                     targetTab?.isPinned
@@ -507,6 +518,7 @@
               <!-- Group 5: Split Editor -->
               <li class="action-item" role="none" @click="handleSplitRight">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-split-horizontal"></span>
                   <span class="action-label">向右拆分</span>
                 </a>
               </li>
@@ -519,6 +531,7 @@
                 @mouseleave="handleSubmenuTriggerLeave"
               >
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-split-vertical"></span>
                   <span class="action-label">拆分和移动</span>
                   <span class="codicon codicon-chevron-right submenu-arrow"></span>
                 </a>
@@ -545,21 +558,25 @@
             <ul class="actions-container" role="menu">
               <li class="action-item" role="none" @click.stop="handleSplitEditor('up')">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-arrow-up"></span>
                   <span class="action-label">向上拆分</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('down')">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-arrow-down"></span>
                   <span class="action-label">向下拆分</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('left')">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-arrow-left"></span>
                   <span class="action-label">向左拆分</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-arrow-right"></span>
                   <span class="action-label">向右拆分</span>
                 </a>
               </li>
@@ -568,21 +585,25 @@
 
               <li class="action-item" role="none" @click.stop="handleSplitEditor('up')">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-chevron-up"></span>
                   <span class="action-label">上移</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('down')">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-chevron-down"></span>
                   <span class="action-label">下移</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('left')">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-chevron-left"></span>
                   <span class="action-label">左移</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-chevron-right"></span>
                   <span class="action-label">右移</span>
                 </a>
               </li>
@@ -591,6 +612,7 @@
 
               <li class="action-item" role="none" @click.stop="handleSplitInGroup">
                 <a class="action-menu-item" role="menuitem">
+                  <span class="menu-icon codicon codicon-layout-panel"></span>
                   <span class="action-label">{{
                     splitState.active && splitState.inGroup ? "加入编辑器组" : "在组中拆分"
                   }}</span>

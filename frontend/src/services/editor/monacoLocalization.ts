@@ -119,7 +119,141 @@ export function localizeEditorActions(editor: any): void {
 }
 
 /**
- * 翻译当前 DOM 中所有活动的 Monaco 菜单项（包括主右键菜单与子菜单）。
+ * Monaco Editor 上下文菜单与常用操作的精致 Codicon 图标映射表（100% 对齐 FileContextMenu 体系）
+ */
+const ACTION_ICON_MAP: Record<string, string> = {
+  // Terminal / Run
+  "在活动终端中运行 (Run in Active Terminal)": "codicon-terminal",
+  "Run in Active Terminal": "codicon-terminal",
+  在活动终端中运行: "codicon-terminal",
+  在集成终端中打开: "codicon-terminal",
+
+  // Matching & Multi-cursor
+  更改所有匹配项: "codicon-edit",
+  "Change All Occurrences": "codicon-edit",
+  變更所有相符項: "codicon-edit",
+
+  // Clipboard
+  剪切: "codicon-scissors",
+  Cut: "codicon-scissors",
+  剪下: "codicon-scissors",
+  复制: "codicon-copy",
+  Copy: "codicon-copy",
+  複製: "codicon-copy",
+  粘贴: "codicon-clippy",
+  Paste: "codicon-clippy",
+  貼上: "codicon-clippy",
+
+  // Command Palette
+  命令面板: "codicon-terminal",
+  "命令面板...": "codicon-terminal",
+  "Command Palette": "codicon-terminal",
+  "Command Palette...": "codicon-terminal",
+  "命令選擇區...": "codicon-terminal",
+
+  // Format & Refactor
+  格式化文档: "codicon-code",
+  "Format Document": "codicon-code",
+  格式化文件: "codicon-code",
+  格式化选定内容: "codicon-code",
+  "Format Selection": "codicon-code",
+  格式化選取項目: "codicon-code",
+  "重构...": "codicon-tools",
+  "Refactor...": "codicon-tools",
+  "重構...": "codicon-tools",
+  "源代码操作...": "codicon-source-control",
+  "Source Action...": "codicon-source-control",
+  "原始程式碼動作...": "codicon-source-control",
+  重命名符号: "codicon-edit",
+  "Rename Symbol": "codicon-edit",
+  重新命名符號: "codicon-edit",
+
+  // Navigation & Definition
+  转到定义: "codicon-go-to-file",
+  "Go to Definition": "codicon-go-to-file",
+  前往定義: "codicon-go-to-file",
+  查看定义: "codicon-preview",
+  "Peek Definition": "codicon-preview",
+  預覽定義: "codicon-preview",
+  转到引用: "codicon-references",
+  "Go to References": "codicon-references",
+  前往參考: "codicon-references",
+  查看引用: "codicon-preview",
+  "Peek References": "codicon-preview",
+  預覽參考: "codicon-preview",
+  转到实现: "codicon-symbol-event",
+  "Go to Implementation": "codicon-symbol-event",
+  前往實作: "codicon-symbol-event",
+  查看实现: "codicon-preview",
+  "Peek Implementation": "codicon-preview",
+  預覽實作: "codicon-preview",
+  转到类型定义: "codicon-symbol-class",
+  "Go to Type Definition": "codicon-symbol-class",
+  前往類型定義: "codicon-symbol-class",
+  查看类型定义: "codicon-preview",
+  "Peek Type Definition": "codicon-preview",
+  預覽類型定義: "codicon-preview",
+  查找所有引用: "codicon-search",
+  "Find All References": "codicon-search",
+  尋找所有參考: "codicon-search",
+
+  // Quick Fix & Actions
+  "快速修复...": "codicon-lightbulb",
+  "Quick Fix...": "codicon-lightbulb",
+  "快速修正...": "codicon-lightbulb",
+  全选: "codicon-selection",
+  "Select All": "codicon-selection",
+  撤销: "codicon-discard",
+  Undo: "codicon-discard",
+  恢复: "codicon-redo",
+  Redo: "codicon-redo",
+  剪切行: "codicon-scissors",
+  "Cut Line": "codicon-scissors",
+  向上复制行: "codicon-copy",
+  "Copy Line Up": "codicon-copy",
+  向下复制行: "codicon-copy",
+  "Copy Line Down": "codicon-copy",
+  删除行: "codicon-trash",
+  "Delete Line": "codicon-trash",
+  切换行注释: "codicon-comment",
+  "Toggle Line Comment": "codicon-comment",
+  切换块注释: "codicon-comment-discussion",
+  "Toggle Block Comment": "codicon-comment-discussion",
+  全部折叠: "codicon-collapse-all",
+  "Fold All": "codicon-collapse-all",
+  全部展开: "codicon-expand-all",
+  "Unfold All": "codicon-expand-all",
+  查看调用层次结构: "codicon-type-hierarchy",
+  "Show Call Hierarchy": "codicon-type-hierarchy",
+  速览调用层次结构: "codicon-type-hierarchy",
+  "Peek Call Hierarchy": "codicon-type-hierarchy",
+};
+
+export function getIconForLabel(label: string): string {
+  const trimmed = label.trim();
+  if (ACTION_ICON_MAP[trimmed]) return ACTION_ICON_MAP[trimmed];
+  const lower = trimmed.toLowerCase();
+  if (lower.includes("terminal") || lower.includes("终端")) return "codicon-terminal";
+  if (lower.includes("cut") || lower.includes("剪切") || lower.includes("剪下")) return "codicon-scissors";
+  if (lower.includes("copy") || lower.includes("复制") || lower.includes("複製")) return "codicon-copy";
+  if (lower.includes("paste") || lower.includes("粘贴") || lower.includes("貼上")) return "codicon-clippy";
+  if (lower.includes("command") || lower.includes("命令")) return "codicon-terminal";
+  if (lower.includes("definition") || lower.includes("定义") || lower.includes("定義")) return "codicon-go-to-file";
+  if (lower.includes("reference") || lower.includes("引用") || lower.includes("參考")) return "codicon-references";
+  if (lower.includes("format") || lower.includes("格式化")) return "codicon-code";
+  if (lower.includes("fix") || lower.includes("修复") || lower.includes("修正")) return "codicon-lightbulb";
+  if (lower.includes("fold") || lower.includes("折叠") || lower.includes("摺疊")) return "codicon-collapse-all";
+  if (lower.includes("unfold") || lower.includes("展开")) return "codicon-expand-all";
+  if (lower.includes("comment") || lower.includes("注释") || lower.includes("註解")) return "codicon-comment";
+  if (lower.includes("delete") || lower.includes("删除") || lower.includes("刪除")) return "codicon-trash";
+  if (lower.includes("find") || lower.includes("search") || lower.includes("查找") || lower.includes("寻找"))
+    return "codicon-search";
+  if (lower.includes("rename") || lower.includes("重命名")) return "codicon-edit";
+  return "codicon-symbol-misc";
+}
+
+/**
+ * 翻译当前 DOM 中所有活动的 Monaco 菜单项（包括主右键菜单与子菜单），并注入 Codicon 菜单图标。
  * 存储原始文本到 dataset.origLabel，以便多次右键或切换语言时准确翻译。
  */
 export function translateActiveMonacoMenus(root: ParentNode = document): void {
@@ -136,6 +270,20 @@ export function translateActiveMonacoMenus(root: ParentNode = document): void {
       const translated = translateMonacoLabel(orig);
       if (translated && el.textContent !== translated) {
         el.textContent = translated;
+      }
+
+      // 注入与更新统一的精致 Codicon 菜单图标（对齐 FileContextMenu）
+      const parent = el.parentElement;
+      if (parent && (parent.classList.contains("action-menu-item") || parent.matches?.("a[role='menuitem']"))) {
+        const iconClass = getIconForLabel(translated || orig);
+        const existingIcon = parent.querySelector(":scope > .menu-icon");
+        if (!existingIcon) {
+          const iconSpan = document.createElement("span");
+          iconSpan.className = `menu-icon codicon ${iconClass}`;
+          parent.insertBefore(iconSpan, el);
+        } else if (!existingIcon.classList.contains(iconClass)) {
+          existingIcon.className = `menu-icon codicon ${iconClass}`;
+        }
       }
     }
   } catch {
