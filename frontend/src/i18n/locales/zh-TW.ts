@@ -1223,6 +1223,7 @@ export const zhTw: TranslationDict = {
   "guard.status.failed": "存在問題",
   "guard.status.duration": "耗時",
   "guard.actions.check_staged": "檢查暫存區",
+  "guard.actions.check_changed": "檢查工作區變更",
   "guard.actions.check_all": "全倉全量巡檢",
   "guard.actions.checking": "正在質檢...",
   "guard.actions.fixing": "正在修復...",

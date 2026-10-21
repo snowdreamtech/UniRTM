@@ -31,11 +31,32 @@
           @click="handleCheck('staged')"
           title="Run quick staged scan (default pre-commit behavior)"
         >
-          <span class="codicon" :class="isChecking ? 'codicon-loading spin' : 'codicon-play'"></span>
+          <span
+            class="codicon"
+            :class="isChecking && checkingMode === 'staged' ? 'codicon-loading spin' : 'codicon-play'"
+          ></span>
           <span>{{
-            isChecking
+            isChecking && checkingMode === "staged"
               ? t("guard.actions.checking") || "Checking..."
               : t("guard.actions.check_staged") || "Check Staged"
+          }}</span>
+        </button>
+
+        <!-- Run Check Changed -->
+        <button
+          class="btn-action secondary"
+          :disabled="isChecking"
+          @click="handleCheck('changed')"
+          title="Run scan on all working tree changes (staged and unstaged)"
+        >
+          <span
+            class="codicon"
+            :class="isChecking && checkingMode === 'changed' ? 'codicon-loading spin' : 'codicon-diff-modified'"
+          ></span>
+          <span>{{
+            isChecking && checkingMode === "changed"
+              ? t("guard.actions.checking") || "Checking..."
+              : t("guard.actions.check_changed") || "Check Changed"
           }}</span>
         </button>
 
@@ -46,7 +67,10 @@
           @click="handleCheck('all')"
           title="Run full repository scan"
         >
-          <span class="codicon codicon-run-all"></span>
+          <span
+            class="codicon"
+            :class="isChecking && checkingMode === 'all' ? 'codicon-loading spin' : 'codicon-run-all'"
+          ></span>
           <span>{{ t("guard.actions.check_all") || "Check Entire Repo" }}</span>
         </button>
 
@@ -69,11 +93,11 @@
           <span>{{ t("guard.actions.add_mapping") || "Add Extension Mapping" }}</span>
         </button>
 
-        <!-- Fallback: View/Edit .unirtm.toml Button -->
+        <!-- Fallback: View/Edit .unirtm.toml Button (Opens directly in Monaco Editor) -->
         <button
           class="btn-action ghost"
-          @click="openTomlFallback"
-          title="Directly view or edit .unirtm.toml configuration"
+          @click="openTomlInEditor"
+          title="Directly view and edit .unirtm.toml in main code editor"
         >
           <span class="codicon codicon-code"></span>
           <span>{{ t("guard.actions.edit_toml") || "Edit .unirtm.toml" }}</span>
@@ -381,11 +405,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onActivated } from "vue";
+import { useRouter } from "vue-router";
 import { t } from "../i18n";
 import { useGuard, type ToolSlotItem, type SlotConfigInput } from "../composables/useGuard";
+import { useEditorTabs } from "../composables/useEditorTabs";
 import ExtensionSlotModal from "../components/guard/ExtensionSlotModal.vue";
 import TomlConfigDrawer from "../components/guard/TomlConfigDrawer.vue";
+
+const router = useRouter();
+const { openTab } = useEditorTabs();
 
 const {
   guardStatus,
@@ -405,6 +434,7 @@ const activeEditingSlot = ref<ToolSlotItem | null>(null);
 const targetExtForAdd = ref<string>("");
 
 const isTomlDrawerOpen = ref(false);
+const checkingMode = ref<"changed" | "staged" | "all">("staged");
 
 const activeTab = ref<"matrix" | "slots" | "reports">("matrix");
 const searchKeyword = ref("");
@@ -424,8 +454,29 @@ onMounted(() => {
   fetchSlots().catch(() => {});
 });
 
-function handleCheck(mode: "staged" | "all") {
+onActivated(() => {
+  fetchStatus().catch(() => {});
+  fetchSlots().catch(() => {});
+});
+
+function handleCheck(mode: "changed" | "staged" | "all") {
+  checkingMode.value = mode;
   runCheck({ mode }).catch(() => {});
+}
+
+async function openTomlInEditor() {
+  await openTab({
+    path: ".unirtm.toml",
+    name: ".unirtm.toml",
+  });
+  router.push({
+    path: "/",
+    query: {
+      from: "guard",
+      file: ".unirtm.toml",
+      scope: "workspace",
+    },
+  });
 }
 
 function handleFix() {

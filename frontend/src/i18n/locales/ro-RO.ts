@@ -1229,6 +1229,7 @@ export const roRo: TranslationDict = {
   "guard.status.failed": "ISSUES",
   "guard.status.duration": "Duration",
   "guard.actions.check_staged": "Check Staged",
+  "guard.actions.check_changed": "Verifică modificările",
   "guard.actions.check_all": "Check Entire Repo",
   "guard.actions.checking": "Checking...",
   "guard.actions.fixing": "Fixing...",

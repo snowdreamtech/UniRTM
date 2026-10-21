@@ -1221,6 +1221,7 @@ export const zhCn: TranslationDict = {
   "guard.status.failed": "存在问题",
   "guard.status.duration": "耗时",
   "guard.actions.check_staged": "检查暂存区",
+  "guard.actions.check_changed": "检查工作区更改",
   "guard.actions.check_all": "全仓全量巡检",
   "guard.actions.checking": "正在质检...",
   "guard.actions.fixing": "正在修复...",

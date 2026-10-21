@@ -1228,6 +1228,7 @@ export const koKr: TranslationDict = {
   "guard.status.failed": "ISSUES",
   "guard.status.duration": "Duration",
   "guard.actions.check_staged": "Check Staged",
+  "guard.actions.check_changed": "변경사항 검사",
   "guard.actions.check_all": "Check Entire Repo",
   "guard.actions.checking": "Checking...",
   "guard.actions.fixing": "Fixing...",

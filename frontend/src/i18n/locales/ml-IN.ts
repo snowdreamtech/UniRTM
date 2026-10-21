@@ -1228,6 +1228,7 @@ export const mlIn: TranslationDict = {
   "guard.status.failed": "ISSUES",
   "guard.status.duration": "Duration",
   "guard.actions.check_staged": "Check Staged",
+  "guard.actions.check_changed": "മാറ്റങ്ങൾ പരിശോധിക്കുക",
   "guard.actions.check_all": "Check Entire Repo",
   "guard.actions.checking": "Checking...",
   "guard.actions.fixing": "Fixing...",

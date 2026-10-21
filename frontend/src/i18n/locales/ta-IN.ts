@@ -1230,6 +1230,7 @@ export const taIn: TranslationDict = {
   "guard.status.failed": "ISSUES",
   "guard.status.duration": "Duration",
   "guard.actions.check_staged": "Check Staged",
+  "guard.actions.check_changed": "மாற்றங்களைச் சரிபார்க்கவும்",
   "guard.actions.check_all": "Check Entire Repo",
   "guard.actions.checking": "Checking...",
   "guard.actions.fixing": "Fixing...",

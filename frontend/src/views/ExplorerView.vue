@@ -629,7 +629,8 @@ function handleReturnContext() {
     const scope = (route.query.scope as string) || "workspace";
     router.push({ path: "/settings", query: { scope } });
   } else {
-    router.push({ path: "/scm", query: { scope: "workspace", tab: "guard" } });
+    const scope = (route.query.scope as string) || "workspace";
+    router.push({ path: "/guard", query: { scope } });
   }
 }
 

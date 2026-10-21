@@ -43,15 +43,32 @@
       </div>
       <div class="action-buttons-group">
         <button class="sidebar-action-btn primary" :disabled="isChecking" @click="handleRunCheck('staged')">
-          <span class="codicon" :class="isChecking ? 'codicon-loading spin' : 'codicon-play'"></span>
+          <span
+            class="codicon"
+            :class="isChecking && checkingMode === 'staged' ? 'codicon-loading spin' : 'codicon-play'"
+          ></span>
           <span>{{
-            isChecking
+            isChecking && checkingMode === "staged"
               ? t("guard.actions.checking") || "Checking..."
               : t("guard.actions.check_staged") || "Check Staged"
           }}</span>
         </button>
+        <button class="sidebar-action-btn secondary" :disabled="isChecking" @click="handleRunCheck('changed')">
+          <span
+            class="codicon"
+            :class="isChecking && checkingMode === 'changed' ? 'codicon-loading spin' : 'codicon-diff-modified'"
+          ></span>
+          <span>{{
+            isChecking && checkingMode === "changed"
+              ? t("guard.actions.checking") || "Checking..."
+              : t("guard.actions.check_changed") || "Check Changed"
+          }}</span>
+        </button>
         <button class="sidebar-action-btn secondary" :disabled="isChecking" @click="handleRunCheck('all')">
-          <span class="codicon codicon-run-all"></span>
+          <span
+            class="codicon"
+            :class="isChecking && checkingMode === 'all' ? 'codicon-loading spin' : 'codicon-run-all'"
+          ></span>
           <span>{{ t("guard.actions.check_all") || "Check Entire Repo" }}</span>
         </button>
         <button class="sidebar-action-btn secondary" :disabled="isFixing" @click="handleRunFix">
@@ -92,6 +109,7 @@ import { useGuard } from "../../composables/useGuard";
 const { guardStatus, isChecking, isFixing, runCheck, runFix } = useGuard();
 
 const selectedCategory = ref("all");
+const checkingMode = ref<"changed" | "staged" | "all">("staged");
 
 const categories = computed(() => [
   { id: "all", label: t("guard.cat.all") || "All Domains", icon: "codicon-layers" },
@@ -101,7 +119,8 @@ const categories = computed(() => [
   { id: "secret", label: t("guard.cat.secret") || "Secret Leak Prevention", icon: "codicon-lock" },
 ]);
 
-function handleRunCheck(mode: "staged" | "all") {
+function handleRunCheck(mode: "changed" | "staged" | "all") {
+  checkingMode.value = mode;
   runCheck({ mode }).catch(() => {});
 }
 
