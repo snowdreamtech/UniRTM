@@ -132,7 +132,7 @@
               placeholder="e.g. prettier --check {{files}} or gofmt -l {{files}}"
             />
             <span class="form-hint">
-              {{ t("guard.modal.command_hint") || "Use {{files}} placeholder for the list of staged/inspected files." }}
+              {{ commandHintText }}
             </span>
           </div>
         </div>
@@ -220,6 +220,10 @@ const selectedPresetTool = ref("");
 const newExtInput = ref("");
 
 const isEditing = computed(() => !!props.initialSlot?.id);
+
+const commandHintText = computed(() => {
+  return t("guard.modal.command_hint") || "Use {{files}} placeholder for the list of staged/inspected files.";
+});
 
 const formData = reactive<SlotConfigInput>({
   id: "",
