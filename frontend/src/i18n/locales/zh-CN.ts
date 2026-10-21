@@ -1300,4 +1300,16 @@ export const zhCn: TranslationDict = {
   "guard.banner.dismiss": "关闭提醒",
   "guard.toast.clean": "质检通过：已检查 {count} 个文件，全部规则通过 ({duration}ms)",
   "guard.toast.issues": "质检提示：在已扫描文件中检测到 {count} 个潜在规范问题",
+
+  "guard.tabs.workbench": "实时守卫与检测日志",
+  "guard.tabs.settings": "管线与工具设置",
+  "guard.actions.settings": "管线设置",
+  "guard.logs.title": "实时质量检测流水日志",
+  "guard.logs.empty":
+    "尚未执行代码质检。点击上方「检查暂存区」或「检查工作区更改」立即启动代码质量巡检并实时输出流式执行日志。",
+  "guard.logs.copy": "复制日志",
+  "guard.logs.copied": "已将检测流水日志复制到剪贴板",
+  "guard.logs.clear": "清屏",
+  "guard.logs.cleared": "控制台日志已清空",
+  "guard.settings.hint": "高级配置：管理文件后缀管线编排、外接 CLI 检查工具与 .unirtm.toml 映射。",
 };

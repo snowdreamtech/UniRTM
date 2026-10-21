@@ -1302,4 +1302,16 @@ export const zhTw: TranslationDict = {
   "guard.banner.dismiss": "關閉提醒",
   "guard.toast.clean": "質檢通過：已檢查 {count} 個檔案，全部規則通過 ({duration}ms)",
   "guard.toast.issues": "質檢提示：在已掃描檔案中檢測到 {count} 個潛在規範問題",
+
+  "guard.tabs.workbench": "即時守衛與檢測日誌",
+  "guard.tabs.settings": "管線與工具設定",
+  "guard.actions.settings": "管線設定",
+  "guard.logs.title": "即時品質檢測流水日誌",
+  "guard.logs.empty":
+    "尚未執行程式碼質檢。點擊上方「檢查暫存區」或「檢查工作區變更」立即啟動程式碼品質巡檢並即時輸出流式執行日誌。",
+  "guard.logs.copy": "複製日誌",
+  "guard.logs.copied": "已將檢測流水日誌複製到剪貼簿",
+  "guard.logs.clear": "清屏",
+  "guard.logs.cleared": "控制台日誌已清空",
+  "guard.settings.hint": "進階設定：管理檔案後綴管線編排、外接 CLI 檢查工具與 .unirtm.toml 映射。",
 };

@@ -101,10 +101,15 @@
           }}</span>
         </button>
 
-        <!-- Add Tool/Extension Slot Button -->
-        <button class="btn-action accent" @click="openAddSlotModal" title="Map a new file extension or external tool">
-          <span class="codicon codicon-plus"></span>
-          <span>{{ t("guard.actions.add_mapping") || "Add Extension Mapping" }}</span>
+        <!-- Toggle Pipeline Settings -->
+        <button
+          class="btn-action"
+          :class="activeTab === 'settings' ? 'primary' : 'ghost'"
+          @click="activeTab = activeTab === 'settings' ? 'workbench' : 'settings'"
+          title="Toggle Pipeline & Tool Slot Configuration"
+        >
+          <span class="codicon codicon-settings-gear"></span>
+          <span>{{ t("guard.actions.settings") || "Settings" }}</span>
         </button>
 
         <!-- Fallback: View/Edit .unirtm.toml Button (Opens directly in Monaco Editor) -->
@@ -286,28 +291,38 @@
     <!-- View Switcher Tabs -->
     <div class="guard-view-tabs-bar">
       <div class="tabs-group">
-        <button class="view-tab-btn" :class="{ active: activeTab === 'matrix' }" @click="activeTab = 'matrix'">
-          <span class="codicon codicon-table"></span>
-          <span>{{ t("guard.tabs.matrix") || "Extension Pipelines (Matrix)" }}</span>
+        <!-- 1. Primary Default Tab: Live Guard & Inspection Logs Workbench -->
+        <button class="view-tab-btn" :class="{ active: activeTab === 'workbench' }" @click="activeTab = 'workbench'">
+          <span class="codicon codicon-terminal"></span>
+          <span>{{ t("guard.tabs.workbench") || "Live Guard & Inspection Logs" }}</span>
+          <span class="tab-badge-pulse" :class="guardStatus.clean ? 'badge-clean' : 'badge-warn'">
+            {{ guardStatus.clean ? "CLEAN" : `${guardStatus.issues.length} ISSUES` }}
+          </span>
         </button>
 
-        <button class="view-tab-btn" :class="{ active: activeTab === 'slots' }" @click="activeTab = 'slots'">
-          <span class="codicon codicon-symbol-class"></span>
-          <span>{{ t("guard.tabs.slots") || "Tool Slots (CLI)" }}</span>
-          <span class="tab-badge font-mono">{{ guardSlots.length }}</span>
-        </button>
-
+        <!-- 2. Transparent Rule Execution Checklist -->
         <button class="view-tab-btn" :class="{ active: activeTab === 'reports' }" @click="activeTab = 'reports'">
           <span class="codicon codicon-checklist"></span>
-          <span>{{ t("guard.tabs.reports") || "Live Streamed Checklist" }}</span>
+          <span>{{ t("guard.tabs.reports") || "Rule Execution Checklist" }}</span>
           <span v-if="guardStatus.rule_reports && guardStatus.rule_reports.length > 0" class="tab-badge font-mono">
             {{ guardStatus.rule_reports.length }}
           </span>
         </button>
+
+        <!-- 3. Hidden Secondary Tab: Pipeline & Tool Mapping Settings (Advanced) -->
+        <button
+          class="view-tab-btn tab-settings"
+          :class="{ active: activeTab === 'settings' }"
+          @click="activeTab = 'settings'"
+        >
+          <span class="codicon codicon-settings-gear"></span>
+          <span>{{ t("guard.tabs.settings") || "Pipeline & Tool Settings" }}</span>
+          <span class="tab-badge font-mono">{{ extensionRows.length }}</span>
+        </button>
       </div>
 
-      <!-- Quick Search Filter in Tabs -->
-      <div class="filter-search-box">
+      <!-- Quick Search Filter in Settings -->
+      <div v-if="activeTab === 'settings'" class="filter-search-box">
         <span class="codicon codicon-search"></span>
         <input
           v-model="searchKeyword"
@@ -320,9 +335,199 @@
 
     <!-- Main Tab View Content Area -->
     <main class="guard-content-body">
-      <!-- 1. Extension Pipelines Matrix Table (Primary View) -->
-      <section v-if="activeTab === 'matrix'" class="tab-section matrix-section">
-        <div class="table-responsive-wrapper">
+      <!-- 1. WORKBENCH: Live Inspection Logs, Execution Output, and Issues -->
+      <section v-if="activeTab === 'workbench'" class="tab-section workbench-section">
+        <div class="workbench-layout">
+          <!-- Live Terminal Output Console Window -->
+          <div class="live-console-card">
+            <div class="console-card-header">
+              <div class="console-header-left">
+                <span class="codicon codicon-terminal console-icon"></span>
+                <span class="console-title">{{ t("guard.logs.title") || "Live Inspection Output Stream" }}</span>
+                <span
+                  class="console-status-dot"
+                  :class="isChecking || isFixing ? 'dot-running' : guardStatus.clean ? 'dot-clean' : 'dot-warn'"
+                ></span>
+                <span class="console-status-text font-mono">
+                  {{
+                    isChecking
+                      ? "RUNNING INSPECTION..."
+                      : isFixing
+                        ? "FIXING PIPELINE..."
+                        : guardStatus.clean
+                          ? "WORKSPACE CLEAN & HEALTHY"
+                          : "ATTENTION: ISSUES FOUND"
+                  }}
+                </span>
+              </div>
+              <div class="console-header-actions">
+                <button class="console-btn" @click="copyAllLogs" title="Copy inspection logs to clipboard">
+                  <span class="codicon codicon-copy"></span>
+                  <span>{{ t("guard.logs.copy") || "Copy" }}</span>
+                </button>
+                <button class="console-btn" @click="clearLogs" title="Clear console output">
+                  <span class="codicon codicon-clear-all"></span>
+                  <span>{{ t("guard.logs.clear") || "Clear" }}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Terminal Output Stream Body -->
+            <div class="console-body" ref="logViewerRef">
+              <div v-if="formattedLogs.length === 0" class="console-empty-placeholder">
+                <span class="codicon codicon-shield-check placeholder-shield"></span>
+                <p class="placeholder-title">UniRTM Quality Guard Ready</p>
+                <p class="placeholder-desc">
+                  {{
+                    t("guard.logs.empty") ||
+                    "No inspection logs yet. Click 'Check Staged' or 'Check Changed' above to inspect files and stream live logs."
+                  }}
+                </p>
+                <div class="placeholder-quick-actions">
+                  <button class="placeholder-action-btn primary" :disabled="isChecking" @click="handleCheck('staged')">
+                    <span class="codicon codicon-play"></span>
+                    <span>{{ t("guard.actions.check_staged") || "Check Staged" }}</span>
+                  </button>
+                  <button class="placeholder-action-btn" :disabled="isChecking" @click="handleCheck('changed')">
+                    <span class="codicon codicon-diff-modified"></span>
+                    <span>{{ t("guard.actions.check_changed") || "Check Changed" }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div v-else class="console-log-lines">
+                <div v-for="(item, idx) in formattedLogs" :key="idx" class="log-line" :class="'log-' + item.type">
+                  <span class="log-ts font-mono">{{ item.time }}</span>
+                  <span class="log-badge font-mono" :class="'badge-' + item.type">{{ item.tag }}</span>
+                  <span class="log-content font-mono">{{ item.text }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Issues & Diagnostics Card (Visible if issues exist) -->
+          <div v-if="guardStatus.issues && guardStatus.issues.length > 0" class="workbench-issues-card">
+            <div class="issues-card-header">
+              <div class="issues-title-group">
+                <span class="codicon codicon-warning text-amber"></span>
+                <h3 class="issues-title">
+                  {{ t("guard.diagnostics.issues") || "Quality Violations Detected" }} ({{ guardStatus.issues.length }})
+                </h3>
+              </div>
+              <button class="btn-action primary compact" :disabled="isFixing" @click="handleFix">
+                <span class="codicon codicon-wand"></span>
+                <span>{{ t("guard.actions.auto_fix") || "Auto-Fix Now" }}</span>
+              </button>
+            </div>
+
+            <div class="issues-list">
+              <div v-for="(issue, idx) in guardStatus.issues" :key="idx" class="issue-item">
+                <div class="issue-item-header">
+                  <span class="issue-file font-mono">{{ issue.file_path }}:{{ issue.line }}:{{ issue.column }}</span>
+                  <span class="issue-rule font-mono">{{ issue.rule_id }}</span>
+                </div>
+                <p class="issue-msg">{{ issue.message }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Transparent Rule Execution Checklist (Reports Tab) -->
+      <section v-if="activeTab === 'reports'" class="tab-section reports-section">
+        <div class="reports-container">
+          <div class="reports-header">
+            <h3 class="reports-title">{{ t("guard.diagnostics.checklist") || "Transparent Execution Checklist" }}</h3>
+            <span class="reports-sub">
+              {{ t("guard.reports_desc") || "Real-time streaming validation status and execution duration per rule." }}
+            </span>
+          </div>
+
+          <div v-if="guardStatus.rule_reports && guardStatus.rule_reports.length > 0" class="checklist-items-grid">
+            <div
+              v-for="report in guardStatus.rule_reports"
+              :key="report.rule_name"
+              class="checklist-item"
+              :class="
+                report.status === 'error' || report.status === 'fail'
+                  ? 'item-error'
+                  : report.status === 'warn'
+                    ? 'item-warning'
+                    : 'item-pass'
+              "
+            >
+              <div class="item-left">
+                <span
+                  class="codicon"
+                  :class="
+                    report.status === 'error' || report.status === 'fail'
+                      ? 'codicon-error text-red'
+                      : report.status === 'warn'
+                        ? 'codicon-warning text-amber'
+                        : 'codicon-pass text-green'
+                  "
+                ></span>
+                <span class="item-rule-name font-mono">{{ report.rule_name }}</span>
+              </div>
+              <div class="item-right">
+                <span class="item-phase-badge" :class="'phase-' + report.phase">{{ report.phase }}</span>
+                <span class="item-duration font-mono">{{ report.duration_ms }}ms</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-reports-box">
+            <span class="codicon codicon-checklist empty-reports-icon"></span>
+            <p>
+              {{
+                t("guard.no_reports") ||
+                "No inspection reports yet. Run 'Check Staged' or 'Check Entire Repo' to see live results."
+              }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. HIDDEN SETTINGS: Pipeline Matrix & Tool Slots -->
+      <section v-if="activeTab === 'settings'" class="tab-section settings-section">
+        <div class="settings-hint-box">
+          <div class="hint-text">
+            <span class="codicon codicon-info"></span>
+            <span>{{
+              t("guard.settings.hint") ||
+              "Advanced Configuration: Manage extension pipelines, external CLI tools, and .unirtm.toml mappings."
+            }}</span>
+          </div>
+          <div class="settings-actions">
+            <button class="btn-action accent compact" @click="openAddSlotModal">
+              <span class="codicon codicon-plus"></span>
+              <span>{{ t("guard.actions.add_mapping") || "Add Extension Mapping" }}</span>
+            </button>
+            <button class="btn-action ghost compact" @click="openTomlInEditor">
+              <span class="codicon codicon-code"></span>
+              <span>{{ t("guard.actions.edit_toml") || "Edit .unirtm.toml" }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sub Tabs inside Settings: Pipelines Matrix vs CLI Slots -->
+        <div class="settings-sub-tabs">
+          <button
+            class="sub-tab-btn"
+            :class="{ active: settingsSubTab === 'matrix' }"
+            @click="settingsSubTab = 'matrix'"
+          >
+            <span class="codicon codicon-table"></span>
+            <span>{{ t("guard.tabs.matrix") || "Extension Pipelines (Matrix)" }}</span>
+          </button>
+          <button class="sub-tab-btn" :class="{ active: settingsSubTab === 'slots' }" @click="settingsSubTab = 'slots'">
+            <span class="codicon codicon-symbol-class"></span>
+            <span>{{ t("guard.tabs.slots") || "Tool Slots (CLI)" }} ({{ guardSlots.length }})</span>
+          </button>
+        </div>
+
+        <!-- 3A. Matrix Table -->
+        <div v-if="settingsSubTab === 'matrix'" class="table-responsive-wrapper">
           <table class="pipeline-matrix-table" id="table-extension-pipelines">
             <thead>
               <tr>
@@ -414,11 +619,9 @@
             </tbody>
           </table>
         </div>
-      </section>
 
-      <!-- 2. Tool Slots Grid (CLI Tool Cards) -->
-      <section v-if="activeTab === 'slots'" class="tab-section slots-section">
-        <div class="slots-cards-grid">
+        <!-- 3B. Tool Slots Grid (CLI Tool Cards) -->
+        <div v-if="settingsSubTab === 'slots'" class="slots-cards-grid">
           <div v-for="slot in filteredSlots" :key="slot.id" class="slot-card">
             <div class="slot-card-header">
               <div class="slot-title-wrap">
@@ -460,61 +663,6 @@
                 <code class="cmd-text font-mono text-green">{{ slot.fix_command }}</code>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 3. Live Streamed Checklist & Reports -->
-      <section v-if="activeTab === 'reports'" class="tab-section reports-section">
-        <div class="reports-container">
-          <div class="reports-header">
-            <h3 class="reports-title">{{ t("guard.diagnostics.checklist") || "Transparent Execution Checklist" }}</h3>
-            <span class="reports-sub">
-              {{ t("guard.reports_desc") || "Real-time streaming validation status and execution duration per rule." }}
-            </span>
-          </div>
-
-          <div v-if="guardStatus.rule_reports && guardStatus.rule_reports.length > 0" class="checklist-items-grid">
-            <div
-              v-for="report in guardStatus.rule_reports"
-              :key="report.rule_name"
-              class="checklist-item"
-              :class="
-                report.status === 'error' || report.status === 'fail'
-                  ? 'item-error'
-                  : report.status === 'warn'
-                    ? 'item-warning'
-                    : 'item-pass'
-              "
-            >
-              <div class="item-left">
-                <span
-                  class="codicon"
-                  :class="
-                    report.status === 'error' || report.status === 'fail'
-                      ? 'codicon-error text-red'
-                      : report.status === 'warn'
-                        ? 'codicon-warning text-amber'
-                        : 'codicon-pass text-green'
-                  "
-                ></span>
-                <span class="item-rule-name font-mono">{{ report.rule_name }}</span>
-              </div>
-              <div class="item-right">
-                <span class="item-phase-badge" :class="'phase-' + report.phase">{{ report.phase }}</span>
-                <span class="item-duration font-mono">{{ report.duration_ms }}ms</span>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="empty-reports-box">
-            <span class="codicon codicon-checklist empty-reports-icon"></span>
-            <p>
-              {{
-                t("guard.no_reports") ||
-                "No inspection reports yet. Run 'Check Staged' or 'Check Entire Repo' to see live results."
-              }}
-            </p>
           </div>
         </div>
       </section>
@@ -574,13 +722,101 @@ const targetExtForAdd = ref<string>("");
 const isTomlDrawerOpen = ref(false);
 const checkingMode = ref<"changed" | "staged" | "all">("staged");
 
-const activeTab = ref<"matrix" | "slots" | "reports">("matrix");
+// Default primary tab is now the transparent Live Guard & Logs Workbench!
+const activeTab = ref<"workbench" | "reports" | "settings">("workbench");
+const settingsSubTab = ref<"matrix" | "slots">("matrix");
 const searchKeyword = ref("");
 
 // Last inspection tracking for high visibility and transparency
 const lastCheckedTime = ref<string>("");
 const lastCheckedMode = ref<"changed" | "staged" | "all">("staged");
 const justInspected = ref(false);
+
+export interface FormattedLogItem {
+  time: string;
+  tag: string;
+  type: "info" | "pass" | "warn" | "error" | "config" | "phase";
+  text: string;
+}
+
+const logViewerRef = ref<HTMLElement | null>(null);
+const localLogs = ref<FormattedLogItem[]>([]);
+
+function parseLogLine(raw: string): FormattedLogItem {
+  const now = new Date();
+  const time = now.toTimeString().split(" ")[0];
+  let type: FormattedLogItem["type"] = "info";
+  let tag = "GUARD";
+
+  if (raw.includes("[Config:")) {
+    type = "config";
+    tag = "CONFIG";
+  } else if (raw.includes("[Phase 1 Fixer]")) {
+    type = "phase";
+    tag = "PHASE 1";
+  } else if (raw.includes("[Phase 2 Formatter]")) {
+    type = "phase";
+    tag = "PHASE 2";
+  } else if (raw.includes("[Phase 3 Linter]")) {
+    type = "phase";
+    tag = "PHASE 3";
+  } else if (
+    raw.toLowerCase().includes("passed") ||
+    raw.toLowerCase().includes("clean") ||
+    raw.toLowerCase().includes("compliant")
+  ) {
+    type = "pass";
+    tag = "PASS";
+  } else if (raw.toLowerCase().includes("warn")) {
+    type = "warn";
+    tag = "WARN";
+  } else if (raw.toLowerCase().includes("error") || raw.toLowerCase().includes("fail")) {
+    type = "error";
+    tag = "ERROR";
+  }
+
+  return {
+    time,
+    tag,
+    type,
+    text: raw,
+  };
+}
+
+const formattedLogs = computed(() => {
+  if (localLogs.value.length > 0) return localLogs.value;
+  if (guardStatus.value.logs && guardStatus.value.logs.length > 0) {
+    return guardStatus.value.logs.map(parseLogLine);
+  }
+  return [];
+});
+
+function scrollToBottom() {
+  setTimeout(() => {
+    if (logViewerRef.value) {
+      logViewerRef.value.scrollTop = logViewerRef.value.scrollHeight;
+    }
+  }, 50);
+}
+
+function copyAllLogs() {
+  const fullText = formattedLogs.value.map((l) => `[${l.time}] [${l.tag}] ${l.text}`).join("\n");
+  if (!fullText) return;
+  navigator.clipboard
+    .writeText(fullText)
+    .then(() => {
+      showToast(t("guard.logs.copied") || "Inspection logs copied to clipboard", "success");
+    })
+    .catch(() => {});
+}
+
+function clearLogs() {
+  localLogs.value = [];
+  if (guardStatus.value) {
+    guardStatus.value.logs = [];
+  }
+  showToast(t("guard.logs.cleared") || "Console output cleared", "info");
+}
 
 export interface LatestInspectionInfo {
   time: string;
@@ -630,6 +866,11 @@ async function handleCheck(mode: "changed" | "staged" | "all") {
   const modeLabel = getModeLabel(mode);
   emit("log-event", "INFO", `[Quality Guard] Starting inspection (${modeLabel})...`, undefined, "output");
 
+  localLogs.value = [
+    parseLogLine(`[Quality Guard] Initiating code quality inspection (${modeLabel}, scope: workspace)...`),
+  ];
+  scrollToBottom();
+
   await runCheck({ mode });
 
   const res = lastRunResult.value || {
@@ -662,6 +903,16 @@ async function handleCheck(mode: "changed" | "staged" | "all") {
     durationMs: res.durationMs,
     isFix: false,
   };
+
+  if (res.logs && res.logs.length > 0) {
+    localLogs.value = res.logs.map(parseLogLine);
+  }
+  localLogs.value.push(
+    parseLogLine(
+      `[Quality Guard] Inspection completed: ${res.scanned} files inspected, ${res.issuesCount} issues, duration: ${res.durationMs}ms`
+    )
+  );
+  scrollToBottom();
 
   if (res.logs && res.logs.length > 0) {
     for (const line of res.logs) {
@@ -717,6 +968,9 @@ async function handleFix() {
   const modeLabel = getModeLabel(checkingMode.value);
   emit("log-event", "INFO", `[Quality Guard] Starting auto-fix pipeline (${modeLabel})...`, undefined, "output");
 
+  localLogs.value = [parseLogLine(`[Quality Guard] Initiating auto-fix pipeline (${modeLabel})...`)];
+  scrollToBottom();
+
   await runFix(checkingMode.value);
 
   const res = lastRunResult.value || {
@@ -749,6 +1003,16 @@ async function handleFix() {
     durationMs: res.durationMs,
     isFix: true,
   };
+
+  if (res.logs && res.logs.length > 0) {
+    localLogs.value = res.logs.map(parseLogLine);
+  }
+  localLogs.value.push(
+    parseLogLine(
+      `[Quality Guard] Auto-fix completed: ${res.fixedCount} corrections applied, duration: ${res.durationMs}ms`
+    )
+  );
+  scrollToBottom();
 
   if (res.logs && res.logs.length > 0) {
     for (const line of res.logs) {
@@ -1435,6 +1699,414 @@ async function onTomlSaved() {
 .view-tab-btn.active {
   background: rgba(2, 132, 199, 0.12);
   color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.tab-badge-pulse {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+  margin-left: 0.35rem;
+}
+
+.tab-badge-pulse.badge-clean {
+  background: rgba(46, 160, 67, 0.2);
+  color: #3fb950;
+}
+
+.tab-badge-pulse.badge-warn {
+  background: rgba(248, 81, 73, 0.2);
+  color: #f85149;
+}
+
+/* Workbench Section & Live Console */
+.workbench-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.live-console-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--vscode-terminal-background, #181818);
+  border: 1px solid var(--card-border, #333);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.console-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--card-border, #333);
+}
+
+.console-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.console-icon {
+  font-size: 1rem;
+  color: var(--accent-cyan, #388bfd);
+}
+
+.console-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.console-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: 0.25rem;
+}
+
+.console-status-dot.dot-clean {
+  background: #3fb950;
+  box-shadow: 0 0 6px rgba(63, 185, 80, 0.6);
+}
+
+.console-status-dot.dot-running {
+  background: #388bfd;
+  box-shadow: 0 0 8px rgba(56, 139, 253, 0.8);
+  animation: pulse-border 1s infinite alternate;
+}
+
+.console-status-dot.dot-warn {
+  background: #d29922;
+  box-shadow: 0 0 6px rgba(210, 153, 34, 0.6);
+}
+
+.console-status-text {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.console-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.console-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--card-border, #444);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.console-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.console-body {
+  height: 380px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  background: #141414;
+}
+
+.console-empty-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: var(--text-muted);
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+}
+
+.placeholder-shield {
+  font-size: 2.5rem;
+  color: var(--accent-cyan, #388bfd);
+  opacity: 0.85;
+}
+
+.placeholder-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.placeholder-desc {
+  font-size: 0.8125rem;
+  max-width: 480px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.placeholder-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.placeholder-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--card-border, #444);
+  color: var(--text-main);
+  transition: all 0.15s ease;
+}
+
+.placeholder-action-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.placeholder-action-btn.primary {
+  background: var(--vscode-button-background, #0e639c);
+  color: #fff;
+  border-color: transparent;
+}
+
+.placeholder-action-btn.primary:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb);
+}
+
+/* Console Log Lines */
+.console-log-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.log-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.125rem 0;
+  border-radius: 3px;
+}
+
+.log-line:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.log-ts {
+  color: #6e7681;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.log-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.badge-info {
+  background: rgba(56, 139, 253, 0.18);
+  color: #58a6ff;
+}
+
+.badge-pass {
+  background: rgba(46, 160, 67, 0.2);
+  color: #3fb950;
+}
+
+.badge-phase {
+  background: rgba(187, 128, 255, 0.2);
+  color: #bc8cff;
+}
+
+.badge-config {
+  background: rgba(57, 197, 207, 0.2);
+  color: #39c5cf;
+}
+
+.badge-warn {
+  background: rgba(210, 153, 34, 0.2);
+  color: #d29922;
+}
+
+.badge-error {
+  background: rgba(248, 81, 73, 0.2);
+  color: #f85149;
+}
+
+.log-content {
+  color: #c9d1d9;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.log-pass .log-content {
+  color: #7ee787;
+}
+
+.log-warn .log-content {
+  color: #e3b341;
+}
+
+.log-error .log-content {
+  color: #ff7b72;
+}
+
+/* Issues Card inside Workbench */
+.workbench-issues-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--card-bg, #1e1e1e);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.issues-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.issues-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.issues-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-main);
+}
+
+.issues-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.issue-item {
+  padding: 0.5rem 0.75rem;
+  background: rgba(248, 81, 73, 0.08);
+  border-left: 3px solid #f85149;
+  border-radius: 4px;
+}
+
+.issue-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.issue-file {
+  font-weight: 600;
+  color: #58a6ff;
+}
+
+.issue-rule {
+  color: var(--text-muted);
+}
+
+.issue-msg {
+  font-size: 0.8125rem;
+  color: var(--text-main);
+  margin: 0.25rem 0 0 0;
+}
+
+/* Hidden Settings Panel */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.settings-hint-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(56, 139, 253, 0.08);
+  border: 1px solid rgba(56, 139, 253, 0.25);
+  border-radius: 8px;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.hint-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-main);
+}
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-sub-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 0.5rem;
+}
+
+.sub-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sub-tab-btn:hover {
+  background: var(--hover-bg);
+  color: var(--text-main);
+}
+
+.sub-tab-btn.active {
+  background: var(--hover-bg);
+  color: var(--text-main);
   font-weight: 600;
 }
 

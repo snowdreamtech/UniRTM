@@ -1307,4 +1307,17 @@ export const elGr: TranslationDict = {
   "guard.banner.dismiss": "Dismiss",
   "guard.toast.clean": "Inspection passed: {count} files verified, all rules healthy ({duration}ms)",
   "guard.toast.issues": "Inspection alert: found {count} issues across inspected files",
+
+  "guard.tabs.workbench": "Live Guard & Inspection Logs",
+  "guard.tabs.settings": "Pipeline & Tool Settings",
+  "guard.actions.settings": "Settings",
+  "guard.logs.title": "Live Inspection Output Stream",
+  "guard.logs.empty":
+    "No inspection logs yet. Click 'Check Staged' or 'Check Changed' above to inspect files and stream live logs.",
+  "guard.logs.copy": "Copy Logs",
+  "guard.logs.copied": "Inspection logs copied to clipboard",
+  "guard.logs.clear": "Clear Logs",
+  "guard.logs.cleared": "Console output cleared",
+  "guard.settings.hint":
+    "Advanced Configuration: Manage extension pipelines, external CLI tools, and .unirtm.toml mappings.",
 };
