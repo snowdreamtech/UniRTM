@@ -16,6 +16,15 @@
   --accent-purple: #9d4edd;
   --success: #10b981;
   --warning: #f59e0b;
+  /* Semantic token aliases */
+  --text-primary: var(--text-main);
+  --text-secondary: var(--text-muted);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --header-bg: rgba(255, 255, 255, 0.04);
+  --btn-secondary-bg: rgba(255, 255, 255, 0.08);
+  --btn-secondary-hover-bg: rgba(255, 255, 255, 0.14);
+  --btn-secondary-text: var(--text-main);
+  --btn-secondary-border: var(--card-border);
   /* Inverted context menu: Dark editor -> Light contrast menu */
   --vscode-menu-background: #ffffff;
   --vscode-menu-foreground: #0f172a;
@@ -56,6 +65,15 @@
   --accent-purple: #7c3aed;
   --success: #059669;
   --warning: #d97706;
+  /* Semantic token aliases */
+  --text-primary: var(--text-main);
+  --text-secondary: var(--text-muted);
+  --hover-bg: rgba(0, 0, 0, 0.04);
+  --header-bg: #f8fafc;
+  --btn-secondary-bg: #e2e8f0;
+  --btn-secondary-hover-bg: #cbd5e1;
+  --btn-secondary-text: #0f172a;
+  --btn-secondary-border: #cbd5e1;
   /* Inverted context menu: Light editor -> Dark contrast menu */
   --vscode-menu-background: #1e1e1e;
   --vscode-menu-foreground: #f1f5f9;

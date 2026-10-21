@@ -151,9 +151,9 @@ async function handleSave() {
   width: 620px;
   max-width: 90vw;
   height: 100vh;
-  background: var(--vscode-sideBar-background, #1e1e1e);
-  border-left: 1px solid var(--card-border, #333);
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
+  background: var(--modal-bg);
+  border-left: 1px solid var(--card-border);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
   animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -173,8 +173,8 @@ async function handleSave() {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  background: var(--card-bg, #252526);
-  border-bottom: 1px solid var(--card-border, #333);
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .header-title-box {
@@ -192,13 +192,13 @@ async function handleSave() {
 .drawer-title {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--text-primary, #fff);
+  color: var(--text-main);
   margin: 0;
 }
 
 .drawer-sub {
   font-size: 0.6875rem;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
 }
 
 .header-actions {
@@ -211,7 +211,7 @@ async function handleSave() {
 .btn-close {
   background: transparent;
   border: none;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0.375rem;
   border-radius: 4px;
@@ -219,8 +219,8 @@ async function handleSave() {
 
 .btn-refresh:hover,
 .btn-close:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary, #fff);
+  background: var(--hover-bg);
+  color: var(--text-main);
 }
 
 .drawer-body {
@@ -237,13 +237,14 @@ async function handleSave() {
   align-items: center;
   justify-content: space-between;
   padding: 0.25rem 0.5rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
   border-radius: 4px;
 }
 
 .file-path-badge {
   font-size: 0.75rem;
-  color: #58a6ff;
+  color: var(--accent-cyan);
   font-weight: 600;
 }
 
@@ -256,9 +257,9 @@ async function handleSave() {
   flex: 1;
   width: 100%;
   box-sizing: border-box;
-  background: var(--vscode-editor-background, #141414);
-  color: var(--vscode-editor-foreground, #e1e4e8);
-  border: 1px solid var(--card-border, #333);
+  background: var(--input-bg);
+  color: var(--text-main);
+  border: 1px solid var(--card-border);
   border-radius: 6px;
   padding: 0.75rem;
   font-size: 0.8125rem;
@@ -269,7 +270,7 @@ async function handleSave() {
 }
 
 .toml-textarea:focus {
-  border-color: var(--vscode-focusBorder, #0078d4);
+  border-color: var(--accent-cyan);
 }
 
 .error-banner {
@@ -289,13 +290,13 @@ async function handleSave() {
   align-items: center;
   justify-content: space-between;
   padding: 0.875rem 1.25rem;
-  background: var(--card-bg, #252526);
-  border-top: 1px solid var(--card-border, #333);
+  background: var(--card-bg);
+  border-top: 1px solid var(--card-border);
 }
 
 .footer-hint {
   font-size: 0.6875rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-muted);
 }
 
 .footer-right {
@@ -311,15 +312,15 @@ async function handleSave() {
   padding: 0.4375rem 1rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  background: var(--vscode-button-background, #0078d4);
-  color: var(--vscode-button-foreground, #fff);
+  background: var(--accent-cyan, #0284c7);
+  color: #ffffff;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .btn-save:hover:not(:disabled) {
-  background: var(--vscode-button-hoverBackground, #026ec1);
+  opacity: 0.9;
 }
 
 .btn-save:disabled {
@@ -331,15 +332,15 @@ async function handleSave() {
   padding: 0.4375rem 0.875rem;
   font-size: 0.8125rem;
   background: transparent;
-  color: var(--text-secondary, #8b949e);
-  border: 1px solid var(--card-border, #444);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
   border-radius: 4px;
   cursor: pointer;
 }
 
 .btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary, #fff);
+  background: var(--hover-bg);
+  color: var(--text-main);
 }
 
 .spin {

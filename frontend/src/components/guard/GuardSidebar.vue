@@ -135,7 +135,7 @@ function handleRunFix() {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   text-transform: uppercase;
 }
 
@@ -166,8 +166,8 @@ function handleRunFix() {
   align-items: center;
   justify-content: space-around;
   padding: 0.625rem;
-  background: var(--card-bg, #1e1e1e);
-  border: 1px solid var(--card-border, #2d2d2d);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 6px;
 }
 
@@ -175,18 +175,25 @@ function handleRunFix() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
 }
 
 .stat-value {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-main);
 }
 
 .stat-label {
   font-size: 0.6875rem;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   margin-top: 0.125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 .action-buttons-group {
@@ -210,22 +217,22 @@ function handleRunFix() {
 }
 
 .sidebar-action-btn.primary {
-  background: var(--vscode-button-background, #0078d4);
-  color: var(--vscode-button-foreground, #ffffff);
+  background: var(--accent-cyan, #0284c7);
+  color: #ffffff;
 }
 
 .sidebar-action-btn.primary:hover:not(:disabled) {
-  background: var(--vscode-button-hoverBackground, #026ec1);
+  opacity: 0.9;
 }
 
 .sidebar-action-btn.secondary {
-  background: var(--vscode-button-secondaryBackground, #3a3d41);
-  color: var(--vscode-button-secondaryForeground, #ffffff);
-  border: 1px solid var(--card-border, #45494e);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
 }
 
 .sidebar-action-btn.secondary:hover:not(:disabled) {
-  background: var(--vscode-button-secondaryHoverBackground, #45494e);
+  background: var(--btn-secondary-hover-bg);
 }
 
 .sidebar-action-btn:disabled {
@@ -246,7 +253,7 @@ function handleRunFix() {
   width: 100%;
   padding: 0.375rem 0.5rem;
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   background: transparent;
   border: none;
   border-radius: 4px;
@@ -256,13 +263,13 @@ function handleRunFix() {
 }
 
 .cat-nav-item:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
-  color: var(--text-primary);
+  background: var(--hover-bg);
+  color: var(--text-main);
 }
 
 .cat-nav-item.active {
-  background: var(--selected-bg, rgba(0, 120, 212, 0.15));
-  color: var(--vscode-button-background, #388bfd);
+  background: rgba(2, 132, 199, 0.12);
+  color: var(--accent-cyan);
   font-weight: 600;
 }
 

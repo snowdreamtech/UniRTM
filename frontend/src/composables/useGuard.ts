@@ -17,12 +17,17 @@ export interface GuardIssue {
 }
 
 export interface GuardRuleReport {
+  rule_id?: string;
   rule_name: string;
   category: string;
   phase: string;
   duration_ms: number;
+  duration?: number;
   issues_count: number;
-  status: "passed" | "warn" | "error" | "fixed";
+  errors_count?: number;
+  warnings_count?: number;
+  fixed_count?: number;
+  status: "passed" | "warn" | "error" | "fixed" | "fail";
 }
 
 export interface GuardStatus {

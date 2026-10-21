@@ -325,16 +325,20 @@
               :key="report.rule_name"
               class="checklist-item"
               :class="
-                report.status === 'error' ? 'item-error' : report.status === 'warning' ? 'item-warning' : 'item-pass'
+                report.status === 'error' || report.status === 'fail'
+                  ? 'item-error'
+                  : report.status === 'warn'
+                    ? 'item-warning'
+                    : 'item-pass'
               "
             >
               <div class="item-left">
                 <span
                   class="codicon"
                   :class="
-                    report.status === 'error'
+                    report.status === 'error' || report.status === 'fail'
                       ? 'codicon-error text-red'
-                      : report.status === 'warning'
+                      : report.status === 'warn'
                         ? 'codicon-warning text-amber'
                         : 'codicon-pass text-green'
                   "
@@ -627,7 +631,7 @@ async function onTomlSaved() {
   font-size: 1.375rem;
   font-weight: 700;
   margin: 0;
-  color: var(--text-primary, #fff);
+  color: var(--text-main);
 }
 
 .status-pill {
@@ -654,7 +658,7 @@ async function onTomlSaved() {
 
 .header-subtitle {
   font-size: 0.8125rem;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -679,43 +683,43 @@ async function onTomlSaved() {
 }
 
 .btn-action.primary {
-  background: var(--vscode-button-background, #0078d4);
-  color: var(--vscode-button-foreground, #fff);
+  background: var(--accent-cyan, #0284c7);
+  color: #ffffff;
 }
 
 .btn-action.primary:hover:not(:disabled) {
-  background: var(--vscode-button-hoverBackground, #026ec1);
+  opacity: 0.9;
 }
 
 .btn-action.secondary {
-  background: var(--vscode-button-secondaryBackground, #3a3d41);
-  color: var(--vscode-button-secondaryForeground, #fff);
-  border: 1px solid var(--card-border, #45494e);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
 }
 
 .btn-action.secondary:hover:not(:disabled) {
-  background: var(--vscode-button-secondaryHoverBackground, #45494e);
+  background: var(--btn-secondary-hover-bg);
 }
 
 .btn-action.accent {
-  background: rgba(56, 139, 253, 0.15);
-  color: #58a6ff;
-  border: 1px solid rgba(56, 139, 253, 0.3);
+  background: rgba(2, 132, 199, 0.12);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(2, 132, 199, 0.3);
 }
 
 .btn-action.accent:hover:not(:disabled) {
-  background: rgba(56, 139, 253, 0.25);
+  background: rgba(2, 132, 199, 0.2);
 }
 
 .btn-action.ghost {
   background: transparent;
-  color: var(--text-secondary, #8b949e);
-  border: 1px solid var(--card-border, #333);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
 }
 
 .btn-action.ghost:hover:not(:disabled) {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
-  color: var(--text-primary, #fff);
+  background: var(--hover-bg);
+  color: var(--text-main);
 }
 
 .btn-action:disabled {
@@ -735,10 +739,10 @@ async function onTomlSaved() {
   align-items: center;
   gap: 0.875rem;
   padding: 0.875rem 1rem;
-  background: var(--card-bg, #1e1e1e);
-  border: 1px solid var(--card-border, #2d2d2d);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .metric-icon-box {
@@ -780,12 +784,12 @@ async function onTomlSaved() {
 .metric-val {
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--text-primary, #fff);
+  color: var(--text-main);
 }
 
 .metric-label {
   font-size: 0.75rem;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
 }
 
 /* View Switcher Tabs Bar */
@@ -793,7 +797,7 @@ async function onTomlSaved() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--card-border, #333);
+  border-bottom: 1px solid var(--card-border);
   padding-bottom: 0.5rem;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -812,7 +816,7 @@ async function onTomlSaved() {
   padding: 0.4375rem 0.875rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -821,20 +825,20 @@ async function onTomlSaved() {
 }
 
 .view-tab-btn:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
-  color: var(--text-primary, #fff);
+  background: var(--hover-bg);
+  color: var(--text-main);
 }
 
 .view-tab-btn.active {
-  background: var(--selected-bg, rgba(0, 120, 212, 0.15));
-  color: var(--vscode-button-background, #388bfd);
+  background: rgba(2, 132, 199, 0.12);
+  color: var(--accent-cyan);
   font-weight: 600;
 }
 
 .tab-badge {
   font-size: 0.6875rem;
   padding: 0.1rem 0.375rem;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-bg);
   border-radius: 9999px;
   margin-left: 0.25rem;
 }
@@ -844,8 +848,8 @@ async function onTomlSaved() {
   align-items: center;
   gap: 0.375rem;
   padding: 0.3125rem 0.625rem;
-  background: var(--input-bg, #181818);
-  border: 1px solid var(--input-border, #333);
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
   border-radius: 6px;
   min-width: 260px;
 }
@@ -853,10 +857,14 @@ async function onTomlSaved() {
 .search-input {
   background: transparent;
   border: none;
-  color: var(--text-primary, #fff);
+  color: var(--text-main);
   font-size: 0.8125rem;
   outline: none;
   width: 100%;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
 }
 
 /* Main Content Body */
@@ -869,8 +877,8 @@ async function onTomlSaved() {
 /* Table Design */
 .table-responsive-wrapper {
   overflow-x: auto;
-  background: var(--card-bg, #1e1e1e);
-  border: 1px solid var(--card-border, #2d2d2d);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
 }
 
@@ -883,20 +891,21 @@ async function onTomlSaved() {
 
 .pipeline-matrix-table th {
   padding: 0.75rem 1rem;
-  background: var(--header-bg, #252526);
-  color: var(--text-secondary, #8b949e);
+  background: var(--header-bg);
+  color: var(--text-muted);
   font-weight: 600;
-  border-bottom: 1px solid var(--card-border, #333);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .pipeline-matrix-table td {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--card-border, #282828);
+  border-bottom: 1px solid var(--card-border);
+  color: var(--text-main);
   vertical-align: middle;
 }
 
 .pipeline-row:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.02));
+  background: var(--hover-bg);
 }
 
 .ext-badge-group {
@@ -909,14 +918,15 @@ async function onTomlSaved() {
   font-size: 0.8125rem;
   font-weight: 700;
   padding: 0.15rem 0.45rem;
-  background: rgba(56, 139, 253, 0.15);
-  color: #58a6ff;
+  background: rgba(2, 132, 199, 0.12);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(2, 132, 199, 0.25);
   border-radius: 4px;
 }
 
 .lang-label {
   font-size: 0.75rem;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
 }
 
 .tool-cell {
@@ -930,17 +940,21 @@ async function onTomlSaved() {
 }
 
 .tool-cell:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.05));
+  background: var(--hover-bg);
 }
 
 .tool-name {
   font-weight: 600;
-  color: var(--text-primary, #fff);
+  color: var(--text-main);
 }
 
 .tool-cmd {
   font-size: 0.6875rem;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
+  background: var(--section-bg);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  border: 1px solid var(--card-border);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -948,7 +962,8 @@ async function onTomlSaved() {
 }
 
 .cell-empty {
-  color: var(--text-secondary, #555);
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .action-btn-row {
@@ -966,15 +981,16 @@ async function onTomlSaved() {
   height: 28px;
   border-radius: 4px;
   background: transparent;
-  border: 1px solid var(--card-border, #3a3a3a);
-  color: var(--text-secondary, #8b949e);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .row-btn:hover {
-  background: var(--hover-bg, rgba(255, 255, 255, 0.1));
-  color: var(--text-primary, #fff);
+  background: var(--hover-bg);
+  color: var(--text-main);
+  border-color: var(--accent-cyan);
 }
 
 /* Slots Grid */
@@ -989,14 +1005,14 @@ async function onTomlSaved() {
   flex-direction: column;
   gap: 0.625rem;
   padding: 1rem;
-  background: var(--card-bg, #1e1e1e);
-  border: 1px solid var(--card-border, #2d2d2d);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   transition: border-color 0.2s ease;
 }
 
 .slot-card:hover {
-  border-color: var(--card-border-hover, #444);
+  border-color: var(--card-border-active);
 }
 
 .slot-card-header {
@@ -1013,12 +1029,12 @@ async function onTomlSaved() {
 .slot-tool-name {
   font-size: 0.9375rem;
   font-weight: 700;
-  color: var(--text-primary, #fff);
+  color: var(--text-main);
 }
 
 .slot-id {
   font-size: 0.6875rem;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
 }
 
 .slot-header-tags {
@@ -1050,20 +1066,20 @@ async function onTomlSaved() {
 .icon-edit-btn {
   background: transparent;
   border: none;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 0.2rem;
   border-radius: 4px;
 }
 
 .icon-edit-btn:hover {
-  color: var(--text-primary, #fff);
-  background: var(--hover-bg, rgba(255, 255, 255, 0.1));
+  color: var(--text-main);
+  background: var(--hover-bg);
 }
 
 .slot-desc {
   font-size: 0.75rem;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
   margin: 0;
   line-height: 1.4;
 }
@@ -1076,7 +1092,7 @@ async function onTomlSaved() {
 
 .ext-label {
   font-size: 0.6875rem;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
 }
 
 .ext-tags-row {
@@ -1088,9 +1104,10 @@ async function onTomlSaved() {
 .ext-chip {
   font-size: 0.6875rem;
   padding: 0.1rem 0.3rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
   border-radius: 3px;
-  color: var(--text-primary, #ccc);
+  color: var(--text-main);
 }
 
 .slot-commands-box {
@@ -1098,7 +1115,8 @@ async function onTomlSaved() {
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
   border-radius: 4px;
 }
 
@@ -1111,11 +1129,11 @@ async function onTomlSaved() {
 
 .cmd-label {
   font-weight: 600;
-  color: var(--text-secondary, #888);
+  color: var(--text-muted);
 }
 
 .cmd-text {
-  color: var(--text-primary, #eee);
+  color: var(--text-main);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1138,12 +1156,12 @@ async function onTomlSaved() {
   font-size: 1rem;
   font-weight: 600;
   margin: 0;
-  color: var(--text-primary, #fff);
+  color: var(--text-main);
 }
 
 .reports-sub {
   font-size: 0.75rem;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
 }
 
 .checklist-items-grid {
@@ -1157,8 +1175,8 @@ async function onTomlSaved() {
   align-items: center;
   justify-content: space-between;
   padding: 0.625rem 0.75rem;
-  background: var(--card-bg, #1e1e1e);
-  border: 1px solid var(--card-border, #2d2d2d);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 6px;
 }
 
@@ -1170,7 +1188,7 @@ async function onTomlSaved() {
 
 .item-rule-name {
   font-size: 0.75rem;
-  color: var(--text-primary, #fff);
+  color: var(--text-main);
 }
 
 .item-right {
@@ -1187,7 +1205,7 @@ async function onTomlSaved() {
 
 .item-duration {
   font-size: 0.6875rem;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
 }
 
 .empty-reports-box {
@@ -1196,10 +1214,10 @@ async function onTomlSaved() {
   align-items: center;
   justify-content: center;
   padding: 3rem 1rem;
-  background: var(--card-bg, #1e1e1e);
-  border: 1px dashed var(--card-border, #333);
+  background: var(--card-bg);
+  border: 1px dashed var(--card-border);
   border-radius: 8px;
-  color: var(--text-secondary, #8b949e);
+  color: var(--text-muted);
   font-size: 0.8125rem;
   gap: 0.5rem;
 }
