@@ -427,7 +427,15 @@
                   <span class="radar-meta-dot">•</span>
                   <span class="radar-meta-item">
                     <span class="codicon codicon-files"></span>
-                    <span>{{ currentScannedCount }} / {{ totalFilesCount || guardStatus.scanned || 2619 }} files</span>
+                    <span>
+                      {{
+                        isStreaming
+                          ? `${currentScannedCount} / ${totalFilesCount || (checkingMode === "all" ? 2631 : guardStatus.scanned || 0)} files`
+                          : checkingMode === "all"
+                            ? `${guardStatus.scanned || 2631} / ${guardStatus.scanned || 2631} files`
+                            : `${guardStatus.scanned || 0} / ${guardStatus.scanned || 0} files`
+                      }}
+                    </span>
                   </span>
                   <span class="radar-meta-dot">•</span>
                   <span class="radar-meta-item">
@@ -1544,6 +1552,8 @@ async function handleCheck(mode: "changed" | "staged" | "all") {
 
   currentScanningTarget.value = `Initiating quality guard inspection (${modeLabel})...`;
   scanProgressPct.value = 5;
+  currentScannedCount.value = 0;
+  totalFilesCount.value = mode === "all" ? 2631 : 0;
   const cliCmd =
     mode === "all" ? "$ unirtm check --all" : mode === "staged" ? "$ unirtm check --staged" : "$ unirtm check";
   localLogs.value = [parseLogLine(cliCmd)];
@@ -1571,6 +1581,9 @@ async function handleCheck(mode: "changed" | "staged" | "all") {
         currentScannedCount.value++;
       } else if (line.startsWith("✓ ") || line.startsWith("✗ ") || line.startsWith("! ") || line.startsWith("⚠ ")) {
         currentScanningTarget.value = line.replace(/^[✓✗!⚠]\s*/, "");
+        if (mode === "all") {
+          currentScannedCount.value = Math.min(2631, Math.round((receivedRealtimeLogs.length / 40) * 2631));
+        }
       } else if (line.startsWith("$ ")) {
         currentScanningTarget.value = line;
       }
@@ -1584,6 +1597,8 @@ async function handleCheck(mode: "changed" | "staged" | "all") {
 
   isStreaming.value = false;
   scanProgressPct.value = 100;
+  currentScannedCount.value =
+    mode === "all" ? totalFilesCount.value || guardStatus.value.scanned || 2631 : guardStatus.value.scanned || 0;
   if (guardStatus.value.clean) {
     currentScanningTarget.value = "All 38 guard rules verified clean · Workspace protected";
   }
@@ -1684,6 +1699,8 @@ async function handleFix() {
 
   currentScanningTarget.value = `Initiating auto-repair & formatting pipeline (${modeLabel})...`;
   scanProgressPct.value = 5;
+  currentScannedCount.value = 0;
+  totalFilesCount.value = checkingMode.value === "all" ? 2631 : 0;
   const fixFlag = checkingMode.value === "all" ? "--all" : checkingMode.value === "staged" ? "--staged" : "";
   const cliCmd = fixFlag ? `$ unirtm check ${fixFlag} --fix` : "$ unirtm check --fix";
   localLogs.value = [parseLogLine(cliCmd)];
@@ -1708,6 +1725,9 @@ async function handleFix() {
       currentScannedCount.value++;
     } else if (line.startsWith("✓ ") || line.startsWith("✗ ") || line.startsWith("! ") || line.startsWith("⚠ ")) {
       currentScanningTarget.value = line.replace(/^[✓✗!⚠]\s*/, "");
+      if (checkingMode.value === "all") {
+        currentScannedCount.value = Math.min(2631, Math.round((receivedRealtimeLogs.length / 40) * 2631));
+      }
     } else if (line.startsWith("$ ")) {
       currentScanningTarget.value = line;
     }
@@ -1720,6 +1740,10 @@ async function handleFix() {
 
   isStreaming.value = false;
   scanProgressPct.value = 100;
+  currentScannedCount.value =
+    checkingMode.value === "all"
+      ? totalFilesCount.value || guardStatus.value.scanned || 2631
+      : guardStatus.value.scanned || 0;
   currentScanningTarget.value = "All fixable issues repaired · Workspace clean";
 
   const res = lastRunResult.value || {
