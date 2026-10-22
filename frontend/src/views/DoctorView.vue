@@ -287,27 +287,6 @@
           </div>
         </div>
       </div>
-
-      <!-- 5. Task & Workflow Discovery -->
-      <div id="doctor-section-tasks" class="glass-card doctor-card doctor-card-full">
-        <div class="card-header">
-          <div class="card-title-group">
-            <span class="card-icon"><TechIcon id="workbench:tasks" :size="16" /></span>
-            <span class="card-title">自动化工程任务与就绪度 (Tasks & Tools)</span>
-          </div>
-          <span class="badge-status pass"> {{ report.tasks.length }} 个任务已发现 </span>
-        </div>
-        <div class="tasks-pill-container font-mono">
-          <div v-for="task in report.tasks" :key="task.name" class="task-chip" :title="task.command">
-            <span class="task-chip-icon">⚡</span>
-            <span class="task-chip-name">{{ task.name }}</span>
-            <span v-if="task.description" class="task-chip-desc">{{ task.description }}</span>
-          </div>
-          <div v-if="report.tasks.length === 0" style="color: var(--text-muted); font-size: 0.8rem; padding: 0.5rem">
-            当前工程尚未定义自动化 [tasks] 任务流。
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -884,10 +863,6 @@ onMounted(() => {
   }
 }
 
-.doctor-card-full {
-  grid-column: 1 / -1;
-}
-
 .card-header {
   display: flex;
   align-items: center;
@@ -1093,48 +1068,6 @@ onMounted(() => {
 
 .cfg-path {
   color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Task Pills */
-.tasks-pill-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.task-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: 6px;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  font-size: 0.78rem;
-  transition: all 0.15s ease;
-}
-
-.task-chip:hover {
-  border-color: var(--accent-cyan);
-  background: rgba(0, 229, 255, 0.05);
-}
-
-.task-chip-icon {
-  color: #f59e0b;
-}
-
-.task-chip-name {
-  color: var(--text-main);
-  font-weight: 600;
-}
-
-.task-chip-desc {
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

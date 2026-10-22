@@ -734,12 +734,6 @@ const doctorChecks = computed<DoctorCheckItem[]>(() => {
       label: t("doctor.dim_database") || "状态数据库与配置",
       status: r ? (r.health?.database_ok ? "success" : "error") : "success",
     },
-    {
-      id: "tasks",
-      icon: "workbench:tasks",
-      label: t("doctor.dim_tasks") || "自动化工程任务",
-      status: "success",
-    },
   ];
 });
 
