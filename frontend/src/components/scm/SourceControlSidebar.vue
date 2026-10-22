@@ -1725,20 +1725,43 @@ async function handleModalConfirm(payload: {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s ease;
-  background: var(--theme-list-hover-bg, rgba(30, 41, 59, 0.95));
+  background: transparent;
   border-radius: 4px;
   padding: 1px 2px;
   z-index: 2;
-}
-
-.repo-item.active .repo-item-actions {
-  background: var(--theme-list-active-selection-bg, rgba(55, 148, 255, 0.25));
 }
 
 .repo-item:hover .repo-item-actions,
 .repo-item:focus-within .repo-item-actions {
   opacity: 1;
   pointer-events: auto;
+}
+
+:root[data-theme="light"] .repo-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .repo-item.active {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .repo-item.active .repo-icon {
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .repo-sync-pill {
+  background: rgba(0, 0, 0, 0.06);
+  color: #475569;
+}
+
+:root[data-theme="light"] .item-action-btn {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .item-action-btn:hover {
+  color: #0f172a;
+  background: rgba(0, 0, 0, 0.08);
 }
 
 /* Quality Guard Capsule Bar */
