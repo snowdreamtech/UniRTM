@@ -306,7 +306,7 @@
 
       <div v-show="isStagedExpanded" class="group-items-list">
         <div
-          v-for="item in status.staged"
+          v-for="item in filteredStaged"
           :key="'staged:' + item.path"
           class="change-item"
           :class="{ active: selectedDiffPath === item.path && selectedIsStaged === true }"
@@ -371,7 +371,7 @@
 
       <div v-show="isUnstagedExpanded" class="group-items-list">
         <div
-          v-for="item in status.unstaged"
+          v-for="item in filteredUnstaged"
           :key="'unstaged:' + item.path"
           class="change-item"
           :class="{ active: selectedDiffPath === item.path && selectedIsStaged === false }"
@@ -452,6 +452,15 @@ import GitActionModal, { type GitModalActionType } from "./GitActionModal.vue";
 import { useGuard } from "../../composables/useGuard";
 import { validateCommitMessage, type CommitMessageValidation } from "../../utils/commitMessageValidator";
 
+const props = withDefaults(
+  defineProps<{
+    searchQuery?: string;
+  }>(),
+  {
+    searchQuery: "",
+  }
+);
+
 const router = useRouter();
 const route = useRoute();
 const { showToast } = useToast();
@@ -490,6 +499,18 @@ const {
   resetUncommitted,
   cleanUntracked,
 } = useGit();
+
+const filteredStaged = computed(() => {
+  if (!props.searchQuery) return status.value.staged;
+  const q = props.searchQuery.toLowerCase().trim();
+  return status.value.staged.filter((item) => item.path.toLowerCase().includes(q));
+});
+
+const filteredUnstaged = computed(() => {
+  if (!props.searchQuery) return status.value.unstaged;
+  const q = props.searchQuery.toLowerCase().trim();
+  return status.value.unstaged.filter((item) => item.path.toLowerCase().includes(q));
+});
 
 const { openTab } = useEditorTabs();
 

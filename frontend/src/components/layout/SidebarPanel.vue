@@ -48,7 +48,7 @@
 
       <!-- SCM Navigation Items -->
       <template v-if="currentTab === 'scm'">
-        <SourceControlSidebar />
+        <SourceControlSidebar :searchQuery="searchQuery" />
       </template>
 
       <!-- GUARD Navigation Items -->

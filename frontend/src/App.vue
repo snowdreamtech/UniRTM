@@ -97,6 +97,16 @@
 
     <!-- 5. Universal Git SSH & GPG Passphrase Prompt Modal -->
     <PassphraseModal />
+
+    <!-- 6. Global Command Palette Search Modal -->
+    <CommandPaletteModal
+      :isOpen="isCommandPaletteOpen"
+      @close="isCommandPaletteOpen = false"
+      @select-tab="handleCommandPaletteSelectTab"
+      @toggle-theme="toggleTheme"
+      @open-drawer="handleOpenDrawerTab"
+      @toggle-scope="toggleScope(router)"
+    />
   </div>
 </template>
 
@@ -119,6 +129,8 @@ import { useTerminalSessions } from "./composables/useTerminalSessions";
 import { useCredentialBroker } from "./composables/useCredentialBroker";
 import ScopeSwitcher from "./components/common/ScopeSwitcher.vue";
 import PassphraseModal from "./components/common/PassphraseModal.vue";
+import CommandPaletteModal from "./components/common/CommandPaletteModal.vue";
+import { toggleScope } from "./composables/useAppScope";
 
 const { startBrokerPolling, stopBrokerPolling } = useCredentialBroker();
 
@@ -331,8 +343,14 @@ function openAbout() {
   navigateToTab("about");
 }
 
+const isCommandPaletteOpen = ref(false);
+
 function openCommandPalette() {
-  showToast("Command Palette: Press Ctrl+K (All quick commands available)", "info");
+  isCommandPaletteOpen.value = true;
+}
+
+function handleCommandPaletteSelectTab(tabId: string) {
+  handleDirectSelectTab(tabId);
 }
 
 function handleOpenDrawerTab(tab: DrawerTab = "terminal") {
