@@ -1125,12 +1125,13 @@ async function executeTask(task: ProjectTask) {
   white-space: nowrap;
 }
 
-.task-dropdown-menu .dropdown-item:hover {
-  background: var(--input-bg);
-  color: var(--text-main);
+.task-dropdown-menu .dropdown-item:hover:not(.danger) {
+  background-color: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15));
+  color: var(--accent-cyan);
 }
-[data-theme="light"] .task-dropdown-menu .dropdown-item:hover {
-  background: #f1f5f9;
+[data-theme="light"] .task-dropdown-menu .dropdown-item:hover:not(.danger) {
+  background-color: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
 }
 
 .task-dropdown-menu .dropdown-item.danger,

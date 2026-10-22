@@ -1467,7 +1467,17 @@ async function handleModalConfirm(payload: {
 }
 
 .change-item:hover {
-  background: var(--section-bg);
+  background-color: rgba(128, 128, 128, 0.12);
+}
+
+:root[data-theme="dark"] .change-item:hover,
+[data-theme="dark"] .change-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme="light"] .change-item:hover,
+[data-theme="light"] .change-item:hover {
+  background-color: rgba(0, 0, 0, 0.06);
 }
 
 .change-item.active {

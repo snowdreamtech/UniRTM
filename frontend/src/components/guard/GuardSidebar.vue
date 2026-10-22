@@ -599,8 +599,18 @@ async function handleRunFix(overrideMode?: "staged" | "changed" | "all") {
 }
 
 .cat-nav-item:hover {
-  background: var(--hover-bg);
+  background-color: rgba(128, 128, 128, 0.12);
   color: var(--text-main);
+}
+
+:root[data-theme="dark"] .cat-nav-item:hover,
+[data-theme="dark"] .cat-nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme="light"] .cat-nav-item:hover,
+[data-theme="light"] .cat-nav-item:hover {
+  background-color: rgba(0, 0, 0, 0.06);
 }
 
 .cat-nav-item.active {

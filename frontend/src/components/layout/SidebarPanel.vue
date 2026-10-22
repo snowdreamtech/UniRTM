@@ -876,7 +876,17 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-item:hover {
-  background: var(--input-bg);
+  background-color: rgba(128, 128, 128, 0.12);
+}
+
+:root[data-theme="dark"] .sidebar-item:hover,
+[data-theme="dark"] .sidebar-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme="light"] .sidebar-item:hover,
+[data-theme="light"] .sidebar-item:hover {
+  background-color: rgba(0, 0, 0, 0.06);
 }
 
 .sidebar-item.active {
@@ -988,8 +998,18 @@ onBeforeUnmount(() => {
 }
 
 .accordion-header:hover {
-  background: var(--input-bg);
+  background-color: rgba(128, 128, 128, 0.12);
   color: var(--text-main);
+}
+
+:root[data-theme="dark"] .accordion-header:hover,
+[data-theme="dark"] .accordion-header:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme="light"] .accordion-header:hover,
+[data-theme="light"] .accordion-header:hover {
+  background-color: rgba(0, 0, 0, 0.06);
 }
 
 .accordion-header-left {

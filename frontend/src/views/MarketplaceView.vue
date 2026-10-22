@@ -3086,13 +3086,14 @@ function cleanGitUrl(url: string): string {
   white-space: nowrap;
 }
 
-.theme-dropdown-menu .dropdown-item:hover {
-  background: var(--input-bg, rgba(255, 255, 255, 0.06));
-  color: var(--text-main);
+.theme-dropdown-menu .dropdown-item:hover:not(.danger) {
+  background-color: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15));
+  color: var(--accent-cyan);
 }
 
-[data-theme="light"] .theme-dropdown-menu .dropdown-item:hover {
-  background: #f1f5f9;
+[data-theme="light"] .theme-dropdown-menu .dropdown-item:hover:not(.danger) {
+  background-color: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
 }
 
 .theme-dropdown-menu .dropdown-item.danger {
