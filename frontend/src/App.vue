@@ -38,7 +38,7 @@
       <!-- Main Canvas / Editor Space -->
       <main class="workbench-canvas" id="workbench-canvas">
         <!-- Canvas Breadcrumbs Navigation Bar -->
-        <div class="canvas-breadcrumb-bar">
+        <div class="canvas-breadcrumb-bar" @contextmenu.prevent>
           <div class="breadcrumb-left">
             <span class="bc-item">UniRTM</span>
             <span class="bc-separator">/</span>

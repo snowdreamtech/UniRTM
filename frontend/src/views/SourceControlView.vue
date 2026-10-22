@@ -1,7 +1,7 @@
 <template>
   <div class="scm-view-container" id="view-scm" @contextmenu.prevent>
     <!-- Top Diff Toolbar (When viewing a specific file diff) -->
-    <div v-if="activeDiffFile" class="diff-header-bar">
+    <div v-if="activeDiffFile" class="diff-header-bar" @contextmenu.prevent>
       <div class="diff-title-group">
         <span class="codicon codicon-diff"></span>
         <span class="diff-file-path font-mono">{{ activeDiffFile }}</span>
@@ -90,7 +90,7 @@
 
     <!-- 2. SCM Overview Hub (When no diff file is selected) -->
     <div v-if="!activeDiffFile" class="scm-overview-hub">
-      <div class="overview-header">
+      <div class="overview-header" @contextmenu.prevent>
         <div class="overview-title-row">
           <div class="title-with-icon">
             <span class="codicon codicon-source-control scm-icon-large"></span>

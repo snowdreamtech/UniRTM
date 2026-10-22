@@ -1,5 +1,5 @@
 <template>
-  <header class="titlebar" id="app-titlebar">
+  <header class="titlebar" id="app-titlebar" @contextmenu.prevent>
     <!-- Left: Brand & Workspace info -->
     <div class="titlebar-left">
       <div class="brand-badge">

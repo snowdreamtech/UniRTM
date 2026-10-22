@@ -46,7 +46,7 @@
     </div>
 
     <!-- 1. SCM Header: Branch info & Sync -->
-    <div class="scm-header-bar">
+    <div class="scm-header-bar" @contextmenu.prevent>
       <div
         class="branch-selector"
         :title="`${t('scm.branch.current')}: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''}`"
