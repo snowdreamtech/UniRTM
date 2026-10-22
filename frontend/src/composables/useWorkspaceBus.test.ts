@@ -180,4 +180,34 @@ describe("useWorkspaceBus", () => {
     bus.notifyToolsChanged();
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  it("handles taskAction broadcasts for run, edit, delete and copy-cmd", () => {
+    const bus = useWorkspaceBus();
+    const taskListener = vi.fn();
+    const unsub = bus.onTaskAction(taskListener);
+
+    bus.triggerTaskAction({ action: "run", taskName: "build" });
+    expect(taskListener).toHaveBeenCalledTimes(1);
+    expect(taskListener).toHaveBeenCalledWith({ action: "run", taskName: "build" });
+
+    bus.triggerTaskAction({ action: "delete", taskName: "test" });
+    expect(taskListener).toHaveBeenCalledTimes(2);
+
+    unsub();
+    bus.triggerTaskAction({ action: "edit", taskName: "lint" });
+    expect(taskListener).toHaveBeenCalledTimes(2);
+  });
+
+  it("handles notifyTasksChanged broadcasts", () => {
+    const bus = useWorkspaceBus();
+    const listener = vi.fn();
+    const unsub = bus.onTasksChanged(listener);
+
+    bus.notifyTasksChanged();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsub();
+    bus.notifyTasksChanged();
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
 });

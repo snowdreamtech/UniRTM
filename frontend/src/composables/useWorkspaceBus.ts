@@ -47,6 +47,14 @@ export interface ToolActionRequest {
   tool?: any;
 }
 
+export interface TaskActionRequest {
+  action: "run" | "edit" | "delete" | "copy-cmd";
+  taskName: string;
+  command?: string;
+  taskCmd?: string;
+  task?: any;
+}
+
 type RevealListener = (req: RevealRequest) => void;
 type GitStatusChangeListener = () => void;
 type OpenDiffListener = (req: WorkspaceDiffRequest) => void;
@@ -58,6 +66,8 @@ type SendToTerminalListener = (req: SendToTerminalRequest) => void;
 type RevealInTerminalListener = (req: RevealInTerminalRequest) => void;
 type ToolActionListener = (req: ToolActionRequest) => void;
 type ToolsChangeListener = () => void;
+type TaskActionListener = (req: TaskActionRequest) => void;
+type TasksChangeListener = () => void;
 
 const lastRevealRequest = ref<RevealRequest | null>(null);
 const currentActiveFilePath = ref<string>("");
@@ -72,6 +82,8 @@ const sendToTerminalListeners = new Set<SendToTerminalListener>();
 const revealInTerminalListeners = new Set<RevealInTerminalListener>();
 const toolActionListeners = new Set<ToolActionListener>();
 const toolsChangeListeners = new Set<ToolsChangeListener>();
+const taskActionListeners = new Set<TaskActionListener>();
+const tasksChangeListeners = new Set<TasksChangeListener>();
 
 /**
  * useWorkspaceBus: 轻量级跨组件协同状态总线
@@ -356,6 +368,53 @@ export function useWorkspaceBus() {
   }
 
   /**
+   * 触发工程自动化任务操作（如从侧边栏右键菜单请求主画布执行运行、编辑、复制、删除）
+   */
+  function triggerTaskAction(req: TaskActionRequest): void {
+    if (!req || !req.taskName) return;
+    taskActionListeners.forEach((fn) => {
+      try {
+        fn(req);
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in task action listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册工程自动化任务操作监听器
+   */
+  function onTaskAction(listener: TaskActionListener): () => void {
+    taskActionListeners.add(listener);
+    return () => {
+      taskActionListeners.delete(listener);
+    };
+  }
+
+  /**
+   * 广播任务列表发生变动
+   */
+  function notifyTasksChanged(): void {
+    tasksChangeListeners.forEach((fn) => {
+      try {
+        fn();
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in tasks change listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册任务列表变动监听器
+   */
+  function onTasksChanged(listener: TasksChangeListener): () => void {
+    tasksChangeListeners.add(listener);
+    return () => {
+      tasksChangeListeners.delete(listener);
+    };
+  }
+
+  /**
    * 清除所有监听器（主要用于单元测试隔离）
    */
   function _clearAllListeners(): void {
@@ -370,6 +429,8 @@ export function useWorkspaceBus() {
     revealInTerminalListeners.clear();
     toolActionListeners.clear();
     toolsChangeListeners.clear();
+    taskActionListeners.clear();
+    tasksChangeListeners.clear();
     lastRevealRequest.value = null;
     currentActiveFilePath.value = "";
   }
@@ -400,6 +461,10 @@ export function useWorkspaceBus() {
     onToolAction,
     notifyToolsChanged,
     onToolsChanged,
+    triggerTaskAction,
+    onTaskAction,
+    notifyTasksChanged,
+    onTasksChanged,
     _clearAllListeners,
   };
 }

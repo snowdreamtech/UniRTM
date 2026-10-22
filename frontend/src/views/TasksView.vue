@@ -388,6 +388,7 @@ import TechIcon from "../components/common/TechIcon.vue";
 import TaskModal, { type TaskFormData } from "../components/TaskModal.vue";
 import { useAppScope } from "../composables/useAppScope";
 import { useToast } from "../composables/useToast";
+import { useWorkspaceBus, type TaskActionRequest } from "../composables/useWorkspaceBus";
 
 const props = defineProps<{
   activeSubItem?: string;
@@ -408,6 +409,8 @@ const emit = defineEmits<{
 
 const { activeScope } = useAppScope();
 const { showToast } = useToast();
+const { onTaskAction, notifyTasksChanged } = useWorkspaceBus();
+let unsubTaskAction: (() => void) | null = null;
 
 export interface ProjectTask {
   name: string;
@@ -497,6 +500,7 @@ async function handleSaveTask(formData: TaskFormData) {
       emit("log-event", "SUCCESS", `[任务管理] 任务 ${formData.name} 保存成功`, undefined, "tasks");
       isTaskModalOpen.value = false;
       await fetchTasks();
+      notifyTasksChanged();
     } else {
       showToast(data.error || "保存任务失败", "error");
       emit("log-event", "ERROR", `[任务管理] 任务 ${formData.name} 保存失败: ${data.error}`, undefined, "tasks");
@@ -522,6 +526,7 @@ async function handleConfirmDelete() {
       emit("log-event", "SUCCESS", `[任务管理] 任务 ${name} 已删除`, undefined, "tasks");
       taskToDelete.value = null;
       await fetchTasks();
+      notifyTasksChanged();
     } else {
       showToast(data.error || "删除任务失败", "error");
     }
@@ -586,15 +591,59 @@ function handleGlobalKeyDown(e: KeyboardEvent) {
   }
 }
 
+function handleBusTaskAction(req: TaskActionRequest) {
+  let target = tasks.value.find((t) => t.name === req.taskName);
+  if (!target) {
+    target = {
+      name: req.taskName,
+      command: req.command || req.taskCmd || (req.task as any)?.cmd || "",
+      description: (req.task as any)?.desc || "",
+    };
+  }
+
+  switch (req.action) {
+    case "run":
+      executeTask(target);
+      break;
+    case "edit":
+      openEditModal(target);
+      break;
+    case "copy-cmd": {
+      const cmdToCopy = target.command || target.name;
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard
+          .writeText(cmdToCopy)
+          .then(() => {
+            showToast(`已复制命令: ${cmdToCopy}`, "success");
+          })
+          .catch(() => {
+            showToast("复制失败", "error");
+          });
+      } else {
+        showToast(`已复制命令: ${cmdToCopy}`, "success");
+      }
+      break;
+    }
+    case "delete":
+      openDeleteConfirm(target);
+      break;
+  }
+}
+
 onMounted(() => {
   fetchTasks();
   window.addEventListener("click", closeTaskMenu);
   window.addEventListener("keydown", handleGlobalKeyDown);
+  unsubTaskAction = onTaskAction(handleBusTaskAction);
 });
 
 onUnmounted(() => {
   window.removeEventListener("click", closeTaskMenu);
   window.removeEventListener("keydown", handleGlobalKeyDown);
+  if (unsubTaskAction) {
+    unsubTaskAction();
+    unsubTaskAction = null;
+  }
 });
 
 async function executeTask(task: ProjectTask) {

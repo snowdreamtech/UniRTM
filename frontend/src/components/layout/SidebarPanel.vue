@@ -200,6 +200,7 @@
           class="sidebar-item"
           :class="{ active: activeSubItem === task.name }"
           @click="handleSubItemClick(task.name)"
+          @contextmenu.prevent="handleTaskContextMenu($event, task)"
         >
           <span class="item-icon"><TechIcon id="workbench:tasks" :size="20" /></span>
           <div class="item-dual">
@@ -346,6 +347,15 @@
       @close="isToolContextMenuVisible = false"
       @action="handleToolContextMenuAction"
     />
+
+    <!-- Task Item Context Menu -->
+    <TaskContextMenu
+      :visible="isTaskContextMenuVisible"
+      :position="taskContextMenuPosition"
+      :task="taskContextMenuTarget"
+      @close="isTaskContextMenuVisible = false"
+      @action="handleTaskContextMenuAction"
+    />
   </aside>
 </template>
 
@@ -357,6 +367,7 @@ import ExplorerSidebar from "../explorer/ExplorerSidebar.vue";
 import SourceControlSidebar from "../scm/SourceControlSidebar.vue";
 import GuardSidebar from "../guard/GuardSidebar.vue";
 import ToolContextMenu, { type ToolMenuActionType } from "../tools/ToolContextMenu.vue";
+import TaskContextMenu, { type TaskMenuActionType } from "../tasks/TaskContextMenu.vue";
 import { useFileTree } from "../../composables/useFileTree";
 import { useToolUpdates } from "../../composables/useToolUpdates";
 import { useToolScope } from "../../composables/useToolScope";
@@ -433,7 +444,7 @@ function handlePointerDown(e: PointerEvent) {
 
 const { syncFromToolsList, updateResults } = useToolUpdates();
 const { activeScope } = useToolScope();
-const { triggerToolAction, onToolsChanged } = useWorkspaceBus();
+const { triggerToolAction, onToolsChanged, triggerTaskAction, onTasksChanged } = useWorkspaceBus();
 
 const isToolContextMenuVisible = ref(false);
 const toolContextMenuPosition = ref({ x: 0, y: 0 });
@@ -453,6 +464,33 @@ function handleToolContextMenuAction(action: ToolMenuActionType, tool: any) {
     toolId,
     toolName: tool.name,
     tool: tool.raw || tool,
+  });
+}
+
+const isTaskContextMenuVisible = ref(false);
+const taskContextMenuPosition = ref({ x: 0, y: 0 });
+const taskContextMenuTarget = ref<SidebarTaskItem | null>(null);
+
+function handleTaskContextMenu(event: MouseEvent, task: SidebarTaskItem) {
+  taskContextMenuTarget.value = task;
+  taskContextMenuPosition.value = { x: event.clientX, y: event.clientY };
+  isTaskContextMenuVisible.value = true;
+}
+
+function handleTaskContextMenuAction(action: TaskMenuActionType, task: SidebarTaskItem) {
+  isTaskContextMenuVisible.value = false;
+  if (action === "copy-cmd") {
+    const textToCopy = task.cmd || task.name;
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(textToCopy).catch(() => {});
+    }
+  }
+  triggerTaskAction({
+    action,
+    taskName: task.name,
+    command: task.cmd,
+    taskCmd: task.cmd,
+    task: task,
   });
 }
 
@@ -678,18 +716,24 @@ async function fetchSidebarToolsStatus() {
 }
 
 let unsubToolsChanged: (() => void) | null = null;
+let unsubTasksChanged: (() => void) | null = null;
 
 onMounted(async () => {
   fetchSidebarTasks();
   fetchSidebarEnvs();
   fetchSidebarToolsStatus();
   unsubToolsChanged = onToolsChanged(fetchSidebarToolsStatus);
+  unsubTasksChanged = onTasksChanged(fetchSidebarTasks);
 });
 
 onBeforeUnmount(() => {
   if (unsubToolsChanged) {
     unsubToolsChanged();
     unsubToolsChanged = null;
+  }
+  if (unsubTasksChanged) {
+    unsubTasksChanged();
+    unsubTasksChanged = null;
   }
 });
 </script>
