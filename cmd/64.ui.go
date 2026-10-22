@@ -1044,6 +1044,9 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/guard/slots", handleGuardSlots)
 	mux.HandleFunc("/api/guard/toml", handleGuardToml)
 
+	// System Doctor & Health Diagnostics API
+	mux.HandleFunc("/api/doctor", handleDoctorDiagnostic)
+
 	// Version Aliases Management APIs
 	mux.HandleFunc("/api/aliases", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
