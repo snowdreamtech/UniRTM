@@ -7479,6 +7479,68 @@ print(json.dumps({
             }
           }
 
+          if (req.url === "/api/keybindings") {
+            const kbPath = path.join(os.homedir(), ".config", "unirtm", "keybindings.json");
+            res.setHeader("Content-Type", "application/json");
+
+            if (req.method === "GET") {
+              const exists = fs.existsSync(kbPath);
+              let raw = "[]";
+              let list: any[] = [];
+              if (exists) {
+                try {
+                  raw = fs.readFileSync(kbPath, "utf-8");
+                  list = JSON.parse(raw);
+                } catch {}
+              }
+              res.end(
+                JSON.stringify({
+                  path: kbPath,
+                  exists,
+                  raw,
+                  keybindings: Array.isArray(list) ? list : [],
+                })
+              );
+              return;
+            }
+
+            if (req.method === "POST" || req.method === "PUT") {
+              let body = "";
+              req.on("data", (chunk: any) => {
+                body += chunk;
+              });
+              req.on("end", () => {
+                try {
+                  const data = JSON.parse(body || "{}");
+                  let contentBytes = "[]";
+                  if (data.raw && typeof data.raw === "string") {
+                    JSON.parse(data.raw); // validate
+                    contentBytes = data.raw;
+                  } else if (Array.isArray(data.keybindings)) {
+                    contentBytes = JSON.stringify(data.keybindings, null, 2);
+                  }
+                  const parent = path.dirname(kbPath);
+                  if (!fs.existsSync(parent)) {
+                    fs.mkdirSync(parent, { recursive: true });
+                  }
+                  fs.writeFileSync(kbPath, contentBytes, "utf-8");
+                  res.end(
+                    JSON.stringify({
+                      success: true,
+                      path: kbPath,
+                      raw: contentBytes,
+                      keybindings: JSON.parse(contentBytes),
+                    })
+                  );
+                } catch (err: any) {
+                  res.statusCode = 400;
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+          }
+
           if (req.url === "/api/config") {
             const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
             const wsPath = path.join(rootDir, ".unirtm.toml");

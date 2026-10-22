@@ -18,6 +18,18 @@ export interface ShortcutItem {
   when?: string;
 }
 
+export interface CustomKeybinding {
+  command: string;
+  key: string;
+  when?: string;
+}
+
+export interface ActiveShortcutItem extends ShortcutItem {
+  effectiveKey: string;
+  isCustom: boolean;
+  source: "user" | "default";
+}
+
 export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
   // 1. General & Palette
   {
@@ -57,8 +69,8 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     macKeys: "Cmd+K Cmd+S",
     titleZh: "打开键盘快捷键参考",
     titleEn: "Open Keyboard Shortcuts",
-    descZh: "查看 UniRTM 与 VS Code 深度对齐的所有键盘快捷键",
-    descEn: "View keyboard shortcuts aligned with VS Code",
+    descZh: "查看与自定义 UniRTM 键盘快捷键 (对齐 VS Code keybindings.json)",
+    descEn: "View and customize keyboard shortcuts (aligned with VS Code keybindings.json)",
   },
   {
     id: "workbench.action.closeModalOrDrawer",
@@ -284,7 +296,99 @@ export interface ShortcutHandlers {
   closeDrawer: () => void;
 }
 
+// Global state for shortcuts and keybindings
 const isShortcutsModalOpen = ref(false);
+const customKeybindings = ref<CustomKeybinding[]>([]);
+const keybindingsPath = ref<string>("~/.config/unirtm/keybindings.json");
+const isKeybindingsLoading = ref(false);
+const rawKeybindingsJson = ref<string>("[]");
+
+export function parseKeyCombo(combo: string): {
+  ctrl: boolean;
+  shift: boolean;
+  alt: boolean;
+  meta: boolean;
+  key: string;
+} {
+  const tokens = combo
+    .split("+")
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+  let ctrl = false;
+  let shift = false;
+  let alt = false;
+  let meta = false;
+  let mainKey = "";
+
+  for (const token of tokens) {
+    if (token === "ctrl" || token === "control") {
+      ctrl = true;
+    } else if (token === "shift") {
+      shift = true;
+    } else if (token === "alt" || token === "option") {
+      alt = true;
+    } else if (token === "cmd" || token === "meta" || token === "command") {
+      meta = true;
+    } else {
+      mainKey = token;
+    }
+  }
+
+  return { ctrl, shift, alt, meta, key: mainKey };
+}
+
+export function matchesSingleCombo(e: KeyboardEvent, comboStr: string): boolean {
+  const parsed = parseKeyCombo(comboStr);
+  const isMac =
+    typeof navigator !== "undefined" && navigator.platform
+      ? navigator.platform.toUpperCase().indexOf("MAC") >= 0
+      : false;
+
+  // Modifiers check
+  const requiresMod = parsed.ctrl || parsed.meta;
+  const hasMod = isMac ? e.metaKey || e.ctrlKey : e.ctrlKey;
+  if (requiresMod && !hasMod) return false;
+  if (!requiresMod && hasMod) return false;
+
+  if (parsed.shift !== e.shiftKey) return false;
+  if (parsed.alt !== e.altKey) return false;
+
+  // Main key check
+  const eventKey = e.key.toLowerCase();
+  const targetKey = parsed.key.toLowerCase();
+
+  if (targetKey === "pagedown") return eventKey === "pagedown";
+  if (targetKey === "pageup") return eventKey === "pageup";
+  if (targetKey === "`" || targetKey === "~") return eventKey === "`" || eventKey === "~";
+  if (targetKey === ",") return eventKey === ",";
+
+  return eventKey === targetKey;
+}
+
+export function matchesKeyCombo(e: KeyboardEvent, keysString: string): boolean {
+  // If string contains multiple options split by " / "
+  const options = keysString.split("/").map((s) => s.trim());
+  return options.some((opt) => matchesSingleCombo(e, opt));
+}
+
+export function normalizeKeyComboFromEvent(e: KeyboardEvent): string {
+  const parts: string[] = [];
+  if (e.ctrlKey) parts.push("Ctrl");
+  if (e.altKey) parts.push("Alt");
+  if (e.shiftKey) parts.push("Shift");
+  if (e.metaKey) parts.push("Cmd");
+
+  let keyName = e.key;
+  if (["Control", "Shift", "Alt", "Meta"].includes(keyName)) {
+    return parts.join("+");
+  }
+
+  if (keyName === " ") keyName = "Space";
+  if (keyName.length === 1) keyName = keyName.toUpperCase();
+  parts.push(keyName);
+
+  return parts.join("+");
+}
 
 export function useKeyboardShortcuts() {
   function openShortcutsModal() {
@@ -323,6 +427,137 @@ export function useKeyboardShortcuts() {
     }
   }
 
+  const activeShortcuts = computed<ActiveShortcutItem[]>(() => {
+    return SHORTCUT_DEFINITIONS.map((def) => {
+      const custom = customKeybindings.value.find((c) => c.command === def.id);
+      if (custom && custom.key) {
+        return {
+          ...def,
+          effectiveKey: custom.key,
+          isCustom: true,
+          source: "user",
+          when: custom.when || def.when,
+        };
+      }
+      return {
+        ...def,
+        effectiveKey: def.keys,
+        isCustom: false,
+        source: "default",
+      };
+    });
+  });
+
+  async function fetchKeybindings(): Promise<void> {
+    isKeybindingsLoading.value = true;
+    try {
+      const res = await fetch("/api/keybindings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.path) keybindingsPath.value = data.path;
+        if (data.raw) rawKeybindingsJson.value = data.raw;
+        if (Array.isArray(data.keybindings)) {
+          customKeybindings.value = data.keybindings;
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to fetch keybindings from /api/keybindings:", err);
+    } finally {
+      isKeybindingsLoading.value = false;
+    }
+  }
+
+  async function saveKeybinding(commandId: string, newKey: string, when?: string): Promise<boolean> {
+    const list = [...customKeybindings.value];
+    const existingIdx = list.findIndex((c) => c.command === commandId);
+    if (existingIdx !== -1) {
+      list[existingIdx] = { command: commandId, key: newKey, when };
+    } else {
+      list.push({ command: commandId, key: newKey, when });
+    }
+    customKeybindings.value = list;
+
+    try {
+      const res = await fetch("/api/keybindings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keybindings: list }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.raw) rawKeybindingsJson.value = data.raw;
+        return true;
+      }
+    } catch (err) {
+      console.error("Failed to persist keybinding to /api/keybindings:", err);
+    }
+    return false;
+  }
+
+  async function resetKeybinding(commandId: string): Promise<boolean> {
+    const list = customKeybindings.value.filter((c) => c.command !== commandId);
+    customKeybindings.value = list;
+
+    try {
+      const res = await fetch("/api/keybindings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keybindings: list }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.raw) rawKeybindingsJson.value = data.raw;
+        return true;
+      }
+    } catch (err) {
+      console.error("Failed to reset keybinding:", err);
+    }
+    return false;
+  }
+
+  async function resetAllKeybindings(): Promise<boolean> {
+    customKeybindings.value = [];
+    try {
+      const res = await fetch("/api/keybindings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keybindings: [] }),
+      });
+      if (res.ok) {
+        rawKeybindingsJson.value = "[]\n";
+        return true;
+      }
+    } catch (err) {
+      console.error("Failed to reset all keybindings:", err);
+    }
+    return false;
+  }
+
+  async function saveRawKeybindings(raw: string): Promise<boolean> {
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        throw new Error("Keybindings JSON must be an array of objects");
+      }
+      const res = await fetch("/api/keybindings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ raw }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        rawKeybindingsJson.value = data.raw || raw;
+        if (Array.isArray(data.keybindings)) {
+          customKeybindings.value = data.keybindings;
+        }
+        return true;
+      }
+    } catch (err) {
+      console.error("Failed to save raw keybindings:", err);
+    }
+    return false;
+  }
+
   // Chord state tracker (e.g. Ctrl+K chord)
   let pendingChord: "Ctrl+K" | null = null;
   let chordTimer: any = null;
@@ -337,6 +572,11 @@ export function useKeyboardShortcuts() {
 
   const tabOrder = ["dashboard", "explorer", "scm", "guard", "tools", "tasks", "environments", "marketplace", "doctor"];
 
+  function getEffectiveKey(commandId: string, defaultKeys: string): string {
+    const found = activeShortcuts.value.find((s) => s.id === commandId);
+    return found ? found.effectiveKey : defaultKeys;
+  }
+
   function createKeydownHandler(handlers: ShortcutHandlers) {
     return function handleKeydown(e: KeyboardEvent) {
       const isMac =
@@ -350,28 +590,26 @@ export function useKeyboardShortcuts() {
       if (pendingChord === "Ctrl+K") {
         clearChord();
 
-        // Ctrl+K Ctrl+S or 's'/'S': Open Keyboard Shortcuts
+        // Ctrl+K Ctrl+S: Open Keyboard Shortcuts
         if ((mod && (key === "s" || key === "S")) || (!mod && (key === "s" || key === "S"))) {
           e.preventDefault();
           openShortcutsModal();
           return;
         }
 
-        // Ctrl+K Ctrl+W or 'w'/'W': Close All Editor Tabs
+        // Ctrl+K Ctrl+W: Close All Editor Tabs
         if ((mod && (key === "w" || key === "W")) || (!mod && (key === "w" || key === "W"))) {
           e.preventDefault();
           closeAllTabs();
           return;
         }
 
-        // Ctrl+K Ctrl+T or 't'/'T': Select Color Theme
+        // Ctrl+K Ctrl+T: Select Color Theme
         if ((mod && (key === "t" || key === "T")) || (!mod && (key === "t" || key === "T"))) {
           e.preventDefault();
           handlers.navigateToTab("marketplace");
           return;
         }
-
-        // If another chord wasn't matched, fall through
       }
 
       // Check if user is typing in standard inputs
@@ -408,120 +646,122 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // --- VS Code Command Palette & Quick Open ---
-      // Ctrl+Shift+P / Cmd+Shift+P / F1: Command Palette
-      if ((mod && e.shiftKey && (key === "p" || key === "P")) || key === "F1") {
+      // --- 1. Dynamic Matching of Custom / Effective Shortcuts ---
+      // Command Palette
+      const showCmdsKey = getEffectiveKey("workbench.action.showCommands", "Ctrl+Shift+P / F1");
+      if (matchesKeyCombo(e, showCmdsKey)) {
         e.preventDefault();
         handlers.openCommandPalette();
         return;
       }
 
-      // Ctrl+P / Cmd+P: Quick Open / Command Search
-      if (mod && !e.shiftKey && !e.altKey && (key === "p" || key === "P")) {
+      // Quick Open
+      const quickOpenKey = getEffectiveKey("workbench.action.quickOpen", "Ctrl+P");
+      if (matchesKeyCombo(e, quickOpenKey)) {
         e.preventDefault();
         handlers.openCommandPalette();
         return;
       }
 
-      // Ctrl+K / Cmd+K: Chord initiator or Command Palette
-      if (mod && !e.shiftKey && !e.altKey && (key === "k" || key === "K")) {
-        e.preventDefault();
-        if (handlers.isCommandPaletteOpen()) {
-          handlers.closeCommandPalette();
-          return;
-        }
-        // Start chord detection with a 380ms timeout
-        pendingChord = "Ctrl+K";
-        chordTimer = setTimeout(() => {
-          if (pendingChord === "Ctrl+K") {
-            clearChord();
-            handlers.openCommandPalette();
-          }
-        }, 380);
-        return;
-      }
-
-      // Ctrl+, / Cmd+,: Open Settings
-      if (mod && !e.shiftKey && !e.altKey && key === ",") {
+      // Open Settings
+      const settingsKey = getEffectiveKey("workbench.action.openSettings", "Ctrl+,");
+      if (matchesKeyCombo(e, settingsKey)) {
         e.preventDefault();
         handlers.openSettings();
         return;
       }
 
-      // --- Side Bar & Panel Layout ---
-      // Ctrl+B / Cmd+B: Toggle Primary Side Bar
-      if (mod && !e.shiftKey && !e.altKey && (key === "b" || key === "B")) {
+      // Open Keyboard Shortcuts
+      const kbShortcutsKey = getEffectiveKey("workbench.action.openGlobalKeybindings", "Ctrl+K Ctrl+S");
+      if (kbShortcutsKey !== "Ctrl+K Ctrl+S" && matchesKeyCombo(e, kbShortcutsKey)) {
+        e.preventDefault();
+        openShortcutsModal();
+        return;
+      }
+
+      // Toggle Sidebar
+      const sidebarKey = getEffectiveKey("workbench.action.toggleSidebarVisibility", "Ctrl+B");
+      if (matchesKeyCombo(e, sidebarKey)) {
         e.preventDefault();
         handlers.toggleSidebar();
         return;
       }
 
-      // Ctrl+J / Cmd+J: Toggle Bottom Panel (Drawer)
-      if (mod && !e.shiftKey && !e.altKey && (key === "j" || key === "J")) {
+      // Toggle Panel
+      const panelKey = getEffectiveKey("workbench.action.togglePanel", "Ctrl+J");
+      if (matchesKeyCombo(e, panelKey)) {
         e.preventDefault();
         handlers.toggleDrawer();
         return;
       }
 
-      // Ctrl+` / Cmd+`: Toggle Integrated Terminal
-      if (mod && !e.shiftKey && !e.altKey && (key === "`" || key === "~")) {
+      // Toggle Integrated Terminal
+      const termKey = getEffectiveKey("workbench.action.terminal.toggleTerminal", "Ctrl+`");
+      if (matchesKeyCombo(e, termKey)) {
         e.preventDefault();
         handlers.openDrawerTab("terminal");
         return;
       }
 
-      // Ctrl+Shift+` / Cmd+Shift+`: Create New Terminal Session
-      if (mod && e.shiftKey && (key === "`" || key === "~")) {
+      // New Terminal Session
+      const newTermKey = getEffectiveKey("workbench.action.terminal.new", "Ctrl+Shift+`");
+      if (matchesKeyCombo(e, newTermKey)) {
         e.preventDefault();
         handlers.newTerminalSession();
         return;
       }
 
-      // Ctrl+Shift+U / Cmd+Shift+U: Show Output Channel
-      if (mod && e.shiftKey && (key === "u" || key === "U")) {
+      // Output Channel
+      const outputKey = getEffectiveKey("workbench.action.output.show", "Ctrl+Shift+U");
+      if (matchesKeyCombo(e, outputKey)) {
         e.preventDefault();
         handlers.openDrawerTab("output");
         return;
       }
 
-      // Ctrl+Shift+M / Cmd+Shift+M: Show Problems & Doctor
-      if (mod && e.shiftKey && (key === "m" || key === "M")) {
+      // Problems / Doctor
+      const problemsKey = getEffectiveKey("workbench.action.problems.show", "Ctrl+Shift+M");
+      if (matchesKeyCombo(e, problemsKey)) {
         e.preventDefault();
         handlers.navigateToTab("doctor");
         return;
       }
 
-      // --- Activity Bar Views Navigation ---
-      // Ctrl+Shift+E: Show Explorer
-      if (mod && e.shiftKey && (key === "e" || key === "E")) {
+      // Explorer
+      const explorerKey = getEffectiveKey("workbench.view.explorer", "Ctrl+Shift+E");
+      if (matchesKeyCombo(e, explorerKey)) {
         e.preventDefault();
         handlers.navigateToTab("explorer");
         return;
       }
 
-      // Ctrl+Shift+G: Show SCM / Git
-      if (mod && e.shiftKey && (key === "g" || key === "G")) {
+      // SCM / Git
+      const scmKey = getEffectiveKey("workbench.view.scm", "Ctrl+Shift+G");
+      if (matchesKeyCombo(e, scmKey)) {
         e.preventDefault();
         handlers.navigateToTab("scm");
         return;
       }
 
-      // Ctrl+Shift+D: Show Doctor (Run & Debug position)
-      if (mod && e.shiftKey && (key === "d" || key === "D")) {
+      // Doctor
+      const doctorKey = getEffectiveKey("workbench.view.doctor", "Ctrl+Shift+D");
+      if (matchesKeyCombo(e, doctorKey)) {
         e.preventDefault();
         handlers.navigateToTab("doctor");
         return;
       }
 
-      // Ctrl+Shift+X: Show Extensions / Marketplace
-      if (mod && e.shiftKey && (key === "x" || key === "X")) {
+      // Extensions / Marketplace
+      const extKey = getEffectiveKey("workbench.view.extensions", "Ctrl+Shift+X");
+      if (matchesKeyCombo(e, extKey)) {
         e.preventDefault();
         handlers.navigateToTab("marketplace");
         return;
       }
 
-      // Alt+S: Toggle Scope (Workspace / User)
-      if (e.altKey && !mod && !e.shiftKey && (key === "s" || key === "S")) {
+      // Scope Switcher
+      const scopeKey = getEffectiveKey("workbench.action.toggleScope", "Alt+S");
+      if (matchesKeyCombo(e, scopeKey)) {
         e.preventDefault();
         handlers.toggleScope();
         return;
@@ -537,23 +777,25 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // --- Editor & Tabs Management ---
-      // Ctrl+Shift+S / Cmd+Shift+S: Save All Files
-      if (mod && e.shiftKey && (key === "s" || key === "S")) {
+      // Editor: Save All Files
+      const saveAllKey = getEffectiveKey("workbench.action.files.saveAll", "Ctrl+Shift+S");
+      if (matchesKeyCombo(e, saveAllKey)) {
         e.preventDefault();
         saveAllTabs();
         return;
       }
 
-      // Ctrl+S / Cmd+S: Save Active File (unless focused on input where user needs browser default)
-      if (mod && !e.shiftKey && !e.altKey && (key === "s" || key === "S")) {
+      // Editor: Save Active File
+      const saveKey = getEffectiveKey("workbench.action.files.save", "Ctrl+S");
+      if (matchesKeyCombo(e, saveKey)) {
         e.preventDefault();
         saveActiveEditorTab();
         return;
       }
 
-      // Ctrl+W / Cmd+W or Ctrl+F4: Close Active Editor Tab
-      if ((mod && !e.shiftKey && !e.altKey && (key === "w" || key === "W") && !isInput) || (mod && key === "F4")) {
+      // Editor: Close Active Tab
+      const closeTabKey = getEffectiveKey("workbench.action.closeActiveEditor", "Ctrl+W / Ctrl+F4");
+      if (matchesKeyCombo(e, closeTabKey) && !isInput) {
         if (activeTabId.value) {
           e.preventDefault();
           closeActiveEditorTab();
@@ -561,15 +803,35 @@ export function useKeyboardShortcuts() {
         }
       }
 
-      // Ctrl+PageDown / Ctrl+PageUp: Switch Next / Previous Editor Tab
-      if (mod && !e.shiftKey && !e.altKey && key === "PageDown") {
+      // Editor: Next / Previous Tab
+      const nextTabKey = getEffectiveKey("workbench.action.nextEditor", "Ctrl+PageDown");
+      if (matchesKeyCombo(e, nextTabKey)) {
         e.preventDefault();
         nextEditorTab();
         return;
       }
-      if (mod && !e.shiftKey && !e.altKey && key === "PageUp") {
+
+      const prevTabKey = getEffectiveKey("workbench.action.previousEditor", "Ctrl+PageUp");
+      if (matchesKeyCombo(e, prevTabKey)) {
         e.preventDefault();
         prevEditorTab();
+        return;
+      }
+
+      // Ctrl+K Chord Initiator (Default VS Code Chord)
+      if (mod && !e.shiftKey && !e.altKey && (key === "k" || key === "K")) {
+        e.preventDefault();
+        if (handlers.isCommandPaletteOpen()) {
+          handlers.closeCommandPalette();
+          return;
+        }
+        pendingChord = "Ctrl+K";
+        chordTimer = setTimeout(() => {
+          if (pendingChord === "Ctrl+K") {
+            clearChord();
+            handlers.openCommandPalette();
+          }
+        }, 380);
         return;
       }
     };
@@ -580,6 +842,16 @@ export function useKeyboardShortcuts() {
     openShortcutsModal,
     closeShortcutsModal,
     allShortcuts: computed(() => SHORTCUT_DEFINITIONS),
+    activeShortcuts,
+    customKeybindings,
+    keybindingsPath,
+    isKeybindingsLoading,
+    rawKeybindingsJson,
+    fetchKeybindings,
+    saveKeybinding,
+    resetKeybinding,
+    resetAllKeybindings,
+    saveRawKeybindings,
     createKeydownHandler,
     nextEditorTab,
     prevEditorTab,

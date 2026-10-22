@@ -71,9 +71,9 @@
                 </td>
                 <td class="col-keys">
                   <div class="keys-wrapper">
-                    <template v-for="(chord, cIdx) in splitKeys(item.keys)" :key="cIdx">
+                    <template v-for="(chord, cIdx) in splitKeys(item.effectiveKey)" :key="cIdx">
                       <span v-if="cIdx > 0" class="chord-separator">+</span>
-                      <kbd class="key-pill">{{ chord }}</kbd>
+                      <kbd class="key-pill" :class="{ 'custom-pill': item.isCustom }">{{ chord }}</kbd>
                     </template>
                   </div>
                 </td>
@@ -97,8 +97,14 @@
             <span class="hint-pill"><kbd>Ctrl+Shift+P</kbd> {{ isZh ? "命令面板" : "Command Palette" }}</span>
             <span class="hint-pill"><kbd>ESC</kbd> {{ isZh ? "关闭" : "Close" }}</span>
           </div>
-          <div class="footer-count">
-            {{ isZh ? `共 ${filteredShortcuts.length} 个快捷键` : `${filteredShortcuts.length} shortcuts` }}
+          <div class="footer-right">
+            <button class="footer-settings-btn" @click="$emit('open-settings')">
+              <span class="codicon codicon-settings-gear"></span>
+              <span>{{ isZh ? "在设置中自定义快捷键" : "Customize in Settings" }}</span>
+            </button>
+            <div class="footer-count">
+              {{ isZh ? `共 ${filteredShortcuts.length} 个快捷键` : `${filteredShortcuts.length} shortcuts` }}
+            </div>
           </div>
         </div>
       </div>
@@ -117,7 +123,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
+  (e: "open-settings"): void;
 }>();
+
+const { activeShortcuts } = useKeyboardShortcuts();
 
 const searchQuery = ref("");
 const activeCategory = ref("all");
@@ -143,22 +152,21 @@ function getCategoryLabel(catKey: string): string {
 }
 
 function splitKeys(keys: string): string[] {
-  // If chord like "Ctrl+K Ctrl+S" or options like "Ctrl+Shift+P / F1"
   return keys.split(" ");
 }
 
-const filteredShortcuts = computed<ShortcutItem[]>(() => {
+const filteredShortcuts = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
   const cat = activeCategory.value;
 
-  return SHORTCUT_DEFINITIONS.filter((item) => {
+  return activeShortcuts.value.filter((item) => {
     if (cat !== "all" && item.category !== cat) {
       return false;
     }
     if (!q) return true;
 
     return (
-      item.keys.toLowerCase().includes(q) ||
+      item.effectiveKey.toLowerCase().includes(q) ||
       item.titleZh.toLowerCase().includes(q) ||
       item.titleEn.toLowerCase().includes(q) ||
       item.descZh.toLowerCase().includes(q) ||
@@ -577,6 +585,48 @@ watch(
   border-top: 1px solid rgba(15, 23, 42, 0.08);
   background: #f8fafc;
   color: #64748b;
+}
+
+.key-pill.custom-pill {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+:root[data-theme="light"] .key-pill.custom-pill {
+  color: #0284c7;
+  border-color: #38bdf8;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-settings-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #00e5ff;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+:root[data-theme="light"] .footer-settings-btn {
+  color: #0284c7;
+}
+
+.footer-settings-btn:hover {
+  background: rgba(0, 229, 255, 0.1);
+}
+
+:root[data-theme="light"] .footer-settings-btn:hover {
+  background: #e0f2fe;
 }
 
 .footer-hint {

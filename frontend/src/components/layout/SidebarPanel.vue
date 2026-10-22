@@ -606,6 +606,7 @@ const headerTitle = computed(() => {
 
 const settingsNavItems = computed(() => [
   { id: "general", icon: "workbench:settings", label: t("settings.cat_general") || "常规" },
+  { id: "shortcuts", icon: "workbench:keyboard", label: t("settings.cat_shortcuts") || "快捷键" },
   { id: "network", icon: "workbench:runtimes", label: t("settings.cat_network") || "网络" },
   { id: "plugins", icon: "workbench:marketplace", label: t("settings.cat_plugins") || "扩展" },
   { id: "security", icon: "workbench:lock", label: t("settings.cat_security") || "安全" },

@@ -943,6 +943,19 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
 	})
 
+	mux.HandleFunc("/api/keybindings", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			handleGetKeybindings(w, r)
+			return
+		} else if r.Method == http.MethodPost || r.Method == http.MethodPut {
+			handlePostKeybindings(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+	})
+
 	mux.HandleFunc("/api/system/browsers", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -1335,6 +1348,92 @@ func handlePostConfigRaw(w http.ResponseWriter, r *http.Request) {
 		"scope":   scope,
 		"path":    targetPath,
 		"size":    len(body.Content),
+	})
+}
+
+func getKeybindingsPath() string {
+	return filepath.Join(env.GetConfigDir(), "keybindings.json")
+}
+
+func handleGetKeybindings(w http.ResponseWriter, r *http.Request) {
+	targetPath := getKeybindingsPath()
+	exists := false
+	raw := "[]"
+	var list []map[string]interface{}
+	if data, err := os.ReadFile(targetPath); err == nil {
+		exists = true
+		raw = string(data)
+		_ = json.Unmarshal(data, &list)
+	}
+	if list == nil {
+		list = []map[string]interface{}{}
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"path":        targetPath,
+		"exists":      exists,
+		"raw":         raw,
+		"keybindings": list,
+	})
+}
+
+func handlePostKeybindings(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Raw         string                   `json:"raw"`
+		Keybindings []map[string]interface{} `json:"keybindings"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid json: " + err.Error()})
+		return
+	}
+
+	targetPath := getKeybindingsPath()
+	parent := filepath.Dir(targetPath)
+	if err := os.MkdirAll(parent, 0755); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to create config dir: " + err.Error()})
+		return
+	}
+
+	var contentBytes []byte
+	if strings.TrimSpace(body.Raw) != "" {
+		var dummy interface{}
+		if err := json.Unmarshal([]byte(body.Raw), &dummy); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "raw content is not valid JSON: " + err.Error()})
+			return
+		}
+		contentBytes = []byte(body.Raw)
+	} else {
+		if body.Keybindings == nil {
+			body.Keybindings = []map[string]interface{}{}
+		}
+		prettyBytes, err := json.MarshalIndent(body.Keybindings, "", "  ")
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to encode keybindings: " + err.Error()})
+			return
+		}
+		contentBytes = append(prettyBytes, '\n')
+	}
+
+	if err := os.WriteFile(targetPath, contentBytes, 0644); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to write keybindings.json: " + err.Error()})
+		return
+	}
+
+	var parsedList []map[string]interface{}
+	_ = json.Unmarshal(contentBytes, &parsedList)
+	if parsedList == nil {
+		parsedList = []map[string]interface{}{}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":     true,
+		"path":        targetPath,
+		"raw":         string(contentBytes),
+		"keybindings": parsedList,
 	})
 }
 

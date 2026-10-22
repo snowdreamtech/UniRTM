@@ -112,7 +112,14 @@
     />
 
     <!-- 7. Keyboard Shortcuts Reference Modal (VS Code Aligned) -->
-    <KeyboardShortcutsModal :isOpen="isShortcutsModalOpen" @close="closeShortcutsModal" />
+    <KeyboardShortcutsModal
+      :isOpen="isShortcutsModalOpen"
+      @close="closeShortcutsModal"
+      @open-settings="
+        closeShortcutsModal();
+        openSettings();
+      "
+    />
   </div>
 </template>
 
@@ -519,7 +526,8 @@ async function loadConfig() {
   }
 }
 
-const { isShortcutsModalOpen, openShortcutsModal, closeShortcutsModal, createKeydownHandler } = useKeyboardShortcuts();
+const { isShortcutsModalOpen, openShortcutsModal, closeShortcutsModal, createKeydownHandler, fetchKeybindings } =
+  useKeyboardShortcuts();
 
 function handleNewTerminal() {
   isDrawerOpen.value = true;
@@ -553,6 +561,7 @@ const handleGlobalKeydown = createKeydownHandler({
 onMounted(() => {
   loadConfig();
   fetchThemes();
+  fetchKeybindings();
   checkUpdates().catch(() => {});
   startBrokerPolling(1000);
   window.addEventListener("keydown", handleGlobalKeydown);

@@ -164,4 +164,47 @@ describe("useKeyboardShortcuts", () => {
     handleKeydown(createKeyEvent({ altKey: true, key: "s" }));
     expect(mockHandlers.toggleScope).toHaveBeenCalledTimes(1);
   });
+
+  it("supports custom keybinding overrides and dynamic matching", async () => {
+    // Mock global fetch
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        path: "/mock/keybindings.json",
+        raw: '[{"command":"workbench.view.scm","key":"Ctrl+Alt+G"}]',
+        keybindings: [{ command: "workbench.view.scm", key: "Ctrl+Alt+G" }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { activeShortcuts, saveKeybinding, resetKeybinding, resetAllKeybindings, createKeydownHandler } =
+      useKeyboardShortcuts();
+
+    // Save custom keybinding
+    await saveKeybinding("workbench.view.scm", "Ctrl+Alt+G");
+    expect(fetchMock).toHaveBeenCalledWith("/api/keybindings", expect.objectContaining({ method: "POST" }));
+
+    const scmItem = activeShortcuts.value.find((s) => s.id === "workbench.view.scm");
+    expect(scmItem?.effectiveKey).toBe("Ctrl+Alt+G");
+    expect(scmItem?.isCustom).toBe(true);
+    expect(scmItem?.source).toBe("user");
+
+    // Dynamic keydown test with custom key
+    const handleKeydown = createKeydownHandler(mockHandlers);
+    handleKeydown(createKeyEvent({ ctrlKey: true, altKey: true, key: "g" }));
+    expect(mockHandlers.navigateToTab).toHaveBeenCalledWith("scm");
+
+    // Reset single keybinding
+    await resetKeybinding("workbench.view.scm");
+    const scmItemAfter = activeShortcuts.value.find((s) => s.id === "workbench.view.scm");
+    expect(scmItemAfter?.isCustom).toBe(false);
+    expect(scmItemAfter?.source).toBe("default");
+
+    // Reset all keybindings
+    await resetAllKeybindings();
+    expect(fetchMock).toHaveBeenCalledWith("/api/keybindings", expect.objectContaining({ method: "POST" }));
+
+    vi.unstubAllGlobals();
+  });
 });

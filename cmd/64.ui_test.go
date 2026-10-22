@@ -670,3 +670,52 @@ func TestUIGitAPI(t *testing.T) {
 		t.Fatalf("Expected 200 for /api/git/log, got %d: %s", rrLog.Code, rrLog.Body.String())
 	}
 }
+
+func TestKeybindingsAPI(t *testing.T) {
+	tmpDir := t.TempDir()
+	origConfigDir := os.Getenv("UNIRTM_CONFIG_DIR")
+	defer os.Setenv("UNIRTM_CONFIG_DIR", origConfigDir)
+	os.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/keybindings", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			handleGetKeybindings(w, r)
+			return
+		} else if r.Method == http.MethodPost || r.Method == http.MethodPut {
+			handlePostKeybindings(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	})
+
+	// 1. GET when not exists
+	reqGet := httptest.NewRequest("GET", "/api/keybindings", nil)
+	rrGet := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet, reqGet)
+	if rrGet.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on GET /api/keybindings, got %d", rrGet.Code)
+	}
+
+	// 2. POST keybindings
+	postPayload := `{"keybindings":[{"command":"workbench.view.scm","key":"ctrl+alt+g"}]}`
+	reqPost := httptest.NewRequest("POST", "/api/keybindings", strings.NewReader(postPayload))
+	reqPost.Header.Set("Content-Type", "application/json")
+	rrPost := httptest.NewRecorder()
+	mux.ServeHTTP(rrPost, reqPost)
+	if rrPost.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on POST /api/keybindings, got %d: %s", rrPost.Code, rrPost.Body.String())
+	}
+
+	// 3. GET after POST
+	reqGet2 := httptest.NewRequest("GET", "/api/keybindings", nil)
+	rrGet2 := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet2, reqGet2)
+	if rrGet2.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on second GET, got %d", rrGet2.Code)
+	}
+	if !strings.Contains(rrGet2.Body.String(), "ctrl+alt+g") {
+		t.Errorf("Expected body to contain 'ctrl+alt+g', got: %s", rrGet2.Body.String())
+	}
+}

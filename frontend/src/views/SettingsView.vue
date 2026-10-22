@@ -871,6 +871,15 @@
         </div>
       </section>
 
+      <!-- 1.5 Keyboard Shortcuts Section (VS Code Aligned) -->
+      <section
+        v-show="isCategoryVisible('shortcuts')"
+        id="section-shortcuts"
+        class="settings-category-section glass-card"
+      >
+        <KeyboardShortcutsSettings />
+      </section>
+
       <!-- 2. Git & Lifecycle Hooks (Workspace Only) -->
       <section
         v-if="activeScope !== 'user'"
@@ -2027,6 +2036,7 @@ import { useAppScope } from "../composables/useAppScope";
 import { useTerminal } from "../composables/useTerminal";
 import CustomSelect from "../components/CustomSelect.vue";
 import TechIcon from "../components/common/TechIcon.vue";
+import KeyboardShortcutsSettings from "../components/settings/KeyboardShortcutsSettings.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -3134,6 +3144,21 @@ function isCategoryVisible(catId: string) {
       q.includes("任务") ||
       q.includes("超时") ||
       q.includes("实验"))
+  )
+    return true;
+  if (
+    catId === "shortcuts" &&
+    (q.includes("short") ||
+      q.includes("key") ||
+      q.includes("bind") ||
+      q.includes("hotkey") ||
+      q.includes("快捷") ||
+      q.includes("按键") ||
+      q.includes("键盘") ||
+      q.includes("ctrl") ||
+      q.includes("cmd") ||
+      q.includes("alt") ||
+      q.includes("shift"))
   )
     return true;
   if (
