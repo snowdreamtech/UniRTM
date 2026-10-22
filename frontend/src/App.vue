@@ -130,12 +130,11 @@ import { useCredentialBroker } from "./composables/useCredentialBroker";
 import ScopeSwitcher from "./components/common/ScopeSwitcher.vue";
 import PassphraseModal from "./components/common/PassphraseModal.vue";
 import CommandPaletteModal from "./components/common/CommandPaletteModal.vue";
-import { toggleScope } from "./composables/useAppScope";
 
 const { startBrokerPolling, stopBrokerPolling } = useCredentialBroker();
 
 const { checkUpdates } = useToolUpdates();
-const { activeScope, syncFromRoute } = useAppScope();
+const { activeScope, syncFromRoute, toggleScope } = useAppScope();
 
 export interface AppConfig {
   language?: string;

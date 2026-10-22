@@ -86,6 +86,7 @@ import { ref, computed, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "../../i18n";
 import TechIcon from "./TechIcon.vue";
+import type { DrawerTab } from "../layout/BottomDrawer.vue";
 
 export interface CommandItem {
   id: string;
@@ -106,7 +107,7 @@ const emit = defineEmits<{
   (e: "close"): void;
   (e: "select-tab", tabId: string): void;
   (e: "toggle-theme"): void;
-  (e: "open-drawer", tab?: string): void;
+  (e: "open-drawer", tab?: DrawerTab): void;
   (e: "toggle-scope"): void;
 }>();
 
