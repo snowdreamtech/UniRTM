@@ -1,7 +1,7 @@
 <template>
   <div class="view-container dashboard-view" id="view-dashboard" @contextmenu.prevent>
     <!-- Hero Cockpit Banner -->
-    <div class="hero-cockpit glass-card">
+    <div class="hero-cockpit glass-card" id="dashboard-section-hero">
       <div class="hero-badge">
         <span class="sparkle-icon">
           <TechIcon id="workbench:sparkle" :size="14" />
@@ -17,7 +17,7 @@
       </p>
 
       <!-- 4 KPI Metrics Grid -->
-      <div class="kpi-grid">
+      <div class="kpi-grid" id="dashboard-section-kpi">
         <div class="kpi-card" @click="$emit('select-tab', 'tools')">
           <span class="kpi-icon"><TechIcon id="workbench:tools" :size="30" /></span>
           <div class="kpi-info">
@@ -55,7 +55,7 @@
     <!-- 2 Column Layout: Runtime Details & Quick Actions -->
     <div class="dash-columns">
       <!-- Left Card: Runtime Environment Specs -->
-      <div class="glass-card dash-card">
+      <div class="glass-card dash-card" id="dashboard-section-specs">
         <div class="card-title-row">
           <div class="card-icon cyan"><TechIcon id="workbench:dashboard" :size="24" /></div>
           <div>
@@ -88,7 +88,7 @@
       </div>
 
       <!-- Right Card: Network & Connectivity Diagnosis -->
-      <div class="glass-card dash-card">
+      <div class="glass-card dash-card" id="dashboard-section-network">
         <div class="card-title-row">
           <div class="card-icon purple"><TechIcon id="workbench:runtimes" :size="24" /></div>
           <div>
@@ -422,5 +422,11 @@ async function handleTestNetwork() {
 
 .text-success {
   color: var(--success);
+}
+
+.highlight-pulse {
+  outline: 2px solid var(--color-primary, #00f0ff) !important;
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.45) !important;
+  transition: all 0.3s ease !important;
 }
 </style>

@@ -32,7 +32,7 @@
           :key="item.id"
           class="sidebar-item"
           :class="{ active: activeSubItem === item.id }"
-          @click="handleSubItemClick(item.id)"
+          @click="handleDashboardItemClick(item)"
           @contextmenu.prevent
         >
           <span class="item-icon"><TechIcon :id="item.icon" :size="20" /></span>
@@ -615,18 +615,74 @@ const searchPlaceholder = computed(() => {
   return t("common.filter") || "Filter...";
 });
 
-// Dashboard mock items
-const dashboardItems = [
-  { id: "overview", icon: "workbench:dashboard", label: "Project Status", meta: "100%" },
-  { id: "specs", icon: "go", label: "Runtime Specs", meta: "Go 1.24" },
-  { id: "connectivity", icon: "workbench:runtimes", label: "Network & Mirrors", meta: "OK" },
-  { id: "actions", icon: "workbench:tasks", label: "Quick Actions", meta: "3" },
-];
+// Dashboard items (Synchronized with workspace dashboard sections)
+const dashboardItems = computed(() => [
+  {
+    id: "overview",
+    sectionId: "dashboard-section-hero",
+    icon: "workbench:dashboard",
+    label: t("sidebar.group_overview") || "项目总览",
+    meta: activeScope.value === "user" ? "User" : "Workspace",
+  },
+  {
+    id: "tools",
+    sectionId: "dashboard-section-kpi",
+    icon: "workbench:tools",
+    label: t("dashboard.kpi_tools") || "活跃工具",
+    meta: `${rawTools.value.length} 项`,
+  },
+  {
+    id: "tasks",
+    sectionId: "dashboard-section-kpi",
+    icon: "workbench:tasks",
+    label: t("dashboard.kpi_tasks") || "项目任务",
+    meta: `${rawTasks.value.length} 个`,
+  },
+  {
+    id: "specs",
+    sectionId: "dashboard-section-specs",
+    icon: "go",
+    label: t("hello.system_title") || "运行环境",
+    meta: "Go 1.24",
+  },
+  {
+    id: "network",
+    sectionId: "dashboard-section-network",
+    icon: "workbench:runtimes",
+    label: t("hello.network_title") || "网络与代理",
+    meta: "OK",
+  },
+  {
+    id: "security",
+    sectionId: "dashboard-section-kpi",
+    icon: "workbench:doctor",
+    label: t("dashboard.kpi_security") || "锁文件与安全",
+    meta: "100%",
+  },
+]);
 
 const filteredDashboardItems = computed(() => {
-  if (!searchQuery.value) return dashboardItems;
-  return dashboardItems.filter((i) => i.label.toLowerCase().includes(searchQuery.value.toLowerCase()));
+  if (!searchQuery.value) return dashboardItems.value;
+  const q = searchQuery.value.toLowerCase().trim();
+  return dashboardItems.value.filter(
+    (i) =>
+      i.label.toLowerCase().includes(q) ||
+      (i.meta && i.meta.toLowerCase().includes(q)) ||
+      i.id.toLowerCase().includes(q)
+  );
 });
+
+function handleDashboardItemClick(item: any) {
+  handleSubItemClick(item.id);
+  const target = document.getElementById(item.sectionId);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.classList.add("highlight-pulse");
+    setTimeout(() => {
+      target.classList.remove("highlight-pulse");
+    }, 1500);
+  }
+}
 
 // Tools items (Synchronized with active toolchains and runtimes by Scope)
 const isMissingExpanded = ref(true);
