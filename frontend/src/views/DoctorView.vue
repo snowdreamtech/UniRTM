@@ -409,7 +409,8 @@ async function fetchDoctorReport() {
   emit("log-event", "INFO", "正在触发 UniRTM Doctor 系统诊断...", undefined, "doctor");
   try {
     const res = await fetch("/api/doctor");
-    if (res.ok) {
+    const contentType = res.headers.get("content-type") || "";
+    if (res.ok && contentType.includes("json")) {
       const data: DoctorReport = await res.json();
       report.value = data;
       const d = new Date(data.timestamp ? data.timestamp * 1000 : Date.now());
@@ -422,7 +423,7 @@ async function fetchDoctorReport() {
         "doctor"
       );
     } else {
-      showToast("获取诊断数据失败", "error");
+      showToast("诊断接口未就绪或未返回 JSON", "error");
       emit("log-event", "ERROR", `[Doctor] 诊断接口请求失败 (HTTP ${res.status})`, undefined, "doctor");
     }
   } catch (err: any) {

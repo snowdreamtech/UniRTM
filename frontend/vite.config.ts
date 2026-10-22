@@ -366,6 +366,202 @@ export default defineConfig({
             return;
           }
 
+          // ─── Doctor System Diagnostic API ───────────────────────────────
+          if (req.url === "/api/doctor" || req.url?.startsWith("/api/doctor?")) {
+            let version = "0.35.0";
+            let commit = "dev";
+            let buildTime = new Date().toISOString().slice(0, 10);
+
+            try {
+              const versionFile = path.join(rootDir, "VERSION");
+              if (fs.existsSync(versionFile)) {
+                const lines = fs.readFileSync(versionFile, "utf-8").split("\n");
+                for (const l of lines) {
+                  const tr = l.trim();
+                  if (tr && !tr.startsWith("#")) {
+                    version = tr.replace(/^v/, "");
+                    break;
+                  }
+                }
+              }
+            } catch {}
+
+            try {
+              const gitRev = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+                cwd: rootDir,
+                encoding: "utf-8",
+                timeout: 2000,
+              }).trim();
+              if (gitRev) commit = gitRev;
+            } catch {}
+
+            try {
+              const gitDate = execFileSync("git", ["log", "-1", "--format=%cs"], {
+                cwd: rootDir,
+                encoding: "utf-8",
+                timeout: 2000,
+              }).trim();
+              if (gitDate) buildTime = gitDate;
+            } catch {}
+
+            const home = os.homedir();
+            const shimsDir = path.join(home, ".local", "share", "unirtm", "shims");
+            const cacheDir = path.join(home, ".cache", "unirtm");
+            const dataDir = path.join(home, ".local", "share", "unirtm");
+            const configDir = path.join(home, ".config", "unirtm");
+
+            const pathEnv = process.env.PATH || "";
+            const shimsOnPath = pathEnv.split(path.delimiter).some((p) => p.toLowerCase() === shimsDir.toLowerCase());
+            const isActivated = !!process.env.ACTIVE || !!process.env.UNIRTM_ACTIVE;
+
+            // Tasks discovery
+            const discoveredTasks: Array<{ name: string; command: string; description: string }> = [];
+            try {
+              const wsToml = path.join(rootDir, ".unirtm.toml");
+              if (fs.existsSync(wsToml)) {
+                const tomlText = fs.readFileSync(wsToml, "utf-8");
+                const taskSectionRegex = /\[tasks\.([^\]]+)\]([\s\S]*?)(?=\n\[|$)/g;
+                let match;
+                while ((match = taskSectionRegex.exec(tomlText)) !== null) {
+                  const tName = match[1].trim();
+                  const body = match[2];
+                  const descMatch = body.match(/description\s*=\s*["']([^"']+)["']/);
+                  const runMatch = body.match(/run\s*=\s*(?:\[([^\]]+)\]|["']([^"']+)["'])/);
+                  let cmd = "";
+                  if (runMatch) {
+                    if (runMatch[1]) {
+                      cmd = runMatch[1]
+                        .split(",")
+                        .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+                        .join(" && ");
+                    } else if (runMatch[2]) {
+                      cmd = runMatch[2];
+                    }
+                  }
+                  discoveredTasks.push({
+                    name: tName,
+                    command: cmd || tName,
+                    description: descMatch ? descMatch[1] : "",
+                  });
+                }
+              }
+            } catch {}
+
+            // Calculate dir sizes safely
+            const getDirSizeText = (dirPath: string): string => {
+              try {
+                if (!fs.existsSync(dirPath)) return "-";
+                const out = execFileSync("du", ["-sh", dirPath], { encoding: "utf-8", timeout: 3000 });
+                return out.trim().split(/\s+/)[0] || "-";
+              } catch {
+                return "-";
+              }
+            };
+
+            const dirs = [
+              { type: "cache", path: cacheDir, size: getDirSizeText(cacheDir) },
+              { type: "config", path: configDir, size: "-" },
+              { type: "data", path: dataDir, size: getDirSizeText(dataDir) },
+              { type: "shims", path: shimsDir, size: getDirSizeText(shimsDir) },
+            ];
+
+            const dbPath = path.join(dataDir, "unirtm.db");
+            const dbExists = fs.existsSync(dbPath);
+            let dbSize = "-";
+            if (dbExists) {
+              try {
+                const st = fs.statSync(dbPath);
+                dbSize = `${(st.size / 1024).toFixed(1)} K`;
+              } catch {}
+            }
+
+            const configs = [];
+            const wsConfig = path.join(rootDir, ".unirtm.toml");
+            if (fs.existsSync(wsConfig)) {
+              configs.push({ path: wsConfig, loaded: true, scope: "workspace" });
+            }
+            const globalConfig = path.join(configDir, "unirtm.toml");
+            if (fs.existsSync(globalConfig)) {
+              configs.push({ path: globalConfig, loaded: true, scope: "global" });
+            }
+
+            const suggestions = [];
+            let score = 100;
+
+            if (!shimsOnPath) {
+              suggestions.push({
+                id: "shims-missing",
+                severity: "warning",
+                message: "UniRTM shims 目录未添加到系统 PATH 环境变量中",
+                command: "unirtm enable --shims",
+                actionable: true,
+              });
+              score -= 10;
+            }
+
+            if (!isActivated) {
+              suggestions.push({
+                id: "not-activated",
+                severity: "warning",
+                message: "当前 shell 环境未激活 UniRTM 自动代理路由",
+                command: "unirtm enable --shims",
+                actionable: true,
+              });
+              score -= 10;
+            }
+
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                timestamp: Math.floor(Date.now() / 1000),
+                score: Math.max(0, score),
+                status: score >= 80 ? "healthy" : "warning",
+                core: {
+                  version: `v${version}`,
+                  commit: commit,
+                  activated: isActivated,
+                  shims_on_path: shimsOnPath,
+                  shims_dir: shimsDir,
+                  trust_status: "trusted",
+                },
+                build: {
+                  target: `${process.platform}/${process.arch}`,
+                  go_version: "go1.27.0",
+                  built: buildTime,
+                  features: ["SQLITE", "OPENSSL", "GPG", "VFOX_COMPAT"],
+                },
+                context: {
+                  shell: process.env.SHELL || "/bin/bash",
+                  shell_version: "5.2.37",
+                  editor: process.env.EDITOR || "vim",
+                  editor_source: "via system default",
+                  work_dir: rootDir,
+                  active_env: "base",
+                },
+                directories: dirs,
+                configs: configs,
+                settings: [],
+                backends: ["asdf", "cargo", "gem", "github", "go", "npm", "pipx", "ubi", "vfox"],
+                tools: [],
+                env_vars: [],
+                tasks: discoveredTasks,
+                health: {
+                  database_path: dbPath,
+                  database_size: dbSize,
+                  database_ok: true,
+                  github_connected: true,
+                  github_status_code: 200,
+                  github_rate_limit: 5000,
+                  github_rate_remaining: 4950,
+                  github_rate_reset: Math.floor(Date.now() / 1000) + 1800,
+                  github_rate_reset_text: "30m",
+                },
+                suggestions: suggestions,
+              })
+            );
+            return;
+          }
+
           if (
             (req.url === "/api/tools/migrate-legacy" || req.url === "/api/runtimes/migrate-legacy") &&
             req.method === "POST"
