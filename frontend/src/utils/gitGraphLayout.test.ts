@@ -165,4 +165,72 @@ describe("gitGraphLayout", () => {
     expect(getLaneColor(0)).toBe(GRAPH_COLORS[0]);
     expect(getLaneColor(GRAPH_COLORS.length)).toBe(GRAPH_COLORS[0]);
   });
+
+  it("does not leak lanes when commits are filtered and parents are absent", () => {
+    // Simulates conventional commit filter where intermediate parents are filtered out
+    const filteredCommits: GitGraphCommit[] = [
+      {
+        hash: "feat3",
+        shortHash: "feat3",
+        parents: ["fix2"], // "fix2" is filtered out and NOT in this list
+        author: "Alice",
+        email: "alice@example.com",
+        timestamp: 3000,
+        message: "feat: feature 3",
+        refs: [],
+      },
+      {
+        hash: "feat2",
+        shortHash: "feat2",
+        parents: ["fix1"], // "fix1" is filtered out and NOT in this list
+        author: "Alice",
+        email: "alice@example.com",
+        timestamp: 2000,
+        message: "feat: feature 2",
+        refs: [],
+      },
+      {
+        hash: "feat1",
+        shortHash: "feat1",
+        parents: ["root"], // "root" is filtered out
+        author: "Alice",
+        email: "alice@example.com",
+        timestamp: 1000,
+        message: "feat: feature 1",
+        refs: [],
+      },
+    ];
+
+    const res = layoutGitGraph(filteredCommits);
+    // All commits should reuse lane 0 without drifting to lane 1, 2, ...
+    expect(res.maxLane).toBe(0);
+    expect(res.nodes[0].lane).toBe(0);
+    expect(res.nodes[1].lane).toBe(0);
+    expect(res.nodes[2].lane).toBe(0);
+    expect(res.width).toBeLessThanOrEqual(220);
+  });
+
+  it("strictly enforces maxWidth and maxLanes limits", () => {
+    // Generate many commits branching out
+    const commits: GitGraphCommit[] = [];
+    for (let i = 0; i < 20; i++) {
+      commits.push({
+        hash: `c${i}`,
+        shortHash: `c${i}`,
+        parents: [],
+        author: "Alice",
+        email: "alice@example.com",
+        timestamp: 1000 + i,
+        message: `Commit ${i}`,
+        refs: [],
+      });
+    }
+
+    const res = layoutGitGraph(commits, { maxLanes: 6, maxWidth: 150 });
+    expect(res.maxLane).toBeLessThanOrEqual(5);
+    expect(res.width).toBeLessThanOrEqual(150);
+    res.nodes.forEach((n) => {
+      expect(n.lane).toBeLessThanOrEqual(5);
+    });
+  });
 });

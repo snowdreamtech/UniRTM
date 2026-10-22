@@ -1384,6 +1384,9 @@ function getRowTop(idx: number): number {
   return idx * ROW_HEIGHT + EXPANDED_PANEL_HEIGHT;
 }
 
+const MIN_GRAPH_COL_WIDTH = 68;
+const MAX_GRAPH_COL_WIDTH = 220;
+
 // Computed SVG Graph Layout
 const graphLayout = computed(() => {
   return layoutGitGraph(filteredCommits.value, {
@@ -1392,11 +1395,13 @@ const graphLayout = computed(() => {
     startX: 16,
     expandedIndex: expandedCommitIndex.value,
     expandedHeight: EXPANDED_PANEL_HEIGHT,
+    maxLanes: 10,
+    maxWidth: MAX_GRAPH_COL_WIDTH,
   });
 });
 
 const graphColWidth = computed(() => {
-  return Math.max(68, graphLayout.value.width);
+  return Math.min(MAX_GRAPH_COL_WIDTH, Math.max(MIN_GRAPH_COL_WIDTH, graphLayout.value.width));
 });
 
 const LOAD_MORE_HEIGHT = 46;
@@ -2475,6 +2480,8 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   left: 0;
   z-index: 5;
   pointer-events: none;
+  max-width: 220px;
+  overflow: hidden;
 }
 
 .node-head-ring {
@@ -2542,6 +2549,8 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
 
 .col-graph {
   flex-shrink: 0;
+  max-width: 220px;
+  overflow: hidden;
 }
 
 .col-desc {

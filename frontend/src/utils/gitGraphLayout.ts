@@ -50,6 +50,8 @@ export interface GraphLayoutOptions {
   startX?: number;
   expandedIndex?: number;
   expandedHeight?: number;
+  maxLanes?: number;
+  maxWidth?: number;
 }
 
 /**
@@ -59,6 +61,8 @@ export function layoutGitGraph(commits: GitGraphCommit[], options: GraphLayoutOp
   const rowHeight = options.rowHeight ?? 34;
   const laneWidth = options.laneWidth ?? 18;
   const startX = options.startX ?? 16;
+  const maxLanes = options.maxLanes ?? 10;
+  const maxWidth = options.maxWidth ?? 220;
   const expandedIndex = options.expandedIndex;
   const expandedHeight = expandedIndex !== undefined && expandedIndex >= 0 ? (options.expandedHeight ?? 280) : 0;
 
@@ -100,19 +104,22 @@ export function layoutGitGraph(commits: GitGraphCommit[], options: GraphLayoutOp
       // Find first empty lane or create new lane
       lane = activeLanes.indexOf(null);
       if (lane === -1) {
-        lane = activeLanes.length;
-        activeLanes.push(null);
+        lane = Math.min(maxLanes - 1, activeLanes.length);
+        if (lane === activeLanes.length) {
+          activeLanes.push(null);
+        }
       }
     }
 
+    lane = Math.min(maxLanes - 1, lane);
     commitLanes.set(commit.hash, lane);
     maxLane = Math.max(maxLane, lane);
 
     // Free current commit from lane
     activeLanes[lane] = null;
 
-    // Allocate lanes for parents
-    const parents = commit.parents || [];
+    // Allocate lanes only for parents that exist in the commit list (prevents lane leakage on filtered commits)
+    const parents = (commit.parents || []).filter((p) => commitIndexMap.has(p));
     if (parents.length > 0) {
       // First parent inherits current lane if not already assigned
       const firstParent = parents[0];
@@ -126,8 +133,10 @@ export function layoutGitGraph(commits: GitGraphCommit[], options: GraphLayoutOp
         if (!activeLanes.includes(parent)) {
           let emptyLane = activeLanes.indexOf(null);
           if (emptyLane === -1) {
-            emptyLane = activeLanes.length;
-            activeLanes.push(null);
+            emptyLane = Math.min(maxLanes - 1, activeLanes.length);
+            if (emptyLane === activeLanes.length) {
+              activeLanes.push(null);
+            }
           }
           activeLanes[emptyLane] = parent;
           maxLane = Math.max(maxLane, emptyLane);
@@ -142,7 +151,8 @@ export function layoutGitGraph(commits: GitGraphCommit[], options: GraphLayoutOp
 
   for (let i = 0; i < commits.length; i++) {
     const commit = commits[i];
-    const lane = commitLanes.get(commit.hash) ?? 0;
+    const rawLane = commitLanes.get(commit.hash) ?? 0;
+    const lane = Math.min(maxLanes - 1, rawLane);
     const x = startX + lane * laneWidth;
     const y = getNodeY(i);
     const color = getLaneColor(lane);
@@ -163,7 +173,8 @@ export function layoutGitGraph(commits: GitGraphCommit[], options: GraphLayoutOp
       const parentIdx = commitIndexMap.get(parentHash);
 
       if (parentIdx !== undefined) {
-        const parentLane = commitLanes.get(parentHash) ?? lane;
+        const rawParentLane = commitLanes.get(parentHash) ?? lane;
+        const parentLane = Math.min(maxLanes - 1, rawParentLane);
         const parentX = startX + parentLane * laneWidth;
         const parentY = getNodeY(parentIdx);
         const pathColor = pIdx === 0 ? color : getLaneColor(parentLane);
@@ -194,7 +205,9 @@ export function layoutGitGraph(commits: GitGraphCommit[], options: GraphLayoutOp
     }
   }
 
-  const width = Math.max(48, startX + (maxLane + 1) * laneWidth + 12);
+  const effectiveMaxLane = Math.min(maxLanes - 1, maxLane);
+  const calculatedWidth = startX + (effectiveMaxLane + 1) * laneWidth + 12;
+  const width = Math.min(maxWidth, Math.max(48, calculatedWidth));
   const height = Math.max(rowHeight, commits.length * rowHeight + expandedHeight);
 
   return {
@@ -203,6 +216,6 @@ export function layoutGitGraph(commits: GitGraphCommit[], options: GraphLayoutOp
     width,
     height,
     rowHeight,
-    maxLane,
+    maxLane: effectiveMaxLane,
   };
 }
