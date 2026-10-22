@@ -54,7 +54,7 @@
           </span>
           <template v-else>
             <span class="score-number">{{ report ? report.score : "--" }}</span>
-            <span class="score-unit">/100</span>
+            <span class="score-unit">/ 100</span>
           </template>
         </div>
         <div class="score-text">
@@ -612,15 +612,17 @@ onMounted(() => {
 }
 
 .score-circle {
-  width: 76px;
-  height: 76px;
+  width: 82px;
+  height: 82px;
   border-radius: 50%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
   border: 3.5px solid;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .score-circle.score-perfect {
@@ -648,17 +650,21 @@ onMounted(() => {
 }
 
 .score-number {
-  font-size: 1.75rem;
+  font-size: 1.55rem;
   font-weight: 800;
   font-family: monospace;
   line-height: 1;
+  letter-spacing: -0.03em;
 }
 
 .score-unit {
-  font-size: 0.72rem;
+  font-size: 0.65rem;
+  font-weight: 600;
   color: var(--text-muted);
-  margin-top: 8px;
-  margin-left: 1px;
+  line-height: 1;
+  margin-top: 3px;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
 }
 
 .score-text {
