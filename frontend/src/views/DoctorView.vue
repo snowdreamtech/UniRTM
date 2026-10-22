@@ -73,10 +73,10 @@
             <template v-if="report">
               核心版本: {{ report.core.version }} • 运行时代理:
               {{ report.core.shims_on_path ? "已注入 PATH" : "未注入 PATH" }} • 数据库:
-              {{ report.health.database_ok ? "正常" : "异常" }} • GitHub API:
-              {{ report.health.github_connected ? `连接正常 (HTTP ${report.health.github_status_code})` : "未连接" }} •
-              全球互联:
-              {{ report.health.google_connected ? "Google 畅通" : "直连模式" }}
+              {{ report.health.database_ok ? "正常" : "异常" }} • 网络代理:
+              {{ report.health.proxy_configured ? "已配置代理" : "系统直连" }} • 全球互联:
+              {{ report.health.google_connected ? "Google 畅通" : "直连模式" }} • GitHub API:
+              {{ report.health.github_connected ? `连接正常 (HTTP ${report.health.github_status_code})` : "未连接" }}
             </template>
             <template v-else> 正在解析本地运行时与环境状态... </template>
           </p>
@@ -179,12 +179,14 @@
           </span>
         </div>
         <div class="card-kv-list">
+          <!-- 1. 网络代理环境 -->
           <div class="kv-row">
-            <span class="kv-key">GitHub 联通状态</span>
-            <span class="kv-val font-mono" :style="{ color: report.health.github_connected ? '#10b981' : '#ef4444' }">
-              ● {{ report.health.github_connected ? `HTTP ${report.health.github_status_code} (已连通)` : "未连接" }}
+            <span class="kv-key">网络代理环境</span>
+            <span class="kv-val font-mono" :class="{ highlight: !!report.health.proxy_configured }">
+              {{ report.health.proxy_configured || "系统直连 (未检测到代理)" }}
             </span>
           </div>
+          <!-- 2. Google 外网联通 -->
           <div class="kv-row">
             <span class="kv-key">Google 外网联通</span>
             <span
@@ -199,13 +201,14 @@
               }}
             </span>
           </div>
+          <!-- 3. GitHub 联通状态 -->
           <div class="kv-row">
-            <span class="kv-key">网络代理环境</span>
-            <span class="kv-val font-mono" :class="{ highlight: !!report.health.proxy_configured }">
-              {{ report.health.proxy_configured || "系统直连 (未检测到代理)" }}
+            <span class="kv-key">GitHub 联通状态</span>
+            <span class="kv-val font-mono" :style="{ color: report.health.github_connected ? '#10b981' : '#ef4444' }">
+              ● {{ report.health.github_connected ? `HTTP ${report.health.github_status_code} (已连通)` : "未连接" }}
             </span>
           </div>
-          <!-- Rate Limit Progress Bar -->
+          <!-- 4. GitHub API 剩余配额配置 -->
           <div v-if="report.health.github_rate_limit > 0" class="rate-limit-section">
             <div class="rate-limit-header font-mono">
               <span>GitHub API 剩余配额</span>
@@ -228,7 +231,7 @@
             </div>
           </div>
           <div v-else class="kv-row">
-            <span class="kv-key">API 速率限制</span>
+            <span class="kv-key">GitHub API 配额配置</span>
             <span class="kv-val font-mono">匿名/未返回配额</span>
           </div>
         </div>
