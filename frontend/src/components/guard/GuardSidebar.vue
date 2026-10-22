@@ -1,5 +1,5 @@
 <template>
-  <div class="guard-sidebar" id="guard-sidebar-panel">
+  <div class="guard-sidebar" id="guard-sidebar-panel" @contextmenu.prevent>
     <!-- Quick Status Banner -->
     <div class="sidebar-section">
       <div class="section-header">

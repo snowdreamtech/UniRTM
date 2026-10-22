@@ -1,5 +1,5 @@
 <template>
-  <div class="guard-view-container" id="quality-guard-view">
+  <div class="guard-view-container" id="quality-guard-view" @contextmenu.prevent>
     <!-- Top Action Header -->
     <header class="guard-header">
       <div class="header-left">
