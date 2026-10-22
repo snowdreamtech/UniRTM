@@ -441,11 +441,14 @@
             <div class="title-with-icon">
               <span class="codicon codicon-history"></span>
               <span class="box-title">{{ t("scm.history.title") }}</span>
+              <span v-if="commits.length > 0" class="history-count-badge font-mono">{{ commits.length }}</span>
             </div>
-            <button class="action-pill small" @click="fetchLog">
-              <span class="codicon codicon-refresh"></span>
-              <span>{{ t("common.refresh") }}</span>
-            </button>
+            <div class="history-header-actions">
+              <button class="action-pill small" :title="t('common.refresh')" @click="fetchLog">
+                <span class="codicon codicon-refresh"></span>
+                <span>{{ t("common.refresh") }}</span>
+              </button>
+            </div>
           </div>
           <div class="commits-list">
             <div v-for="c in commits" :key="c.hash" class="commit-item">
@@ -2113,11 +2116,56 @@ onBeforeUnmount(() => {
   font-size: 11px;
 }
 
+.history-count-badge {
+  font-size: 11px;
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--accent-cyan);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+:root[data-theme="light"] .history-count-badge {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.history-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .commits-list {
   display: flex;
   flex-direction: column;
-  max-height: 280px;
+  min-height: 480px;
+  max-height: 640px;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.commits-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.commits-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.commits-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+:root[data-theme="light"] .commits-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.commits-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.5);
 }
 
 .commit-item {
@@ -2125,9 +2173,11 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   padding: 8px 14px;
+  min-height: 38px;
   border-bottom: 1px solid var(--card-border);
   font-size: 12px;
   transition: background 0.15s ease;
+  white-space: nowrap;
 }
 
 .commit-item:hover {
@@ -2138,6 +2188,7 @@ onBeforeUnmount(() => {
   color: var(--accent-cyan);
   font-weight: 600;
   min-width: 65px;
+  flex-shrink: 0;
 }
 
 .gpg-mini-badge {
@@ -2192,6 +2243,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .commit-meta {
@@ -2200,10 +2252,17 @@ onBeforeUnmount(() => {
   gap: 12px;
   color: var(--text-muted);
   font-size: 11px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .commit-author {
   color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.commit-time {
+  white-space: nowrap;
 }
 
 .header-right-group {

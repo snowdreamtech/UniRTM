@@ -4994,7 +4994,7 @@ print(json.dumps({
                 const out = runGit([
                   "log",
                   "-n",
-                  "30",
+                  "50",
                   "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s%x09%G?%x09%GK%x09%GS%x09%GF",
                 ]);
                 const commits = out

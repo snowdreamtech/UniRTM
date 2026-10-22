@@ -4604,7 +4604,7 @@ func handleGitLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := runGitInReq(r, "log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s%x09%G?%x09%GK%x09%GS%x09%GF")
+	out, err := runGitInReq(r, "log", "-n", "50", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s%x09%G?%x09%GK%x09%GS%x09%GF")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
