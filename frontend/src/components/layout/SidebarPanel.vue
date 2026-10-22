@@ -259,11 +259,12 @@
 
       <!-- MARKETPLACE Navigation Items -->
       <template v-if="currentTab === 'marketplace'">
-        <div class="nav-group-title">{{ t("sidebar.group_marketplace") || "MARKETPLACE" }}</div>
+        <div class="nav-group-title" @contextmenu.prevent>{{ t("sidebar.group_marketplace") || "MARKETPLACE" }}</div>
         <button
           class="sidebar-item"
           :class="{ active: activeSubItem === 'themes' || (!activeSubItem && currentTab === 'marketplace') }"
           @click="handleSubItemClick('themes')"
+          @contextmenu.prevent
         >
           <span class="item-icon"><TechIcon id="workbench:marketplace" :size="20" /></span>
           <div class="item-dual">
@@ -276,6 +277,7 @@
           class="sidebar-item"
           :class="{ active: activeSubItem === 'plugins' }"
           @click="handleSubItemClick('plugins')"
+          @contextmenu.prevent
         >
           <span class="item-icon"><TechIcon id="workbench:tools" :size="20" /></span>
           <div class="item-dual">

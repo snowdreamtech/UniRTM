@@ -1,5 +1,5 @@
 <template>
-  <div class="view-container marketplace-view" id="view-marketplace">
+  <div class="view-container marketplace-view" id="view-marketplace" @contextmenu.prevent>
     <!-- VIEW MODE 1: EXTENSION DETAIL PAGE -->
     <div v-if="route.params.namespace && route.params.name" class="market-detail-container">
       <!-- Breadcrumb Bar -->
