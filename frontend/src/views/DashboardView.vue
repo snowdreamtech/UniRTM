@@ -1,5 +1,5 @@
 <template>
-  <div class="view-container dashboard-view" id="view-dashboard">
+  <div class="view-container dashboard-view" id="view-dashboard" @contextmenu.prevent>
     <!-- Hero Cockpit Banner -->
     <div class="hero-cockpit glass-card">
       <div class="hero-badge">

@@ -26,13 +26,14 @@
     <div class="sidebar-content-list">
       <!-- DASHBOARD Navigation Items -->
       <template v-if="currentTab === 'dashboard'">
-        <div class="nav-group-title">{{ t("sidebar.group_overview") || "PROJECT OVERVIEW" }}</div>
+        <div class="nav-group-title" @contextmenu.prevent>{{ t("sidebar.group_overview") || "PROJECT OVERVIEW" }}</div>
         <button
           v-for="item in filteredDashboardItems"
           :key="item.id"
           class="sidebar-item"
           :class="{ active: activeSubItem === item.id }"
           @click="handleSubItemClick(item.id)"
+          @contextmenu.prevent
         >
           <span class="item-icon"><TechIcon :id="item.icon" :size="20" /></span>
           <span class="item-label">{{ item.label }}</span>
