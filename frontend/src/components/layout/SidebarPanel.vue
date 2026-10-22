@@ -287,17 +287,17 @@
 
       <!-- DOCTOR Navigation Items -->
       <template v-if="currentTab === 'doctor'">
-        <div class="nav-group-title">{{ t("sidebar.group_doctor") || "DIAGNOSTIC CHECKS" }}</div>
+        <div class="nav-group-title">{{ t("sidebar.group_doctor") || "系统诊断" }}</div>
         <button
-          v-for="check in doctorChecks"
+          v-for="check in filteredDoctorChecks"
           :key="check.id"
           class="sidebar-item"
           :class="{ active: activeSubItem === check.id }"
-          @click="handleSubItemClick(check.id)"
+          @click="handleDoctorItemClick(check.id)"
         >
           <span class="item-icon"><TechIcon :id="check.icon" :size="20" /></span>
           <span class="item-label">{{ check.label }}</span>
-          <span class="status-indicator-dot success">●</span>
+          <span class="status-indicator-dot" :class="check.status">●</span>
         </button>
       </template>
 
@@ -444,7 +444,7 @@ function handlePointerDown(e: PointerEvent) {
 
 const { syncFromToolsList, updateResults } = useToolUpdates();
 const { activeScope } = useToolScope();
-const { triggerToolAction, onToolsChanged, triggerTaskAction, onTasksChanged } = useWorkspaceBus();
+const { triggerToolAction, onToolsChanged, triggerTaskAction, onTasksChanged, onDoctorChanged } = useWorkspaceBus();
 
 const isToolContextMenuVisible = ref(false);
 const toolContextMenuPosition = ref({ x: 0, y: 0 });
@@ -650,6 +650,8 @@ watch(
       fetchSidebarTasks();
     } else if (newTab === "environments") {
       fetchSidebarEnvs();
+    } else if (newTab === "doctor") {
+      fetchSidebarDoctorStatus();
     }
   }
 );
@@ -685,13 +687,79 @@ const filteredEnvItems = computed(() => {
   return rawEnvs.value.filter((e) => e.name.toLowerCase().includes(q) || e.value.toLowerCase().includes(q));
 });
 
-// Doctor checks
-const doctorChecks = [
-  { id: "os-arch", icon: "workbench:dashboard", label: "OS & Arch Support" },
-  { id: "lockfile", icon: "workbench:lock", label: "Lockfile Hygiene" },
-  { id: "env-sandbox", icon: "workbench:config", label: "Environment Isolation" },
-  { id: "mirror-speed", icon: "workbench:tasks", label: "Mirror Latency" },
-];
+// Doctor checks - 真实对应 UniRTM 全景诊断 5 大核心板块
+interface DoctorCheckItem {
+  id: string;
+  icon: string;
+  label: string;
+  status: "success" | "warning" | "error";
+}
+
+const doctorReport = ref<any>(null);
+
+async function fetchSidebarDoctorStatus() {
+  try {
+    const res = await fetch("/api/doctor");
+    const contentType = res.headers.get("content-type") || "";
+    if (res.ok && contentType.includes("json")) {
+      doctorReport.value = await res.json();
+    }
+  } catch {}
+}
+
+const doctorChecks = computed<DoctorCheckItem[]>(() => {
+  const r = doctorReport.value;
+  return [
+    {
+      id: "core",
+      icon: "workbench:dashboard",
+      label: t("doctor.dim_core") || "核心与执行环境",
+      status: r ? (r.core?.shims_on_path ? "success" : "warning") : "success",
+    },
+    {
+      id: "network",
+      icon: "workbench:runtimes",
+      label: t("doctor.dim_network") || "网络联通与 API 配额",
+      status: r ? (r.health?.github_connected ? "success" : "error") : "success",
+    },
+    {
+      id: "directories",
+      icon: "workbench:folder",
+      label: t("doctor.dim_directories") || "磁盘占用与存储路径",
+      status: "success",
+    },
+    {
+      id: "database",
+      icon: "workbench:settings",
+      label: t("doctor.dim_database") || "状态数据库与配置",
+      status: r ? (r.health?.database_ok ? "success" : "error") : "success",
+    },
+    {
+      id: "tasks",
+      icon: "workbench:tasks",
+      label: t("doctor.dim_tasks") || "自动化工程任务",
+      status: "success",
+    },
+  ];
+});
+
+const filteredDoctorChecks = computed(() => {
+  if (!searchQuery.value) return doctorChecks.value;
+  const q = searchQuery.value.toLowerCase().trim();
+  return doctorChecks.value.filter((c) => c.label.toLowerCase().includes(q) || c.id.toLowerCase().includes(q));
+});
+
+function handleDoctorItemClick(id: string) {
+  handleSubItemClick(id);
+  const target = document.getElementById("doctor-section-" + id);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.classList.add("highlight-pulse");
+    setTimeout(() => {
+      target.classList.remove("highlight-pulse");
+    }, 1500);
+  }
+}
 
 async function fetchSidebarToolsStatus() {
   try {
@@ -711,13 +779,16 @@ async function fetchSidebarToolsStatus() {
 
 let unsubToolsChanged: (() => void) | null = null;
 let unsubTasksChanged: (() => void) | null = null;
+let unsubDoctorChanged: (() => void) | null = null;
 
 onMounted(async () => {
   fetchSidebarTasks();
   fetchSidebarEnvs();
   fetchSidebarToolsStatus();
+  fetchSidebarDoctorStatus();
   unsubToolsChanged = onToolsChanged(fetchSidebarToolsStatus);
   unsubTasksChanged = onTasksChanged(fetchSidebarTasks);
+  unsubDoctorChanged = onDoctorChanged(fetchSidebarDoctorStatus);
 });
 
 onBeforeUnmount(() => {
@@ -728,6 +799,10 @@ onBeforeUnmount(() => {
   if (unsubTasksChanged) {
     unsubTasksChanged();
     unsubTasksChanged = null;
+  }
+  if (unsubDoctorChanged) {
+    unsubDoctorChanged();
+    unsubDoctorChanged = null;
   }
 });
 </script>
@@ -946,10 +1021,20 @@ onBeforeUnmount(() => {
   line-height: 1;
 }
 
+.status-indicator-dot.success,
 .status-indicator-dot.update {
   color: var(--success, #10b981);
 }
 
+.status-indicator-dot.warning {
+  color: #f59e0b;
+}
+
+.status-indicator-dot.error {
+  color: #ef4444;
+}
+
+[data-theme="light"] .status-indicator-dot.success,
 [data-theme="light"] .status-indicator-dot.update,
 :root[data-theme="light"] .status-indicator-dot.update {
   color: var(--success, #059669);

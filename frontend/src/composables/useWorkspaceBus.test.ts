@@ -210,4 +210,17 @@ describe("useWorkspaceBus", () => {
     bus.notifyTasksChanged();
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  it("handles notifyDoctorChanged broadcasts", () => {
+    const bus = useWorkspaceBus();
+    const listener = vi.fn();
+    const unsub = bus.onDoctorChanged(listener);
+
+    bus.notifyDoctorChanged();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsub();
+    bus.notifyDoctorChanged();
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
 });

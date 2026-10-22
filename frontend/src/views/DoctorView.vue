@@ -116,7 +116,7 @@
     <!-- Diagnostic Details Grid (5 Core Dimensions) -->
     <div v-if="report" class="doctor-grid">
       <!-- 1. Core & Shell Context -->
-      <div class="glass-card doctor-card">
+      <div id="doctor-section-core" class="glass-card doctor-card">
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:dashboard" :size="16" /></span>
@@ -151,7 +151,7 @@
       </div>
 
       <!-- 2. Cloud Network & GitHub Quota -->
-      <div class="glass-card doctor-card">
+      <div id="doctor-section-network" class="glass-card doctor-card">
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:runtimes" :size="16" /></span>
@@ -198,7 +198,7 @@
       </div>
 
       <!-- 3. Storage & Footprint -->
-      <div class="glass-card doctor-card">
+      <div id="doctor-section-directories" class="glass-card doctor-card">
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:folder" :size="16" /></span>
@@ -217,7 +217,7 @@
       </div>
 
       <!-- 4. Database & Configuration -->
-      <div class="glass-card doctor-card">
+      <div id="doctor-section-database" class="glass-card doctor-card">
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:settings" :size="16" /></span>
@@ -252,7 +252,7 @@
       </div>
 
       <!-- 5. Task & Workflow Discovery -->
-      <div class="glass-card doctor-card doctor-card-full">
+      <div id="doctor-section-tasks" class="glass-card doctor-card doctor-card-full">
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:tasks" :size="16" /></span>
@@ -368,7 +368,7 @@ const emit = defineEmits<{
 }>();
 
 const { showToast } = useToast();
-const { sendToTerminal } = useWorkspaceBus();
+const { sendToTerminal, notifyDoctorChanged } = useWorkspaceBus();
 
 const report = ref<DoctorReport | null>(null);
 const isLoading = ref(false);
@@ -415,6 +415,7 @@ async function fetchDoctorReport() {
       report.value = data;
       const d = new Date(data.timestamp ? data.timestamp * 1000 : Date.now());
       lastCheckedTime.value = d.toLocaleTimeString();
+      notifyDoctorChanged();
       emit(
         "log-event",
         data.status === "healthy" ? "SUCCESS" : "WARN",
@@ -814,6 +815,26 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  transition: all 0.25s ease;
+}
+
+.doctor-card.highlight-pulse {
+  animation: pulse-border 1.5s ease-out;
+}
+
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 2px var(--accent-cyan);
+    border-color: var(--accent-cyan);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.4);
+    border-color: var(--accent-cyan);
+  }
+  100% {
+    box-shadow: none;
+    border-color: var(--card-border);
+  }
 }
 
 .doctor-card-full {

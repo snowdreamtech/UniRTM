@@ -68,6 +68,7 @@ type ToolActionListener = (req: ToolActionRequest) => void;
 type ToolsChangeListener = () => void;
 type TaskActionListener = (req: TaskActionRequest) => void;
 type TasksChangeListener = () => void;
+type DoctorChangeListener = () => void;
 
 const lastRevealRequest = ref<RevealRequest | null>(null);
 const currentActiveFilePath = ref<string>("");
@@ -84,6 +85,7 @@ const toolActionListeners = new Set<ToolActionListener>();
 const toolsChangeListeners = new Set<ToolsChangeListener>();
 const taskActionListeners = new Set<TaskActionListener>();
 const tasksChangeListeners = new Set<TasksChangeListener>();
+const doctorChangeListeners = new Set<DoctorChangeListener>();
 
 /**
  * useWorkspaceBus: 轻量级跨组件协同状态总线
@@ -415,6 +417,29 @@ export function useWorkspaceBus() {
   }
 
   /**
+   * 广播系统环境诊断变动
+   */
+  function notifyDoctorChanged(): void {
+    doctorChangeListeners.forEach((fn) => {
+      try {
+        fn();
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in doctor change listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册系统环境诊断变动监听器
+   */
+  function onDoctorChanged(listener: DoctorChangeListener): () => void {
+    doctorChangeListeners.add(listener);
+    return () => {
+      doctorChangeListeners.delete(listener);
+    };
+  }
+
+  /**
    * 清除所有监听器（主要用于单元测试隔离）
    */
   function _clearAllListeners(): void {
@@ -431,6 +456,7 @@ export function useWorkspaceBus() {
     toolsChangeListeners.clear();
     taskActionListeners.clear();
     tasksChangeListeners.clear();
+    doctorChangeListeners.clear();
     lastRevealRequest.value = null;
     currentActiveFilePath.value = "";
   }
@@ -465,6 +491,8 @@ export function useWorkspaceBus() {
     onTaskAction,
     notifyTasksChanged,
     onTasksChanged,
+    notifyDoctorChanged,
+    onDoctorChanged,
     _clearAllListeners,
   };
 }
