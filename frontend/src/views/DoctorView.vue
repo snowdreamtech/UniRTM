@@ -74,7 +74,9 @@
               核心版本: {{ report.core.version }} • 运行时代理:
               {{ report.core.shims_on_path ? "已注入 PATH" : "未注入 PATH" }} • 数据库:
               {{ report.health.database_ok ? "正常" : "异常" }} • GitHub API:
-              {{ report.health.github_connected ? `连接正常 (HTTP ${report.health.github_status_code})` : "未连接" }}
+              {{ report.health.github_connected ? `连接正常 (HTTP ${report.health.github_status_code})` : "未连接" }} •
+              全球互联:
+              {{ report.health.google_connected ? "Google 畅通" : "直连模式" }}
             </template>
             <template v-else> 正在解析本地运行时与环境状态... </template>
           </p>
@@ -157,8 +159,23 @@
             <span class="card-icon"><TechIcon id="workbench:runtimes" :size="16" /></span>
             <span class="card-title">网络联通与 API 配额 (Network)</span>
           </div>
-          <span class="badge-status" :class="report.health.github_connected ? 'pass' : 'fail'">
-            {{ report.health.github_connected ? "GitHub API 正常" : "网络断开" }}
+          <span
+            class="badge-status"
+            :class="
+              report.health.github_connected && report.health.google_connected
+                ? 'pass'
+                : report.health.github_connected
+                  ? 'pass'
+                  : 'fail'
+            "
+          >
+            {{
+              report.health.github_connected && report.health.google_connected
+                ? "全球互联正常"
+                : report.health.github_connected
+                  ? "直连访问就绪"
+                  : "网络连接异常"
+            }}
           </span>
         </div>
         <div class="card-kv-list">
@@ -166,6 +183,26 @@
             <span class="kv-key">GitHub 联通状态</span>
             <span class="kv-val font-mono" :style="{ color: report.health.github_connected ? '#10b981' : '#ef4444' }">
               ● {{ report.health.github_connected ? `HTTP ${report.health.github_status_code} (已连通)` : "未连接" }}
+            </span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Google 外网联通</span>
+            <span
+              class="kv-val font-mono"
+              :style="{ color: report.health.google_connected ? '#10b981' : 'var(--text-muted)' }"
+            >
+              ●
+              {{
+                report.health.google_connected
+                  ? `HTTP ${report.health.google_status_code || 204} (已连通 · ${report.health.google_latency_ms || "<100"}ms)`
+                  : "未连通 (需配置外网代理)"
+              }}
+            </span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">网络代理环境</span>
+            <span class="kv-val font-mono" :class="{ highlight: !!report.health.proxy_configured }">
+              {{ report.health.proxy_configured || "系统直连 (未检测到代理)" }}
             </span>
           </div>
           <!-- Rate Limit Progress Bar -->
@@ -346,6 +383,10 @@ interface DoctorReport {
     github_rate_remaining: number;
     github_rate_reset: number;
     github_rate_reset_text: string;
+    google_connected?: boolean;
+    google_status_code?: number;
+    google_latency_ms?: number;
+    proxy_configured?: string;
   };
   suggestions: Array<{
     id: string;
