@@ -7479,8 +7479,13 @@ print(json.dumps({
             }
           }
 
-          if (req.url === "/api/keybindings") {
-            const kbPath = path.join(os.homedir(), ".config", "unirtm", "keybindings.json");
+          if (req.url?.startsWith("/api/keybindings")) {
+            const parsedUrl = new URL(req.url, "http://localhost");
+            const scope = parsedUrl.searchParams.get("scope") === "user" ? "user" : "workspace";
+            const userPath = path.join(os.homedir(), ".config", "unirtm", "keybindings.json");
+            const workspacePath = path.resolve(__dirname, "..", ".unirtm", "keybindings.json");
+            const kbPath = scope === "user" ? userPath : workspacePath;
+
             res.setHeader("Content-Type", "application/json");
 
             if (req.method === "GET") {
@@ -7495,10 +7500,13 @@ print(json.dumps({
               }
               res.end(
                 JSON.stringify({
+                  scope,
                   path: kbPath,
                   exists,
                   raw,
                   keybindings: Array.isArray(list) ? list : [],
+                  userPath,
+                  workspacePath,
                 })
               );
               return;
@@ -7512,6 +7520,9 @@ print(json.dumps({
               req.on("end", () => {
                 try {
                   const data = JSON.parse(body || "{}");
+                  const effectiveScope = data.scope === "user" ? "user" : scope === "user" ? "user" : "workspace";
+                  const effectivePath = effectiveScope === "user" ? userPath : workspacePath;
+
                   let contentBytes = "[]";
                   if (data.raw && typeof data.raw === "string") {
                     JSON.parse(data.raw); // validate
@@ -7519,15 +7530,16 @@ print(json.dumps({
                   } else if (Array.isArray(data.keybindings)) {
                     contentBytes = JSON.stringify(data.keybindings, null, 2);
                   }
-                  const parent = path.dirname(kbPath);
+                  const parent = path.dirname(effectivePath);
                   if (!fs.existsSync(parent)) {
                     fs.mkdirSync(parent, { recursive: true });
                   }
-                  fs.writeFileSync(kbPath, contentBytes, "utf-8");
+                  fs.writeFileSync(effectivePath, contentBytes, "utf-8");
                   res.end(
                     JSON.stringify({
                       success: true,
-                      path: kbPath,
+                      scope: effectiveScope,
+                      path: effectivePath,
                       raw: contentBytes,
                       keybindings: JSON.parse(contentBytes),
                     })

@@ -183,7 +183,10 @@ describe("useKeyboardShortcuts", () => {
 
     // Save custom keybinding
     await saveKeybinding("workbench.view.scm", "Ctrl+Alt+G");
-    expect(fetchMock).toHaveBeenCalledWith("/api/keybindings", expect.objectContaining({ method: "POST" }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/keybindings"),
+      expect.objectContaining({ method: "POST" })
+    );
 
     const scmItem = activeShortcuts.value.find((s) => s.id === "workbench.view.scm");
     expect(scmItem?.effectiveKey).toBe("Ctrl+Alt+G");
@@ -203,7 +206,41 @@ describe("useKeyboardShortcuts", () => {
 
     // Reset all keybindings
     await resetAllKeybindings();
-    expect(fetchMock).toHaveBeenCalledWith("/api/keybindings", expect.objectContaining({ method: "POST" }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/keybindings"),
+      expect.objectContaining({ method: "POST" })
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it("supports keymap presets and scope switching", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        scope: "workspace",
+        path: ".unirtm/keybindings.json",
+        raw: "[]",
+        keybindings: [],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { keymapPresets, applyPreset, switchScope, currentScope } = useKeyboardShortcuts();
+    expect(keymapPresets.length).toBeGreaterThanOrEqual(4);
+    expect(keymapPresets.map((p) => p.id)).toContain("jetbrains");
+    expect(keymapPresets.map((p) => p.id)).toContain("vim");
+
+    await switchScope("user");
+    expect(currentScope.value).toBe("user");
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("scope=user"));
+
+    await applyPreset("jetbrains", "user");
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("scope=user"),
+      expect.objectContaining({ method: "POST" })
+    );
 
     vi.unstubAllGlobals();
   });

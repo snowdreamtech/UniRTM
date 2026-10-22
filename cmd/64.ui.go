@@ -1351,12 +1351,19 @@ func handlePostConfigRaw(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func getKeybindingsPath() string {
+func getKeybindingsPath(scope string) string {
+	if strings.ToLower(strings.TrimSpace(scope)) == "workspace" {
+		return filepath.Join(".unirtm", "keybindings.json")
+	}
 	return filepath.Join(env.GetConfigDir(), "keybindings.json")
 }
 
 func handleGetKeybindings(w http.ResponseWriter, r *http.Request) {
-	targetPath := getKeybindingsPath()
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	if scope == "" {
+		scope = "workspace"
+	}
+	targetPath := getKeybindingsPath(scope)
 	exists := false
 	raw := "[]"
 	var list []map[string]interface{}
@@ -1368,26 +1375,40 @@ func handleGetKeybindings(w http.ResponseWriter, r *http.Request) {
 	if list == nil {
 		list = []map[string]interface{}{}
 	}
+	userPath := getKeybindingsPath("user")
+	workspacePath := getKeybindingsPath("workspace")
+
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"path":        targetPath,
-		"exists":      exists,
-		"raw":         raw,
-		"keybindings": list,
+		"scope":         scope,
+		"path":          targetPath,
+		"exists":        exists,
+		"raw":           raw,
+		"keybindings":   list,
+		"userPath":      userPath,
+		"workspacePath": workspacePath,
 	})
 }
 
 func handlePostKeybindings(w http.ResponseWriter, r *http.Request) {
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	if scope == "" {
+		scope = "workspace"
+	}
 	var body struct {
 		Raw         string                   `json:"raw"`
 		Keybindings []map[string]interface{} `json:"keybindings"`
+		Scope       string                   `json:"scope"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid json: " + err.Error()})
 		return
 	}
+	if body.Scope != "" {
+		scope = strings.ToLower(strings.TrimSpace(body.Scope))
+	}
 
-	targetPath := getKeybindingsPath()
+	targetPath := getKeybindingsPath(scope)
 	parent := filepath.Dir(targetPath)
 	if err := os.MkdirAll(parent, 0755); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -1431,6 +1452,7 @@ func handlePostKeybindings(w http.ResponseWriter, r *http.Request) {
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":     true,
+		"scope":       scope,
 		"path":        targetPath,
 		"raw":         string(contentBytes),
 		"keybindings": parsedList,

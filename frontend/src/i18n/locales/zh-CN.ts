@@ -376,6 +376,8 @@ export const zhCn: TranslationDict = {
   "settings.empty_toml": "# 暂无自定义配置",
   "settings.cat_general": "常规",
   "settings.cat_general_sub": "语言、主题、浏览器与缓存",
+  "settings.cat_shortcuts": "快捷键",
+  "settings.cat_shortcuts_sub": "自定义快捷键与键盘映射方案",
   "settings.cat_network": "网络",
   "settings.cat_network_sub": "镜像加速与网络代理",
   "settings.cat_plugins": "扩展",

@@ -24,6 +24,82 @@ export interface CustomKeybinding {
   when?: string;
 }
 
+export interface KeymapPreset {
+  id: "vscode" | "jetbrains" | "vim" | "sublime";
+  nameZh: string;
+  nameEn: string;
+  descZh: string;
+  descEn: string;
+  keybindings: CustomKeybinding[];
+}
+
+export const KEYMAP_PRESETS: KeymapPreset[] = [
+  {
+    id: "vscode",
+    nameZh: "VS Code (系统默认)",
+    nameEn: "VS Code (Default)",
+    descZh: "VS Code 经典键位方案：Ctrl+Shift+P 调板、Ctrl+P 跳转、Ctrl+` 终端、Ctrl+B 侧边栏",
+    descEn: "Classic VS Code keybindings: Ctrl+Shift+P, Ctrl+P, Ctrl+`, Ctrl+B",
+    keybindings: [],
+  },
+  {
+    id: "jetbrains",
+    nameZh: "JetBrains / IntelliJ IDEA",
+    nameEn: "JetBrains / IntelliJ IDEA",
+    descZh:
+      "IntelliJ 习惯键位：Ctrl+Shift+A 查找操作、Ctrl+Shift+N 文件、Alt+F12 终端、Alt+1 项目窗口、Ctrl+Alt+S 设置",
+    descEn: "JetBrains keybindings: Ctrl+Shift+A, Ctrl+Shift+N, Alt+F12, Alt+1, Ctrl+Alt+S",
+    keybindings: [
+      { command: "workbench.action.showCommands", key: "Ctrl+Shift+A" },
+      { command: "workbench.action.quickOpen", key: "Ctrl+Shift+N" },
+      { command: "workbench.action.openSettings", key: "Ctrl+Alt+S" },
+      { command: "workbench.action.toggleSidebarVisibility", key: "Alt+1" },
+      { command: "workbench.action.terminal.toggleTerminal", key: "Alt+F12" },
+      { command: "workbench.action.terminal.new", key: "Alt+Shift+F12" },
+      { command: "workbench.action.togglePanel", key: "Alt+4" },
+      { command: "workbench.action.findInFiles", key: "Ctrl+Shift+F" },
+      { command: "workbench.view.scm", key: "Alt+9" },
+      { command: "workbench.action.tasks.run", key: "Shift+F10" },
+      { command: "editor.action.formatDocument", key: "Ctrl+Alt+L" },
+    ],
+  },
+  {
+    id: "vim",
+    nameZh: "Vim 风格",
+    nameEn: "Vim Style",
+    descZh: "Vim 导航键位：Space Space 调板、Ctrl+P 搜索、Ctrl+W V 分栏、Ctrl+W T 终端、G Q 格式化",
+    descEn: "Vim style navigation: Space Space, Ctrl+P, Ctrl+W V, Ctrl+W T, G Q",
+    keybindings: [
+      { command: "workbench.action.showCommands", key: "Space Space" },
+      { command: "workbench.action.quickOpen", key: "Ctrl+P" },
+      { command: "workbench.action.toggleSidebarVisibility", key: "Ctrl+W V" },
+      { command: "workbench.action.terminal.toggleTerminal", key: "Ctrl+W T" },
+      { command: "workbench.action.togglePanel", key: "Ctrl+W J" },
+      { command: "workbench.view.scm", key: "Space G" },
+      { command: "workbench.action.findInFiles", key: "Ctrl+Shift+F" },
+      { command: "workbench.action.tasks.run", key: "Space B" },
+      { command: "editor.action.formatDocument", key: "G Q" },
+    ],
+  },
+  {
+    id: "sublime",
+    nameZh: "Sublime Text",
+    nameEn: "Sublime Text",
+    descZh: "Sublime Text 键位：Ctrl+Shift+P 动作、Ctrl+P 打开、Ctrl+K Ctrl+B 侧边栏、Ctrl+B 运行任务",
+    descEn: "Sublime Text keybindings: Ctrl+Shift+P, Ctrl+P, Ctrl+K Ctrl+B, Ctrl+B",
+    keybindings: [
+      { command: "workbench.action.showCommands", key: "Ctrl+Shift+P" },
+      { command: "workbench.action.quickOpen", key: "Ctrl+P" },
+      { command: "workbench.action.openSettings", key: "Ctrl+," },
+      { command: "workbench.action.toggleSidebarVisibility", key: "Ctrl+K Ctrl+B" },
+      { command: "workbench.action.terminal.toggleTerminal", key: "Ctrl+`" },
+      { command: "workbench.action.togglePanel", key: "Ctrl+J" },
+      { command: "workbench.action.tasks.run", key: "Ctrl+B" },
+      { command: "editor.action.formatDocument", key: "Ctrl+Alt+F" },
+    ],
+  },
+];
+
 export interface ActiveShortcutItem extends ShortcutItem {
   effectiveKey: string;
   isCustom: boolean;
@@ -299,7 +375,10 @@ export interface ShortcutHandlers {
 // Global state for shortcuts and keybindings
 const isShortcutsModalOpen = ref(false);
 const customKeybindings = ref<CustomKeybinding[]>([]);
-const keybindingsPath = ref<string>("~/.config/unirtm/keybindings.json");
+const currentScope = ref<"workspace" | "user">("workspace");
+const keybindingsPath = ref<string>(".unirtm/keybindings.json");
+const userKeybindingsPath = ref<string>("~/.config/unirtm/keybindings.json");
+const workspaceKeybindingsPath = ref<string>(".unirtm/keybindings.json");
 const isKeybindingsLoading = ref(false);
 const rawKeybindingsJson = ref<string>("[]");
 
@@ -448,13 +527,16 @@ export function useKeyboardShortcuts() {
     });
   });
 
-  async function fetchKeybindings(): Promise<void> {
+  async function fetchKeybindings(scope?: "workspace" | "user"): Promise<void> {
+    if (scope) currentScope.value = scope;
     isKeybindingsLoading.value = true;
     try {
-      const res = await fetch("/api/keybindings");
+      const res = await fetch(`/api/keybindings?scope=${currentScope.value}`);
       if (res.ok) {
         const data = await res.json();
         if (data.path) keybindingsPath.value = data.path;
+        if (data.userPath) userKeybindingsPath.value = data.userPath;
+        if (data.workspacePath) workspaceKeybindingsPath.value = data.workspacePath;
         if (data.raw) rawKeybindingsJson.value = data.raw;
         if (Array.isArray(data.keybindings)) {
           customKeybindings.value = data.keybindings;
@@ -467,7 +549,18 @@ export function useKeyboardShortcuts() {
     }
   }
 
-  async function saveKeybinding(commandId: string, newKey: string, when?: string): Promise<boolean> {
+  async function switchScope(scope: "workspace" | "user"): Promise<void> {
+    currentScope.value = scope;
+    await fetchKeybindings(scope);
+  }
+
+  async function saveKeybinding(
+    commandId: string,
+    newKey: string,
+    when?: string,
+    targetScope?: "workspace" | "user"
+  ): Promise<boolean> {
+    const scope = targetScope || currentScope.value;
     const list = [...customKeybindings.value];
     const existingIdx = list.findIndex((c) => c.command === commandId);
     if (existingIdx !== -1) {
@@ -478,10 +571,10 @@ export function useKeyboardShortcuts() {
     customKeybindings.value = list;
 
     try {
-      const res = await fetch("/api/keybindings", {
+      const res = await fetch(`/api/keybindings?scope=${scope}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keybindings: list }),
+        body: JSON.stringify({ keybindings: list, scope }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -494,15 +587,16 @@ export function useKeyboardShortcuts() {
     return false;
   }
 
-  async function resetKeybinding(commandId: string): Promise<boolean> {
+  async function resetKeybinding(commandId: string, targetScope?: "workspace" | "user"): Promise<boolean> {
+    const scope = targetScope || currentScope.value;
     const list = customKeybindings.value.filter((c) => c.command !== commandId);
     customKeybindings.value = list;
 
     try {
-      const res = await fetch("/api/keybindings", {
+      const res = await fetch(`/api/keybindings?scope=${scope}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keybindings: list }),
+        body: JSON.stringify({ keybindings: list, scope }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -515,13 +609,14 @@ export function useKeyboardShortcuts() {
     return false;
   }
 
-  async function resetAllKeybindings(): Promise<boolean> {
+  async function resetAllKeybindings(targetScope?: "workspace" | "user"): Promise<boolean> {
+    const scope = targetScope || currentScope.value;
     customKeybindings.value = [];
     try {
-      const res = await fetch("/api/keybindings", {
+      const res = await fetch(`/api/keybindings?scope=${scope}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keybindings: [] }),
+        body: JSON.stringify({ keybindings: [], scope }),
       });
       if (res.ok) {
         rawKeybindingsJson.value = "[]\n";
@@ -533,16 +628,17 @@ export function useKeyboardShortcuts() {
     return false;
   }
 
-  async function saveRawKeybindings(raw: string): Promise<boolean> {
+  async function saveRawKeybindings(raw: string, targetScope?: "workspace" | "user"): Promise<boolean> {
+    const scope = targetScope || currentScope.value;
     try {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) {
         throw new Error("Keybindings JSON must be an array of objects");
       }
-      const res = await fetch("/api/keybindings", {
+      const res = await fetch(`/api/keybindings?scope=${scope}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ raw }),
+        body: JSON.stringify({ raw, scope }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -556,6 +652,16 @@ export function useKeyboardShortcuts() {
       console.error("Failed to save raw keybindings:", err);
     }
     return false;
+  }
+
+  async function applyPreset(
+    presetId: "vscode" | "jetbrains" | "vim" | "sublime",
+    targetScope?: "workspace" | "user"
+  ): Promise<boolean> {
+    const preset = KEYMAP_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return false;
+    const scope = targetScope || currentScope.value;
+    return saveRawKeybindings(JSON.stringify(preset.keybindings, null, 2), scope);
   }
 
   // Chord state tracker (e.g. Ctrl+K chord)
@@ -844,14 +950,20 @@ export function useKeyboardShortcuts() {
     allShortcuts: computed(() => SHORTCUT_DEFINITIONS),
     activeShortcuts,
     customKeybindings,
+    currentScope,
     keybindingsPath,
+    userKeybindingsPath,
+    workspaceKeybindingsPath,
     isKeybindingsLoading,
     rawKeybindingsJson,
     fetchKeybindings,
+    switchScope,
     saveKeybinding,
     resetKeybinding,
     resetAllKeybindings,
     saveRawKeybindings,
+    applyPreset,
+    keymapPresets: KEYMAP_PRESETS,
     createKeydownHandler,
     nextEditorTab,
     prevEditorTab,

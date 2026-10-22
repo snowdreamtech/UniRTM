@@ -877,7 +877,7 @@
         id="section-shortcuts"
         class="settings-category-section glass-card"
       >
-        <KeyboardShortcutsSettings />
+        <KeyboardShortcutsSettings :active-scope="activeScope" />
       </section>
 
       <!-- 2. Git & Lifecycle Hooks (Workspace Only) -->

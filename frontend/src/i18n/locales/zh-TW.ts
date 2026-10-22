@@ -434,6 +434,8 @@ export const zhTw: TranslationDict = {
   "settings.empty_toml": "# No custom settings yet",
   "settings.cat_general": "General",
   "settings.cat_general_sub": "Language, theme, browser, and cache",
+  "settings.cat_shortcuts": "快速鍵",
+  "settings.cat_shortcuts_sub": "自訂快速鍵與鍵盤對應方案",
   "settings.cat_network": "Network",
   "settings.cat_network_sub": "Mirrors and proxies",
   "settings.cat_plugins": "Extensions",

@@ -22,16 +22,56 @@
           @click="openRawJsonModal"
         >
           <span class="codicon codicon-json"></span>
-          <span>{{ isZh ? "打开 keybindings.json" : "Open JSON" }}</span>
+          <span class="btn-text">{{ isZh ? "打开 keybindings.json" : "Open JSON" }}</span>
         </button>
         <button
           v-if="hasCustomKeybindings"
           class="btn btn-outline-danger"
-          :title="isZh ? '重置所有自定义快捷键为系统默认' : 'Reset all shortcuts to defaults'"
+          :title="isZh ? '重置当前范围所有自定义快捷键为系统默认' : 'Reset all shortcuts in current scope to defaults'"
           @click="handleResetAll"
         >
           <span class="codicon codicon-discard"></span>
-          <span>{{ isZh ? "恢复全部默认" : "Reset All" }}</span>
+          <span class="btn-text">{{ isZh ? "恢复全部默认" : "Reset All" }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Scope Switcher: Workspace vs User -->
+    <div class="scope-tabs-bar">
+      <div class="scope-tabs">
+        <button
+          class="scope-tab"
+          :class="{ active: currentScope === 'workspace' }"
+          @click="handleScopeChange('workspace')"
+        >
+          <span class="codicon codicon-folder"></span>
+          <span class="scope-tab-title">{{ isZh ? "工作区快捷键 (当前项目)" : "Workspace Keybindings" }}</span>
+          <span class="scope-tab-path font-mono">.unirtm/keybindings.json</span>
+        </button>
+        <button class="scope-tab" :class="{ active: currentScope === 'user' }" @click="handleScopeChange('user')">
+          <span class="codicon codicon-account"></span>
+          <span class="scope-tab-title">{{ isZh ? "用户全局快捷键" : "User Global Keybindings" }}</span>
+          <span class="scope-tab-path font-mono">~/.config/unirtm/keybindings.json</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Keymap Presets Bar (VS Code / JetBrains / Vim / Sublime) -->
+    <div class="presets-bar">
+      <div class="presets-label">
+        <span class="codicon codicon-layout"></span>
+        <span>{{ isZh ? "预设快捷键方案 (Keymap Presets):" : "Keymap Presets:" }}</span>
+      </div>
+      <div class="preset-buttons">
+        <button
+          v-for="preset in keymapPresets"
+          :key="preset.id"
+          class="preset-btn"
+          :title="isZh ? preset.descZh : preset.descEn"
+          @click="handleApplyPreset(preset.id)"
+        >
+          <span class="codicon" :class="getPresetIcon(preset.id)"></span>
+          <span class="preset-name">{{ isZh ? preset.nameZh : preset.nameEn }}</span>
         </button>
       </div>
     </div>
@@ -56,7 +96,7 @@
           {{ isZh ? "全部 (" + activeShortcuts.length + ")" : "All (" + activeShortcuts.length + ")" }}
         </button>
         <button class="filter-pill" :class="{ active: sourceFilter === 'user' }" @click="sourceFilter = 'user'">
-          {{ isZh ? "用户自定义 (" + customCount + ")" : "User (" + customCount + ")" }}
+          {{ isZh ? "自定义 (" + customCount + ")" : "Custom (" + customCount + ")" }}
         </button>
         <button class="filter-pill" :class="{ active: sourceFilter === 'default' }" @click="sourceFilter = 'default'">
           {{
@@ -114,7 +154,15 @@
             <!-- Source -->
             <td class="col-source">
               <span v-if="item.isCustom" class="badge-source badge-user font-mono">
-                {{ isZh ? "User (用户)" : "User" }}
+                {{
+                  isZh
+                    ? currentScope === "workspace"
+                      ? "Workspace (项目)"
+                      : "User (用户)"
+                    : currentScope === "workspace"
+                      ? "Workspace"
+                      : "User"
+                }}
               </span>
               <span v-else class="badge-source badge-default font-mono">
                 {{ isZh ? "System (内置)" : "System" }}
@@ -146,7 +194,7 @@
             </td>
           </tr>
 
-          <tr v-if="filteredList.length === 0" class="empty-state-row">
+          <tr v-if="filteredList.length === 0">
             <td colspan="5">
               <div class="empty-state">
                 <span class="codicon codicon-search empty-icon"></span>
@@ -194,6 +242,14 @@
                     : "Press desired key combination, then press Enter..."
                 }}</span>
               </div>
+            </div>
+
+            <!-- Scope info in modal -->
+            <div class="modal-scope-hint font-mono">
+              <span class="codicon codicon-info"></span>
+              <span
+                >{{ isZh ? "将保存至: " : "Will save to: " }}<strong>{{ keybindingsPath }}</strong></span
+              >
             </div>
 
             <!-- Conflict warning -->
@@ -251,7 +307,7 @@
               spellcheck="false"
               :placeholder="jsonPlaceholder"
             ></textarea>
-            <div v-if="jsonError" class="json-error-banner">
+            <div v-if="jsonError" class="json-error-banner font-mono">
               <span class="codicon codicon-error"></span>
               <span>{{ jsonError }}</span>
             </div>
@@ -263,7 +319,7 @@
             </button>
             <div style="flex: 1"></div>
             <button class="btn btn-secondary" @click="isJsonModalOpen = false">
-              {{ isZh ? "关闭" : "Close" }}
+              {{ isZh ? "取消" : "Cancel" }}
             </button>
             <button class="btn btn-primary" @click="handleSaveRawJson">
               {{ isZh ? "保存并生效" : "Save Changes" }}
@@ -276,7 +332,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import {
   useKeyboardShortcuts,
   normalizeKeyComboFromEvent,
@@ -285,15 +341,28 @@ import {
 import { selectedLangSetting } from "../../i18n";
 import { useToast } from "../../composables/useToast";
 
+const props = withDefaults(
+  defineProps<{
+    activeScope?: "workspace" | "user";
+  }>(),
+  {
+    activeScope: "workspace",
+  }
+);
+
 const {
   activeShortcuts,
+  currentScope,
   keybindingsPath,
   rawKeybindingsJson,
+  keymapPresets,
   fetchKeybindings,
+  switchScope,
   saveKeybinding,
   resetKeybinding,
   resetAllKeybindings,
   saveRawKeybindings,
+  applyPreset,
 } = useKeyboardShortcuts();
 
 const { showToast } = useToast();
@@ -317,6 +386,55 @@ const jsonPlaceholder = computed(() => '[\n  {\n    "command": "workbench.view.s
 
 const customCount = computed(() => activeShortcuts.value.filter((s) => s.isCustom).length);
 const hasCustomKeybindings = computed(() => customCount.value > 0);
+
+watch(
+  () => props.activeScope,
+  (newScope) => {
+    if (newScope && newScope !== currentScope.value) {
+      switchScope(newScope);
+    }
+  }
+);
+
+function getPresetIcon(id: string): string {
+  switch (id) {
+    case "jetbrains":
+      return "codicon-symbol-class";
+    case "vim":
+      return "codicon-terminal-linux";
+    case "sublime":
+      return "codicon-file-code";
+    default:
+      return "codicon-vscode";
+  }
+}
+
+async function handleScopeChange(scope: "workspace" | "user") {
+  await switchScope(scope);
+  showToast(
+    isZh.value
+      ? `已切换到 ${scope === "workspace" ? "工作区快捷键 (.unirtm/keybindings.json)" : "用户全局快捷键 (~/.config/unirtm/keybindings.json)"}`
+      : `Switched to ${scope === "workspace" ? "Workspace Keybindings" : "User Global Keybindings"}`,
+    "info"
+  );
+}
+
+async function handleApplyPreset(presetId: "vscode" | "jetbrains" | "vim" | "sublime") {
+  const preset = keymapPresets.find((p) => p.id === presetId);
+  const name = isZh.value ? preset?.nameZh : preset?.nameEn;
+  const msg = isZh.value
+    ? `确定要将当前范围 (${currentScope.value === "workspace" ? "工作区" : "全局用户"}) 快捷键切换为「${name}」预设方案吗？`
+    : `Apply "${name}" keymap preset to ${currentScope.value} scope?`;
+
+  if (!confirm(msg)) return;
+
+  const ok = await applyPreset(presetId, currentScope.value);
+  if (ok) {
+    showToast(isZh.value ? `已成功应用「${name}」方案！` : `Successfully applied "${name}" preset!`, "success");
+  } else {
+    showToast(isZh.value ? "应用预设方案失败" : "Failed to apply preset", "error");
+  }
+}
 
 function splitKeys(keys: string): string[] {
   return keys.split(" ");
@@ -379,7 +497,6 @@ function handleRecordKeydown(e: KeyboardEvent) {
   }
 
   const combo = normalizeKeyComboFromEvent(e);
-  // Don't update if only modifier key was pressed
   if (!["Ctrl", "Alt", "Shift", "Cmd"].includes(combo)) {
     recordedCombo.value = combo;
   }
@@ -407,12 +524,16 @@ async function handleResetOne(cmdId: string) {
 }
 
 async function handleResetAll() {
-  if (!confirm(isZh.value ? "确定要恢复所有快捷键为系统默认值吗？" : "Reset all keybindings to defaults?")) {
+  if (
+    !confirm(
+      isZh.value ? "确定要恢复当前范围的所有快捷键为默认设置吗？" : "Reset keybindings in this scope to defaults?"
+    )
+  ) {
     return;
   }
   const ok = await resetAllKeybindings();
   if (ok) {
-    showToast(isZh.value ? "所有快捷键已恢复为默认设置" : "All keybindings reset to defaults", "success");
+    showToast(isZh.value ? "当前范围快捷键已恢复为默认设置" : "Keybindings reset to defaults", "success");
   }
 }
 
@@ -450,7 +571,7 @@ async function handleSaveRawJson() {
 }
 
 onMounted(() => {
-  fetchKeybindings();
+  fetchKeybindings(props.activeScope);
 });
 </script>
 
@@ -462,17 +583,69 @@ onMounted(() => {
   width: 100%;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(0, 229, 255, 0.1);
+  color: #00e5ff;
+  font-size: 20px;
+}
+
+:root[data-theme="light"] .section-icon {
+  background: rgba(2, 132, 199, 0.1);
+  color: #0284c7;
+}
+
+.section-title-wrap h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .section-title-wrap h2 {
+  color: #0f172a;
+}
+
+.section-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+  display: inline-block;
+}
+
+:root[data-theme="light"] .section-sub {
+  color: #64748b;
+}
+
 .file-path-badge {
   color: #00e5ff;
-  background: rgba(0, 229, 255, 0.08);
-  padding: 2px 6px;
+  background: rgba(0, 229, 255, 0.1);
+  padding: 1px 6px;
   border-radius: 4px;
-  font-size: 11px;
 }
 
 :root[data-theme="light"] .file-path-badge {
   color: #0284c7;
-  background: #e0f2fe;
+  background: rgba(2, 132, 199, 0.1);
 }
 
 .header-actions {
@@ -481,50 +654,190 @@ onMounted(() => {
   gap: 8px;
 }
 
-/* Toolbar */
-.shortcuts-toolbar {
+/* Scope Tabs Bar */
+.scope-tabs-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
+  gap: 10px;
 }
 
-:root[data-theme="light"] .shortcuts-toolbar {
+.scope-tabs {
+  display: flex;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+}
+
+:root[data-theme="light"] .scope-tabs {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+}
+
+.scope-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+:root[data-theme="light"] .scope-tab {
+  color: #64748b;
+}
+
+.scope-tab:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+:root[data-theme="light"] .scope-tab:hover {
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+.scope-tab.active {
+  background: #00e5ff;
+  color: #0b101e;
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .scope-tab.active {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.scope-tab-title {
+  white-space: nowrap;
+}
+
+.scope-tab-path {
+  font-size: 11px;
+  opacity: 0.8;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.scope-tab.active .scope-tab-path {
+  background: rgba(0, 0, 0, 0.15);
+  color: inherit;
+}
+
+/* Presets Bar */
+.presets-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme="light"] .presets-bar {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
 }
 
-.search-input-wrap {
-  position: relative;
+.presets-label {
   display: flex;
   align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+:root[data-theme="light"] .presets-label {
+  color: #475569;
+}
+
+.preset-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.4);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+:root[data-theme="light"] .preset-btn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.preset-btn:hover {
+  border-color: #00e5ff;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.08);
+}
+
+:root[data-theme="light"] .preset-btn:hover {
+  border-color: #0284c7;
+  color: #0284c7;
+  background: #e0f2fe;
+}
+
+/* Toolbar */
+.shortcuts-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.search-input-wrap {
+  position: relative;
   flex: 1;
   min-width: 260px;
 }
 
 .search-icon {
   position: absolute;
-  left: 10px;
-  color: #94a3b8;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
   font-size: 14px;
-  pointer-events: none;
 }
 
 .filter-input {
   width: 100%;
-  padding: 8px 32px 8px 32px;
-  background: #111a2e;
+  padding: 8px 36px;
+  background: rgba(13, 20, 36, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   color: #ffffff;
   font-size: 13px;
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease;
 }
 
 :root[data-theme="light"] .filter-input {
@@ -535,21 +848,29 @@ onMounted(() => {
 
 .filter-input:focus {
   border-color: #00e5ff;
-  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.2);
 }
 
 :root[data-theme="light"] .filter-input:focus {
   border-color: #0284c7;
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
 }
 
 .clear-btn {
   position: absolute;
-  right: 8px;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
+}
+
+.clear-btn:hover {
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .clear-btn:hover {
+  color: #0f172a;
 }
 
 .source-filter-pills {
@@ -558,27 +879,37 @@ onMounted(() => {
 }
 
 .filter-pill {
-  padding: 6px 12px;
-  font-size: 12px;
+  padding: 6px 14px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
   color: #94a3b8;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 :root[data-theme="light"] .filter-pill {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #cbd5e1;
   color: #64748b;
+}
+
+.filter-pill:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+:root[data-theme="light"] .filter-pill:hover {
+  color: #0f172a;
+  border-color: #94a3b8;
 }
 
 .filter-pill.active {
   background: rgba(0, 229, 255, 0.15);
   border-color: #00e5ff;
   color: #00e5ff;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 :root[data-theme="light"] .filter-pill.active {
@@ -602,8 +933,10 @@ onMounted(() => {
 
 .shortcuts-table {
   width: 100%;
+  min-width: 820px;
   border-collapse: collapse;
   text-align: left;
+  table-layout: fixed;
 }
 
 .shortcuts-table th {
@@ -614,12 +947,41 @@ onMounted(() => {
   text-transform: uppercase;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
 }
 
 :root[data-theme="light"] .shortcuts-table th {
   color: #64748b;
   border-bottom: 1px solid #e2e8f0;
   background: #f8fafc;
+}
+
+/* Column Widths & Layout */
+.col-cmd {
+  width: 32%;
+  min-width: 220px;
+}
+
+.col-id {
+  width: 26%;
+  min-width: 180px;
+}
+
+.col-key {
+  width: 20%;
+  min-width: 140px;
+}
+
+.col-source {
+  width: 10%;
+  min-width: 80px;
+}
+
+.col-actions {
+  width: 12%;
+  min-width: 135px;
+  text-align: right !important;
+  white-space: nowrap;
 }
 
 .shortcut-row {
@@ -661,8 +1023,8 @@ onMounted(() => {
 }
 
 .cmd-desc {
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 11px;
+  color: #64748b;
 }
 
 :root[data-theme="light"] .cmd-desc {
@@ -672,20 +1034,28 @@ onMounted(() => {
 .cmd-id-pill {
   font-size: 11px;
   color: #94a3b8;
-  padding: 2px 6px;
-  border-radius: 4px;
   background: rgba(255, 255, 255, 0.05);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 :root[data-theme="light"] .cmd-id-pill {
   color: #475569;
   background: #f1f5f9;
+  border: 1px solid #e2e8f0;
 }
 
 .keys-display {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .chord-sep {
@@ -703,6 +1073,7 @@ onMounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
   color: #e2e8f0;
+  white-space: nowrap;
 }
 
 :root[data-theme="light"] .keycap {
@@ -726,6 +1097,7 @@ onMounted(() => {
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 4px;
+  white-space: nowrap;
 }
 
 .badge-user {
@@ -750,17 +1122,22 @@ onMounted(() => {
   color: #64748b;
 }
 
+/* Action Buttons Styling - Prevents wrapping */
 .action-buttons {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 6px;
+  white-space: nowrap;
+  flex-wrap: nowrap;
 }
 
 .action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 10px;
   border-radius: 4px;
   font-size: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -768,11 +1145,18 @@ onMounted(() => {
   color: #94a3b8;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.2;
 }
 
 :root[data-theme="light"] .action-btn {
   border: 1px solid #cbd5e1;
   color: #475569;
+}
+
+.btn-text {
+  white-space: nowrap;
 }
 
 .action-btn:hover {
@@ -799,34 +1183,29 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px);
-  outline: none;
+  backdrop-filter: blur(4px);
 }
 
 .recording-modal-card {
-  width: 90vw;
+  width: 90%;
   max-width: 480px;
-  background: #0d1424;
-  border: 1px solid rgba(0, 229, 255, 0.3);
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
-  box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.8),
-    0 0 20px rgba(0, 229, 255, 0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
   overflow: hidden;
-  color: #e2e8f0;
 }
 
 :root[data-theme="light"] .recording-modal-card {
   background: #ffffff;
   border: 1px solid #cbd5e1;
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
-  color: #0f172a;
 }
 
 .modal-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -838,7 +1217,6 @@ onMounted(() => {
 .modal-icon {
   font-size: 18px;
   color: #00e5ff;
-  margin-right: 8px;
 }
 
 :root[data-theme="light"] .modal-icon {
@@ -846,18 +1224,31 @@ onMounted(() => {
 }
 
 .modal-card-header h3 {
+  flex: 1;
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  flex: 1;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .modal-card-header h3 {
+  color: #0f172a;
 }
 
 .modal-close-btn {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
-  padding: 4px;
+  font-size: 16px;
+}
+
+.modal-close-btn:hover {
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .modal-close-btn:hover {
+  color: #0f172a;
 }
 
 .modal-card-body {
@@ -884,37 +1275,24 @@ onMounted(() => {
 }
 
 .target-id {
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 11px;
+  color: #64748b;
 }
 
 .recording-box {
+  min-height: 80px;
+  border: 2px dashed rgba(0, 229, 255, 0.4);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 80px;
-  border: 2px dashed rgba(0, 229, 255, 0.3);
-  border-radius: 8px;
-  background: rgba(0, 229, 255, 0.04);
+  background: rgba(0, 229, 255, 0.03);
+  padding: 16px;
 }
 
 :root[data-theme="light"] .recording-box {
   border-color: #38bdf8;
   background: #f0f9ff;
-}
-
-.keycap.active-recording {
-  font-size: 16px;
-  padding: 6px 16px;
-  color: #00e5ff;
-  border-color: #00e5ff;
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
-}
-
-:root[data-theme="light"] .keycap.active-recording {
-  color: #0284c7;
-  border-color: #0284c7;
-  box-shadow: 0 0 12px rgba(2, 132, 199, 0.2);
 }
 
 .recording-prompt {
@@ -925,9 +1303,13 @@ onMounted(() => {
   font-size: 13px;
 }
 
+:root[data-theme="light"] .recording-prompt {
+  color: #475569;
+}
+
 .pulse-dot {
   color: #ef4444;
-  animation: pulse 1.5s infinite;
+  animation: pulse 1.2s infinite ease-in-out;
 }
 
 @keyframes pulse {
@@ -938,8 +1320,29 @@ onMounted(() => {
   }
   50% {
     opacity: 0.4;
-    transform: scale(0.9);
+    transform: scale(0.85);
   }
+}
+
+.keycap.active-recording {
+  font-size: 16px;
+  padding: 6px 14px;
+  background: #00e5ff;
+  color: #0b101e;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
+}
+
+.modal-scope-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+:root[data-theme="light"] .modal-scope-hint {
+  color: #64748b;
 }
 
 .conflict-warning {
@@ -948,15 +1351,15 @@ onMounted(() => {
   gap: 8px;
   padding: 8px 12px;
   border-radius: 6px;
-  background: rgba(234, 179, 8, 0.12);
+  background: rgba(234, 179, 8, 0.1);
   border: 1px solid rgba(234, 179, 8, 0.25);
   color: #eab308;
   font-size: 12px;
 }
 
 .recording-tips {
-  font-size: 12px;
-  color: #94a3b8;
+  font-size: 11px;
+  color: #64748b;
   text-align: center;
 }
 
@@ -964,10 +1367,10 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 14px 20px;
+  gap: 10px;
+  padding: 12px 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.15);
 }
 
 :root[data-theme="light"] .modal-card-footer {
@@ -977,45 +1380,53 @@ onMounted(() => {
 
 /* Raw JSON Modal */
 .raw-json-modal-card {
-  width: 90vw;
-  max-width: 680px;
-  height: 80vh;
+  width: 90%;
+  max-width: 640px;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: #0d1424;
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  border-radius: 12px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
-  overflow: hidden;
-  color: #e2e8f0;
 }
 
 :root[data-theme="light"] .raw-json-modal-card {
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  color: #0f172a;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+}
+
+.raw-json-modal-card .header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.raw-json-modal-card .file-path {
+  font-size: 11px;
+  color: #64748b;
 }
 
 .raw-json-body {
-  flex: 1;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  padding: 16px;
   gap: 10px;
-  overflow: hidden;
 }
 
 .json-textarea {
-  flex: 1;
   width: 100%;
-  padding: 12px;
-  background: #111a2e;
+  height: 320px;
+  background: #0b101e;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
-  color: #38bdf8;
-  font-size: 13px;
+  padding: 12px;
+  color: #e2e8f0;
+  font-size: 12px;
   line-height: 1.5;
-  resize: none;
+  resize: vertical;
   outline: none;
 }
 
@@ -1025,15 +1436,38 @@ onMounted(() => {
   color: #0f172a;
 }
 
+.json-textarea:focus {
+  border-color: #00e5ff;
+}
+
+:root[data-theme="light"] .json-textarea:focus {
+  border-color: #0284c7;
+}
+
 .json-error-banner {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 8px 12px;
-  border-radius: 6px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
   color: #ef4444;
   font-size: 12px;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 16px;
+  color: #64748b;
+  gap: 8px;
+}
+
+.empty-icon {
+  font-size: 28px;
 }
 </style>

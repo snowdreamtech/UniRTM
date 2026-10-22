@@ -385,6 +385,8 @@ export const csCz: TranslationDict = {
   "settings.empty_toml": "# No custom settings yet",
   "settings.cat_general": "General",
   "settings.cat_general_sub": "Language, theme, browser, and cache",
+  "settings.cat_shortcuts": "Keyboard Shortcuts",
+  "settings.cat_shortcuts_sub": "Customize keybindings and keymap presets",
   "settings.cat_network": "Network",
   "settings.cat_network_sub": "Mirrors and proxies",
   "settings.cat_plugins": "Extensions",

@@ -384,6 +384,8 @@ export const koKr: TranslationDict = {
   "settings.empty_toml": "# No custom settings yet",
   "settings.cat_general": "General",
   "settings.cat_general_sub": "Language, theme, browser, and cache",
+  "settings.cat_shortcuts": "단축키",
+  "settings.cat_shortcuts_sub": "사용자 지정 단축키 및 키맵 프리셋",
   "settings.cat_network": "Network",
   "settings.cat_network_sub": "Mirrors and proxies",
   "settings.cat_plugins": "Extensions",
