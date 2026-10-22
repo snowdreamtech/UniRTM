@@ -50,7 +50,7 @@
       <div class="score-left">
         <div class="score-circle" :class="circleScoreClass">
           <span v-if="isLoading" class="score-loading-icon spin-icon">
-            <TechIcon id="workbench:sync" :size="24" />
+            <TechIcon id="workbench:sync" :size="28" />
           </span>
           <template v-else>
             <span class="score-number">{{ report ? report.score : "--" }}</span>
@@ -575,12 +575,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-radius: 12px;
+  padding: 1.75rem 2rem;
+  min-height: 116px;
+  border-radius: 14px;
   border: 1px solid var(--card-border);
   position: relative;
   overflow: hidden;
-  transition: border-color 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .score-banner.status-perfect {
@@ -606,91 +607,94 @@ onMounted(() => {
 .score-left {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1.75rem;
 }
 
 .score-circle {
-  width: 64px;
-  height: 64px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  border: 3px solid;
+  border: 3.5px solid;
   flex-shrink: 0;
 }
 
 .score-circle.score-perfect {
   border-color: #10b981;
   color: #10b981;
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.28);
 }
 
 .score-circle.score-good {
   border-color: var(--accent-cyan);
   color: var(--accent-cyan);
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.25);
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.28);
 }
 
 .score-circle.score-warning {
   border-color: #f59e0b;
   color: #f59e0b;
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.28);
 }
 
 .score-circle.score-critical {
   border-color: #ef4444;
   color: #ef4444;
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.25);
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.28);
 }
 
 .score-number {
-  font-size: 1.45rem;
+  font-size: 1.75rem;
   font-weight: 800;
   font-family: monospace;
+  line-height: 1;
 }
 
 .score-unit {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
-  margin-top: 6px;
+  margin-top: 8px;
+  margin-left: 1px;
 }
 
 .score-text {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
 .score-title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--text-main);
+  letter-spacing: -0.01em;
 }
 
 .score-sub {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: 1.6;
 }
 
 .score-right-meta {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.2rem;
+  gap: 0.35rem;
 }
 
 .meta-label {
-  font-size: 0.7rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
 }
 
 .meta-value {
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   color: var(--text-main);
   font-weight: 600;
 }
