@@ -1632,12 +1632,15 @@ async function handleModalConfirm(payload: {
   align-items: center;
   gap: 8px;
   padding: 5px 8px;
+  padding-right: 32px;
   border-radius: 4px;
   cursor: pointer;
   position: relative;
   font-size: 13px;
   color: var(--text-main);
   transition: background 0.15s ease;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .repo-item:hover {
@@ -1664,6 +1667,7 @@ async function handleModalConfirm(payload: {
 .repo-icon {
   font-size: 14px;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .repo-item.active .repo-icon {
@@ -1671,19 +1675,22 @@ async function handleModalConfirm(payload: {
 }
 
 .repo-name {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .repo-branch-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   font-size: 11px;
   color: var(--text-muted);
   font-family: var(--font-mono, monospace);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .repo-branch-name {
@@ -1704,17 +1711,34 @@ async function handleModalConfirm(payload: {
   background: rgba(255, 255, 255, 0.08);
   padding: 1px 4px;
   border-radius: 3px;
+  flex-shrink: 0;
 }
 
 .repo-item-actions {
-  display: none;
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
   align-items: center;
   gap: 2px;
-  margin-left: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  background: var(--theme-list-hover-bg, rgba(30, 41, 59, 0.95));
+  border-radius: 4px;
+  padding: 1px 2px;
+  z-index: 2;
 }
 
-.repo-item:hover .repo-item-actions {
-  display: flex;
+.repo-item.active .repo-item-actions {
+  background: var(--theme-list-active-selection-bg, rgba(55, 148, 255, 0.25));
+}
+
+.repo-item:hover .repo-item-actions,
+.repo-item:focus-within .repo-item-actions {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* Quality Guard Capsule Bar */
