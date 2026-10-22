@@ -451,7 +451,11 @@ export default defineConfig({
             const getDirSizeText = (dirPath: string): string => {
               try {
                 if (!fs.existsSync(dirPath)) return "-";
-                const out = execFileSync("du", ["-sh", dirPath], { encoding: "utf-8", timeout: 3000 });
+                const out = execFileSync("du", ["-sh", dirPath], {
+                  encoding: "utf-8",
+                  timeout: 3000,
+                  stdio: ["ignore", "pipe", "ignore"],
+                });
                 return out.trim().split(/\s+/)[0] || "-";
               } catch {
                 return "-";
