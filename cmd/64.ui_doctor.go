@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
@@ -119,6 +120,10 @@ type DoctorHealthInfo struct {
 	GitHubRateRemaining int64  `json:"github_rate_remaining"`
 	GitHubRateReset     int64  `json:"github_rate_reset"`
 	GitHubRateResetText string `json:"github_rate_reset_text"`
+	GoogleConnected     bool   `json:"google_connected"`
+	GoogleStatusCode    int    `json:"google_status_code"`
+	GoogleLatencyMs     int64  `json:"google_latency_ms"`
+	ProxyConfigured     string `json:"proxy_configured,omitempty"`
 }
 
 type DoctorSuggestion struct {
@@ -441,21 +446,60 @@ func collectDoctorReport(ctx context.Context) (*DoctorDiagnosticReport, error) {
 	var githubLimit, githubRemaining, githubReset int64
 	githubResetText := ""
 
-	if resp, err := client.Do(req); err == nil {
-		githubConnected = true
-		githubStatusCode = resp.StatusCode
-		limitStr := resp.Header.Get("X-RateLimit-Limit")
-		remainingStr := resp.Header.Get("X-RateLimit-Remaining")
-		resetStr := resp.Header.Get("X-RateLimit-Reset")
+	googleConnected := false
+	googleStatusCode := 0
+	var googleLatencyMs int64
 
-		fmt.Sscanf(limitStr, "%d", &githubLimit)
-		fmt.Sscanf(remainingStr, "%d", &githubRemaining)
-		fmt.Sscanf(resetStr, "%d", &githubReset)
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-		if githubReset > 0 {
-			githubResetText = time.Until(time.Unix(githubReset, 0)).Round(time.Minute).String()
+	go func() {
+		defer wg.Done()
+		if resp, err := client.Do(req); err == nil {
+			githubConnected = true
+			githubStatusCode = resp.StatusCode
+			limitStr := resp.Header.Get("X-RateLimit-Limit")
+			remainingStr := resp.Header.Get("X-RateLimit-Remaining")
+			resetStr := resp.Header.Get("X-RateLimit-Reset")
+
+			fmt.Sscanf(limitStr, "%d", &githubLimit)
+			fmt.Sscanf(remainingStr, "%d", &githubRemaining)
+			fmt.Sscanf(resetStr, "%d", &githubReset)
+
+			if githubReset > 0 {
+				githubResetText = time.Until(time.Unix(githubReset, 0)).Round(time.Minute).String()
+			}
+			_ = resp.Body.Close()
 		}
-		_ = resp.Body.Close()
+	}()
+
+	googleClient := pkgHttp.NewClientWithTimeout(2500 * time.Millisecond)
+	go func() {
+		defer wg.Done()
+		start := time.Now()
+		gReq, gErr := http.NewRequestWithContext(ctx, "GET", "https://www.google.com/generate_204", nil)
+		if gErr != nil {
+			return
+		}
+		if gResp, err := googleClient.Do(gReq); err == nil {
+			googleLatencyMs = time.Since(start).Milliseconds()
+			googleStatusCode = gResp.StatusCode
+			if gResp.StatusCode == 204 || gResp.StatusCode == 200 {
+				googleConnected = true
+			}
+			_ = gResp.Body.Close()
+		}
+	}()
+
+	wg.Wait()
+
+	proxyConfigured := ""
+	if p := env.Get("HTTPS_PROXY"); p != "" {
+		proxyConfigured = p
+	} else if p := env.Get("HTTP_PROXY"); p != "" {
+		proxyConfigured = p
+	} else if p := env.Get("ALL_PROXY"); p != "" {
+		proxyConfigured = p
 	}
 
 	health := DoctorHealthInfo{
@@ -469,6 +513,10 @@ func collectDoctorReport(ctx context.Context) (*DoctorDiagnosticReport, error) {
 		GitHubRateRemaining: githubRemaining,
 		GitHubRateReset:     githubReset,
 		GitHubRateResetText: githubResetText,
+		GoogleConnected:     googleConnected,
+		GoogleStatusCode:    googleStatusCode,
+		GoogleLatencyMs:     googleLatencyMs,
+		ProxyConfigured:     proxyConfigured,
 	}
 
 	// 12. Fix Suggestions & Score

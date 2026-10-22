@@ -555,6 +555,10 @@ export default defineConfig({
                   github_rate_remaining: 4950,
                   github_rate_reset: Math.floor(Date.now() / 1000) + 1800,
                   github_rate_reset_text: "30m",
+                  google_connected: true,
+                  google_status_code: 204,
+                  google_latency_ms: 125,
+                  proxy_configured: process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.ALL_PROXY || "",
                 },
                 suggestions: suggestions,
               })
