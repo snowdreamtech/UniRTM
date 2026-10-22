@@ -1,5 +1,5 @@
 <template>
-  <div class="view-container explorer-view" id="view-explorer">
+  <div class="view-container explorer-view" id="view-explorer" @contextmenu.prevent>
     <!-- Context Return Banner (Quality Guard or Settings) -->
     <div v-if="route.query.from === 'guard' || route.query.from === 'settings'" class="return-guard-banner">
       <div class="return-guard-content">
