@@ -1,5 +1,5 @@
 <template>
-  <div class="view-container settings-view" id="view-settings">
+  <div class="view-container settings-view" id="view-settings" @contextmenu.prevent>
     <!-- Top Settings Header Bar (VS Code Style) -->
     <div class="settings-top-bar glass-card">
       <div class="settings-search-wrapper">
