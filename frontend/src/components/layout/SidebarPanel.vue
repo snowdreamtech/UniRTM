@@ -226,6 +226,7 @@
           class="sidebar-item"
           :class="{ active: activeSubItem === env.name }"
           @click="handleSubItemClick(env.name)"
+          @contextmenu.prevent="handleEnvContextMenu($event, env)"
         >
           <span class="item-icon">
             <TechIcon
@@ -356,6 +357,15 @@
       @close="isTaskContextMenuVisible = false"
       @action="handleTaskContextMenuAction"
     />
+
+    <!-- Environment Item Context Menu -->
+    <EnvironmentContextMenu
+      :visible="isEnvContextMenuVisible"
+      :position="envContextMenuPosition"
+      :env="envContextMenuTarget"
+      @close="isEnvContextMenuVisible = false"
+      @action="handleEnvContextMenuAction"
+    />
   </aside>
 </template>
 
@@ -368,6 +378,7 @@ import SourceControlSidebar from "../scm/SourceControlSidebar.vue";
 import GuardSidebar from "../guard/GuardSidebar.vue";
 import ToolContextMenu, { type ToolMenuActionType } from "../tools/ToolContextMenu.vue";
 import TaskContextMenu, { type TaskMenuActionType } from "../tasks/TaskContextMenu.vue";
+import EnvironmentContextMenu, { type EnvMenuActionType } from "../environments/EnvironmentContextMenu.vue";
 import { useFileTree } from "../../composables/useFileTree";
 import { useToolUpdates } from "../../composables/useToolUpdates";
 import { useToolScope } from "../../composables/useToolScope";
@@ -444,7 +455,15 @@ function handlePointerDown(e: PointerEvent) {
 
 const { syncFromToolsList, updateResults } = useToolUpdates();
 const { activeScope } = useToolScope();
-const { triggerToolAction, onToolsChanged, triggerTaskAction, onTasksChanged, onDoctorChanged } = useWorkspaceBus();
+const {
+  triggerToolAction,
+  onToolsChanged,
+  triggerTaskAction,
+  onTasksChanged,
+  onDoctorChanged,
+  triggerEnvAction,
+  onEnvsChanged,
+} = useWorkspaceBus();
 
 const isToolContextMenuVisible = ref(false);
 const toolContextMenuPosition = ref({ x: 0, y: 0 });
@@ -485,6 +504,38 @@ function handleTaskContextMenuAction(action: TaskMenuActionType, task: SidebarTa
     command: task.cmd,
     taskCmd: task.cmd,
     task: task,
+  });
+}
+
+const isEnvContextMenuVisible = ref(false);
+const envContextMenuPosition = ref({ x: 0, y: 0 });
+const envContextMenuTarget = ref<SidebarEnvItem | null>(null);
+
+function handleEnvContextMenu(event: MouseEvent, env: SidebarEnvItem) {
+  envContextMenuTarget.value = env;
+  envContextMenuPosition.value = { x: event.clientX, y: event.clientY };
+  isEnvContextMenuVisible.value = true;
+}
+
+function handleEnvContextMenuAction(action: EnvMenuActionType, env: SidebarEnvItem) {
+  isEnvContextMenuVisible.value = false;
+  if (action === "copy-value") {
+    try {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(env.value);
+      }
+    } catch {}
+  } else if (action === "copy-name") {
+    try {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(env.name);
+      }
+    } catch {}
+  }
+  triggerEnvAction({
+    action,
+    envName: env.name,
+    env,
   });
 }
 
@@ -661,6 +712,8 @@ interface SidebarEnvItem {
   name: string;
   value: string;
   isSensitive: boolean;
+  scope?: "workspace" | "user";
+  isOverride?: boolean;
 }
 
 const rawEnvs = ref<SidebarEnvItem[]>([]);
@@ -674,7 +727,9 @@ async function fetchSidebarEnvs() {
         rawEnvs.value = data.env.map((e: any) => ({
           name: e.name,
           value: e.value,
-          isSensitive: e.is_sensitive,
+          isSensitive: Boolean(e.is_sensitive || e.isSensitive),
+          isOverride: Boolean(e.is_override || e.isOverride),
+          scope: e.scope,
         }));
       }
     }
@@ -774,6 +829,7 @@ async function fetchSidebarToolsStatus() {
 let unsubToolsChanged: (() => void) | null = null;
 let unsubTasksChanged: (() => void) | null = null;
 let unsubDoctorChanged: (() => void) | null = null;
+let unsubEnvsChanged: (() => void) | null = null;
 
 onMounted(async () => {
   fetchSidebarTasks();
@@ -783,6 +839,7 @@ onMounted(async () => {
   unsubToolsChanged = onToolsChanged(fetchSidebarToolsStatus);
   unsubTasksChanged = onTasksChanged(fetchSidebarTasks);
   unsubDoctorChanged = onDoctorChanged(fetchSidebarDoctorStatus);
+  unsubEnvsChanged = onEnvsChanged(fetchSidebarEnvs);
 });
 
 onBeforeUnmount(() => {
@@ -797,6 +854,10 @@ onBeforeUnmount(() => {
   if (unsubDoctorChanged) {
     unsubDoctorChanged();
     unsubDoctorChanged = null;
+  }
+  if (unsubEnvsChanged) {
+    unsubEnvsChanged();
+    unsubEnvsChanged = null;
   }
 });
 </script>

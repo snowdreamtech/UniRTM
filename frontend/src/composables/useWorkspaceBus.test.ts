@@ -223,4 +223,34 @@ describe("useWorkspaceBus", () => {
     bus.notifyDoctorChanged();
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  it("handles envAction broadcasts for edit, copy-value, copy-name, and delete", () => {
+    const bus = useWorkspaceBus();
+    const envListener = vi.fn();
+    const unsub = bus.onEnvAction(envListener);
+
+    bus.triggerEnvAction({ action: "edit", envName: "PORT" });
+    expect(envListener).toHaveBeenCalledTimes(1);
+    expect(envListener).toHaveBeenCalledWith({ action: "edit", envName: "PORT" });
+
+    bus.triggerEnvAction({ action: "delete", envName: "PORT" });
+    expect(envListener).toHaveBeenCalledTimes(2);
+
+    unsub();
+    bus.triggerEnvAction({ action: "copy-value", envName: "PORT" });
+    expect(envListener).toHaveBeenCalledTimes(2);
+  });
+
+  it("handles notifyEnvsChanged broadcasts", () => {
+    const bus = useWorkspaceBus();
+    const listener = vi.fn();
+    const unsub = bus.onEnvsChanged(listener);
+
+    bus.notifyEnvsChanged();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsub();
+    bus.notifyEnvsChanged();
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
 });

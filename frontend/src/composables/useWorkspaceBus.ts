@@ -55,6 +55,12 @@ export interface TaskActionRequest {
   task?: any;
 }
 
+export interface EnvActionRequest {
+  action: "edit" | "copy-value" | "copy-name" | "restore-base" | "delete";
+  envName: string;
+  env?: any;
+}
+
 type RevealListener = (req: RevealRequest) => void;
 type GitStatusChangeListener = () => void;
 type OpenDiffListener = (req: WorkspaceDiffRequest) => void;
@@ -69,6 +75,8 @@ type ToolsChangeListener = () => void;
 type TaskActionListener = (req: TaskActionRequest) => void;
 type TasksChangeListener = () => void;
 type DoctorChangeListener = () => void;
+type EnvActionListener = (req: EnvActionRequest) => void;
+type EnvsChangeListener = () => void;
 
 const lastRevealRequest = ref<RevealRequest | null>(null);
 const currentActiveFilePath = ref<string>("");
@@ -86,6 +94,8 @@ const toolsChangeListeners = new Set<ToolsChangeListener>();
 const taskActionListeners = new Set<TaskActionListener>();
 const tasksChangeListeners = new Set<TasksChangeListener>();
 const doctorChangeListeners = new Set<DoctorChangeListener>();
+const envActionListeners = new Set<EnvActionListener>();
+const envsChangeListeners = new Set<EnvsChangeListener>();
 
 /**
  * useWorkspaceBus: 轻量级跨组件协同状态总线
@@ -440,6 +450,53 @@ export function useWorkspaceBus() {
   }
 
   /**
+   * 触发环境变量操作（如从侧边栏右键菜单请求主画布执行编辑、复制真实值、复制变量名、恢复基准值、删除）
+   */
+  function triggerEnvAction(req: EnvActionRequest): void {
+    if (!req || !req.envName) return;
+    envActionListeners.forEach((fn) => {
+      try {
+        fn(req);
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in env action listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册环境变量操作监听器
+   */
+  function onEnvAction(listener: EnvActionListener): () => void {
+    envActionListeners.add(listener);
+    return () => {
+      envActionListeners.delete(listener);
+    };
+  }
+
+  /**
+   * 广播环境变量配置发生变动
+   */
+  function notifyEnvsChanged(): void {
+    envsChangeListeners.forEach((fn) => {
+      try {
+        fn();
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in envs change listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册环境变量变动监听器
+   */
+  function onEnvsChanged(listener: EnvsChangeListener): () => void {
+    envsChangeListeners.add(listener);
+    return () => {
+      envsChangeListeners.delete(listener);
+    };
+  }
+
+  /**
    * 清除所有监听器（主要用于单元测试隔离）
    */
   function _clearAllListeners(): void {
@@ -457,6 +514,8 @@ export function useWorkspaceBus() {
     taskActionListeners.clear();
     tasksChangeListeners.clear();
     doctorChangeListeners.clear();
+    envActionListeners.clear();
+    envsChangeListeners.clear();
     lastRevealRequest.value = null;
     currentActiveFilePath.value = "";
   }
@@ -493,6 +552,10 @@ export function useWorkspaceBus() {
     onTasksChanged,
     notifyDoctorChanged,
     onDoctorChanged,
+    triggerEnvAction,
+    onEnvAction,
+    notifyEnvsChanged,
+    onEnvsChanged,
     _clearAllListeners,
   };
 }

@@ -587,12 +587,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
 import EnvironmentModal from "../components/EnvironmentModal.vue";
 import { useAppScope } from "../composables/useAppScope";
+import { useWorkspaceBus, type EnvActionRequest } from "../composables/useWorkspaceBus";
 
 interface EnvItem {
   name: string;
@@ -609,6 +610,8 @@ interface EnvItem {
 
 const route = useRoute();
 const { activeScope, syncFromRoute } = useAppScope();
+const { onEnvAction, notifyEnvsChanged } = useWorkspaceBus();
+let unsubEnvAction: (() => void) | null = null;
 
 const envList = ref<EnvItem[]>([]);
 const profilesList = ref<string[]>([]);
@@ -719,6 +722,7 @@ async function restoreBaseValue(key: string) {
     if (res.ok) {
       showToast(`✓ 已恢复 ${key} 为默认基准值`);
       await fetchEnvVars();
+      notifyEnvsChanged();
     } else {
       const err = await res.json();
       showToast("恢复基准失败: " + (err.error || "未知错误"));
@@ -841,6 +845,24 @@ async function copyValue(item: EnvItem) {
   }
 }
 
+function copyKeyName(name: string) {
+  try {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(name);
+    } else {
+      const input = document.createElement("input");
+      input.value = name;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+    }
+    showToast(`✓ ${t("environments.copied_key_to_clipboard", { key: name }) || "已复制变量名 " + name}`);
+  } catch {
+    showToast("复制失败");
+  }
+}
+
 function openCreateModal() {
   modalMode.value = "create";
   selectedEnv.value = undefined;
@@ -878,6 +900,7 @@ async function handleSaveEnv(payload: {
           : `✓ ${t("environments.update_success", { key: payload.key }) || "成功更新环境变量 " + payload.key}`
       );
       await fetchEnvVars();
+      notifyEnvsChanged();
     } else {
       const err = await res.json();
       showToast("保存失败: " + (err.error || "未知错误"));
@@ -905,6 +928,7 @@ async function executeDelete(name: string) {
       deleteConfirmKey.value = "";
       showToast(`✓ ${t("environments.delete_success", { key: name }) || "已成功删除环境变量 " + name}`);
       await fetchEnvVars();
+      notifyEnvsChanged();
     } else {
       const err = await res.json();
       showToast("删除失败: " + (err.error || "未知错误"));
@@ -916,8 +940,48 @@ async function executeDelete(name: string) {
   }
 }
 
+function handleBusEnvAction(req: EnvActionRequest) {
+  let target = envList.value.find((e) => e.name === req.envName);
+  if (!target && req.env) {
+    target = {
+      name: req.env.name,
+      value: req.env.value,
+      scope: activeScope.value,
+      is_sensitive: Boolean(req.env.isSensitive || req.env.is_sensitive),
+      is_override: Boolean(req.env.is_override || req.env.isOverride),
+    };
+  }
+  if (!target) return;
+
+  switch (req.action) {
+    case "edit":
+      openEditModal(target);
+      break;
+    case "copy-value":
+      copyValue(target);
+      break;
+    case "copy-name":
+      copyKeyName(target.name);
+      break;
+    case "restore-base":
+      restoreBaseValue(target.name);
+      break;
+    case "delete":
+      confirmDelete(target.name);
+      break;
+  }
+}
+
 onMounted(() => {
   fetchEnvVars();
+  unsubEnvAction = onEnvAction(handleBusEnvAction);
+});
+
+onUnmounted(() => {
+  if (unsubEnvAction) {
+    unsubEnvAction();
+    unsubEnvAction = null;
+  }
 });
 </script>
 
