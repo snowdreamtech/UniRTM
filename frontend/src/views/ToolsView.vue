@@ -1,5 +1,5 @@
 <template>
-  <div class="view-container tools-view" id="view-tools">
+  <div class="view-container tools-view" id="view-tools" @contextmenu.prevent>
     <!-- View Header Row -->
     <div class="view-header-row">
       <div>
