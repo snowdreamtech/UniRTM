@@ -2,7 +2,7 @@
 <!-- Licensed under the MIT License. See LICENSE file in the project root for full license information. -->
 
 <template>
-  <div class="view-container doctor-view" id="view-doctor">
+  <div class="view-container doctor-view" id="view-doctor" @contextmenu.prevent>
     <!-- View Header -->
     <div class="view-header-row">
       <div>

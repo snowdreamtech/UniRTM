@@ -288,13 +288,14 @@
 
       <!-- DOCTOR Navigation Items -->
       <template v-if="currentTab === 'doctor'">
-        <div class="nav-group-title">{{ t("sidebar.group_doctor") || "系统诊断" }}</div>
+        <div class="nav-group-title" @contextmenu.prevent>{{ t("sidebar.group_doctor") || "系统诊断" }}</div>
         <button
           v-for="check in filteredDoctorChecks"
           :key="check.id"
           class="sidebar-item"
           :class="{ active: activeSubItem === check.id }"
           @click="handleDoctorItemClick(check.id)"
+          @contextmenu.prevent
         >
           <span class="item-icon"><TechIcon :id="check.icon" :size="20" /></span>
           <span class="item-label">{{ check.label }}</span>
