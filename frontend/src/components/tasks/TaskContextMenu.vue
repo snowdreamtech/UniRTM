@@ -140,9 +140,21 @@ onBeforeUnmount(() => {
   color: var(--accent-cyan);
 }
 
+.menu-item.danger,
+.menu-item.danger .menu-label,
+.menu-item.danger .menu-icon {
+  color: var(--error, #f87171);
+}
+
+:root[data-theme="light"] .menu-item.danger,
+:root[data-theme="light"] .menu-item.danger .menu-label,
+:root[data-theme="light"] .menu-item.danger .menu-icon {
+  color: #ef4444;
+}
+
 .menu-item.danger:hover {
   background-color: rgba(239, 68, 68, 0.15);
-  color: var(--error, #ef4444);
+  color: #ef4444;
 }
 
 .menu-icon {

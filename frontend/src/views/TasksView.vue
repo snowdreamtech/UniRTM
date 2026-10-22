@@ -1149,13 +1149,23 @@ async function executeTask(task: ProjectTask) {
   background: #f1f5f9;
 }
 
-.task-dropdown-menu .dropdown-item.danger {
+.task-dropdown-menu .dropdown-item.danger,
+.task-dropdown-menu .dropdown-item.danger span {
   color: #ef4444;
+}
+
+[data-theme="dark"] .task-dropdown-menu .dropdown-item.danger,
+[data-theme="dark"] .task-dropdown-menu .dropdown-item.danger span {
+  color: #f87171;
 }
 
 .task-dropdown-menu .dropdown-item.danger:hover {
   background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
+}
+[data-theme="dark"] .task-dropdown-menu .dropdown-item.danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
 }
 
 /* 下拉菜单动画 */

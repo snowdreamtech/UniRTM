@@ -3110,14 +3110,16 @@ onBeforeUnmount(() => {
   color: #fbbf24;
 }
 
-.runtime-dropdown-menu .dropdown-item.danger {
+.runtime-dropdown-menu .dropdown-item.danger,
+.runtime-dropdown-menu .dropdown-item.danger span {
   color: #ef4444;
 }
 .runtime-dropdown-menu .dropdown-item.danger:hover {
   background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
 }
-[data-theme="dark"] .runtime-dropdown-menu .dropdown-item.danger {
+[data-theme="dark"] .runtime-dropdown-menu .dropdown-item.danger,
+[data-theme="dark"] .runtime-dropdown-menu .dropdown-item.danger span {
   color: #f87171;
 }
 
