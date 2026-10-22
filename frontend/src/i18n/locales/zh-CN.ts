@@ -67,7 +67,7 @@ export const zhCn: TranslationDict = {
   "terminal.split_badge": "已拆分",
   "drawer.empty_logs": "暂无系统输出日志。系统运行与扩展事件将在此显示。",
   "drawer.empty_tasks": "暂无任务执行日志。在任务视图中点击“运行”以在此查看执行终端输出。",
-  "drawer.empty_doctor": "暂无环境体检报告。在环境诊断视图中执行“重新全面体检”以查看详情。",
+  "drawer.empty_doctor": "暂无环境体检报告。在环境诊断视图中执行“全面体检”以查看详情。",
   "drawer.clear_logs": "清空日志",
   "drawer.copy_all": "复制日志",
   "drawer.copy_all_success": "已复制日志到剪贴板",

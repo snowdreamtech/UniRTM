@@ -32,15 +32,15 @@
           <span>导出报告</span>
         </button>
 
-        <!-- 重新全面体检主按钮 -->
+        <!-- 全面体检主按钮 -->
         <button
           class="doctor-action-btn primary"
           :disabled="isLoading"
           @click="fetchDoctorReport"
-          title="重新执行系统健康全景诊断"
+          title="执行系统健康全面体检"
         >
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': isLoading }" />
-          <span>{{ isLoading ? "正在体检..." : "重新全面体检" }}</span>
+          <span>{{ isLoading ? "正在体检..." : "全面体检" }}</span>
         </button>
       </div>
     </div>
@@ -558,7 +558,7 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.45rem 0.9rem;
+  padding: 0.45rem 0.95rem;
   border-radius: 6px;
   font-size: 0.82rem;
   font-weight: 600;
@@ -567,31 +567,79 @@ onMounted(() => {
   border: 1px solid transparent;
 }
 
+/* 深色模式主按钮 (全面体检) */
 .doctor-action-btn.primary {
-  background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
-  color: #070a12;
-  box-shadow: 0 2px 8px var(--accent-cyan-glow);
+  background: linear-gradient(135deg, #00f0ff 0%, #38bdf8 100%);
+  color: #050e1d;
+  font-weight: 700;
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  box-shadow: 0 2px 10px rgba(0, 229, 255, 0.28);
 }
 
 .doctor-action-btn.primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px var(--accent-cyan-glow);
+  background: linear-gradient(135deg, #38bdf8 0%, #7dd3fc 100%);
+  color: #050e1d;
+  border-color: #7dd3fc;
+  box-shadow: 0 4px 16px rgba(0, 229, 255, 0.45);
 }
 
+/* 浅色模式主按钮 (全面体检) */
+:root[data-theme="light"] .doctor-action-btn.primary,
+[data-theme="light"] .doctor-action-btn.primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff !important;
+  font-weight: 600;
+  border: 1px solid #0284c7;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+
+:root[data-theme="light"] .doctor-action-btn.primary:hover:not(:disabled),
+[data-theme="light"] .doctor-action-btn.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  border-color: #0369a1;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+
+/* 深色模式次要按钮 */
 .doctor-action-btn.secondary {
-  background: var(--card-bg);
-  border-color: var(--card-border);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
   color: var(--text-main);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .doctor-action-btn.secondary:hover:not(:disabled) {
-  background: var(--input-bg);
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.1);
   border-color: var(--card-border-active);
+  color: var(--text-main);
+}
+
+/* 浅色模式次要按钮 */
+:root[data-theme="light"] .doctor-action-btn.secondary,
+[data-theme="light"] .doctor-action-btn.secondary {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .doctor-action-btn.secondary:hover:not(:disabled),
+[data-theme="light"] .doctor-action-btn.secondary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #f8fafc;
+  border-color: #0284c7;
+  color: #0284c7;
 }
 
 .doctor-action-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* Score Banner */
