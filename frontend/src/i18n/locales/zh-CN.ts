@@ -1374,4 +1374,8 @@ export const zhCn: TranslationDict = {
   "scm.graph.loading": "正在加载 Git 提交图谱...",
   "scm.graph.loading_desc": "正在解析提交拓扑与分支历史，请稍候...",
   "scm.graph.refreshing": "正在更新 Git 图谱...",
+  "doctor.dim_core": "核心与执行环境",
+  "doctor.dim_network": "网络联通与 API 配额",
+  "doctor.dim_directories": "磁盘占用与存储路径",
+  "doctor.dim_database": "状态数据库与配置",
 };

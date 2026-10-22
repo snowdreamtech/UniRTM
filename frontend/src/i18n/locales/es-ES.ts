@@ -1386,4 +1386,8 @@ export const esEs: TranslationDict = {
   "scm.graph.loading": "Cargando gráfico Git...",
   "scm.graph.loading_desc": "Analizando la topología de commits y el historial de ramas...",
   "scm.graph.refreshing": "Actualizando gráfico Git...",
+  "doctor.dim_core": "Core & Shell",
+  "doctor.dim_network": "Network & Quotas",
+  "doctor.dim_directories": "Storage & Directories",
+  "doctor.dim_database": "Database & Config",
 };

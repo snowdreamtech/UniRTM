@@ -1386,4 +1386,8 @@ export const deDe: TranslationDict = {
   "scm.graph.loading": "Git-Graph wird geladen...",
   "scm.graph.loading_desc": "Commit-Topologie und Branch-Verlauf werden analysiert, bitte warten...",
   "scm.graph.refreshing": "Git-Graph wird aktualisiert...",
+  "doctor.dim_core": "Core & Shell",
+  "doctor.dim_network": "Network & Quotas",
+  "doctor.dim_directories": "Storage & Directories",
+  "doctor.dim_database": "Database & Config",
 };

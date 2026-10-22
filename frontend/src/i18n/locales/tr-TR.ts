@@ -1386,4 +1386,8 @@ export const trTr: TranslationDict = {
   "scm.graph.loading": "Loading Git Graph...",
   "scm.graph.loading_desc": "Parsing commit topology and branch history, please wait...",
   "scm.graph.refreshing": "Updating Git Graph...",
+  "doctor.dim_core": "Core & Shell",
+  "doctor.dim_network": "Network & Quotas",
+  "doctor.dim_directories": "Storage & Directories",
+  "doctor.dim_database": "Database & Config",
 };

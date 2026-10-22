@@ -1385,4 +1385,8 @@ export const koKr: TranslationDict = {
   "scm.graph.loading": "Git 그래프 로딩 중...",
   "scm.graph.loading_desc": "커밋 토폴로지 및 브랜치 기록 분석 중, 잠시만 기다려주세요...",
   "scm.graph.refreshing": "Git 그래프 업데이트 중...",
+  "doctor.dim_core": "Core & Shell",
+  "doctor.dim_network": "Network & Quotas",
+  "doctor.dim_directories": "Storage & Directories",
+  "doctor.dim_database": "Database & Config",
 };

@@ -1378,4 +1378,8 @@ export const zhTw: TranslationDict = {
   "scm.graph.loading": "正在載入 Git 提交圖表...",
   "scm.graph.loading_desc": "正在解析提交拓撲與分支歷程，請稍候...",
   "scm.graph.refreshing": "正在更新 Git 圖表...",
+  "doctor.dim_core": "核心與執行環境",
+  "doctor.dim_network": "網路連線與 API 配額",
+  "doctor.dim_directories": "磁碟佔用與儲存路徑",
+  "doctor.dim_database": "狀態資料庫與設定",
 };

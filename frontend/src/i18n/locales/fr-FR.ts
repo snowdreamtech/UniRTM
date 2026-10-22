@@ -1386,4 +1386,8 @@ export const frFr: TranslationDict = {
   "scm.graph.loading": "Chargement du graphique Git...",
   "scm.graph.loading_desc": "Analyse de la topologie des commits et de l'historique des branches...",
   "scm.graph.refreshing": "Mise à jour du graphique Git...",
+  "doctor.dim_core": "Core & Shell",
+  "doctor.dim_network": "Network & Quotas",
+  "doctor.dim_directories": "Storage & Directories",
+  "doctor.dim_database": "Database & Config",
 };

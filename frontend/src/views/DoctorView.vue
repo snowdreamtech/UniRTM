@@ -122,7 +122,7 @@
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:dashboard" :size="16" /></span>
-            <span class="card-title">核心与执行环境 (Core & Shell)</span>
+            <span class="card-title">{{ t("doctor.dim_core") || "核心与执行环境" }}</span>
           </div>
           <span class="badge-status" :class="report.core.shims_on_path ? 'pass' : 'warn'">
             {{ report.core.shims_on_path ? "Shims 已就绪" : "Shims 需配置" }}
@@ -157,7 +157,7 @@
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:runtimes" :size="16" /></span>
-            <span class="card-title">网络联通与 API 配额 (Network)</span>
+            <span class="card-title">{{ t("doctor.dim_network") || "网络联通与 API 配额" }}</span>
           </div>
           <span
             class="badge-status"
@@ -242,7 +242,7 @@
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:folder" :size="16" /></span>
-            <span class="card-title">磁盘占用与存储路径 (Directories)</span>
+            <span class="card-title">{{ t("doctor.dim_directories") || "磁盘占用与存储路径" }}</span>
           </div>
         </div>
         <div class="card-dirs-list">
@@ -261,7 +261,7 @@
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:settings" :size="16" /></span>
-            <span class="card-title">状态数据库与配置层叠</span>
+            <span class="card-title">{{ t("doctor.dim_database") || "状态数据库与配置层叠" }}</span>
           </div>
           <span class="badge-status" :class="report.health.database_ok ? 'pass' : 'fail'">
             {{ report.health.database_ok ? "SQLite OK" : "DB 异常" }}

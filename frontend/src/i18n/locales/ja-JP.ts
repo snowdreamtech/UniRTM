@@ -1386,4 +1386,8 @@ export const jaJp: TranslationDict = {
   "scm.graph.loading": "Git グラフを読み込み中...",
   "scm.graph.loading_desc": "コミットトポロジとブランチ履歴を解析中、お待ちください...",
   "scm.graph.refreshing": "Git グラフを更新中...",
+  "doctor.dim_core": "コアと実行環境",
+  "doctor.dim_network": "ネットワークとAPIクォータ",
+  "doctor.dim_directories": "ストレージとディレクトリ",
+  "doctor.dim_database": "データベースと設定",
 };

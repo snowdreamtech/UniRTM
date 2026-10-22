@@ -151,6 +151,10 @@ export interface TranslationDict {
 
   "doctor.title"?: string;
   "doctor.healthy"?: string;
+  "doctor.dim_core"?: string;
+  "doctor.dim_network"?: string;
+  "doctor.dim_directories"?: string;
+  "doctor.dim_database"?: string;
 
   "dashboard.kpi_tools"?: string;
   "dashboard.kpi_tasks"?: string;

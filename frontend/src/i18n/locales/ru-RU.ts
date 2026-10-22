@@ -1385,4 +1385,8 @@ export const ruRu: TranslationDict = {
   "scm.graph.loading": "Загрузка графа Git...",
   "scm.graph.loading_desc": "Анализ топологии коммитов и истории веток, пожалуйста, подождите...",
   "scm.graph.refreshing": "Обновление графа Git...",
+  "doctor.dim_core": "Core & Shell",
+  "doctor.dim_network": "Network & Quotas",
+  "doctor.dim_directories": "Storage & Directories",
+  "doctor.dim_database": "Database & Config",
 };
