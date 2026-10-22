@@ -1,5 +1,5 @@
 <template>
-  <div class="scm-view-container" id="view-scm">
+  <div class="scm-view-container" id="view-scm" @contextmenu.prevent>
     <!-- Top Diff Toolbar (When viewing a specific file diff) -->
     <div v-if="activeDiffFile" class="diff-header-bar">
       <div class="diff-title-group">

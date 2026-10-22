@@ -1,5 +1,5 @@
 <template>
-  <div class="scm-sidebar-container" id="scm-sidebar">
+  <div class="scm-sidebar-container" id="scm-sidebar" @contextmenu.prevent>
     <!-- 0. Repositories Section (Multi-repository) -->
     <div v-if="repositories.length > 0" class="scm-changes-group scm-repositories-group">
       <div class="group-header" @click="isReposExpanded = !isReposExpanded">
