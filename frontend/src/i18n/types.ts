@@ -25,6 +25,11 @@ export interface TranslationDict {
   "drawer.reset_tab_order"?: string;
   "drawer.drag_reorder_tip"?: string;
   "drawer.panel_views"?: string;
+  "activity_bar.reset_order"?: string;
+  "activity_bar.drag_reorder_tip"?: string;
+  "activity_bar.views"?: string;
+  "environments.copy_name"?: string;
+  "environments.copied_key_to_clipboard"?: string;
   "explorer.context_menu.view_history"?: string;
   "explorer.context_menu.open_diff"?: string;
   "explorer.context_menu.stage_file"?: string;

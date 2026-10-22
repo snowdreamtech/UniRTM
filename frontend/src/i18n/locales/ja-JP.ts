@@ -1390,4 +1390,9 @@ export const jaJp: TranslationDict = {
   "doctor.dim_network": "ネットワークとAPIクォータ",
   "doctor.dim_directories": "ストレージとディレクトリ",
   "doctor.dim_database": "データベースと設定",
+  "activity_bar.reset_order": "Reset Activity Bar Order",
+  "activity_bar.drag_reorder_tip": "Drag to reorder icons, right-click to manage views or reset",
+  "activity_bar.views": "Activity Bar Views",
+  "environments.copy_name": "Copy Variable Name",
+  "environments.copied_key_to_clipboard": "Copied variable name {key}",
 };

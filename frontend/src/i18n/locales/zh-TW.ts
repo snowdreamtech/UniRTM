@@ -1382,4 +1382,9 @@ export const zhTw: TranslationDict = {
   "doctor.dim_network": "網路連線與 API 配額",
   "doctor.dim_directories": "磁碟佔用與儲存路徑",
   "doctor.dim_database": "狀態資料庫與設定",
+  "activity_bar.reset_order": "重置圖示順序與可見性",
+  "activity_bar.drag_reorder_tip": "拖拽調整圖示順序，右鍵管理檢視與重置",
+  "activity_bar.views": "活動列檢視",
+  "environments.copy_name": "複製變數名稱",
+  "environments.copied_key_to_clipboard": "已複製變數名稱 {key}",
 };

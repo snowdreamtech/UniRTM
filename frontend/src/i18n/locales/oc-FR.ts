@@ -1389,4 +1389,9 @@ export const ocFr: TranslationDict = {
   "doctor.dim_network": "Network & Quotas",
   "doctor.dim_directories": "Storage & Directories",
   "doctor.dim_database": "Database & Config",
+  "activity_bar.reset_order": "Reset Activity Bar Order",
+  "activity_bar.drag_reorder_tip": "Drag to reorder icons, right-click to manage views or reset",
+  "activity_bar.views": "Activity Bar Views",
+  "environments.copy_name": "Copy Variable Name",
+  "environments.copied_key_to_clipboard": "Copied variable name {key}",
 };
