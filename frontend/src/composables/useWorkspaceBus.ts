@@ -48,7 +48,7 @@ export interface ToolActionRequest {
 }
 
 export interface TaskActionRequest {
-  action: "run" | "edit" | "delete" | "copy-cmd";
+  action: "run" | "edit" | "delete";
   taskName: string;
   command?: string;
   taskCmd?: string;

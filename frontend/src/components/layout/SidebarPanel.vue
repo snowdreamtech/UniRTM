@@ -479,12 +479,6 @@ function handleTaskContextMenu(event: MouseEvent, task: SidebarTaskItem) {
 
 function handleTaskContextMenuAction(action: TaskMenuActionType, task: SidebarTaskItem) {
   isTaskContextMenuVisible.value = false;
-  if (action === "copy-cmd") {
-    const textToCopy = task.cmd || task.name;
-    if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(textToCopy).catch(() => {});
-    }
-  }
   triggerTaskAction({
     action,
     taskName: task.name,

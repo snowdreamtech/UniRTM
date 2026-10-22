@@ -608,22 +608,6 @@ function handleBusTaskAction(req: TaskActionRequest) {
     case "edit":
       openEditModal(target);
       break;
-    case "copy-cmd": {
-      const cmdToCopy = target.command || target.name;
-      if (navigator?.clipboard?.writeText) {
-        navigator.clipboard
-          .writeText(cmdToCopy)
-          .then(() => {
-            showToast(`已复制命令: ${cmdToCopy}`, "success");
-          })
-          .catch(() => {
-            showToast("复制失败", "error");
-          });
-      } else {
-        showToast(`已复制命令: ${cmdToCopy}`, "success");
-      }
-      break;
-    }
     case "delete":
       openDeleteConfirm(target);
       break;

@@ -17,15 +17,9 @@
           <span class="menu-label">{{ t("common.edit") || "编辑" }}</span>
         </div>
 
-        <!-- 3. 复制命令 (Copy Command) -->
-        <div class="menu-item" @click="handleAction('copy-cmd')">
-          <span class="menu-icon codicon codicon-copy"></span>
-          <span class="menu-label">{{ t("settings.copy_command") || "复制命令" }}</span>
-        </div>
-
         <div class="menu-separator"></div>
 
-        <!-- 4. 删除 (Delete) -->
+        <!-- 3. 删除 (Delete) -->
         <div class="menu-item danger" @click="handleAction('delete')">
           <span class="menu-icon codicon codicon-trash"></span>
           <span class="menu-label">{{ t("common.delete") || "删除" }}</span>
@@ -39,7 +33,7 @@
 import { computed, ref, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../../i18n";
 
-export type TaskMenuActionType = "run" | "edit" | "copy-cmd" | "delete";
+export type TaskMenuActionType = "run" | "edit" | "delete";
 
 const props = defineProps<{
   visible: boolean;
@@ -54,8 +48,8 @@ const emit = defineEmits<{
 
 const menuRef = ref<HTMLElement | null>(null);
 
-const MENU_WIDTH = 140;
-const MENU_HEIGHT = 145;
+const MENU_WIDTH = 130;
+const MENU_HEIGHT = 115;
 
 const adjustedStyle = computed(() => {
   let { x, y } = props.position;

@@ -181,7 +181,7 @@ describe("useWorkspaceBus", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it("handles taskAction broadcasts for run, edit, delete and copy-cmd", () => {
+  it("handles taskAction broadcasts for run, edit, and delete", () => {
     const bus = useWorkspaceBus();
     const taskListener = vi.fn();
     const unsub = bus.onTaskAction(taskListener);
