@@ -93,6 +93,7 @@
       @select-tab="handleDirectSelectTab"
       @open-network-settings="openSettings"
       @toggle-drawer="toggleDrawer"
+      @open-shortcuts="openShortcutsModal"
     />
 
     <!-- 5. Universal Git SSH & GPG Passphrase Prompt Modal -->
@@ -106,7 +107,12 @@
       @toggle-theme="toggleTheme"
       @open-drawer="handleOpenDrawerTab"
       @toggle-scope="toggleScope(router)"
+      @open-shortcuts="openShortcutsModal"
+      @new-terminal="handleNewTerminal"
     />
+
+    <!-- 7. Keyboard Shortcuts Reference Modal (VS Code Aligned) -->
+    <KeyboardShortcutsModal :isOpen="isShortcutsModalOpen" @close="closeShortcutsModal" />
   </div>
 </template>
 
@@ -130,6 +136,8 @@ import { useCredentialBroker } from "./composables/useCredentialBroker";
 import ScopeSwitcher from "./components/common/ScopeSwitcher.vue";
 import PassphraseModal from "./components/common/PassphraseModal.vue";
 import CommandPaletteModal from "./components/common/CommandPaletteModal.vue";
+import KeyboardShortcutsModal from "./components/common/KeyboardShortcutsModal.vue";
+import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
 
 const { startBrokerPolling, stopBrokerPolling } = useCredentialBroker();
 
@@ -511,41 +519,36 @@ async function loadConfig() {
   }
 }
 
-function handleGlobalKeydown(e: KeyboardEvent) {
-  // Ctrl+B / Cmd+B: Toggle Sidebar (VS Code shortcut)
-  if ((e.ctrlKey || e.metaKey) && (e.key === "b" || e.key === "B")) {
-    e.preventDefault();
-    isSidebarOpen.value = !isSidebarOpen.value;
-  }
-  // Ctrl+` / Cmd+`: Toggle Terminal Drawer (VS Code shortcut)
-  else if ((e.ctrlKey || e.metaKey) && e.key === "`") {
-    e.preventDefault();
-    if (!isDrawerOpen.value) {
-      drawerActiveTab.value = "terminal";
-      isDrawerOpen.value = true;
-    } else if (drawerActiveTab.value !== "terminal") {
-      drawerActiveTab.value = "terminal";
-    } else {
-      isDrawerOpen.value = false;
-    }
-  }
-  // Ctrl+K: Command search
-  else if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
-    e.preventDefault();
-    openCommandPalette();
-  }
-  // Ctrl+, / Cmd+,: Open Settings (VS Code shortcut)
-  else if ((e.ctrlKey || e.metaKey) && e.key === ",") {
-    e.preventDefault();
-    openSettings();
-  }
-  // Escape
-  else if (e.key === "Escape") {
-    if (isDrawerOpen.value) {
-      isDrawerOpen.value = false;
-    }
-  }
+const { isShortcutsModalOpen, openShortcutsModal, closeShortcutsModal, createKeydownHandler } = useKeyboardShortcuts();
+
+function handleNewTerminal() {
+  isDrawerOpen.value = true;
+  drawerActiveTab.value = "terminal";
+  const { createSession } = useTerminalSessions();
+  createSession();
 }
+
+const handleGlobalKeydown = createKeydownHandler({
+  openCommandPalette,
+  closeCommandPalette: () => {
+    isCommandPaletteOpen.value = false;
+  },
+  isCommandPaletteOpen: () => isCommandPaletteOpen.value,
+  openSettings,
+  toggleSidebar: () => {
+    isSidebarOpen.value = !isSidebarOpen.value;
+  },
+  toggleDrawer,
+  openDrawerTab: handleOpenDrawerTab,
+  newTerminalSession: handleNewTerminal,
+  navigateToTab,
+  toggleTheme,
+  toggleScope: () => toggleScope(router),
+  isDrawerOpen: () => isDrawerOpen.value,
+  closeDrawer: () => {
+    isDrawerOpen.value = false;
+  },
+});
 
 onMounted(() => {
   loadConfig();

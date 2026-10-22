@@ -109,6 +109,8 @@ const emit = defineEmits<{
   (e: "toggle-theme"): void;
   (e: "open-drawer", tab?: DrawerTab): void;
   (e: "toggle-scope"): void;
+  (e: "open-shortcuts"): void;
+  (e: "new-terminal"): void;
 }>();
 
 const router = useRouter();
@@ -172,7 +174,19 @@ const allCommands = computed<CommandItem[]>(() => {
   const catSys = zh ? "系统" : "System";
 
   return [
-    // 1. Navigation views
+    // 1. Navigation views (VS Code aligned)
+    {
+      id: "nav-explorer",
+      title: zh ? "文件资源管理器 (Explorer)" : "File Explorer (Explorer)",
+      desc: zh ? "浏览当前工作区文件目录树与查看编辑代码" : "Browse workspace directories and view editor files",
+      category: catView,
+      shortcut: "Ctrl+Shift+E",
+      techIcon: "workbench:folder",
+      action: () => {
+        emit("select-tab", "explorer");
+        router.push("/explorer");
+      },
+    },
     {
       id: "nav-scm",
       title: zh ? "源码管理与版本控制 (SCM)" : "Source Control (SCM / Git)",
@@ -180,7 +194,7 @@ const allCommands = computed<CommandItem[]>(() => {
         ? "查看变更清单、暂存修改、分支切换及提交图谱"
         : "Manage changes, staged files, branch switching and git graphs",
       category: catGit,
-      shortcut: "Alt+G",
+      shortcut: "Ctrl+Shift+G",
       techIcon: "workbench:git",
       action: () => {
         emit("select-tab", "scm");
@@ -194,50 +208,11 @@ const allCommands = computed<CommandItem[]>(() => {
         ? "全景探测运行时核心、Shims 路由、磁盘足迹与 API 配额"
         : "Diagnose core runtime, shims routing, disk footprint and cloud quotas",
       category: catDiag,
-      shortcut: "Alt+D",
+      shortcut: "Ctrl+Shift+D",
       techIcon: "workbench:doctor",
       action: () => {
         emit("select-tab", "doctor");
         router.push("/doctor");
-      },
-    },
-    {
-      id: "nav-tools",
-      title: zh ? "开发环境与多版本工具链 (Tools)" : "Toolchains & Runtimes (Tools)",
-      desc: zh
-        ? "快速管理 Node.js, Python, Go, Rust 等多版本运行时"
-        : "Manage multi-version runtimes including Node.js, Python, Go, Rust",
-      category: catTool,
-      techIcon: "workbench:tools",
-      action: () => {
-        emit("select-tab", "tools");
-        router.push("/tools");
-      },
-    },
-    {
-      id: "nav-environments",
-      title: zh ? "环境变量配置管理 (Environments)" : "Environment Variables (Environments)",
-      desc: zh
-        ? "配置与管理当前工作区和用户全局环境变量"
-        : "Inspect and configure workspace and global user environment variables",
-      category: catView,
-      techIcon: "workbench:environments",
-      action: () => {
-        emit("select-tab", "environments");
-        router.push("/environments");
-      },
-    },
-    {
-      id: "nav-tasks",
-      title: zh ? "工程任务与自动化脚本 (Tasks)" : "Project Automation Tasks (Tasks)",
-      desc: zh
-        ? "一键运行构建、测试、代码格式化与流水线任务"
-        : "Execute build, test, lint, and custom automation scripts",
-      category: catView,
-      techIcon: "workbench:tasks",
-      action: () => {
-        emit("select-tab", "tasks");
-        router.push("/tasks");
       },
     },
     {
@@ -247,21 +222,11 @@ const allCommands = computed<CommandItem[]>(() => {
         ? "发现并安装主题风格、功能插件及后端生态扩展"
         : "Discover themes, plugins, and backend ecosystem extensions",
       category: catView,
+      shortcut: "Ctrl+Shift+X",
       techIcon: "workbench:marketplace",
       action: () => {
         emit("select-tab", "marketplace");
         router.push("/marketplace");
-      },
-    },
-    {
-      id: "nav-explorer",
-      title: zh ? "文件资源管理器 (Explorer)" : "File Explorer (Explorer)",
-      desc: zh ? "浏览当前工作区文件目录树与查看编辑代码" : "Browse workspace directories and view editor files",
-      category: catView,
-      techIcon: "workbench:folder",
-      action: () => {
-        emit("select-tab", "explorer");
-        router.push("/explorer");
       },
     },
     {
@@ -271,6 +236,7 @@ const allCommands = computed<CommandItem[]>(() => {
         ? "UniRTM 项目状态总览、运行指标与快速入口"
         : "UniRTM project status overview, core metrics and quick guide",
       category: catView,
+      shortcut: "Alt+1",
       techIcon: "workbench:dashboard",
       action: () => {
         emit("select-tab", "dashboard");
@@ -284,10 +250,53 @@ const allCommands = computed<CommandItem[]>(() => {
         ? "预提交安全扫描、密钥防泄露拦截与格式合规性检查"
         : "Pre-commit protection, secret leak detection, and format harness",
       category: catDiag,
+      shortcut: "Alt+4",
       codicon: "codicon-shield",
       action: () => {
         emit("select-tab", "guard");
         router.push("/guard");
+      },
+    },
+    {
+      id: "nav-tools",
+      title: zh ? "开发环境与多版本工具链 (Tools)" : "Toolchains & Runtimes (Tools)",
+      desc: zh
+        ? "快速管理 Node.js, Python, Go, Rust 等多版本运行时"
+        : "Manage multi-version runtimes including Node.js, Python, Go, Rust",
+      category: catTool,
+      shortcut: "Alt+5",
+      techIcon: "workbench:tools",
+      action: () => {
+        emit("select-tab", "tools");
+        router.push("/tools");
+      },
+    },
+    {
+      id: "nav-tasks",
+      title: zh ? "工程任务与自动化脚本 (Tasks)" : "Project Automation Tasks (Tasks)",
+      desc: zh
+        ? "一键运行构建、测试、代码格式化与流水线任务"
+        : "Execute build, test, lint, and custom automation scripts",
+      category: catView,
+      shortcut: "Alt+6",
+      techIcon: "workbench:tasks",
+      action: () => {
+        emit("select-tab", "tasks");
+        router.push("/tasks");
+      },
+    },
+    {
+      id: "nav-environments",
+      title: zh ? "环境变量配置管理 (Environments)" : "Environment Variables (Environments)",
+      desc: zh
+        ? "配置与管理当前工作区和用户全局环境变量"
+        : "Inspect and configure workspace and global user environment variables",
+      category: catView,
+      shortcut: "Alt+7",
+      techIcon: "workbench:environments",
+      action: () => {
+        emit("select-tab", "environments");
+        router.push("/environments");
       },
     },
     {
@@ -318,7 +327,20 @@ const allCommands = computed<CommandItem[]>(() => {
       },
     },
 
-    // 2. Global Actions
+    // 2. Global Actions & Helpers
+    {
+      id: "act-shortcuts",
+      title: zh ? "键盘快捷键速查手册 (VS Code 对齐)" : "Keyboard Shortcuts Reference (VS Code Aligned)",
+      desc: zh
+        ? "查看 UniRTM 与 VS Code 深度对齐的所有键盘快捷键及快速操作"
+        : "View full list of keyboard shortcuts aligned with VS Code",
+      category: catSys,
+      shortcut: "Ctrl+K Ctrl+S",
+      codicon: "codicon-keyboard",
+      action: () => {
+        emit("open-shortcuts");
+      },
+    },
     {
       id: "act-theme",
       title: zh ? "切换浅色 / 深色外观模式" : "Toggle Light / Dark Appearance Mode",
@@ -346,13 +368,26 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "act-terminal",
-      title: zh ? "打开集成终端 (Terminal)" : "Open Integrated Terminal (Terminal)",
-      desc: zh ? "呼出底部抽屉终端并启动交互控制台" : "Reveal bottom drawer and launch interactive shell session",
+      title: zh ? "切换集成终端 (Terminal)" : "Toggle Integrated Terminal (Terminal)",
+      desc: zh ? "呼出或收起底部抽屉终端并启动交互控制台" : "Reveal or toggle bottom drawer integrated shell session",
       category: catTool,
       shortcut: "Ctrl+`",
       codicon: "codicon-terminal",
       action: () => {
         emit("open-drawer", "terminal");
+      },
+    },
+    {
+      id: "act-new-terminal",
+      title: zh ? "新建终端会话 (New Terminal)" : "Create New Terminal Session",
+      desc: zh
+        ? "在底部终端抽屉中新增一个独立的 Shell 终端实例"
+        : "Create a new terminal shell session in bottom drawer",
+      category: catTool,
+      shortcut: "Ctrl+Shift+`",
+      codicon: "codicon-terminal",
+      action: () => {
+        emit("new-terminal");
       },
     },
     {
@@ -362,6 +397,7 @@ const allCommands = computed<CommandItem[]>(() => {
         ? "检查实时事件分发、系统后台信息及构建流水线日志"
         : "Inspect background events, system notifications and build outputs",
       category: catTool,
+      shortcut: "Ctrl+Shift+U",
       codicon: "codicon-output",
       action: () => {
         emit("open-drawer", "output");

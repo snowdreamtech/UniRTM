@@ -111,6 +111,17 @@
         <span>{{ lockStatusText }}</span>
       </div>
 
+      <!-- Keyboard Shortcuts Cheatsheet -->
+      <button
+        class="status-btn"
+        id="btn-status-shortcuts"
+        :title="isZh ? '键盘快捷键 (Ctrl+K Ctrl+S)' : 'Keyboard Shortcuts (Ctrl+K Ctrl+S)'"
+        @click="$emit('open-shortcuts')"
+      >
+        <span class="btn-icon"><span class="codicon codicon-keyboard"></span></span>
+        <span>{{ isZh ? "快捷键" : "Shortcuts" }}</span>
+      </button>
+
       <!-- Core Version -->
       <div class="status-version font-mono" title="UniRTM Core Version">v0.35.0</div>
     </div>
@@ -142,6 +153,7 @@ defineEmits<{
   (e: "select-tab", tabId: string): void;
   (e: "open-network-settings"): void;
   (e: "toggle-drawer"): void;
+  (e: "open-shortcuts"): void;
 }>();
 
 const isZh = computed(() => {
