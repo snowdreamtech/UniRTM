@@ -5,6 +5,7 @@
     :class="{ 'is-resizing': isDragging }"
     id="app-sidebar-panel"
     :style="{ width: `${sidebarWidth}px`, minWidth: `${sidebarWidth}px` }"
+    @contextmenu.prevent
   >
     <!-- Panel Header -->
     <div class="sidebar-header">
