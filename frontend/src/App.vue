@@ -1,5 +1,5 @@
 <template>
-  <div class="vscode-app-layout" id="app-workbench">
+  <div class="vscode-app-layout" id="app-workbench" @contextmenu.prevent>
     <!-- Global Toast Notification -->
     <ToastNotification :message="toastMessage" :type="toastType" @close="dismissToast" />
 
