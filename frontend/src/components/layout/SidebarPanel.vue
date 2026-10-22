@@ -86,6 +86,7 @@
               class="sidebar-item item-missing"
               :class="{ active: activeSubItem === tool.name || activeSubItem === tool.id }"
               @click="handleSubItemClick(tool.id || tool.name)"
+              @contextmenu.prevent="handleToolContextMenu($event, tool)"
             >
               <span class="item-icon"><TechIcon :id="tool.id || tool.name" :size="20" /></span>
               <div class="item-dual">
@@ -125,6 +126,7 @@
               class="sidebar-item item-upgradable"
               :class="{ active: activeSubItem === tool.name || activeSubItem === tool.id }"
               @click="handleSubItemClick(tool.id || tool.name)"
+              @contextmenu.prevent="handleToolContextMenu($event, tool)"
             >
               <span class="item-icon"><TechIcon :id="tool.id || tool.name" :size="20" /></span>
               <div class="item-dual">
@@ -168,6 +170,7 @@
               class="sidebar-item"
               :class="{ active: activeSubItem === tool.name || activeSubItem === tool.id }"
               @click="handleSubItemClick(tool.id || tool.name)"
+              @contextmenu.prevent="handleToolContextMenu($event, tool)"
             >
               <span class="item-icon"><TechIcon :id="tool.id || tool.name" :size="20" /></span>
               <div class="item-dual">
@@ -334,19 +337,30 @@
 
     <!-- Dragging overlay to prevent cursor/pointer capture interference -->
     <div v-if="isDragging" class="sidebar-drag-overlay"></div>
+
+    <!-- Tool Item Context Menu -->
+    <ToolContextMenu
+      :visible="isToolContextMenuVisible"
+      :position="toolContextMenuPosition"
+      :tool="toolContextMenuTarget"
+      @close="isToolContextMenuVisible = false"
+      @action="handleToolContextMenuAction"
+    />
   </aside>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import ExplorerSidebar from "../explorer/ExplorerSidebar.vue";
 import SourceControlSidebar from "../scm/SourceControlSidebar.vue";
 import GuardSidebar from "../guard/GuardSidebar.vue";
+import ToolContextMenu, { type ToolMenuActionType } from "../tools/ToolContextMenu.vue";
 import { useFileTree } from "../../composables/useFileTree";
 import { useToolUpdates } from "../../composables/useToolUpdates";
 import { useToolScope } from "../../composables/useToolScope";
+import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 import { categorizeTools } from "../../utils/toolStatus";
 
 const SIDEBAR_WIDTH_KEY = "unirtm_sidebar_width";
@@ -419,6 +433,28 @@ function handlePointerDown(e: PointerEvent) {
 
 const { syncFromToolsList, updateResults } = useToolUpdates();
 const { activeScope } = useToolScope();
+const { triggerToolAction, onToolsChanged } = useWorkspaceBus();
+
+const isToolContextMenuVisible = ref(false);
+const toolContextMenuPosition = ref({ x: 0, y: 0 });
+const toolContextMenuTarget = ref<any | null>(null);
+
+function handleToolContextMenu(event: MouseEvent, tool: any) {
+  toolContextMenuTarget.value = tool;
+  toolContextMenuPosition.value = { x: event.clientX, y: event.clientY };
+  isToolContextMenuVisible.value = true;
+}
+
+function handleToolContextMenuAction(action: ToolMenuActionType, tool: any) {
+  isToolContextMenuVisible.value = false;
+  const toolId = tool.id || tool.name;
+  triggerToolAction({
+    action,
+    toolId,
+    toolName: tool.name,
+    tool: tool.raw || tool,
+  });
+}
 
 const props = defineProps<{
   isOpen: boolean;
@@ -625,9 +661,7 @@ const doctorChecks = [
   { id: "mirror-speed", icon: "workbench:tasks", label: "Mirror Latency" },
 ];
 
-onMounted(async () => {
-  fetchSidebarTasks();
-  fetchSidebarEnvs();
+async function fetchSidebarToolsStatus() {
   try {
     const res = await fetch("/api/tools/status");
     if (res.ok) {
@@ -640,6 +674,22 @@ onMounted(async () => {
     }
   } catch {
     // dev mode fallback
+  }
+}
+
+let unsubToolsChanged: (() => void) | null = null;
+
+onMounted(async () => {
+  fetchSidebarTasks();
+  fetchSidebarEnvs();
+  fetchSidebarToolsStatus();
+  unsubToolsChanged = onToolsChanged(fetchSidebarToolsStatus);
+});
+
+onBeforeUnmount(() => {
+  if (unsubToolsChanged) {
+    unsubToolsChanged();
+    unsubToolsChanged = null;
   }
 });
 </script>

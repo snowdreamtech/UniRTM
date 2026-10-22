@@ -40,6 +40,13 @@ export interface RevealInTerminalRequest {
   directoryPath: string;
 }
 
+export interface ToolActionRequest {
+  action: "switch" | "install" | "toggle-pin" | "delete";
+  toolId: string;
+  toolName?: string;
+  tool?: any;
+}
+
 type RevealListener = (req: RevealRequest) => void;
 type GitStatusChangeListener = () => void;
 type OpenDiffListener = (req: WorkspaceDiffRequest) => void;
@@ -49,6 +56,8 @@ type FileDeleteListener = (path: string) => void;
 type OpenInEditorListener = (req: OpenInEditorRequest) => void;
 type SendToTerminalListener = (req: SendToTerminalRequest) => void;
 type RevealInTerminalListener = (req: RevealInTerminalRequest) => void;
+type ToolActionListener = (req: ToolActionRequest) => void;
+type ToolsChangeListener = () => void;
 
 const lastRevealRequest = ref<RevealRequest | null>(null);
 const currentActiveFilePath = ref<string>("");
@@ -61,6 +70,8 @@ const fileDeleteListeners = new Set<FileDeleteListener>();
 const openInEditorListeners = new Set<OpenInEditorListener>();
 const sendToTerminalListeners = new Set<SendToTerminalListener>();
 const revealInTerminalListeners = new Set<RevealInTerminalListener>();
+const toolActionListeners = new Set<ToolActionListener>();
+const toolsChangeListeners = new Set<ToolsChangeListener>();
 
 /**
  * useWorkspaceBus: 轻量级跨组件协同状态总线
@@ -298,6 +309,53 @@ export function useWorkspaceBus() {
   }
 
   /**
+   * 触发工具链操作（如从侧边栏右键菜单请求主画布执行切换、安装、锁定、删除）
+   */
+  function triggerToolAction(req: ToolActionRequest): void {
+    if (!req || !req.toolId) return;
+    toolActionListeners.forEach((fn) => {
+      try {
+        fn(req);
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in tool action listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册工具链操作监听器
+   */
+  function onToolAction(listener: ToolActionListener): () => void {
+    toolActionListeners.add(listener);
+    return () => {
+      toolActionListeners.delete(listener);
+    };
+  }
+
+  /**
+   * 广播工具链配置或状态发生变动
+   */
+  function notifyToolsChanged(): void {
+    toolsChangeListeners.forEach((fn) => {
+      try {
+        fn();
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in tools change listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册工具链变动监听器
+   */
+  function onToolsChanged(listener: ToolsChangeListener): () => void {
+    toolsChangeListeners.add(listener);
+    return () => {
+      toolsChangeListeners.delete(listener);
+    };
+  }
+
+  /**
    * 清除所有监听器（主要用于单元测试隔离）
    */
   function _clearAllListeners(): void {
@@ -310,6 +368,8 @@ export function useWorkspaceBus() {
     openInEditorListeners.clear();
     sendToTerminalListeners.clear();
     revealInTerminalListeners.clear();
+    toolActionListeners.clear();
+    toolsChangeListeners.clear();
     lastRevealRequest.value = null;
     currentActiveFilePath.value = "";
   }
@@ -336,6 +396,10 @@ export function useWorkspaceBus() {
     onSendToTerminal,
     revealInTerminal,
     onRevealInTerminal,
+    triggerToolAction,
+    onToolAction,
+    notifyToolsChanged,
+    onToolsChanged,
     _clearAllListeners,
   };
 }

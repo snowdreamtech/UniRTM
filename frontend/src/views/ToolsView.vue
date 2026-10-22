@@ -325,7 +325,7 @@
                   :title="t('runtimes.action_delete')"
                 >
                   <TechIcon id="workbench:delete" :size="13" />
-                  <span>{{ t("runtimes.action_delete") || "移除工具" }}</span>
+                  <span>{{ t("runtimes.action_delete") || "删除" }}</span>
                 </button>
               </div>
             </transition>
@@ -483,7 +483,7 @@
                         :title="t('runtimes.action_delete')"
                       >
                         <TechIcon id="workbench:delete" :size="13" />
-                        <span>{{ t("runtimes.action_delete") || "移除工具" }}</span>
+                        <span>{{ t("runtimes.action_delete") || "删除" }}</span>
                       </button>
                     </div>
                   </transition>
@@ -1013,9 +1013,11 @@ import { computeToolStatus, type ToolStatusResult } from "../utils/toolStatus";
 import { COMMON_TOOL_PREFIXES, parseToolSpec, composeToolSpec } from "../utils/toolSpecParser";
 
 import { useToolScope } from "../composables/useToolScope";
+import { useWorkspaceBus, type ToolActionRequest } from "../composables/useWorkspaceBus";
 
 const { showToast } = useToast();
 const { activeScope: currentScope } = useToolScope();
+const { onToolAction, notifyToolsChanged } = useWorkspaceBus();
 const {
   updateResults,
   isChecking: checkingUpdates,
@@ -1726,6 +1728,7 @@ async function fetchStatus() {
         totalInstalled.value = data.total_installed || 0;
         detectedLegacies.value = data.detected_legacies || [];
         syncFromToolsList(toolsList);
+        notifyToolsChanged();
       }
     }
   } catch (err: any) {
@@ -2156,6 +2159,44 @@ function handleRemoveFromMenu(rt: RuntimeItem) {
   confirmRemoveRuntime(rt);
 }
 
+function findRuntimeItem(toolId: string, toolName?: string): RuntimeItem | undefined {
+  const normId = toolId.trim().toLowerCase();
+  const normName = (toolName || "").trim().toLowerCase();
+  return runtimes.value.find((r) => {
+    return (
+      r.id.toLowerCase() === normId ||
+      (r.name && r.name.toLowerCase() === normId) ||
+      (normName && r.id.toLowerCase() === normName) ||
+      (normName && r.name && r.name.toLowerCase() === normName)
+    );
+  });
+}
+
+function handleBusToolAction(req: ToolActionRequest) {
+  let target = findRuntimeItem(req.toolId, req.toolName);
+  if (!target && req.tool) {
+    target = req.tool as RuntimeItem;
+  }
+  if (!target) return;
+
+  switch (req.action) {
+    case "switch":
+      openSwitchVersionModal(target);
+      break;
+    case "install":
+      openRemoteModal(target);
+      break;
+    case "toggle-pin":
+      handleTogglePinFromMenu(target);
+      break;
+    case "delete":
+      handleRemoveFromMenu(target);
+      break;
+  }
+}
+
+let unsubscribeToolAction: (() => void) | null = null;
+
 function handleDocumentClick() {
   if (activeMenuRuntimeId.value) {
     closeRuntimeMenu();
@@ -2175,11 +2216,16 @@ function handleGlobalKeyDown(e: KeyboardEvent) {
 
 onMounted(() => {
   fetchStatus();
+  unsubscribeToolAction = onToolAction(handleBusToolAction);
   window.addEventListener("keydown", handleGlobalKeyDown);
   document.addEventListener("click", handleDocumentClick);
 });
 
 onBeforeUnmount(() => {
+  if (unsubscribeToolAction) {
+    unsubscribeToolAction();
+    unsubscribeToolAction = null;
+  }
   window.removeEventListener("keydown", handleGlobalKeyDown);
   document.removeEventListener("click", handleDocumentClick);
   if (remoteModalAbortController) {

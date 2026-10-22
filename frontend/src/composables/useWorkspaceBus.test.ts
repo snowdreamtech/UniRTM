@@ -150,4 +150,34 @@ describe("useWorkspaceBus", () => {
     unsubSend();
     unsubReveal();
   });
+
+  it("handles toolAction broadcasts for switch, install, toggle-pin and delete", () => {
+    const bus = useWorkspaceBus();
+    const toolListener = vi.fn();
+    const unsub = bus.onToolAction(toolListener);
+
+    bus.triggerToolAction({ action: "switch", toolId: "node", toolName: "Node.js" });
+    expect(toolListener).toHaveBeenCalledTimes(1);
+    expect(toolListener).toHaveBeenCalledWith({ action: "switch", toolId: "node", toolName: "Node.js" });
+
+    bus.triggerToolAction({ action: "delete", toolId: "python" });
+    expect(toolListener).toHaveBeenCalledTimes(2);
+
+    unsub();
+    bus.triggerToolAction({ action: "install", toolId: "go" });
+    expect(toolListener).toHaveBeenCalledTimes(2);
+  });
+
+  it("handles notifyToolsChanged broadcasts", () => {
+    const bus = useWorkspaceBus();
+    const listener = vi.fn();
+    const unsub = bus.onToolsChanged(listener);
+
+    bus.notifyToolsChanged();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsub();
+    bus.notifyToolsChanged();
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
 });
