@@ -41,16 +41,16 @@
           {{
             activeScope === "user"
               ? t("runtimes.scope_user_desc") || "展示当前用户全局配置文件 (~/.config/unirtm/unirtm.toml) 定义的任务"
-              : t("runtimes.scope_workspace_desc") || "解析当前工作区项目配置文件 (.unirtm.toml) 定义的自动化任务"
+              : t("runtimes.scope_workspace_desc") || "解析当前工作区项目配置文件 (unirtm.toml) 定义的自动化任务"
           }}
         </span>
       </div>
       <div
         class="scope-context-config font-mono"
-        :title="activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml'"
+        :title="activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : 'unirtm.toml'"
       >
         <span class="file-icon">📄</span>
-        <span>{{ activeScope === "user" ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml" }}</span>
+        <span>{{ activeScope === "user" ? "~/.config/unirtm/unirtm.toml" : "unirtm.toml" }}</span>
       </div>
     </div>
 
@@ -66,6 +66,9 @@
           class="task-search-input"
           placeholder="搜索任务名称、依赖、命令或描述..."
         />
+        <button v-if="searchKey" type="button" class="search-clear-btn" title="清空搜索" @click="searchKey = ''">
+          <span class="codicon codicon-close"></span>
+        </button>
       </div>
       <div class="task-stats-badges">
         <span class="stat-badge">
@@ -127,12 +130,18 @@
         </div>
         <p class="empty-desc">
           {{
-            activeScope === "user"
-              ? "可在用户配置文件 (~/.config/unirtm/unirtm.toml) 中配置 [tasks.task-name] 定义通用任务。"
-              : "可在项目根目录的 .unirtm.toml 中添加 [tasks.task-name] 定义构建、测试与安全扫描等自动化脚本。"
+            searchKey
+              ? "可尝试缩短关键词或搜索其他自动化命令、依赖名称。"
+              : activeScope === "user"
+                ? "可在用户配置文件 (~/.config/unirtm/unirtm.toml) 中配置 [tasks.task-name] 定义通用任务。"
+                : "可在项目根目录的 unirtm.toml 中添加 [tasks.task-name] 定义构建、测试与安全扫描等自动化脚本。"
           }}
         </p>
-        <button v-if="!searchKey" class="tool-action-btn primary" style="margin-top: 0.75rem" @click="openCreateModal">
+        <button v-if="searchKey" class="tool-action-btn secondary" style="margin-top: 0.75rem" @click="searchKey = ''">
+          <span class="codicon codicon-clear-all"></span>
+          <span>清空搜索条件</span>
+        </button>
+        <button v-else class="tool-action-btn primary" style="margin-top: 0.75rem" @click="openCreateModal">
           <TechIcon id="workbench:edit" :size="14" />
           <span>{{ t("tasks.create_first") || "创建第一个任务" }}</span>
         </button>
@@ -352,7 +361,7 @@
           <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4">
             {{
               t("tasks.delete_warning", {
-                file: activeScope === "user" ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml",
+                file: activeScope === "user" ? "~/.config/unirtm/unirtm.toml" : "unirtm.toml",
               })
             }}
           </p>
@@ -770,11 +779,32 @@ async function executeTask(task: ProjectTask) {
 }
 
 .search-input-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex: 1;
   max-width: 450px;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.search-clear-btn:hover {
+  color: var(--text-main);
+  background: rgba(128, 128, 128, 0.15);
 }
 
 .search-icon {
@@ -785,7 +815,7 @@ async function executeTask(task: ProjectTask) {
 
 .task-search-input {
   width: 100%;
-  padding: 0.4rem 0.65rem;
+  padding: 0.4rem 2rem 0.4rem 0.65rem;
   font-size: 0.82rem;
   border-radius: 6px;
   border: 1px solid var(--card-border);

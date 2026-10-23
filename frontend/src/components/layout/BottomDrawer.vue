@@ -622,6 +622,7 @@ import XTerminalPane from "../terminal/XTerminalPane.vue";
 import PortsPanelView from "../ports/PortsPanelView.vue";
 import { usePorts } from "../../composables/usePorts";
 import { useTerminalProcessWatcher } from "../../composables/useTerminalProcessWatcher";
+import { isMac } from "../../utils/platform";
 
 export interface LogItem {
   timestamp: string;
@@ -1182,7 +1183,7 @@ const emptyStateText = computed(() => {
 
 const autoScrollTitle = computed(() => (autoScroll.value ? "自动滚动 (开启)" : "自动滚动 (关闭)"));
 const maximizeTitle = computed(() => (isMaximized.value ? "还原面板高度" : "最大化面板高度"));
-const closeTitle = computed(() => "关闭面板 (Ctrl+` 或 Esc)");
+const closeTitle = computed(() => (isMac ? "关闭面板 (⌘` 或 Esc)" : "关闭面板 (Ctrl+` 或 Esc)"));
 
 const isCopiedAll = ref(false);
 const copiedRowIdx = ref<number | null>(null);

@@ -70,7 +70,7 @@
         <button
           v-if="activeTab?.isDirty && !activeTab?.isBinary"
           class="action-btn primary"
-          title="保存当前文件 (Ctrl+S)"
+          :title="isMac ? '保存当前文件 (⌘S)' : '保存当前文件 (Ctrl+S)'"
           @click="handleSave"
         >
           <span class="codicon codicon-save"></span>
@@ -361,9 +361,35 @@
     <!-- 4. No File/Folder Selected (Watermark Welcome Screen) -->
     <div v-else class="explorer-welcome-workspace">
       <div class="welcome-watermark">
-        <TechIcon id="workbench:explorer" :size="56" class="watermark-icon" />
+        <div class="welcome-hero-badge">
+          <TechIcon id="workbench:explorer" :size="48" class="watermark-icon" />
+          <div class="hero-glow"></div>
+        </div>
         <h2 class="welcome-title">{{ t("explorer.title") || "资源管理器" }}</h2>
-        <p class="welcome-desc">在左侧选择文件以查看详情或编辑，支持文件浏览、增删改查与终端快捷联动。</p>
+        <p class="welcome-desc">UniRTM 统一工作台：在左侧选择文件编辑，或通过全局快捷键与命令快速开启高效开发流。</p>
+
+        <!-- Quick Launch Cards -->
+        <div class="welcome-quick-actions">
+          <button class="quick-action-pill" @click="handleOpenCommandPalette" title="快速查找命令或文件">
+            <span class="codicon codicon-terminal-cmd"></span>
+            <span class="quick-action-label">命令面板</span>
+            <span class="key-badge">{{ isMac ? "⌘⇧P" : "Ctrl+Shift+P" }}</span>
+          </button>
+          <button class="quick-action-pill" @click="handleOpenTerminal" title="开启或唤起底部集成终端">
+            <span class="codicon codicon-terminal"></span>
+            <span class="quick-action-label">集成终端</span>
+            <span class="key-badge">{{ isMac ? "⌘`" : "Ctrl+`" }}</span>
+          </button>
+          <button class="quick-action-pill" @click="handleCreateNewFileRoot" title="在工作区根目录新建文件">
+            <span class="codicon codicon-new-file"></span>
+            <span class="quick-action-label">新建文件</span>
+          </button>
+          <button class="quick-action-pill" @click="handleOpenKeyboardShortcuts" title="查看全部快捷键绑定">
+            <span class="codicon codicon-keyboard"></span>
+            <span class="quick-action-label">快捷键一览</span>
+            <span class="key-badge">{{ isMac ? "⌘K ⌘S" : "Ctrl+K Ctrl+S" }}</span>
+          </button>
+        </div>
 
         <div class="welcome-shortcuts">
           <div class="shortcut-list">
@@ -388,7 +414,7 @@
               <span class="shortcut-desc">就地原地重命名文件或文件夹</span>
             </div>
             <div class="shortcut-row">
-              <span class="key-badge">Ctrl + S</span>
+              <span class="key-badge">{{ isMac ? "⌘S" : "Ctrl+S" }}</span>
               <span class="shortcut-desc">快速保存当前正在编辑的文件</span>
             </div>
           </div>
@@ -642,6 +668,7 @@ import { useWorkspaceBus } from "../composables/useWorkspaceBus";
 import { useTerminalSessions } from "../composables/useTerminalSessions";
 import { useToast } from "../composables/useToast";
 import { useGit } from "../composables/useGit";
+import { isMac } from "../utils/platform";
 
 const router = useRouter();
 const route = useRoute();
@@ -790,11 +817,6 @@ function handleSubmenuContentLeave() {
     isSubmenuVisible.value = false;
   }, 160);
 }
-
-const isMac = computed(() => {
-  if (typeof navigator === "undefined") return false;
-  return /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent);
-});
 
 const isSubmenuNearRightEdge = computed(() => {
   if (typeof window === "undefined") return false;
@@ -1332,6 +1354,22 @@ function handleCreateFolderInside() {
   if (selectedNode.value?.is_dir) {
     startInlineCreate(selectedNode.value.path, "new-folder");
   }
+}
+
+function handleOpenTerminal() {
+  emit("open-drawer", "terminal");
+}
+
+function handleCreateNewFileRoot() {
+  startInlineCreate("", "new-file");
+}
+
+function handleOpenCommandPalette() {
+  window.dispatchEvent(new CustomEvent("open-command-palette"));
+}
+
+function handleOpenKeyboardShortcuts() {
+  window.dispatchEvent(new CustomEvent("open-keyboard-shortcuts"));
 }
 </script>
 
@@ -2001,6 +2039,7 @@ function handleCreateFolderInside() {
   justify-content: center;
   height: 100%;
   width: 100%;
+  overflow-y: auto;
 }
 
 .welcome-watermark {
@@ -2008,28 +2047,90 @@ function handleCreateFolderInside() {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  max-width: 480px;
-  padding: 24px;
+  max-width: 520px;
+  padding: 32px 24px;
+}
+
+.welcome-hero-badge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.hero-glow {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, rgba(56, 189, 248, 0) 70%);
+  filter: blur(8px);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .watermark-icon {
-  color: var(--text-muted);
-  margin-bottom: 12px;
-  opacity: 0.35;
+  position: relative;
+  color: var(--accent-cyan, #0ea5e9);
+  opacity: 0.9;
+  z-index: 1;
 }
 
 .welcome-title {
-  margin: 0 0 6px;
-  font-size: 18px;
+  margin: 0 0 8px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--text-main);
+  letter-spacing: -0.3px;
 }
 
 .welcome-desc {
   margin: 0 0 24px;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--text-muted);
+}
+
+.welcome-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.quick-action-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--card-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  border-radius: 6px;
+  color: var(--text-main);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.quick-action-pill:hover {
+  background: var(--hover-bg, rgba(255, 255, 255, 0.08));
+  border-color: var(--accent-cyan, #0ea5e9);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.quick-action-pill .codicon {
+  font-size: 14px;
+  color: var(--accent-cyan, #0ea5e9);
+}
+
+.quick-action-label {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
 }
 
 .welcome-shortcuts {

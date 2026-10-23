@@ -268,7 +268,11 @@
         :class="{ 'commit-btn-blocked': guardStatus.errors_count > 0 }"
         :disabled="isCommitting || !commitMessage.trim() || guardStatus.errors_count > 0"
         :title="
-          guardStatus.errors_count > 0 ? t('guard.toast.blocked') || '质量守卫阻断提交：请先解决违规项' : undefined
+          guardStatus.errors_count > 0
+            ? t('guard.toast.blocked') || '质量守卫阻断提交：请先解决违规项'
+            : isMac
+              ? '提交 (⌘Enter)'
+              : '提交 (Ctrl+Enter)'
         "
         @click="handleCommit"
       >
@@ -451,6 +455,7 @@ import GitFileContextMenu, { type ContextMenuTargetFile, type FileMenuActionType
 import GitActionModal, { type GitModalActionType } from "./GitActionModal.vue";
 import { useGuard } from "../../composables/useGuard";
 import { validateCommitMessage, type CommitMessageValidation } from "../../utils/commitMessageValidator";
+import { isMac } from "../../utils/platform";
 
 const props = withDefaults(
   defineProps<{
@@ -572,10 +577,15 @@ const fileContextMenuPos = ref({ x: 0, y: 0 });
 const fileContextMenuTarget = ref<ContextMenuTargetFile | null>(null);
 
 const commitPlaceholder = computed(() => {
-  return (
-    t("scm.sidebar.commit_placeholder_branch", { branch: currentBranch.value }) ||
-    `消息(按Enter在“${currentBranch.value}”提交)`
-  );
+  const shortcut = isMac ? "⌘Enter" : "Ctrl+Enter";
+  const raw = t("scm.sidebar.commit_placeholder_branch", { branch: currentBranch.value });
+  if (raw && !raw.includes("Enter")) {
+    return raw;
+  }
+  if (raw && raw.includes("Enter") && !raw.includes("Ctrl") && !raw.includes("⌘")) {
+    return raw.replace(/Enter/g, shortcut);
+  }
+  return `消息 (按 ${shortcut} 在 "${currentBranch.value}" 提交)`;
 });
 
 onMounted(async () => {
