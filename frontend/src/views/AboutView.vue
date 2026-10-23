@@ -24,8 +24,11 @@
           @click="handleCheckUpdate"
           :disabled="checking || updating"
         >
-          <span v-if="checking" class="spin-icon">
-            <TechIcon id="workbench:sync" :size="14" />
+          <span v-if="checking" style="display: inline-flex; align-items: center; gap: 6px">
+            <span class="spin-icon">
+              <TechIcon id="workbench:sync" :size="14" />
+            </span>
+            <span>{{ t("about.checking") || "检查中..." }}</span>
           </span>
           <span v-else-if="isLatestChecked" style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:check" :size="14" />
@@ -663,6 +666,8 @@ onMounted(async () => {
 .about-action-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 124px;
   gap: 0.45rem;
   padding: 7px 16px;
   border-radius: 8px;
@@ -673,6 +678,8 @@ onMounted(async () => {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   line-height: 1.4;
   user-select: none;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .about-action-btn.primary {
@@ -1254,7 +1261,9 @@ onMounted(async () => {
 }
 
 .spin-icon {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   animation: spin 1s linear infinite;
 }
 
