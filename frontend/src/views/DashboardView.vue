@@ -128,7 +128,7 @@
               <span class="spin-icon">
                 <TechIcon id="workbench:sync" :size="16" />
               </span>
-              <span>{{ t("common.testing") || "正在测试..." }}</span>
+              <span>{{ t("hello.testing") || "正在测速..." }}</span>
             </span>
             <span v-else class="btn-content">
               <TechIcon id="workbench:tasks" :size="16" :colored="false" />
