@@ -124,12 +124,15 @@
 
         <div class="card-action-bar">
           <button class="dash-btn primary" :disabled="testingNetwork" @click="handleTestNetwork">
-            <span v-if="testingNetwork" class="spin-icon">
-              <TechIcon id="workbench:sync" :size="16" />
+            <span v-if="testingNetwork" class="btn-content-loading">
+              <span class="spin-icon">
+                <TechIcon id="workbench:sync" :size="16" />
+              </span>
+              <span>{{ t("common.testing") || "正在测试..." }}</span>
             </span>
-            <span v-else style="display: inline-flex; align-items: center; gap: 8px">
+            <span v-else class="btn-content">
               <TechIcon id="workbench:tasks" :size="16" :colored="false" />
-              {{ t("hello.test_speed_btn") || "测试网络联通性" }}
+              <span>{{ t("hello.test_speed_btn") || "测试网络联通性" }}</span>
             </span>
           </button>
         </div>
@@ -393,6 +396,12 @@ async function handleTestNetwork() {
   color: var(--accent-cyan);
 }
 
+.badge-on {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: var(--success);
+}
+
 .card-action-bar {
   margin-top: 1.1rem;
 }
@@ -400,23 +409,71 @@ async function handleTestNetwork() {
 .dash-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 1rem;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.15rem;
+  min-width: 148px;
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  border: none;
-  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  white-space: nowrap;
+  box-sizing: border-box;
+  line-height: 1.4;
 }
 
+.btn-content,
+.btn-content-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Dark Theme Primary Button (Default) */
 .dash-btn.primary {
-  background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
-  color: #070a12;
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.28);
 }
 
-.dash-btn.primary:hover {
-  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.35);
+.dash-btn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+  border-color: #38bdf8;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.42);
+  transform: translateY(-1px);
+}
+
+.dash-btn.primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.dash-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Light Theme Adaptations */
+:root[data-theme="light"] .dash-btn.primary,
+[data-theme="light"] .dash-btn.primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(2, 132, 199, 0.4);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
+}
+
+:root[data-theme="light"] .dash-btn.primary:hover:not(:disabled),
+[data-theme="light"] .dash-btn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  border-color: #0284c7;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.32);
   transform: translateY(-1px);
 }
 
