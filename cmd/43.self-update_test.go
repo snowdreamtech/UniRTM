@@ -351,3 +351,29 @@ func TestRunSelfUpdate_FetchFails_WithoutYes(t *testing.T) {
 	err := runSelfUpdate(cmd, []string{})
 	assert.Error(t, err)
 }
+
+func TestInstallMethodString(t *testing.T) {
+	assert.Equal(t, "script", installMethodScript.String())
+	assert.Equal(t, "npm", installMethodNpm.String())
+	assert.Equal(t, "pip", installMethodPip.String())
+	assert.Equal(t, "brew", installMethodBrew.String())
+	assert.Equal(t, "unknown", installMethod(999).String())
+}
+
+func TestCheckSelfUpdate(t *testing.T) {
+	prevFetch := fetchGitHubRelease
+	fetchGitHubRelease = func(version string) (*githubRelease, error) {
+		return &githubRelease{
+			TagName: "v1.0.0",
+			Name:    "v1.0.0 Release",
+			Body:    "Feature notes",
+		}, nil
+	}
+	t.Cleanup(func() { fetchGitHubRelease = prevFetch })
+
+	res, err := CheckSelfUpdate()
+	require.NoError(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, "v1.0.0", res.LatestVersion)
+	assert.Equal(t, "Feature notes", res.ReleaseNotes)
+}

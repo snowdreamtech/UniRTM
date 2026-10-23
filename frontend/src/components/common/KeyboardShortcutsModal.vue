@@ -114,7 +114,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
-import { useKeyboardShortcuts, SHORTCUT_DEFINITIONS, type ShortcutItem } from "../../composables/useKeyboardShortcuts";
+import { useKeyboardShortcuts } from "../../composables/useKeyboardShortcuts";
 import { selectedLangSetting } from "../../i18n";
 
 const props = defineProps<{

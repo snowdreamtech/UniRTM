@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -48,6 +49,39 @@ const (
 	installMethodMacPorts               // port install unirtm
 	installMethodPkgx                   // pkgx unirtm
 )
+
+func (m installMethod) String() string {
+	switch m {
+	case installMethodScript:
+		return "script"
+	case installMethodNpm:
+		return "npm"
+	case installMethodPip:
+		return "pip"
+	case installMethodBrew:
+		return "brew"
+	case installMethodScoop:
+		return "scoop"
+	case installMethodChoco:
+		return "choco"
+	case installMethodCargo:
+		return "cargo"
+	case installMethodGo:
+		return "go"
+	case installMethodNix:
+		return "nix"
+	case installMethodSnap:
+		return "snap"
+	case installMethodAsdf:
+		return "asdf"
+	case installMethodMacPorts:
+		return "macports"
+	case installMethodPkgx:
+		return "pkgx"
+	default:
+		return "unknown"
+	}
+}
 
 func init() {
 	selfUpdateCmd.Flags().StringVar(&selfUpdateVersion, "version", "", "target version to update to (default: latest)")
@@ -603,4 +637,80 @@ func verifySelfUpdate() error {
 
 	output.Warning("Could not verify installed version. Restart your terminal and run 'unirtm version' manually.")
 	return nil
+}
+
+// CheckUpdateResult holds the release and update status for both CLI and Workbench UI.
+type CheckUpdateResult struct {
+	CurrentVersion string `json:"current_version"`
+	LatestVersion  string `json:"latest_version"`
+	HasUpdate      bool   `json:"has_update"`
+	ReleaseName    string `json:"release_name"`
+	ReleaseNotes   string `json:"release_notes"`
+	InstallMethod  string `json:"install_method"`
+	UpgradeHint    string `json:"upgrade_hint,omitempty"`
+	IsUnsupported  bool   `json:"is_unsupported"`
+}
+
+// CheckSelfUpdate checks GitHub release and evaluates if an update is available.
+func CheckSelfUpdate() (*CheckUpdateResult, error) {
+	current := env.GitTag
+	if current == "" || current == "N/A" {
+		current = "dev"
+	}
+
+	var method installMethod = installMethodScript
+	if execPath, err := os.Executable(); err == nil {
+		if resolved, rerr := filepath.EvalSymlinks(execPath); rerr == nil {
+			execPath = resolved
+		}
+		method = detectInstallMethod(execPath)
+	}
+
+	hint := officialChannelHint(method)
+	isUnsupported := isUnsupportedThirdPartyInstall(method)
+
+	releaseInfo, err := fetchGitHubRelease("latest")
+	if err != nil {
+		return nil, err
+	}
+
+	hasUpdate := false
+	if current != "dev" && current != "N/A" && releaseInfo != nil {
+		cmp := version.CompareVersions(current, releaseInfo.TagName)
+		hasUpdate = cmp < 0
+	} else if releaseInfo != nil {
+		hasUpdate = normalizeVersion(current) != normalizeVersion(releaseInfo.TagName)
+	}
+
+	return &CheckUpdateResult{
+		CurrentVersion: current,
+		LatestVersion:  releaseInfo.TagName,
+		HasUpdate:      hasUpdate,
+		ReleaseName:    releaseInfo.Name,
+		ReleaseNotes:   releaseInfo.Body,
+		InstallMethod:  method.String(),
+		UpgradeHint:    hint,
+		IsUnsupported:  isUnsupported,
+	}, nil
+}
+
+// ExecuteSelfUpdate executes self-update using install.sh / install.ps1.
+func ExecuteSelfUpdate(tag string) (string, error) {
+	var buf bytes.Buffer
+	formatter := output.NewFormatter(output.FormatterOptions{
+		Writer:  &buf,
+		NoColor: true,
+	})
+
+	if tag == "" {
+		tag = "latest"
+	}
+
+	var err error
+	if runtime.GOOS == "windows" {
+		err = selfUpdateWindows(formatter, tag)
+	} else {
+		err = selfUpdateUnix(formatter, tag)
+	}
+	return buf.String(), err
 }

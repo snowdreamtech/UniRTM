@@ -51,6 +51,13 @@
           </span>
         </button>
 
+        <button v-else-if="upgradeHint" class="about-action-btn update" @click="copyUpgradeCommand">
+          <span style="display: inline-flex; align-items: center; gap: 6px">
+            <TechIcon id="workbench:config" :size="14" />
+            <span>{{ copiedUpgrade ? t("about.copied") || "已复制" : "复制更新命令" }}</span>
+          </span>
+        </button>
+
         <button v-else class="about-action-btn update" @click="handlePerformUpdate" :disabled="updating">
           <span style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:tasks" :size="14" />
@@ -61,6 +68,49 @@
         </button>
       </div>
     </div>
+
+    <!-- New Release Available Notification Banner -->
+    <transition name="fade-slide">
+      <div v-if="hasUpdateAvailable" class="glass-card new-version-banner">
+        <div class="banner-main-row">
+          <div class="banner-title-area">
+            <span class="banner-badge">NEW</span>
+            <span class="banner-headline">
+              {{ t("about.newVersionNotice", { tag: latestTag }) || `发现新版本 ${latestTag}` }}
+            </span>
+            <span v-if="installMethod && installMethod !== 'script'" class="install-method-badge font-mono">
+              {{ installMethod }}
+            </span>
+          </div>
+
+          <div class="banner-action-area">
+            <button v-if="releaseNotes" class="banner-sub-btn" @click="toggleReleaseNotes">
+              <span>{{ showReleaseNotes ? "收起更新说明" : "查看更新说明 (Release Notes)" }}</span>
+            </button>
+            <button v-if="upgradeHint" class="banner-copy-btn" @click="copyUpgradeCommand">
+              <span>{{ copiedUpgrade ? "已复制命令" : `复制命令: ${upgradeHint}` }}</span>
+            </button>
+          </div>
+        </div>
+
+        <p v-if="upgradeHint" class="package-manager-warning">
+          ⚠️ UniRTM 是通过 {{ installMethod }} 包管理器安装的。为避免文件冲突，请在终端运行上方命令进行升级。
+        </p>
+        <p v-else-if="isUnsupported" class="package-manager-warning">
+          ⚠️ 当前安装源非官方渠道，自更新可能存在安全风险，建议前往官方仓库获取最新版本。
+        </p>
+
+        <!-- Collapsible Release Notes Box -->
+        <transition name="fade-slide">
+          <div v-if="showReleaseNotes && releaseNotes" class="release-notes-box">
+            <div class="release-notes-header">
+              <span class="font-mono">Release Notes for {{ latestTag }}</span>
+            </div>
+            <pre class="release-notes-content font-mono">{{ releaseNotes }}</pre>
+          </div>
+        </transition>
+      </div>
+    </transition>
 
     <!-- Update Feedback Banner (displayed only when user action/restart is required) -->
     <transition name="fade-slide">
@@ -355,10 +405,38 @@ const updateStatusText = computed(() => {
 
 const hasUpdateAvailable = ref(false);
 const latestTag = ref("");
+const latestReleaseName = ref("");
+const releaseNotes = ref("");
+const installMethod = ref("script");
+const upgradeHint = ref("");
+const isUnsupported = ref(false);
+const showReleaseNotes = ref(false);
+const copiedUpgrade = ref(false);
+
 const updateMessage = ref("");
 const updateStatusClass = ref("");
 const isLatestChecked = ref(false);
 let isLatestTimer: number | undefined;
+
+const toggleReleaseNotes = () => {
+  showReleaseNotes.value = !showReleaseNotes.value;
+};
+
+const copyUpgradeCommand = async () => {
+  if (!upgradeHint.value) return;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(upgradeHint.value);
+    }
+    copiedUpgrade.value = true;
+    showToast(t("about.copied") || "已复制更新命令到剪贴板", "success");
+    setTimeout(() => {
+      copiedUpgrade.value = false;
+    }, 2500);
+  } catch (err) {
+    console.error("Failed to copy upgrade command:", err);
+  }
+};
 
 const openUrl = (url: string) => {
   window.open(url, "_blank", "noopener,noreferrer");
@@ -433,45 +511,103 @@ const handleCheckUpdate = async () => {
   updateMessage.value = "";
   isLatestChecked.value = false;
   await fetchSystemStatus();
-  setTimeout(() => {
+
+  try {
+    const res = await fetch("/api/system/check-update");
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) {
+        latestTag.value = data.latest_version || "";
+        latestReleaseName.value = data.release_name || data.latest_version || "";
+        releaseNotes.value = data.release_notes || "";
+        installMethod.value = data.install_method || "script";
+        upgradeHint.value = data.upgrade_hint || "";
+        isUnsupported.value = Boolean(data.is_unsupported);
+
+        if (data.has_update) {
+          hasUpdateAvailable.value = true;
+          isLatestChecked.value = false;
+          showToast(
+            t("about.newVersionNotice", { tag: data.latest_version }) || `🚀 发现新版本 ${data.latest_version}！`,
+            "info"
+          );
+        } else {
+          hasUpdateAvailable.value = false;
+          isLatestChecked.value = true;
+          showToast(
+            t("about.isLatest", { version: displayVersion.value }) || `当前已是最新版本 (${displayVersion.value})`,
+            "success"
+          );
+          if (isLatestTimer) clearTimeout(isLatestTimer);
+          isLatestTimer = window.setTimeout(() => {
+            isLatestChecked.value = false;
+          }, 2500);
+        }
+      } else {
+        throw new Error(data?.error || "Unknown update check error");
+      }
+    } else {
+      throw new Error(`HTTP ${res.status}`);
+    }
+  } catch (err: any) {
+    console.warn("Failed to check update from /api/system/check-update:", err);
+    showToast(t("about.checkFailed") || "检查更新失败，请稍后重试", "error");
+  } finally {
     checking.value = false;
-    hasUpdateAvailable.value = false;
-    isLatestChecked.value = true;
-    showToast(
-      t("about.isLatest", { version: displayVersion.value }) || `当前已是最新版本 (${displayVersion.value})`,
-      "success"
-    );
-    if (isLatestTimer) clearTimeout(isLatestTimer);
-    isLatestTimer = window.setTimeout(() => {
-      isLatestChecked.value = false;
-    }, 2500);
-  }, 600);
+  }
 };
 
 const handlePerformUpdate = async () => {
+  if (upgradeHint.value) {
+    await copyUpgradeCommand();
+    return;
+  }
+
   updating.value = true;
-  updateProgress.value = 0;
-  currentProgress.value = { stage: "checking", percentage: 0 };
+  updateProgress.value = 15;
+  currentProgress.value = { stage: "checking", percentage: 15 };
   updateMessage.value = "";
 
-  let p = 0;
-  const interval = setInterval(() => {
-    p += 25;
-    updateProgress.value = Math.min(p, 100);
-    currentProgress.value = {
-      percentage: updateProgress.value,
-      stage: "downloading",
-      loadedBytes: Math.round(10240000 * (updateProgress.value / 100)),
-      totalBytes: 10240000,
-    };
-    if (p >= 100) {
-      clearInterval(interval);
-      updating.value = false;
-      isRestartReady.value = true;
-      updateMessage.value = t("about.updateCompleteRestart") || "升级包已就绪，点击重启即可应用。";
-      updateStatusClass.value = "is-latest";
+  const timer = setInterval(() => {
+    if (updateProgress.value < 85) {
+      updateProgress.value += 10;
+      currentProgress.value = {
+        percentage: updateProgress.value,
+        stage: "downloading",
+      };
     }
-  }, 250);
+  }, 400);
+
+  try {
+    const res = await fetch("/api/system/self-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    clearInterval(timer);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) {
+        updateProgress.value = 100;
+        currentProgress.value = { stage: "ready", percentage: 100 };
+        isRestartReady.value = true;
+        hasUpdateAvailable.value = false;
+        updateMessage.value = t("about.updateCompleteRestart") || "新版本已准备就绪，重启应用后即可生效";
+        updateStatusClass.value = "is-latest";
+        showToast(updateMessage.value, "success");
+      } else {
+        throw new Error(data?.error || "Self update failed");
+      }
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error || `HTTP ${res.status}`);
+    }
+  } catch (err: any) {
+    clearInterval(timer);
+    showToast(err.message || t("about.onlineUpdateFailed", { error: "Update failed" }), "error");
+  } finally {
+    updating.value = false;
+  }
 };
 
 const handleRestartApp = async () => {
@@ -619,6 +755,119 @@ onMounted(async () => {
 }
 
 /* Update Banner */
+.new-version-banner {
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  background: rgba(147, 51, 234, 0.08);
+  border: 1px solid rgba(147, 51, 234, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.banner-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.banner-title-area {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.banner-badge {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.banner-headline {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.install-method-badge {
+  background: var(--section-bg);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+}
+
+.banner-action-area {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.banner-sub-btn,
+.banner-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  transition: all 0.15s ease;
+}
+
+.banner-sub-btn:hover,
+.banner-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--card-border-active);
+}
+
+.package-manager-warning {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #f59e0b;
+  line-height: 1.4;
+}
+
+.release-notes-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.release-notes-header {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 4px;
+}
+
+.release-notes-content {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-main);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
 .update-status-banner {
   display: flex;
   align-items: center;
@@ -1092,5 +1341,35 @@ onMounted(async () => {
 [data-theme="light"] .credit-license-badge:hover {
   background: rgba(2, 132, 199, 0.2);
   color: #0284c7;
+}
+
+:root[data-theme="light"] .new-version-banner,
+[data-theme="light"] .new-version-banner {
+  background: rgba(147, 51, 234, 0.05);
+  border-color: rgba(147, 51, 234, 0.2);
+}
+
+:root[data-theme="light"] .banner-sub-btn,
+:root[data-theme="light"] .banner-copy-btn,
+[data-theme="light"] .banner-sub-btn,
+[data-theme="light"] .banner-copy-btn {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+:root[data-theme="light"] .banner-sub-btn:hover,
+:root[data-theme="light"] .banner-copy-btn:hover,
+[data-theme="light"] .banner-sub-btn:hover,
+[data-theme="light"] .banner-copy-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .release-notes-box,
+[data-theme="light"] .release-notes-box {
+  background: #f8fafc;
+  border-color: #e2e8f0;
 }
 </style>

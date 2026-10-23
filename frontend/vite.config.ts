@@ -366,6 +366,90 @@ export default defineConfig({
             return;
           }
 
+          // ─── System Self-Update & Check-Update API ──────────────────────────────
+          if (req.url === "/api/system/check-update" || req.url?.startsWith("/api/system/check-update?")) {
+            let currentVersion = "v0.35.0";
+            try {
+              const versionFile = path.join(rootDir, "VERSION");
+              if (fs.existsSync(versionFile)) {
+                const lines = fs.readFileSync(versionFile, "utf-8").split("\n");
+                for (const l of lines) {
+                  const tr = l.trim();
+                  if (tr && !tr.startsWith("#")) {
+                    currentVersion = tr.startsWith("v") ? tr : `v${tr}`;
+                    break;
+                  }
+                }
+              }
+            } catch {}
+
+            (async () => {
+              let latestVersion = currentVersion;
+              let releaseName = currentVersion;
+              let releaseNotes = "";
+              let hasUpdate = false;
+
+              try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+                const ghRes = await fetch("https://api.github.com/repos/snowdreamtech/unirtm/releases/latest", {
+                  headers: {
+                    "User-Agent": "unirtm-frontend-dev",
+                    Accept: "application/vnd.github+json",
+                  },
+                  signal: controller.signal,
+                });
+                clearTimeout(timeoutId);
+
+                if (ghRes.ok) {
+                  const data: any = await ghRes.json();
+                  if (data && data.tag_name) {
+                    latestVersion = data.tag_name;
+                    releaseName = data.name || data.tag_name;
+                    releaseNotes = data.body || "";
+                    const cClean = currentVersion.replace(/^v/i, "");
+                    const lClean = latestVersion.replace(/^v/i, "");
+                    hasUpdate = cClean !== lClean;
+                  }
+                }
+              } catch {}
+
+              res.writeHead(200, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  success: true,
+                  current_version: currentVersion,
+                  latest_version: latestVersion,
+                  has_update: hasUpdate,
+                  release_name: releaseName,
+                  release_notes: releaseNotes,
+                  install_method: "script",
+                  upgrade_hint: "",
+                  is_unsupported: false,
+                })
+              );
+            })();
+            return;
+          }
+
+          if (req.url === "/api/system/self-update" || req.url?.startsWith("/api/system/self-update?")) {
+            if (req.method !== "POST") {
+              res.writeHead(405, { "Content-Type": "application/json" });
+              res.end(JSON.stringify({ error: "Method Not Allowed" }));
+              return;
+            }
+
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(
+              JSON.stringify({
+                success: true,
+                message: "UniRTM updated successfully.",
+                output: "UniRTM update script executed successfully.",
+              })
+            );
+            return;
+          }
+
           // ─── Doctor System Diagnostic API ───────────────────────────────
           if (req.url === "/api/doctor" || req.url?.startsWith("/api/doctor?")) {
             let version = "0.35.0";

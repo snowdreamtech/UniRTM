@@ -962,6 +962,8 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 			"browsers": detectInstalledBrowsers(),
 		})
 	})
+	mux.HandleFunc("/api/system/check-update", handleSystemCheckUpdate)
+	mux.HandleFunc("/api/system/self-update", handleSystemSelfUpdate)
 	mux.HandleFunc("/api/terminals", handleGetTerminals)
 	mux.HandleFunc("/api/terminal/exec", handleTerminalExec)
 	mux.Handle("/api/terminal/ws", websocket.Handler(handleTerminalWebSocket))
@@ -1456,6 +1458,92 @@ func handlePostKeybindings(w http.ResponseWriter, r *http.Request) {
 		"path":        targetPath,
 		"raw":         string(contentBytes),
 		"keybindings": parsedList,
+	})
+}
+
+// handleSystemCheckUpdate handles GET /api/system/check-update by delegating to CLI self-update core.
+func handleSystemCheckUpdate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		return
+	}
+
+	result, err := CheckSelfUpdate()
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":         true,
+		"current_version": result.CurrentVersion,
+		"latest_version":  result.LatestVersion,
+		"has_update":      result.HasUpdate,
+		"release_name":    result.ReleaseName,
+		"release_notes":   result.ReleaseNotes,
+		"install_method":  result.InstallMethod,
+		"upgrade_hint":    result.UpgradeHint,
+		"is_unsupported":  result.IsUnsupported,
+	})
+}
+
+// handleSystemSelfUpdate handles POST /api/system/self-update by invoking official self-update workflow.
+func handleSystemSelfUpdate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		return
+	}
+
+	var method installMethod = installMethodScript
+	if execPath, err := os.Executable(); err == nil {
+		if resolved, rerr := filepath.EvalSymlinks(execPath); rerr == nil {
+			execPath = resolved
+		}
+		method = detectInstallMethod(execPath)
+	}
+
+	if isUnsupportedThirdPartyInstall(method) {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "UniRTM has not been officially published to the package manager that installed this binary.",
+		})
+		return
+	}
+
+	if hint := officialChannelHint(method); hint != "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":      false,
+			"error":        fmt.Sprintf("UniRTM was installed via %s. Please run '%s' in terminal to upgrade.", method.String(), hint),
+			"upgrade_hint": hint,
+		})
+		return
+	}
+
+	outputLog, err := ExecuteSelfUpdate("latest")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   err.Error(),
+			"output":  outputLog,
+		})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "UniRTM updated successfully.",
+		"output":  outputLog,
 	})
 }
 
