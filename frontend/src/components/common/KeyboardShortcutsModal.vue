@@ -71,7 +71,7 @@
                 </td>
                 <td class="col-keys">
                   <div class="keys-wrapper">
-                    <template v-for="(chord, cIdx) in splitKeys(item.effectiveKey)" :key="cIdx">
+                    <template v-for="(chord, cIdx) in splitKeys(formatShortcut(item.effectiveKey))" :key="cIdx">
                       <span v-if="cIdx > 0" class="chord-separator">+</span>
                       <kbd class="key-pill" :class="{ 'custom-pill': item.isCustom }">{{ chord }}</kbd>
                     </template>
@@ -93,8 +93,12 @@
         <!-- Footer -->
         <div class="modal-footer">
           <div class="footer-hint">
-            <span class="hint-pill"><kbd>Ctrl+K Ctrl+S</kbd> {{ isZh ? "快捷键速查" : "Shortcuts" }}</span>
-            <span class="hint-pill"><kbd>Ctrl+Shift+P</kbd> {{ isZh ? "命令面板" : "Command Palette" }}</span>
+            <span class="hint-pill"
+              ><kbd>{{ isMac ? "⌘K ⌘S" : "Ctrl+K Ctrl+S" }}</kbd> {{ isZh ? "快捷键速查" : "Shortcuts" }}</span
+            >
+            <span class="hint-pill"
+              ><kbd>{{ isMac ? "⌘⇧P" : "Ctrl+Shift+P" }}</kbd> {{ isZh ? "命令面板" : "Command Palette" }}</span
+            >
             <span class="hint-pill"><kbd>ESC</kbd> {{ isZh ? "关闭" : "Close" }}</span>
           </div>
           <div class="footer-right">
@@ -116,6 +120,7 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { useKeyboardShortcuts } from "../../composables/useKeyboardShortcuts";
 import { selectedLangSetting } from "../../i18n";
+import { isMac, formatShortcut } from "../../utils/platform";
 
 const props = defineProps<{
   isOpen: boolean;

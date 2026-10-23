@@ -115,7 +115,15 @@
       <button
         class="status-btn"
         id="btn-status-shortcuts"
-        :title="isZh ? '键盘快捷键 (Ctrl+K Ctrl+S)' : 'Keyboard Shortcuts (Ctrl+K Ctrl+S)'"
+        :title="
+          isZh
+            ? isMac
+              ? '键盘快捷键 (⌘K ⌘S)'
+              : '键盘快捷键 (Ctrl+K Ctrl+S)'
+            : isMac
+              ? 'Keyboard Shortcuts (⌘K ⌘S)'
+              : 'Keyboard Shortcuts (Ctrl+K Ctrl+S)'
+        "
         @click="$emit('open-shortcuts')"
       >
         <span class="btn-icon"><span class="codicon codicon-keyboard"></span></span>
@@ -134,6 +142,7 @@ import { useRouter } from "vue-router";
 import TechIcon from "../common/TechIcon.vue";
 import { useAppScope } from "../../composables/useAppScope";
 import { useGit } from "../../composables/useGit";
+import { isMac } from "../../utils/platform";
 
 const router = useRouter();
 const { activeScope, toggleScope } = useAppScope();

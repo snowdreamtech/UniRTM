@@ -33,7 +33,7 @@
         <span class="search-placeholder">
           {{ searchPlaceholderText }}
         </span>
-        <kbd class="shortcut-kbd">Ctrl+K</kbd>
+        <kbd class="shortcut-kbd">{{ searchShortcutKbd }}</kbd>
       </div>
     </div>
 
@@ -89,6 +89,7 @@ import { useRouter } from "vue-router";
 import { SUPPORTED_LANGUAGES, t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useAppScope } from "../../composables/useAppScope";
+import { isMac } from "../../utils/platform";
 
 const router = useRouter();
 const { activeScope, toggleScope } = useAppScope();
@@ -110,6 +111,8 @@ const emit = defineEmits<{
 
 const isLangMenuOpen = ref(false);
 const langDropdownRef = ref<HTMLElement | null>(null);
+
+const searchShortcutKbd = computed(() => (isMac ? "⌘K" : "Ctrl+K"));
 
 const isLight = computed(() => {
   if (props.currentTheme === "light") return true;

@@ -60,7 +60,7 @@
 
               <div class="item-right">
                 <span v-if="item.category" class="category-pill">{{ item.category }}</span>
-                <kbd v-if="item.shortcut" class="shortcut-pill">{{ item.shortcut }}</kbd>
+                <kbd v-if="item.shortcut" class="shortcut-pill">{{ formatShortcut(item.shortcut) }}</kbd>
                 <span class="enter-arrow">↵</span>
               </div>
             </div>
@@ -87,6 +87,7 @@ import { useRouter } from "vue-router";
 import { selectedLangSetting } from "../../i18n";
 import TechIcon from "./TechIcon.vue";
 import type { DrawerTab } from "../layout/BottomDrawer.vue";
+import { isMac, formatShortcut } from "../../utils/platform";
 
 export interface CommandItem {
   id: string;
@@ -124,9 +125,10 @@ const isZh = computed(() => {
 });
 
 const placeholderText = computed(() => {
+  const shortcutHint = isMac ? "⌘K" : "Ctrl+K";
   return isZh.value
-    ? "搜索功能、页面导航或执行快捷命令 (Ctrl+K)..."
-    : "Search features, navigate views, or execute quick commands (Ctrl+K)...";
+    ? `搜索功能、页面导航或执行快捷命令 (${shortcutHint})...`
+    : `Search features, navigate views, or execute quick commands (${shortcutHint})...`;
 });
 
 const emptyText = computed(() => {

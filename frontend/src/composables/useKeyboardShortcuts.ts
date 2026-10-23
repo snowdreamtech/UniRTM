@@ -3,6 +3,7 @@
 
 import { ref, computed } from "vue";
 import { useEditorTabs } from "./useEditorTabs";
+import { isMac } from "../utils/platform";
 
 export type DrawerTab = "terminal" | "output" | "tasks" | "doctor" | "ports";
 
@@ -418,10 +419,6 @@ export function parseKeyCombo(combo: string): {
 
 export function matchesSingleCombo(e: KeyboardEvent, comboStr: string): boolean {
   const parsed = parseKeyCombo(comboStr);
-  const isMac =
-    typeof navigator !== "undefined" && navigator.platform
-      ? navigator.platform.toUpperCase().indexOf("MAC") >= 0
-      : false;
 
   // Modifiers check
   const requiresMod = parsed.ctrl || parsed.meta;
@@ -520,7 +517,7 @@ export function useKeyboardShortcuts() {
       }
       return {
         ...def,
-        effectiveKey: def.keys,
+        effectiveKey: isMac && def.macKeys ? def.macKeys : def.keys,
         isCustom: false,
         source: "default",
       };
@@ -685,10 +682,6 @@ export function useKeyboardShortcuts() {
 
   function createKeydownHandler(handlers: ShortcutHandlers) {
     return function handleKeydown(e: KeyboardEvent) {
-      const isMac =
-        typeof navigator !== "undefined" && navigator.platform
-          ? navigator.platform.toUpperCase().indexOf("MAC") >= 0
-          : false;
       const mod = isMac ? e.metaKey : e.ctrlKey;
       const key = e.key;
 
