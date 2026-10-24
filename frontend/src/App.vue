@@ -420,7 +420,12 @@ async function handleSidebarTaskRun(taskName: string) {
   activeRunningTask.value = taskName;
   isDrawerOpen.value = true;
   drawerActiveTab.value = "tasks";
-  addLog("INFO", `[unirtm run ${taskName}] 正在启动任务...`, undefined, "tasks");
+  addLog(
+    "INFO",
+    t("app.task_starting", { task: taskName }) || `[unirtm run ${taskName}] Starting task...`,
+    undefined,
+    "tasks"
+  );
   try {
     const res = await fetch("/api/tasks/run", {
       method: "POST",
@@ -433,17 +438,30 @@ async function handleSidebarTaskRun(taskName: string) {
     });
     const data = await res.json();
     if (res.ok && data.success) {
-      addLog("SUCCESS", `[unirtm run ${taskName}] 任务执行完成 (退出码: 0)`, data.output, "tasks");
+      addLog(
+        "SUCCESS",
+        t("app.task_success", { task: taskName }) ||
+          `[unirtm run ${taskName}] Task completed successfully (exit code: 0)`,
+        data.output,
+        "tasks"
+      );
     } else {
       addLog(
         "ERROR",
-        `[unirtm run ${taskName}] 任务执行失败 (退出码: ${data.exit_code ?? 1})`,
+        t("app.task_failed", { task: taskName, code: data.exit_code ?? 1 }) ||
+          `[unirtm run ${taskName}] Task failed (exit code: ${data.exit_code ?? 1})`,
         data.error || data.output,
         "tasks"
       );
     }
   } catch (err: any) {
-    addLog("ERROR", `[unirtm run ${taskName}] 任务调用异常: ${err.message}`, undefined, "tasks");
+    addLog(
+      "ERROR",
+      t("app.task_error", { task: taskName, err: err.message }) ||
+        `[unirtm run ${taskName}] Task execution error: ${err.message}`,
+      undefined,
+      "tasks"
+    );
   } finally {
     activeRunningTask.value = undefined;
   }
@@ -451,7 +469,12 @@ async function handleSidebarTaskRun(taskName: string) {
 
 function handleTaskFinished(taskName: string) {
   activeRunningTask.value = undefined;
-  addLog("SUCCESS", `[unirtm run ${taskName}] 任务执行结束`, undefined, "tasks");
+  addLog(
+    "SUCCESS",
+    t("app.task_finished", { task: taskName }) || `[unirtm run ${taskName}] Task execution finished`,
+    undefined,
+    "tasks"
+  );
 }
 
 async function saveGlobalSetting(key: string, value: any) {
@@ -482,7 +505,12 @@ function selectLanguage(langVal: string) {
 async function toggleTheme() {
   const nextTheme = await toggleAppearance();
   saveGlobalSetting("settings.appearance", nextTheme);
-  showToast(nextTheme === "light" ? "已切换为浅色模式" : "已切换为深色模式", "info");
+  showToast(
+    nextTheme === "light"
+      ? t("app.theme_switched_light") || "Switched to Light Mode"
+      : t("app.theme_switched_dark") || "Switched to Dark Mode",
+    "info"
+  );
 }
 
 async function loadConfig() {

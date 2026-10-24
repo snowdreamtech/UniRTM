@@ -10,8 +10,8 @@
         class="workspace-pill"
         :title="
           activeScope === 'user'
-            ? '用户全局模式 (~/.unirtm) • 点击切换 (Alt+S)'
-            : '当前工作区: /UniRTM (dev) • 点击切换 (Alt+S)'
+            ? t('titlebar.scope_user_tip') || 'User Global (~/.unirtm) • Click to toggle (Alt+S)'
+            : t('titlebar.scope_workspace_tip') || 'Workspace: /UniRTM (dev) • Click to toggle (Alt+S)'
         "
         style="cursor: pointer"
         @click="toggleScope(router)"
@@ -19,7 +19,9 @@
         <span class="folder-icon">
           <TechIcon :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'" :size="16" />
         </span>
-        <span class="workspace-name">{{ activeScope === "user" ? "用户全局" : "UniRTM" }}</span>
+        <span class="workspace-name">{{
+          activeScope === "user" ? t("titlebar.user_global") || "User Global" : "UniRTM"
+        }}</span>
         <span class="branch-tag" :class="activeScope">{{ activeScope === "user" ? "global" : "dev" }}</span>
       </div>
     </div>
@@ -137,9 +139,7 @@ const currentLangLabel = computed(() => {
 });
 
 const searchPlaceholderText = computed(() => {
-  return props.currentLang.startsWith("zh")
-    ? "搜索工具、任务、扩展与设置..."
-    : "Search tools, tasks, extensions & settings...";
+  return t("titlebar.search_placeholder") || "Search tools, tasks, extensions and settings...";
 });
 
 function selectLanguage(langVal: string) {

@@ -6,7 +6,16 @@
       <div
         class="status-pill status-git"
         id="status-git-branch"
-        :title="`Git: ${activeRepo ? activeRepo.name + ' • ' : ''}${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''} (${status.behind}↓ ${status.ahead}↑) • 点击打开源代码管理`"
+        :title="
+          t('statusbar.git_tooltip', {
+            repo: activeRepo ? activeRepo.name + ' • ' : '',
+            branch: currentBranch,
+            upstream: status.upstream ? ' -> ' + status.upstream : '',
+            behind: status.behind,
+            ahead: status.ahead,
+          }) ||
+          `Git: ${activeRepo ? activeRepo.name + ' • ' : ''}${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''} (${status.behind}↓ ${status.ahead}↑) • Click to open Source Control`
+        "
         @click="$emit('select-tab', 'scm')"
       >
         <span class="status-icon"><TechIcon id="workbench:git" :size="13" :colored="false" /></span>
@@ -19,7 +28,10 @@
         <button
           v-if="status.ahead > 0 || status.behind > 0"
           class="git-sync-btn"
-          :title="`同步变更: ${status.behind} 落后, ${status.ahead} 领先 (点击同步)`"
+          :title="
+            t('statusbar.sync_tooltip', { behind: status.behind, ahead: status.ahead }) ||
+            `Sync changes: ${status.behind} behind, ${status.ahead} ahead (Click to sync)`
+          "
           :disabled="isSyncing"
           @click.stop="handleSync"
         >
@@ -60,8 +72,10 @@
         id="btn-status-scope"
         :title="
           activeScope === 'user'
-            ? '当前作用域: 用户全局 (~/.unirtm) • 点击切换为工作区 (Alt+S)'
-            : '当前作用域: 工作区 (.unirtm.toml) • 点击切换为用户全局 (Alt+S)'
+            ? t('statusbar.scope_user_tooltip') ||
+              'Current Scope: User (~/.unirtm) • Click to switch to Workspace (Alt+S)'
+            : t('statusbar.scope_workspace_tooltip') ||
+              'Current Scope: Workspace (.unirtm.toml) • Click to switch to User (Alt+S)'
         "
         @click="toggleScope(router)"
       >
@@ -72,7 +86,9 @@
             :colored="false"
           />
         </span>
-        <span>{{ activeScope === "user" ? (isZh ? "用户全局" : "User") : isZh ? "工作区" : "Workspace" }}</span>
+        <span>{{
+          activeScope === "user" ? t("settings.scope_user") || "User" : t("settings.scope_workspace") || "Workspace"
+        }}</span>
       </button>
 
       <!-- Active Toolchain Count -->
@@ -81,12 +97,8 @@
         id="btn-status-tools"
         :title="
           activeScope === 'user'
-            ? isZh
-              ? '用户全局共 1 个工具'
-              : '1 tool configured in user global'
-            : isZh
-              ? '工作区共 5 个工具'
-              : '5 tools configured in workspace'
+            ? t('statusbar.user_tools_count', { count: 1 }) || '1 tool configured in user global'
+            : t('statusbar.workspace_tools_count', { count: 5 }) || '5 tools configured in workspace'
         "
         @click="$emit('select-tab', 'tools')"
       >
@@ -116,18 +128,14 @@
         class="status-btn"
         id="btn-status-shortcuts"
         :title="
-          isZh
-            ? isMac
-              ? '键盘快捷键 (⌘K ⌘S)'
-              : '键盘快捷键 (Ctrl+K Ctrl+S)'
-            : isMac
-              ? 'Keyboard Shortcuts (⌘K ⌘S)'
-              : 'Keyboard Shortcuts (Ctrl+K Ctrl+S)'
+          isMac
+            ? t('statusbar.shortcuts_mac') || 'Keyboard Shortcuts (⌘K ⌘S)'
+            : t('statusbar.shortcuts_win') || 'Keyboard Shortcuts (Ctrl+K Ctrl+S)'
         "
         @click="$emit('open-shortcuts')"
       >
         <span class="btn-icon"><span class="codicon codicon-keyboard"></span></span>
-        <span>{{ isZh ? "快捷键" : "Shortcuts" }}</span>
+        <span>{{ t("statusbar.shortcuts") || "Shortcuts" }}</span>
       </button>
 
       <!-- Core Version -->
@@ -143,6 +151,7 @@ import TechIcon from "../common/TechIcon.vue";
 import { useAppScope } from "../../composables/useAppScope";
 import { useGit } from "../../composables/useGit";
 import { isMac } from "../../utils/platform";
+import { t } from "../../i18n";
 
 const router = useRouter();
 const { activeScope, toggleScope } = useAppScope();
@@ -165,14 +174,10 @@ defineEmits<{
   (e: "open-shortcuts"): void;
 }>();
 
-const isZh = computed(() => {
-  return props.currentLang ? props.currentLang.startsWith("zh") : true;
-});
-
-const statusReadyText = computed(() => (isZh.value ? "环境就绪" : "Ready"));
-const runningTaskText = computed(() => (isZh.value ? "正在执行" : "Running"));
-const toolsLabelText = computed(() => (isZh.value ? "个工具" : "tools"));
-const lockStatusText = computed(() => (isZh.value ? "锁定已同步" : "Lock Sync"));
+const statusReadyText = computed(() => t("statusbar.status_ready") || "Ready");
+const runningTaskText = computed(() => t("statusbar.status_running") || "Running");
+const toolsLabelText = computed(() => t("statusbar.tools_label") || "tools");
+const lockStatusText = computed(() => t("statusbar.lock_sync") || "Lock Sync");
 
 const mirrorLabel = computed(() => {
   const lat = props.latencyMs ? ` (${props.latencyMs}ms)` : "";

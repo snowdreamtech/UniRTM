@@ -59,10 +59,14 @@
       <!-- TOOLS Navigation Items -->
       <template v-if="currentTab === 'tools'">
         <div class="nav-group-title">
-          {{ activeScope === "user" ? "用户工具" : t("sidebar.group_tools") || "PROJECT TOOLS" }}
+          {{
+            activeScope === "user"
+              ? t("sidebar.user_tools") || "USER TOOLS"
+              : t("sidebar.group_tools") || "PROJECT TOOLS"
+          }}
         </div>
 
-        <!-- 1. ⚠️ 待安装 (N)：仅当 N > 0 时显示在最顶部，默认展开，琥珀色警示 -->
+        <!-- 1. Missing tools -->
         <div v-if="missingTools.length > 0" class="tools-accordion-group group-missing">
           <div
             class="accordion-header missing-header"
@@ -102,7 +106,7 @@
           </div>
         </div>
 
-        <!-- 2. 🟢 可升级 (N)：仅当 N > 0 时展示，默认展开，绿色升级小圆点 -->
+        <!-- 2. Upgradable tools -->
         <div v-if="upgradableTools.length > 0" class="tools-accordion-group group-upgradable">
           <div
             class="accordion-header upgradable-header"
@@ -139,7 +143,8 @@
                 class="status-indicator-dot update"
                 :title="
                   tool.upgradableVersion
-                    ? `可升级至 v${tool.upgradableVersion}`
+                    ? t('sidebar.upgradable_to', { version: tool.upgradableVersion }) ||
+                      `Upgradable to v${tool.upgradableVersion}`
                     : t('tools.actions.upgrade') || 'Upgrade'
                 "
                 >●</span
@@ -148,7 +153,7 @@
           </div>
         </div>
 
-        <!-- 3. 已就绪 / 已安装 (N)：所有正常就绪的工具，支持折叠/展开 -->
+        <!-- 3. Ready / Installed tools -->
         <div class="tools-accordion-group group-ready">
           <div
             class="accordion-header ready-header"
@@ -193,7 +198,9 @@
       <template v-if="currentTab === 'tasks'">
         <div class="nav-group-title">
           {{
-            activeScope === "user" ? "用户任务 (~/.unirtm.toml)" : t("sidebar.group_tasks") || "TASKS (.unirtm.toml)"
+            activeScope === "user"
+              ? t("sidebar.user_tasks") || "USER TASKS (~/.unirtm.toml)"
+              : t("sidebar.group_tasks") || "TASKS (.unirtm.toml)"
           }}
         </div>
         <button
@@ -252,7 +259,7 @@
               align-items: center;
               padding: 2px 4px;
             "
-            title="敏感字段"
+            :title="t('sidebar.sensitive_field') || 'Sensitive Field'"
           >
             <TechIcon id="workbench:lock" :size="11" />
           </span>
@@ -271,7 +278,7 @@
           <span class="item-icon"><TechIcon id="workbench:marketplace" :size="20" /></span>
           <div class="item-dual">
             <span class="item-label">{{ t("settings.theme_tab_marketplace") || "Online Marketplace (Open VSX)" }}</span>
-            <span class="item-sub">Open VSX 扩展源</span>
+            <span class="item-sub">{{ t("sidebar.openvsx_source") || "Open VSX Registry" }}</span>
           </div>
         </button>
 
@@ -284,9 +291,11 @@
           <span class="item-icon"><TechIcon id="workbench:tools" :size="20" /></span>
           <div class="item-dual">
             <span class="item-label">{{ t("settings.cat_plugins") || "Extensions" }}</span>
-            <span class="item-sub">敬请期待</span>
+            <span class="item-sub">{{ t("sidebar.coming_soon") || "Coming Soon" }}</span>
           </div>
-          <span class="badge-soon" style="font-size: 0.6rem; padding: 1px 4px">开发中</span>
+          <span class="badge-soon" style="font-size: 0.6rem; padding: 1px 4px">{{
+            t("sidebar.in_development") || "In Dev"
+          }}</span>
         </button>
       </template>
 
@@ -337,7 +346,7 @@
       :class="{ active: isDragging }"
       @pointerdown="handlePointerDown"
       @dblclick="resetWidth"
-      title="双击恢复默认宽度，拖拽调节大小"
+      :title="t('sidebar.resize_tip') || 'Double-click to reset width, drag to resize'"
     >
       <div class="sash-indicator"></div>
     </div>
@@ -630,14 +639,14 @@ const dashboardItems = computed(() => [
     sectionId: "dashboard-section-kpi",
     icon: "workbench:tools",
     label: t("dashboard.kpi_tools") || "Active Tools",
-    meta: `${rawTools.value.length} 项`,
+    meta: t("sidebar.items_count", { count: rawTools.value.length }) || `${rawTools.value.length} items`,
   },
   {
     id: "tasks",
     sectionId: "dashboard-section-kpi",
     icon: "workbench:tasks",
     label: t("dashboard.kpi_tasks") || "Project Tasks",
-    meta: `${rawTasks.value.length} 个`,
+    meta: t("sidebar.tasks_count", { count: rawTasks.value.length }) || `${rawTasks.value.length} tasks`,
   },
   {
     id: "specs",
@@ -804,7 +813,7 @@ const filteredEnvItems = computed(() => {
   return rawEnvs.value.filter((e) => e.name.toLowerCase().includes(q) || e.value.toLowerCase().includes(q));
 });
 
-// Doctor checks - 真实对应 UniRTM 全景诊断 5 大核心板块
+// Doctor checks - Maps to UniRTM diagnostics 5 core dimensions
 interface DoctorCheckItem {
   id: string;
   icon: string;

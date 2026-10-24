@@ -457,7 +457,7 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* VS Code 风格的横向插入指示线 */
+/* VS Code-style horizontal insertion indicator */
 .activity-btn.drop-indicator-top::before,
 .activity-btn.drop-indicator-bottom::after {
   content: "";

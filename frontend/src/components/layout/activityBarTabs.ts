@@ -91,7 +91,7 @@ export function toggleActivityTabVisibility(
   if (newHidden.has(tabId)) {
     newHidden.delete(tabId);
   } else {
-    // 保护：至少保留 1 个可见 Tab
+    // Guard: Keep at least 1 visible tab
     if (visible.length <= 1) {
       return { newHidden, newCurrentTab: newCurrent };
     }
