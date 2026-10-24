@@ -75,37 +75,48 @@ function registerLabelKey(rawLabel: string, key: keyof TranslationDict) {
   }
 }
 
+const MONACO_ACTION_KEYS = Object.values(MONACO_LABEL_TO_KEY);
+
+function indexDictionary(dict: TranslationDict | undefined): void {
+  if (!dict) return;
+  for (let i = 0; i < MONACO_ACTION_KEYS.length; i++) {
+    const key = MONACO_ACTION_KEYS[i];
+    const val = dict[key];
+    if (val) {
+      registerLabelKey(val, key);
+    }
+  }
+}
+
 // 1. Register canonical English labels
 for (const [englishLabel, key] of Object.entries(MONACO_LABEL_TO_KEY)) {
   registerLabelKey(englishLabel, key);
 }
 
-// 2. Register Simplified Chinese labels from zhCn
-for (const [_, key] of Object.entries(MONACO_LABEL_TO_KEY)) {
-  const zhVal = zhCn[key];
-  if (zhVal) registerLabelKey(zhVal, key);
-}
+// 2. Synchronously pre-index core locales
+indexDictionary(zhCn);
+indexDictionary(zhTw);
+indexDictionary(jaJp);
 
-// 3. Register Traditional Chinese labels from zhTw
-for (const [_, key] of Object.entries(MONACO_LABEL_TO_KEY)) {
-  const twVal = zhTw[key];
-  if (twVal) registerLabelKey(twVal, key);
-}
-
-// 4. Register Japanese labels from jaJp
-for (const [_, key] of Object.entries(MONACO_LABEL_TO_KEY)) {
-  const jaVal = jaJp[key];
-  if (jaVal) registerLabelKey(jaVal, key);
-}
-
-// 5. Register common Monaco NLS aliases using unicode escapes
+// 3. Register common Monaco NLS aliases using unicode escapes
 registerLabelKey("\u67e5\u770b\u5b9a\u4e49", "editor.action.peek_definition");
 registerLabelKey("\u67e5\u770b\u5f15\u7528", "editor.action.peek_references");
 registerLabelKey("\u67e5\u770b\u5b9e\u73b0", "editor.action.peek_implementation");
 registerLabelKey("\u67e5\u770b\u7c7b\u578b\u5b9a\u4e49", "editor.action.peek_type_definition");
 
+// 3. Reactively index any loaded dictionaries in O(1)
+watch(
+  () => Object.values(loadedDictionaries.value),
+  (dicts) => {
+    for (let i = 0; i < dicts.length; i++) {
+      indexDictionary(dicts[i]);
+    }
+  },
+  { immediate: true, deep: false }
+);
+
 /**
- * Resolves an arbitrary context menu label (in ANY language) back to its TranslationDict key.
+ * Resolves an arbitrary context menu label (in ANY language) back to its TranslationDict key in O(1).
  */
 export function getActionKeyForLabel(label: string): keyof TranslationDict | undefined {
   if (!label) return undefined;
@@ -113,18 +124,9 @@ export function getActionKeyForLabel(label: string): keyof TranslationDict | und
   const direct = LABEL_TO_KEY_CACHE.get(trimmed) || LABEL_TO_KEY_CACHE.get(trimmed.toLowerCase());
   if (direct) return direct;
 
-  // Search dynamically across all currently loaded language dictionaries
-  const dicts = Object.values(loadedDictionaries.value);
-  for (const dict of dicts) {
-    if (!dict) continue;
-    for (const [key, val] of Object.entries(dict)) {
-      if ((key.startsWith("editor.action.") || key === "editor.run_in_terminal") && typeof val === "string") {
-        if (val.trim() === trimmed || val.trim().toLowerCase() === trimmed.toLowerCase()) {
-          registerLabelKey(val, key as keyof TranslationDict);
-          return key as keyof TranslationDict;
-        }
-      }
-    }
+  if (trimmed.endsWith("...")) {
+    const withoutDots = trimmed.slice(0, -3).trim();
+    return LABEL_TO_KEY_CACHE.get(withoutDots) || LABEL_TO_KEY_CACHE.get(withoutDots.toLowerCase());
   }
 
   return undefined;
@@ -252,15 +254,21 @@ export function localizeEditorActions(editor: any): void {
   }
 }
 
+let isTranslating = false;
+
 /**
  * Translates all active Monaco context menu and submenu items in the DOM,
  * injecting unified Codicon menu icons aligned with the workspace design system.
  */
 export function translateActiveMonacoMenus(root: ParentNode = document): void {
+  if (isTranslating) return;
+  isTranslating = true;
   try {
     const labels = root.querySelectorAll<HTMLElement>(
       ".context-view .action-label:not(.separator), .monaco-menu .action-label:not(.separator)"
     );
+    if (!labels.length) return;
+
     for (let i = 0; i < labels.length; i++) {
       const el = labels[i];
       let actionKey = el.dataset.actionKey as keyof TranslationDict | undefined;
@@ -296,6 +304,8 @@ export function translateActiveMonacoMenus(root: ParentNode = document): void {
     }
   } catch {
     // ignore
+  } finally {
+    isTranslating = false;
   }
 }
 
@@ -304,26 +314,19 @@ let globalMenuObserver: MutationObserver | null = null;
 function ensureGlobalMenuObserver(): void {
   if (globalMenuObserver || typeof document === "undefined") return;
   globalMenuObserver = new MutationObserver((mutations) => {
+    if (isTranslating) return;
     let shouldTranslate = false;
     for (let i = 0; i < mutations.length; i++) {
       const mut = mutations[i];
-      const target = mut.target as HTMLElement;
-      if (
-        (target && target.nodeType === Node.ELEMENT_NODE && target.closest?.(".context-view, .monaco-menu")) ||
-        (target && target.parentElement?.closest?.(".context-view, .monaco-menu"))
-      ) {
-        shouldTranslate = true;
-        break;
-      }
       if (mut.addedNodes.length > 0) {
         for (let j = 0; j < mut.addedNodes.length; j++) {
           const node = mut.addedNodes[j];
           if (node.nodeType === Node.ELEMENT_NODE) {
             const el = node as HTMLElement;
             if (
-              el.matches?.(".action-label, .action-menu-item, .monaco-menu, .context-view") ||
               el.classList?.contains("context-view") ||
               el.classList?.contains("monaco-menu-container") ||
+              el.classList?.contains("monaco-menu") ||
               el.querySelector?.(".action-label")
             ) {
               shouldTranslate = true;
@@ -342,7 +345,6 @@ function ensureGlobalMenuObserver(): void {
   globalMenuObserver.observe(document.body, {
     childList: true,
     subtree: true,
-    characterData: true,
   });
 
   // Watch locale changes to automatically re-localize any open context menus
@@ -366,17 +368,10 @@ export function setupEditorContextMenuLocalization(editor: any, container: HTMLE
   ensureGlobalMenuObserver();
 
   const handleContextMenu = () => {
-    localizeEditorActions(editor);
-    translateActiveMonacoMenus();
     requestAnimationFrame(() => {
       translateActiveMonacoMenus();
-      setTimeout(translateActiveMonacoMenus, 10);
-      setTimeout(translateActiveMonacoMenus, 30);
-      setTimeout(translateActiveMonacoMenus, 60);
-      setTimeout(translateActiveMonacoMenus, 120);
-      setTimeout(translateActiveMonacoMenus, 250);
     });
   };
 
-  container.addEventListener("contextmenu", handleContextMenu, { capture: true });
+  container.addEventListener("contextmenu", handleContextMenu, { capture: true, passive: true });
 }
