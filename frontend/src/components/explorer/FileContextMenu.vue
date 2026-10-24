@@ -67,12 +67,14 @@
 
           <div class="menu-item" @click="handleAddToWorkspace">
             <span class="menu-icon codicon codicon-folder-library"></span>
-            <span class="menu-label">{{ t("explorer.add_folder_to_workspace") || "将文件夹添加到工作区..." }}</span>
+            <span class="menu-label">{{ t("explorer.add_folder_to_workspace") || "Add Folder to Workspace..." }}</span>
           </div>
 
           <div v-if="isWorkspaceRoot(contextMenu.node)" class="menu-item danger" @click="handleRemoveFromWorkspace">
             <span class="menu-icon codicon codicon-close"></span>
-            <span class="menu-label">{{ t("explorer.remove_folder_from_workspace") || "将文件夹从工作区删除" }}</span>
+            <span class="menu-label">{{
+              t("explorer.remove_folder_from_workspace") || "Remove Folder from Workspace"
+            }}</span>
           </div>
         </template>
 

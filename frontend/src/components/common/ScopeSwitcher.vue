@@ -54,8 +54,8 @@ import { t } from "../../i18n";
 const router = useRouter();
 const { activeScope, setScope, toggleScope } = useAppScope();
 
-const workspaceLabel = computed(() => t("settings.scope_workspace") || "工作区");
-const userLabel = computed(() => t("settings.scope_user") || "用户");
+const workspaceLabel = computed(() => t("settings.scope_workspace") || "Workspace");
+const userLabel = computed(() => t("settings.scope_user") || "User");
 
 const workspaceTooltip = computed(() => "工作区环境：配置当前项目专属环境 (.unirtm.toml)");
 const userTooltip = computed(() => "用户全局环境：配置当前用户所有项目共用的默认兜底环境 (~/.unirtm)");

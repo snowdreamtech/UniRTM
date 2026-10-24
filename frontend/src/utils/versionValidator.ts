@@ -27,7 +27,8 @@ export function validateRuntimeVersion(toolId: string, input: string): VersionVa
   if (!/^[0-9a-zA-Z._+-]+$/.test(val)) {
     return {
       valid: false,
-      error: t("runtimes.version_invalid_format") || "版本号格式不合规（包含非法字符）",
+      error:
+        t("runtimes.version_invalid_format") || "Invalid version format (must follow Semantic Versioning, e.g. 1.23.0)",
     };
   }
 
@@ -70,7 +71,8 @@ export function validateRuntimeVersion(toolId: string, input: string): VersionVa
   if (!match) {
     return {
       valid: false,
-      error: t("runtimes.version_invalid_format") || "版本号格式不合规（须符合语义化版本或年月日 CalVer 规范）",
+      error:
+        t("runtimes.version_invalid_format") || "Invalid version format (must follow Semantic Versioning, e.g. 1.23.0)",
     };
   }
 

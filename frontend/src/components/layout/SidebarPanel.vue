@@ -59,7 +59,7 @@
       <!-- TOOLS Navigation Items -->
       <template v-if="currentTab === 'tools'">
         <div class="nav-group-title">
-          {{ activeScope === "user" ? "用户工具" : t("sidebar.group_tools") || "项目工具" }}
+          {{ activeScope === "user" ? "用户工具" : t("sidebar.group_tools") || "PROJECT TOOLS" }}
         </div>
 
         <!-- 1. ⚠️ 待安装 (N)：仅当 N > 0 时显示在最顶部，默认展开，琥珀色警示 -->
@@ -68,7 +68,7 @@
             class="accordion-header missing-header"
             :class="{ collapsed: !isMissingExpanded }"
             @click="isMissingExpanded = !isMissingExpanded"
-            :title="t('sidebar.tools_missing_hint') || '工作区已配置但尚未在本地安装的工具'"
+            :title="t('sidebar.tools_missing_hint') || 'Configured in workspace but not installed locally'"
           >
             <div class="accordion-header-left">
               <span
@@ -76,7 +76,7 @@
                 :class="isMissingExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"
               ></span>
               <span class="accordion-status-icon warning">⚠️</span>
-              <span class="accordion-title">{{ t("sidebar.tools_missing") || "待安装" }}</span>
+              <span class="accordion-title">{{ t("sidebar.tools_missing") || "Missing (Pending Installation)" }}</span>
             </div>
             <span class="accordion-count badge-warning">{{ missingTools.length }}</span>
           </div>
@@ -95,7 +95,7 @@
                 <span class="item-label">{{ tool.name }}</span>
                 <span class="item-sub text-warning">{{ tool.version }}</span>
               </div>
-              <span class="status-indicator-badge warning" :title="t('tools.status.missing') || '待安装'">
+              <span class="status-indicator-badge warning" :title="t('tools.status.missing') || 'Missing'">
                 <span class="codicon codicon-warning"></span>
               </span>
             </button>
@@ -108,7 +108,7 @@
             class="accordion-header upgradable-header"
             :class="{ collapsed: !isUpgradableExpanded }"
             @click="isUpgradableExpanded = !isUpgradableExpanded"
-            :title="t('sidebar.tools_upgradable_hint') || '发现更高可用版本，支持一键升级'"
+            :title="t('sidebar.tools_upgradable_hint') || 'Newer version available, supports one-click upgrade'"
           >
             <div class="accordion-header-left">
               <span
@@ -116,7 +116,7 @@
                 :class="isUpgradableExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"
               ></span>
               <span class="accordion-status-dot update">●</span>
-              <span class="accordion-title">{{ t("sidebar.tools_upgradable") || "可升级" }}</span>
+              <span class="accordion-title">{{ t("sidebar.tools_upgradable") || "Upgradable" }}</span>
             </div>
             <span class="accordion-count badge-success">{{ upgradableTools.length }}</span>
           </div>
@@ -140,7 +140,7 @@
                 :title="
                   tool.upgradableVersion
                     ? `可升级至 v${tool.upgradableVersion}`
-                    : t('tools.actions.upgrade') || '可升级'
+                    : t('tools.actions.upgrade') || 'Upgrade'
                 "
                 >●</span
               >
@@ -160,7 +160,7 @@
                 class="codicon twistie"
                 :class="isReadyExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"
               ></span>
-              <span class="accordion-title">{{ t("sidebar.tools_ready") || "已就绪" }}</span>
+              <span class="accordion-title">{{ t("sidebar.tools_ready") || "Ready / Installed" }}</span>
             </div>
             <span class="accordion-count badge-neutral">{{ readyTools.length }}</span>
           </div>
@@ -185,7 +185,7 @@
 
         <!-- Empty State when searching -->
         <div v-if="allFilteredTools.length === 0" class="sidebar-empty-state">
-          <span class="empty-text">{{ t("common.no_results") || "未找到匹配工具" }}</span>
+          <span class="empty-text">{{ t("common.no_results") || "No results found" }}</span>
         </div>
       </template>
 
@@ -193,7 +193,7 @@
       <template v-if="currentTab === 'tasks'">
         <div class="nav-group-title">
           {{
-            activeScope === "user" ? "用户任务 (~/.unirtm.toml)" : t("sidebar.group_tasks") || "项目任务 (.unirtm.toml)"
+            activeScope === "user" ? "用户任务 (~/.unirtm.toml)" : t("sidebar.group_tasks") || "TASKS (.unirtm.toml)"
           }}
         </div>
         <button
@@ -218,8 +218,8 @@
         <div class="nav-group-title">
           {{
             activeScope === "user"
-              ? t("environments.scope_user") || "用户"
-              : t("environments.scope_workspace") || "工作区"
+              ? t("environments.scope_user") || "User"
+              : t("environments.scope_workspace") || "Workspace"
           }}
         </div>
         <button
@@ -270,7 +270,7 @@
         >
           <span class="item-icon"><TechIcon id="workbench:marketplace" :size="20" /></span>
           <div class="item-dual">
-            <span class="item-label">{{ t("settings.theme_tab_marketplace") || "主题与图标" }}</span>
+            <span class="item-label">{{ t("settings.theme_tab_marketplace") || "Online Marketplace (Open VSX)" }}</span>
             <span class="item-sub">Open VSX 扩展源</span>
           </div>
         </button>
@@ -283,7 +283,7 @@
         >
           <span class="item-icon"><TechIcon id="workbench:tools" :size="20" /></span>
           <div class="item-dual">
-            <span class="item-label">{{ t("settings.cat_plugins") || "功能插件" }}</span>
+            <span class="item-label">{{ t("settings.cat_plugins") || "Extensions" }}</span>
             <span class="item-sub">敬请期待</span>
           </div>
           <span class="badge-soon" style="font-size: 0.6rem; padding: 1px 4px">开发中</span>
@@ -292,7 +292,7 @@
 
       <!-- DOCTOR Navigation Items -->
       <template v-if="currentTab === 'doctor'">
-        <div class="nav-group-title" @contextmenu.prevent>{{ t("sidebar.group_doctor") || "系统诊断" }}</div>
+        <div class="nav-group-title" @contextmenu.prevent>{{ t("sidebar.group_doctor") || "SYSTEM DIAGNOSTICS" }}</div>
         <button
           v-for="check in filteredDoctorChecks"
           :key="check.id"
@@ -326,7 +326,7 @@
         <div class="nav-group-title">ABOUT UNIRTM</div>
         <div class="sidebar-item active">
           <span class="item-icon"><TechIcon id="workbench:about" :size="20" /></span>
-          <span class="item-label">{{ t("about.title") || "关于" }}</span>
+          <span class="item-label">{{ t("about.title") || "About" }}</span>
         </div>
       </template>
     </div>
@@ -605,11 +605,11 @@ const headerTitle = computed(() => {
 });
 
 const settingsNavItems = computed(() => [
-  { id: "general", icon: "workbench:settings", label: t("settings.cat_general") || "常规" },
-  { id: "shortcuts", icon: "workbench:keyboard", label: t("settings.cat_shortcuts") || "快捷键" },
-  { id: "network", icon: "workbench:runtimes", label: t("settings.cat_network") || "网络" },
-  { id: "plugins", icon: "workbench:marketplace", label: t("settings.cat_plugins") || "扩展" },
-  { id: "security", icon: "workbench:lock", label: t("settings.cat_security") || "安全" },
+  { id: "general", icon: "workbench:settings", label: t("settings.cat_general") || "General" },
+  { id: "shortcuts", icon: "workbench:keyboard", label: t("settings.cat_shortcuts") || "Keyboard Shortcuts" },
+  { id: "network", icon: "workbench:runtimes", label: t("settings.cat_network") || "Network" },
+  { id: "plugins", icon: "workbench:marketplace", label: t("settings.cat_plugins") || "Extensions" },
+  { id: "security", icon: "workbench:lock", label: t("settings.cat_security") || "Security" },
 ]);
 
 const searchPlaceholder = computed(() => {
@@ -622,42 +622,42 @@ const dashboardItems = computed(() => [
     id: "overview",
     sectionId: "dashboard-section-hero",
     icon: "workbench:dashboard",
-    label: t("sidebar.group_overview") || "项目总览",
+    label: t("sidebar.group_overview") || "PROJECT OVERVIEW",
     meta: activeScope.value === "user" ? "User" : "Workspace",
   },
   {
     id: "tools",
     sectionId: "dashboard-section-kpi",
     icon: "workbench:tools",
-    label: t("dashboard.kpi_tools") || "活跃工具",
+    label: t("dashboard.kpi_tools") || "Active Tools",
     meta: `${rawTools.value.length} 项`,
   },
   {
     id: "tasks",
     sectionId: "dashboard-section-kpi",
     icon: "workbench:tasks",
-    label: t("dashboard.kpi_tasks") || "项目任务",
+    label: t("dashboard.kpi_tasks") || "Project Tasks",
     meta: `${rawTasks.value.length} 个`,
   },
   {
     id: "specs",
     sectionId: "dashboard-section-specs",
     icon: "go",
-    label: t("hello.system_title") || "运行环境",
+    label: t("hello.system_title") || "Runtime Environment",
     meta: "Go 1.24",
   },
   {
     id: "network",
     sectionId: "dashboard-section-network",
     icon: "workbench:runtimes",
-    label: t("hello.network_title") || "网络与代理",
+    label: t("hello.network_title") || "Network & Proxy",
     meta: "OK",
   },
   {
     id: "security",
     sectionId: "dashboard-section-kpi",
     icon: "workbench:doctor",
-    label: t("dashboard.kpi_security") || "锁文件与安全",
+    label: t("dashboard.kpi_security") || "Lockfile & Security",
     meta: "100%",
   },
 ]);
@@ -830,25 +830,25 @@ const doctorChecks = computed<DoctorCheckItem[]>(() => {
     {
       id: "core",
       icon: "workbench:dashboard",
-      label: t("doctor.dim_core") || "核心与执行环境",
+      label: t("doctor.dim_core") || "Core & Shell",
       status: r ? (r.core?.shims_on_path ? "success" : "warning") : "success",
     },
     {
       id: "network",
       icon: "workbench:runtimes",
-      label: t("doctor.dim_network") || "网络联通与 API 配额",
+      label: t("doctor.dim_network") || "Network & Quotas",
       status: r ? (r.health?.github_connected ? "success" : "error") : "success",
     },
     {
       id: "directories",
       icon: "workbench:folder",
-      label: t("doctor.dim_directories") || "磁盘占用与存储路径",
+      label: t("doctor.dim_directories") || "Storage & Directories",
       status: "success",
     },
     {
       id: "database",
       icon: "workbench:settings",
-      label: t("doctor.dim_database") || "状态数据库与配置",
+      label: t("doctor.dim_database") || "Database & Config",
       status: r ? (r.health?.database_ok ? "success" : "error") : "success",
     },
   ];

@@ -7,7 +7,7 @@
           <span class="view-icon">
             <TechIcon id="workbench:tools" :size="20" />
           </span>
-          <span>{{ t("nav.tools") || "开发环境与工具链" }}</span>
+          <span>{{ t("nav.tools") || "Toolchains" }}</span>
         </h2>
         <p class="view-desc">
           由 UniRTM 统一版本锁定与高性能垫片（Go Shims）路由，替换 NVM、GVM、Pyenv
@@ -42,16 +42,14 @@
             :colored="false"
           />
           {{
-            currentScope === "user"
-              ? t("runtimes.scope_user") || "用户全局环境"
-              : t("runtimes.scope_workspace") || "工作区项目环境"
+            currentScope === "user" ? t("runtimes.scope_user") || "User" : t("runtimes.scope_workspace") || "Workspace"
           }}
         </span>
         <span class="scope-hint-text">
           {{
             currentScope === "user"
-              ? t("runtimes.scope_user_desc") || "配置当前用户所有未指定工作区时的默认兜底环境 (~/.unirtm)"
-              : t("runtimes.scope_workspace_desc") || "锁定当前工作区工具版本，团队协作检出即生效 (.unirtm.toml)"
+              ? t("runtimes.scope_user_desc") || "Default fallback environment for user profile"
+              : t("runtimes.scope_workspace_desc") || "Lock language versions for current workspace"
           }}
         </span>
       </div>
@@ -90,7 +88,7 @@
         >
           <span style="display: inline-flex; align-items: center; gap: 4px">
             <TechIcon id="workbench:tasks" :size="12" :colored="false" />
-            {{ migrating ? "Importing..." : t("runtimes.import_legacy") || "一键导入至工作区" }}
+            {{ migrating ? "Importing..." : t("runtimes.import_legacy") || "Import to Workspace" }}
           </span>
         </button>
       </div>
@@ -111,7 +109,7 @@
       </div>
       <div class="runtime-stats-badges">
         <span class="stat-badge">
-          <b>{{ filteredRuntimes.length }}</b> {{ t("runtimes.count_runtimes_suffix") || "个工具" }}
+          <b>{{ filteredRuntimes.length }}</b> {{ t("runtimes.count_runtimes_suffix") || "tools" }}
         </span>
 
         <!-- 待安装统计徽标：遵循低噪音原则，仅在 > 0 时醒目呈现，支持点击一键切换筛选 -->
@@ -126,7 +124,7 @@
           @click="filterOnlyMissing = !filterOnlyMissing"
         >
           <span class="badge-dot warning-dot">●</span>
-          <b>{{ scopeMissingCount }}</b> {{ t("runtimes.count_missing_suffix") || "个待安装" }}
+          <b>{{ scopeMissingCount }}</b> {{ t("runtimes.count_missing_suffix") || "Missing" }}
         </span>
 
         <!-- 可升级统计徽标：绿色专属升级状态 -->
@@ -141,7 +139,7 @@
           "
           @click="scopeUpgradableCount > 0 ? (isDiffDrawerOpen = true) : undefined"
         >
-          <b>{{ scopeUpgradableCount }}</b> {{ t("runtimes.count_upgradable_suffix") || "个可升级" }}
+          <b>{{ scopeUpgradableCount }}</b> {{ t("runtimes.count_upgradable_suffix") || "Upgradable" }}
         </span>
 
         <!-- View Mode Switcher -->
@@ -151,7 +149,7 @@
             class="view-mode-btn"
             :class="{ active: viewMode === 'cards' }"
             @click="setViewMode('cards')"
-            :title="t('environments.view_cards') || '卡片视图'"
+            :title="t('environments.view_cards') || 'Cards View'"
           >
             <TechIcon id="workbench:cards" :size="14" />
           </button>
@@ -160,14 +158,14 @@
             class="view-mode-btn"
             :class="{ active: viewMode === 'list' }"
             @click="setViewMode('list')"
-            :title="t('environments.view_list') || '列表视图'"
+            :title="t('environments.view_list') || 'List View'"
           >
             <TechIcon id="workbench:list" :size="14" />
           </button>
         </div>
 
         <button class="tool-action-btn primary small" id="btn-add-runtime" @click="openAddModal">
-          <span>+ {{ t("runtimes.add_runtime") || "添加运行环境" }}</span>
+          <span>+ {{ t("runtimes.add_runtime") || "Add Runtime" }}</span>
         </button>
       </div>
     </div>
@@ -188,7 +186,7 @@
         }}
       </p>
       <button class="tool-action-btn primary small" @click="openAddModal">
-        <span>+ {{ t("runtimes.add_runtime") || "添加运行环境" }}</span>
+        <span>+ {{ t("runtimes.add_runtime") || "Add Runtime" }}</span>
       </button>
     </div>
 
@@ -234,7 +232,7 @@
                   <span class="missing-dot">●</span>
                   <span
                     >{{ formatVersion(getToolStatus(rt).configuredVersion) }} ({{
-                      t("runtimes.status_missing") || "待安装"
+                      t("runtimes.status_missing") || "Missing"
                     }})</span
                   >
                 </span>
@@ -293,7 +291,7 @@
               :class="{ 'is-active': activeMenuRuntimeId === rt.id }"
               :id="'btn-more-' + rt.id"
               @click.stop="toggleRuntimeMenu(rt.id)"
-              :title="t('common.more_actions') || '更多操作'"
+              :title="t('common.more_actions') || 'More Actions'"
             >
               <TechIcon id="workbench:more" :size="15" />
             </button>
@@ -314,7 +312,7 @@
                 >
                   <TechIcon :id="rt.pinned ? 'workbench:unlock' : 'workbench:lock'" :size="13" />
                   <span>{{
-                    rt.pinned ? t("runtimes.action_unlock") || "解除锁定" : t("runtimes.action_lock") || "锁定版本"
+                    rt.pinned ? t("runtimes.action_unlock") || "Unlock" : t("runtimes.action_lock") || "Lock"
                   }}</span>
                 </button>
                 <div class="dropdown-divider"></div>
@@ -325,7 +323,7 @@
                   :title="t('runtimes.action_delete')"
                 >
                   <TechIcon id="workbench:delete" :size="13" />
-                  <span>{{ t("runtimes.action_delete") || "删除" }}</span>
+                  <span>{{ t("runtimes.action_delete") || "Delete" }}</span>
                 </button>
               </div>
             </transition>
@@ -339,10 +337,10 @@
       <table class="tools-table">
         <thead>
           <tr>
-            <th class="th-tool">{{ t("runtimes.col_tool") || "工具" }}</th>
-            <th class="th-version">{{ t("runtimes.col_version") || "版本" }}</th>
-            <th class="th-desc">{{ t("runtimes.col_desc") || "描述" }}</th>
-            <th class="th-actions">{{ t("runtimes.col_actions") || "操作" }}</th>
+            <th class="th-tool">{{ t("runtimes.col_tool") || "Tool" }}</th>
+            <th class="th-version">{{ t("runtimes.col_version") || "Version" }}</th>
+            <th class="th-desc">{{ t("runtimes.col_desc") || "Description" }}</th>
+            <th class="th-actions">{{ t("runtimes.col_actions") || "Actions" }}</th>
           </tr>
         </thead>
         <tbody>
@@ -387,7 +385,7 @@
                   <span class="missing-dot">●</span>
                   <span
                     >{{ formatVersion(getToolStatus(rt).configuredVersion) }} ({{
-                      t("runtimes.status_missing") || "待安装"
+                      t("runtimes.status_missing") || "Missing"
                     }})</span
                   >
                 </span>
@@ -449,7 +447,7 @@
                     :class="{ 'is-active': activeMenuRuntimeId === rt.id }"
                     :id="'btn-more-row-' + rt.id"
                     @click.stop="toggleRuntimeMenu(rt.id)"
-                    :title="t('common.more_actions') || '更多操作'"
+                    :title="t('common.more_actions') || 'More Actions'"
                   >
                     <TechIcon id="workbench:more" :size="14" />
                   </button>
@@ -470,9 +468,7 @@
                       >
                         <TechIcon :id="rt.pinned ? 'workbench:unlock' : 'workbench:lock'" :size="13" />
                         <span>{{
-                          rt.pinned
-                            ? t("runtimes.action_unlock") || "解除锁定"
-                            : t("runtimes.action_lock") || "锁定版本"
+                          rt.pinned ? t("runtimes.action_unlock") || "Unlock" : t("runtimes.action_lock") || "Lock"
                         }}</span>
                       </button>
                       <div class="dropdown-divider"></div>
@@ -483,7 +479,7 @@
                         :title="t('runtimes.action_delete')"
                       >
                         <TechIcon id="workbench:delete" :size="13" />
-                        <span>{{ t("runtimes.action_delete") || "删除" }}</span>
+                        <span>{{ t("runtimes.action_delete") || "Delete" }}</span>
                       </button>
                     </div>
                   </transition>
@@ -588,7 +584,11 @@
               </p>
             </div>
           </div>
-          <button class="btn btn-icon modal-close-btn" @click="closeRemoteModal" :title="t('runtimes.close') || '关闭'">
+          <button
+            class="btn btn-icon modal-close-btn"
+            @click="closeRemoteModal"
+            :title="t('runtimes.close') || 'Close'"
+          >
             <TechIcon id="workbench:close" :size="14" />
           </button>
         </div>
@@ -601,9 +601,9 @@
               <TechIcon id="workbench:workspace" :size="16" :colored="false" />
             </span>
             <div class="scope-opt-text">
-              <span class="scope-opt-name">{{ t("runtimes.scope_workspace") || "工作区" }}</span>
+              <span class="scope-opt-name">{{ t("runtimes.scope_workspace") || "Workspace" }}</span>
               <span class="scope-opt-desc">{{
-                t("runtimes.scope_workspace_tip") || "应用于当前工作区，随团队项目协作生效"
+                t("runtimes.scope_workspace_tip") || "Applied to current workspace, active for team collaboration"
               }}</span>
             </div>
           </label>
@@ -613,9 +613,9 @@
               <TechIcon id="workbench:user" :size="16" :colored="false" />
             </span>
             <div class="scope-opt-text">
-              <span class="scope-opt-name">{{ t("runtimes.scope_user") || "用户" }}</span>
+              <span class="scope-opt-name">{{ t("runtimes.scope_user") || "User" }}</span>
               <span class="scope-opt-desc">{{
-                t("runtimes.scope_user_tip") || "应用于本机所有工作区的默认兜底版本"
+                t("runtimes.scope_user_tip") || "Fallback default version for all workspaces on this machine"
               }}</span>
             </div>
           </label>
@@ -629,7 +629,7 @@
             :placeholder="t('runtimes.search_remote_placeholder') || 'Filter remote versions (e.g. 20, lts, 1.23)...'"
           />
           <span class="version-count-pill font-mono">
-            {{ filteredRemoteVersions.length }} {{ t("runtimes.version_count") || "个可用版本" }}
+            {{ filteredRemoteVersions.length }} {{ t("runtimes.version_count") || "available versions" }}
           </span>
         </div>
 
@@ -642,7 +642,7 @@
           class="quick-filter-chips"
         >
           <button class="filter-chip" :class="{ active: selectedMajorFilter === '' }" @click="selectedMajorFilter = ''">
-            {{ t("runtimes.all_versions") || "全部" }}
+            {{ t("runtimes.all_versions") || "All" }}
           </button>
           <button
             v-if="selectedRuntime?.installed_versions && selectedRuntime.installed_versions.length > 0"
@@ -677,7 +677,9 @@
             <div class="empty-icon-wrap">
               <TechIcon id="workbench:search" :size="24" />
             </div>
-            <div class="empty-title">{{ t("runtimes.no_matching_releases") || "未找到匹配的官方发布版本" }}</div>
+            <div class="empty-title">
+              {{ t("runtimes.no_matching_releases") || "No matching upstream releases found." }}
+            </div>
 
             <!-- Version format / rule validation error -->
             <div v-if="versionValidation.error" class="version-validation-error">
@@ -690,13 +692,13 @@
               <div class="custom-ver-header">
                 <span class="font-mono ver-name">{{ formatVersion(cleanCustomVersion) }}</span>
                 <span class="custom-badge font-mono">
-                  {{ t("runtimes.custom_version_unlisted") || "官方未收录" }}
+                  {{ t("runtimes.custom_version_unlisted") || "Unlisted Upstream" }}
                 </span>
               </div>
               <p class="custom-ver-desc">
                 {{
                   t("runtimes.custom_version_desc") ||
-                  "该版本未包含在当前官方版本清单中。若您确认存在此构建，可尝试自定义安装。"
+                  "This version is not in the official release list. If you are sure this build exists, you can try custom installation."
                 }}
               </p>
               <button
@@ -707,7 +709,7 @@
                 <span v-if="installingVer === cleanCustomVersion">{{
                   t("runtimes.installing") || "Installing..."
                 }}</span>
-                <span v-else>{{ t("runtimes.install_custom_btn") || "尝试安装自定义版本" }}</span>
+                <span v-else>{{ t("runtimes.install_custom_btn") || "Try Installing Custom Version" }}</span>
               </button>
             </div>
           </div>
@@ -725,7 +727,7 @@
                     : '已保存在本地共享安装池中，切换无需下载'
                 "
               >
-                {{ t("runtimes.installed") || "已安装" }}
+                {{ t("runtimes.installed") || "Installed" }}
               </span>
               <span
                 v-else-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version)"
@@ -736,7 +738,7 @@
                     : '工作区已配置该版本，但本地尚未下载安装'
                 "
               >
-                {{ t("runtimes.status_missing") || "待安装" }}
+                {{ t("runtimes.status_missing") || "Missing" }}
               </span>
             </div>
 
@@ -764,16 +766,16 @@
                   isAlreadyInstalled(selectedRuntime?.id || '', rv.version)
                 "
               >
-                {{ t("runtimes.active_badge") || "当前使用" }}
+                {{ t("runtimes.active_badge") || "Active" }}
               </span>
               <span v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">
                 {{
                   modalInstallScope === "user"
-                    ? t("runtimes.set_user") || "设为用户"
-                    : t("runtimes.set_workspace") || "设为工作区"
+                    ? t("runtimes.set_user") || "Set as User"
+                    : t("runtimes.set_workspace") || "Set as Workspace"
                 }}
               </span>
-              <span v-else>{{ t("runtimes.install_apply") || "安装并应用" }}</span>
+              <span v-else>{{ t("runtimes.install_apply") || "Install & Apply" }}</span>
             </button>
           </div>
         </div>
@@ -789,21 +791,23 @@
               <TechIcon id="workbench:tools" :size="20" />
             </span>
             <div>
-              <h3 class="modal-title">{{ t("runtimes.add_runtime") || "添加工具" }}</h3>
+              <h3 class="modal-title">{{ t("runtimes.add_runtime") || "Add Runtime" }}</h3>
               <p class="modal-desc">为当前{{ currentScope === "user" ? "用户默认" : "工作区" }}添加工具与版本</p>
             </div>
           </div>
           <button
             class="btn btn-icon modal-close-btn"
             @click="isAddModalOpen = false"
-            :title="t('runtimes.close') || '关闭'"
+            :title="t('runtimes.close') || 'Close'"
           >
             <TechIcon id="workbench:close" :size="14" />
           </button>
         </div>
 
         <div class="add-preset-section">
-          <div class="preset-section-title">{{ t("tools.official_recommended") || "官方支持推荐语言" }}</div>
+          <div class="preset-section-title">
+            {{ t("tools.official_recommended") || "Official Recommended Languages & Toolchains" }}
+          </div>
           <div class="add-preset-grid">
             <div
               v-for="preset in presetRuntimes"
@@ -816,7 +820,7 @@
                 <div class="preset-info">
                   <div class="preset-name-row">
                     <span class="preset-name">{{ preset.name }}</span>
-                    <span class="preset-tag font-mono">{{ t("tools.official") || "官方" }}</span>
+                    <span class="preset-tag font-mono">{{ t("tools.official") || "Official" }}</span>
                   </div>
                   <span class="preset-desc">{{ preset.description }}</span>
                 </div>
@@ -837,7 +841,7 @@
 
         <div class="custom-add-section">
           <div class="preset-section-title">
-            {{ t("tools.custom.section_title") || "或输入自定义工具与固定版本" }}
+            {{ t("tools.custom.section_title") || "Or enter custom tool and explicit version" }}
           </div>
           <div class="custom-add-form">
             <!-- 1. 常用前缀下拉选择 -->
@@ -845,7 +849,7 @@
               <select
                 v-model="customPrefix"
                 class="custom-prefix-select"
-                :title="t('tools.custom.prefix_hint') || '选择工具生态或 Provider 前缀'"
+                :title="t('tools.custom.prefix_hint') || 'Select tool ecosystem or provider prefix'"
               >
                 <option v-for="opt in COMMON_TOOL_PREFIXES" :key="opt.value" :value="opt.value">
                   {{ opt.label }}
@@ -873,7 +877,7 @@
                 v-model="customToolVersion"
                 type="text"
                 class="custom-tool-input custom-version-input font-mono"
-                :placeholder="t('tools.custom.version_placeholder') || '版本号 (如: 1.0.0)'"
+                :placeholder="t('tools.custom.version_placeholder') || 'Version (e.g. 1.0.0)'"
                 @paste="handleCustomPaste"
                 @keyup.enter="isCustomFormValid && addCustomRuntime()"
               />
@@ -891,7 +895,7 @@
 
           <!-- 5. 实时配置预览 -->
           <div v-if="customSpec.previewToml" class="custom-config-preview">
-            <span class="preview-label">{{ t("tools.custom.preview_label") || "配置预览:" }}</span>
+            <span class="preview-label">{{ t("tools.custom.preview_label") || "Config preview:" }}</span>
             <code class="preview-code">{{ customSpec.previewToml }}</code>
             <span v-if="customToolVersion.toLowerCase() === 'latest'" class="preview-warning text-warning">
               ⚠️ 不建议使用 latest，请指定固定版本以保证构建确定性
@@ -919,7 +923,7 @@
           <button
             class="btn btn-icon modal-close-btn"
             @click="isDiffDrawerOpen = false"
-            :title="t('common.close') || '关闭'"
+            :title="t('common.close') || 'Close'"
           >
             <TechIcon id="workbench:close" :size="14" />
           </button>
@@ -1381,7 +1385,9 @@ async function confirmRemoveRuntime(rt: RuntimeItem) {
       return;
     }
   }
-  const msg = (t("runtimes.remove_confirm") || "确定从当前工作区中移除 {name} 吗？").replace("{name}", rt.name);
+  const msg = (
+    t("runtimes.remove_confirm") || "Are you sure you want to remove {name} from workspace configuration?"
+  ).replace("{name}", rt.name);
   if (!window.confirm(msg)) {
     return;
   }
@@ -1865,7 +1871,7 @@ async function quickSwitch(toolId: string, ver: string, targetGlobal?: boolean) 
 
 async function migrateLegacy() {
   migrating.value = true;
-  showToast(t("runtimes.migrating") || "正在导入旧版本配置到 .unirtm.toml...", "info");
+  showToast(t("runtimes.migrating") || "Importing legacy version configurations to .unirtm.toml...", "info");
   try {
     await fetch("/api/tools/migrate-legacy", {
       method: "POST",
@@ -1884,13 +1890,19 @@ async function migrateLegacy() {
       }
       return rt;
     });
-    showToast(t("runtimes.migrate_success") || "已成功将旧版本文件配置迁移至 .unirtm.toml！", "success");
+    showToast(
+      t("runtimes.migrate_success") || "Successfully migrated legacy version files into .unirtm.toml!",
+      "success"
+    );
     emit("log-event", "SUCCESS", "Successfully migrated legacy version files into .unirtm.toml");
     await fetchStatus();
   } catch (err: any) {
     detectedLegacies.value = [];
     runtimes.value = runtimes.value.map((rt) => ({ ...rt, is_legacy: false, source: ".unirtm.toml" }));
-    showToast(t("runtimes.migrate_success") || "已成功将旧版本文件配置迁移至 .unirtm.toml！", "success");
+    showToast(
+      t("runtimes.migrate_success") || "Successfully migrated legacy version files into .unirtm.toml!",
+      "success"
+    );
     emit("log-event", "SUCCESS", `Migration completed: ${err.message}`);
   } finally {
     migrating.value = false;

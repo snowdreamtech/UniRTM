@@ -8,7 +8,7 @@
           v-model="searchQuery"
           type="text"
           class="ports-search-input"
-          :placeholder="t('ports.filter_placeholder') || '过滤端口、进程或标签...'"
+          :placeholder="t('ports.filter_placeholder') || 'Filter ports, processes or labels...'"
         />
         <button v-if="searchQuery" class="search-clear-btn" @click="searchQuery = ''">
           <span class="codicon codicon-close"></span>
@@ -17,16 +17,16 @@
 
       <div class="toolbar-actions">
         <!-- Add Port Button -->
-        <button class="ports-tool-btn primary" @click="startInlineAdd" :title="t('ports.add_port') || '添加端口'">
+        <button class="ports-tool-btn primary" @click="startInlineAdd" :title="t('ports.add_port') || 'Add Port'">
           <span class="codicon codicon-add"></span>
-          <span>{{ t("ports.add_port") || "添加端口" }}</span>
+          <span>{{ t("ports.add_port") || "Add Port" }}</span>
         </button>
 
         <!-- Refresh Button -->
         <button
           class="ports-tool-btn"
           :class="{ loading: isLoading }"
-          :title="t('common.refresh') || '刷新'"
+          :title="t('common.refresh') || 'Refresh'"
           @click="handleRefresh"
         >
           <span class="codicon" :class="isLoading ? 'codicon-sync codicon-modifier-spin' : 'codicon-refresh'"></span>
@@ -48,10 +48,10 @@
         <button
           class="banner-reset-btn"
           @click="resetAllPortsToPrivate"
-          :title="t('ports.reset_all_private_tip') || '将所有公开端口安全收敛为私有模式'"
+          :title="t('ports.reset_all_private_tip') || 'Securely revert all public ports back to private mode'"
         >
           <span class="codicon codicon-lock"></span>
-          <span>{{ t("ports.reset_all_private") || "一键全部转为私有" }}</span>
+          <span>{{ t("ports.reset_all_private") || "Reset All to Private" }}</span>
         </button>
       </div>
     </div>
@@ -61,11 +61,11 @@
       <table class="ports-table">
         <thead>
           <tr>
-            <th class="th-port">{{ t("ports.col_port") || "端口" }}</th>
-            <th class="th-address">{{ t("ports.col_address") || "转发地址" }}</th>
-            <th class="th-process">{{ t("ports.col_process") || "正在运行的进程" }}</th>
-            <th class="th-source">{{ t("ports.col_source") || "源" }}</th>
-            <th class="th-visibility">{{ t("ports.col_visibility") || "访问控制" }}</th>
+            <th class="th-port">{{ t("ports.col_port") || "Port" }}</th>
+            <th class="th-address">{{ t("ports.col_address") || "Forwarded Address" }}</th>
+            <th class="th-process">{{ t("ports.col_process") || "Running Process" }}</th>
+            <th class="th-source">{{ t("ports.col_source") || "Source" }}</th>
+            <th class="th-visibility">{{ t("ports.col_visibility") || "Visibility" }}</th>
             <th class="th-actions"></th>
           </tr>
         </thead>
@@ -93,8 +93,8 @@
                   :class="item.status === 'active' ? 'dot-active' : 'dot-inactive'"
                   :title="
                     item.status === 'active'
-                      ? t('ports.status_active') || '运行中'
-                      : t('ports.status_inactive') || '未连接 / 离线'
+                      ? t('ports.status_active') || 'Active'
+                      : t('ports.status_inactive') || 'Inactive'
                   "
                 ></span>
 
@@ -144,7 +144,7 @@
                 <template v-else>
                   <span
                     class="port-label"
-                    :title="t('ports.double_click_to_edit') || '双击编辑标签'"
+                    :title="t('ports.double_click_to_edit') || 'Double click to edit label'"
                     @dblclick="startEditLabel(item)"
                   >
                     {{ item.label }}
@@ -164,21 +164,21 @@
                 <div class="row-hover-actions">
                   <button
                     class="icon-action-btn"
-                    :title="t('ports.edit_label') || '修改标签'"
+                    :title="t('ports.edit_label') || 'Edit Label'"
                     @click.stop="startEditLabel(item)"
                   >
                     <span class="codicon codicon-tag"></span>
                   </button>
                   <button
                     class="icon-action-btn"
-                    :title="t('ports.open_browser') || '在浏览器中打开'"
+                    :title="t('ports.open_browser') || 'Open in Browser'"
                     @click.stop="openPort(item)"
                   >
                     <span class="codicon codicon-globe"></span>
                   </button>
                   <button
                     class="icon-action-btn"
-                    :title="t('ports.copy_address') || '复制转发地址'"
+                    :title="t('ports.copy_address') || 'Copy Forwarded Address'"
                     @click.stop="copyAddress(item)"
                   >
                     <span class="codicon codicon-copy"></span>
@@ -186,7 +186,7 @@
                   <button
                     v-if="item.status === 'active'"
                     class="icon-action-btn"
-                    :title="t('ports.stop_forwarding') || '停止转发'"
+                    :title="t('ports.stop_forwarding') || 'Stop Forwarding'"
                     @click.stop="stopPort(item.port)"
                   >
                     <span class="codicon codicon-stop-circle"></span>
@@ -194,14 +194,14 @@
                   <button
                     v-else
                     class="icon-action-btn"
-                    :title="t('ports.start_forwarding') || '恢复转发'"
+                    :title="t('ports.start_forwarding') || 'Resume Forwarding'"
                     @click.stop="startPort(item.port)"
                   >
                     <span class="codicon codicon-play-circle"></span>
                   </button>
                   <button
                     class="icon-action-btn danger"
-                    :title="t('ports.remove_port') || '删除端口'"
+                    :title="t('ports.remove_port') || 'Remove Port'"
                     @click.stop="removePort(item.port)"
                   >
                     <span class="codicon codicon-close"></span>
@@ -222,8 +222,8 @@
                     item.commandLine ||
                     item.process ||
                     (item.workspaceHint
-                      ? t("ports.expected_service") || "预期工作区服务"
-                      : t("ports.process_unavailable") || "流程信息不可用")
+                      ? t("ports.expected_service") || "Expected workspace service"
+                      : t("ports.process_unavailable") || "Process info unavailable")
                   }}
                 </div>
                 <!-- Method B Probe Banner if detected -->
@@ -242,7 +242,9 @@
             <td class="td-source">
               <span class="source-badge" :class="'source-' + item.source">
                 {{
-                  item.source === "auto" ? t("ports.source_auto") || "自动转发" : t("ports.source_user") || "用户转发"
+                  item.source === "auto"
+                    ? t("ports.source_auto") || "Auto Forward"
+                    : t("ports.source_user") || "User Forward"
                 }}
               </span>
             </td>
@@ -252,12 +254,12 @@
               <button
                 class="visibility-toggle-btn"
                 :class="'vis-' + item.visibility"
-                :title="t('ports.toggle_visibility') || '点击切换公开/私有访问权限'"
+                :title="t('ports.toggle_visibility') || 'Toggle Port Visibility'"
                 @click.stop="toggleVisibility(item)"
               >
                 <span class="codicon" :class="item.visibility === 'public' ? 'codicon-globe' : 'codicon-lock'"></span>
                 <span>{{
-                  item.visibility === "public" ? t("ports.vis_public") || "公开" : t("ports.vis_private") || "私有"
+                  item.visibility === "public" ? t("ports.vis_public") || "Public" : t("ports.vis_private") || "Private"
                 }}</span>
               </button>
             </td>
@@ -266,7 +268,7 @@
             <td class="td-actions">
               <button
                 class="more-action-btn"
-                :title="t('ports.more_actions') || '更多操作'"
+                :title="t('ports.more_actions') || 'More Actions...'"
                 @click.stop="openContextMenu($event, item)"
               >
                 <span class="codicon codicon-ellipsis"></span>
@@ -307,17 +309,21 @@
               <span class="placeholder-text">-</span>
             </td>
             <td class="td-source">
-              <span class="source-badge source-user">{{ t("ports.source_user") || "用户转发" }}</span>
+              <span class="source-badge source-user">{{ t("ports.source_user") || "User Forward" }}</span>
             </td>
             <td class="td-visibility">
-              <span class="source-badge vis-private">{{ t("ports.vis_private") || "私有" }}</span>
+              <span class="source-badge vis-private">{{ t("ports.vis_private") || "Private" }}</span>
             </td>
             <td class="td-actions">
               <div class="inline-submit-group">
-                <button class="inline-btn confirm" :title="t('common.confirm') || '确定'" @click.stop="submitInlineAdd">
+                <button
+                  class="inline-btn confirm"
+                  :title="t('common.confirm') || 'Confirm'"
+                  @click.stop="submitInlineAdd"
+                >
                   <span class="codicon codicon-check"></span>
                 </button>
-                <button class="inline-btn cancel" :title="t('common.cancel') || '取消'" @click.stop="cancelInlineAdd">
+                <button class="inline-btn cancel" :title="t('common.cancel') || 'Cancel'" @click.stop="cancelInlineAdd">
                   <span class="codicon codicon-close"></span>
                 </button>
               </div>
@@ -329,13 +335,16 @@
             <td colspan="6">
               <div class="ports-empty-state">
                 <span class="codicon codicon-radio-tower empty-icon"></span>
-                <div class="empty-title">{{ t("ports.no_forwarded_ports") || "暂无转发的端口" }}</div>
+                <div class="empty-title">{{ t("ports.no_forwarded_ports") || "No Forwarded Ports" }}</div>
                 <div class="empty-desc">
-                  {{ t("ports.empty_hint") || "运行任何本地服务时将自动感知并呈现，您也可以手动添加端口。" }}
+                  {{
+                    t("ports.empty_hint") ||
+                    "Local services will be automatically discovered and displayed here, or you can add ports manually."
+                  }}
                 </div>
                 <button class="empty-add-btn" @click="startInlineAdd">
                   <span class="codicon codicon-add"></span>
-                  <span>{{ t("ports.add_port") || "添加端口" }}</span>
+                  <span>{{ t("ports.add_port") || "Add Port" }}</span>
                 </button>
               </div>
             </td>
@@ -347,7 +356,7 @@
       <div v-if="!isAddingInline" class="table-bottom-bar">
         <button class="bottom-add-btn" @click="startInlineAdd">
           <span class="codicon codicon-add"></span>
-          <span>{{ t("ports.add_port") || "添加端口" }}</span>
+          <span>{{ t("ports.add_port") || "Add Port" }}</span>
         </button>
       </div>
     </div>
@@ -362,19 +371,19 @@
       >
         <!-- 1. Open in Browser -->
         <div class="menu-item" @click="handleContextAction('open')">
-          <span class="action-label">{{ t("ports.open_browser") || "在浏览器中打开" }}</span>
+          <span class="action-label">{{ t("ports.open_browser") || "Open in Browser" }}</span>
         </div>
 
         <!-- 2. Preview in Editor (Simple Browser) -->
         <div class="menu-item" @click="handleContextAction('preview')">
-          <span class="action-label">{{ t("ports.preview_in_editor") || "在编辑器中预览" }}</span>
+          <span class="action-label">{{ t("ports.preview_in_editor") || "Preview in Editor" }}</span>
         </div>
 
         <div class="menu-separator"></div>
 
         <!-- 3. Set Port Label -->
         <div class="menu-item" @click="handleContextAction('edit-label')">
-          <span class="action-label">{{ t("ports.set_label") || "设置端口标签" }}</span>
+          <span class="action-label">{{ t("ports.set_label") || "Set Port Label" }}</span>
           <span class="keybinding font-mono">↵</span>
         </div>
 
@@ -382,13 +391,13 @@
 
         <!-- 4. Copy Local Address -->
         <div class="menu-item" @click="handleContextAction('copy-address')">
-          <span class="action-label">{{ t("ports.copy_local_address") || "复制本地地址" }}</span>
+          <span class="action-label">{{ t("ports.copy_local_address") || "Copy Local Address" }}</span>
           <span class="keybinding font-mono">{{ isMac ? "⌘ C" : "Ctrl+C" }}</span>
         </div>
 
         <!-- 5. Change Local Address Port -->
         <div class="menu-item" @click="handleContextAction('change-local-port')">
-          <span class="action-label">{{ t("ports.change_local_port") || "更改本地地址端口" }}</span>
+          <span class="action-label">{{ t("ports.change_local_port") || "Change Local Address Port" }}</span>
         </div>
 
         <!-- 6. Change Port Protocol > (Submenu trigger) -->
@@ -399,7 +408,7 @@
           @mouseleave="scheduleCloseProtocolSubmenu"
           @click.stop="openProtocolSubmenu($event)"
         >
-          <span class="action-label">{{ t("ports.change_protocol") || "更改端口协议" }}</span>
+          <span class="action-label">{{ t("ports.change_protocol") || "Change Port Protocol" }}</span>
           <span class="submenu-chevron font-mono">›</span>
         </div>
 
@@ -410,8 +419,8 @@
           <span class="action-label">
             {{
               contextPort?.status === "active"
-                ? t("ports.stop_forwarding_port") || "停止转发端口"
-                : t("ports.start_forwarding_port") || "转发端口"
+                ? t("ports.stop_forwarding_port") || "Stop Forwarding Port"
+                : t("ports.start_forwarding_port") || "Forward Port"
             }}
           </span>
           <span class="keybinding font-mono">{{ isMac ? "⌘ ⌫" : "Del" }}</span>
@@ -419,7 +428,7 @@
 
         <!-- 8. Forward a Port -->
         <div class="menu-item" @click="handleContextAction('forward-port')">
-          <span class="action-label">{{ t("ports.forward_port") || "转发端口" }}</span>
+          <span class="action-label">{{ t("ports.forward_port") || "Forward a Port" }}</span>
         </div>
       </div>
     </Teleport>
@@ -490,7 +499,7 @@
       >
         <div class="change-port-dialog">
           <div class="change-port-header">
-            <span class="change-port-title">{{ t("ports.change_local_port") || "更改本地地址端口" }}</span>
+            <span class="change-port-title">{{ t("ports.change_local_port") || "Change Local Address Port" }}</span>
             <button class="dialog-close-btn" @click="isChangeLocalPortModalOpen = false">
               <span class="codicon codicon-close"></span>
             </button>
@@ -525,7 +534,7 @@
           <div class="security-modal-header web">
             <div class="modal-title-wrap">
               <span class="codicon codicon-info header-icon web"></span>
-              <span class="header-title">{{ t("ports.public_web_title") || "公开端口安全提示" }}</span>
+              <span class="header-title">{{ t("ports.public_web_title") || "Public Port Security Warning" }}</span>
             </div>
             <button class="modal-close-btn" @click="isWebPublicConfirmOpen = false">
               <span class="codicon codicon-close"></span>
@@ -542,15 +551,18 @@
             </div>
             <label class="security-checkbox-label">
               <input type="checkbox" v-model="dontAskAgainWeb" />
-              <span>{{ t("ports.dont_ask_again_session") || "本次会话不再提示（普通 Web 服务直接放行）" }}</span>
+              <span>{{
+                t("ports.dont_ask_again_session") ||
+                "Don't ask again for this session (auto-allow standard Web services)"
+              }}</span>
             </label>
           </div>
           <div class="security-modal-footer">
             <button class="dialog-btn secondary" @click="isWebPublicConfirmOpen = false">
-              {{ t("ports.keep_private") || "保持私有" }}
+              {{ t("ports.keep_private") || "Keep Private" }}
             </button>
             <button class="dialog-btn primary" @click="confirmStandardWebPublic">
-              {{ t("ports.confirm_public") || "确认公开" }}
+              {{ t("ports.confirm_public") || "Make Public" }}
             </button>
           </div>
         </div>
@@ -564,7 +576,7 @@
           <div class="security-modal-header danger">
             <div class="modal-title-wrap">
               <span class="codicon codicon-warning header-icon danger"></span>
-              <span class="header-title">{{ t("ports.high_risk_title") || "高危服务公开警告" }}</span>
+              <span class="header-title">{{ t("ports.high_risk_title") || "High-Risk Service Public Warning" }}</span>
             </div>
             <button class="modal-close-btn" @click="isHighRiskConfirmOpen = false">
               <span class="codicon codicon-close"></span>
@@ -585,16 +597,17 @@
             <label class="security-checkbox-label danger">
               <input type="checkbox" v-model="highRiskAcknowledged" />
               <span>{{
-                t("ports.high_risk_ack") || "我已知晓数据泄露与网络安全风险，仍确认将该数据库/管理服务暴露给外部网络"
+                t("ports.high_risk_ack") ||
+                "I acknowledge data exposure and security risks, and confirm exposing this database/infra service externally"
               }}</span>
             </label>
           </div>
           <div class="security-modal-footer">
             <button class="dialog-btn secondary" @click="isHighRiskConfirmOpen = false">
-              {{ t("ports.keep_private_recommended") || "保持私有 (推荐)" }}
+              {{ t("ports.keep_private_recommended") || "Keep Private (Recommended)" }}
             </button>
             <button class="dialog-btn danger" :disabled="!highRiskAcknowledged" @click="confirmHighRiskPublic">
-              {{ t("ports.force_public") || "强制设为公开" }}
+              {{ t("ports.force_public") || "Force Make Public" }}
             </button>
           </div>
         </div>

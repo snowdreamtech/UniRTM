@@ -5,12 +5,12 @@
       <div>
         <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
           <TechIcon id="workbench:environments" :size="20" />
-          <span>{{ t("environments.title") || "环境变量管理" }}</span>
+          <span>{{ t("environments.title") || "Environment Variables" }}</span>
         </h2>
         <p class="view-desc">
           {{
             t("environments.desc") ||
-            "统一管理工作区 (.unirtm.toml) 与用户全局 (~/.config/unirtm/unirtm.toml) 配置文件中的 [env] 环境变量。敏感密钥默认脱密遮蔽。"
+            "Manage scoped environment variables across workspace (.unirtm.toml) and user profiles (~/.config/unirtm/unirtm.toml). Sensitive values are masked by default."
           }}
         </p>
       </div>
@@ -19,10 +19,10 @@
           class="tool-action-btn secondary"
           @click="fetchEnvVars"
           :disabled="loading"
-          :title="t('common.refresh') || '刷新'"
+          :title="t('common.refresh') || 'Refresh'"
         >
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': loading }" />
-          <span>{{ loading ? t("common.refreshing") || "刷新中..." : t("common.refresh") || "刷新" }}</span>
+          <span>{{ loading ? t("common.refreshing") || "Refreshing..." : t("common.refresh") || "Refresh" }}</span>
         </button>
       </div>
     </div>
@@ -38,15 +38,17 @@
           />
           {{
             activeScope === "user"
-              ? t("environments.scope_user") || "用户"
-              : t("environments.scope_workspace") || "工作区"
+              ? t("environments.scope_user") || "User"
+              : t("environments.scope_workspace") || "Workspace"
           }}
         </span>
         <span class="scope-hint-text">
           {{
             activeScope === "user"
-              ? t("environments.scope_user_desc") || "定义在用户全局 ~/.config/unirtm/unirtm.toml 的 [env] 配置块中"
-              : t("environments.scope_workspace_desc") || "定义在当前项目 .unirtm.toml 的 [env] 配置块中"
+              ? t("environments.scope_user_desc") ||
+                "Configured in user global profile (~/.config/unirtm/unirtm.toml) under [env] section"
+              : t("environments.scope_workspace_desc") ||
+                "Configured in local project (.unirtm.toml) under [env] section"
           }}
         </span>
       </div>
@@ -70,7 +72,7 @@
           @click="selectProfile('')"
         >
           <span class="tab-icon">✨</span>
-          <span class="tab-label">{{ t("environments.profile_default") || "默认基准 (Default)" }}</span>
+          <span class="tab-label">{{ t("environments.profile_default") || "Default Base" }}</span>
         </button>
 
         <!-- User Defined Profiles -->
@@ -84,13 +86,13 @@
             <span class="tab-icon">{{ getProfileIcon(p) }}</span>
             <span class="tab-label font-mono">{{ p }}</span>
             <span v-if="getProfileOverrideCount(p) > 0" class="profile-override-chip">
-              {{ getProfileOverrideCount(p) }} {{ t("environments.profile_overrides_chip") || "覆盖" }}
+              {{ getProfileOverrideCount(p) }} {{ t("environments.profile_overrides_chip") || "overrides" }}
             </span>
           </button>
           <button
             type="button"
             class="btn btn-icon danger btn-delete-profile"
-            :title="t('environments.delete_profile') || '删除此环境配置'"
+            :title="t('environments.delete_profile') || 'Delete Profile'"
             @click.stop="confirmDeleteProfile(p)"
           >
             <TechIcon id="workbench:close" :size="11" />
@@ -102,9 +104,9 @@
           type="button"
           class="profile-tab-btn btn-add-profile"
           @click="openNewProfileModal"
-          :title="t('environments.create_profile') || '新建环境 Profile'"
+          :title="t('environments.create_profile') || 'New Profile'"
         >
-          <span>+ {{ t("environments.create_profile") || "新建环境 Profile" }}</span>
+          <span>+ {{ t("environments.create_profile") || "New Profile" }}</span>
         </button>
       </div>
 
@@ -132,21 +134,26 @@
           v-model="searchKey"
           type="text"
           class="env-search-input"
-          :placeholder="t('environments.search_placeholder') || '搜索环境变量名称、关键字或值...'"
+          :placeholder="
+            t('environments.search_placeholder') || 'Search environment variable name, keyword, or value...'
+          "
         />
       </div>
 
       <div class="env-stats-badges">
         <span class="stat-badge">
-          <b>{{ filteredEnvList.length }}</b> {{ t("environments.count_suffix") || "个变量" }}
+          <b>{{ filteredEnvList.length }}</b> {{ t("environments.count_suffix") || "variables" }}
         </span>
         <span
           v-if="sensitiveCount > 0"
           class="stat-badge sensitive-stat"
-          :title="t('environments.sensitive_hint') || '已自动启用默认脱密保护'"
+          :title="
+            t('environments.sensitive_hint') ||
+            'Sensitive secret detected. Masked by default, click eye icon to view plaintext.'
+          "
         >
           <TechIcon id="workbench:lock" :size="12" />
-          <b>{{ sensitiveCount }}</b> {{ t("environments.sensitive_count_suffix") || "个敏感" }}
+          <b>{{ sensitiveCount }}</b> {{ t("environments.sensitive_count_suffix") || "sensitive" }}
         </span>
 
         <!-- View Mode Switcher -->
@@ -156,7 +163,7 @@
             class="view-mode-btn"
             :class="{ active: viewMode === 'cards' }"
             @click="setViewMode('cards')"
-            :title="t('environments.view_cards') || '卡片视图'"
+            :title="t('environments.view_cards') || 'Cards View'"
           >
             <TechIcon id="workbench:cards" :size="14" />
           </button>
@@ -165,7 +172,7 @@
             class="view-mode-btn"
             :class="{ active: viewMode === 'list' }"
             @click="setViewMode('list')"
-            :title="t('environments.view_list') || '列表视图'"
+            :title="t('environments.view_list') || 'List View'"
           >
             <TechIcon id="workbench:list" :size="14" />
           </button>
@@ -175,9 +182,9 @@
           class="tool-action-btn primary small"
           id="btn-add-env"
           @click="openCreateModal"
-          :title="t('environments.create_btn') || '新建变量'"
+          :title="t('environments.create_btn') || 'New Variable'"
         >
-          <span>+ {{ t("environments.create_btn") || "新建变量" }}</span>
+          <span>+ {{ t("environments.create_btn") || "New Variable" }}</span>
         </button>
       </div>
     </div>
@@ -188,7 +195,7 @@
       <div v-if="loading && envList.length === 0" class="env-empty-box">
         <TechIcon id="workbench:sync" :size="24" class="spin-icon" />
         <span style="font-size: 0.85rem; color: var(--text-muted)">{{
-          t("environments.loading") || "正在读取 [env] 配置..."
+          t("environments.loading") || "Reading [env] configuration..."
         }}</span>
       </div>
 
@@ -199,21 +206,21 @@
           {{
             searchKey
               ? t("environments.empty_search", { query: searchKey }) || `未找到匹配 "${searchKey}" 的环境变量`
-              : t("environments.empty_title") || "暂未配置任何环境变量"
+              : t("environments.empty_title") || "No environment variables defined"
           }}
         </div>
         <p class="empty-desc">
           {{
             activeScope === "user"
               ? t("environments.empty_user_desc") ||
-                "可在用户全局配置 (~/.config/unirtm/unirtm.toml) 中添加 [env] 区块，为全局所有开发环境提供兜底环境变量。"
+                "Configure global default environment variables in ~/.config/unirtm/unirtm.toml under [env] section."
               : t("environments.empty_workspace_desc") ||
-                "可在当前项目根目录的 .unirtm.toml 中添加 [env] 区块，锁定当前项目的专属环境变量与服务端口。"
+                "Configure environment variables in project .unirtm.toml under [env] section."
           }}
         </p>
         <button v-if="!searchKey" class="tool-action-btn primary" style="margin-top: 0.75rem" @click="openCreateModal">
           <TechIcon id="workbench:edit" :size="14" />
-          <span>{{ t("environments.create_first") || "创建第一个环境变量" }}</span>
+          <span>{{ t("environments.create_first") || "Create First Variable" }}</span>
         </button>
       </div>
 
@@ -240,33 +247,33 @@
                 :class="item.is_sensitive ? 'sensitive' : 'public'"
                 :title="
                   item.is_sensitive
-                    ? t('environments.sensitive_badge') || '敏感密钥'
-                    : t('environments.public_badge') || '公开变量'
+                    ? t('environments.sensitive_badge') || 'Sensitive'
+                    : t('environments.public_badge') || 'Public'
                 "
               >
                 <TechIcon :id="item.is_sensitive ? 'workbench:lock' : 'workbench:globe'" :size="11" />
                 <span>{{
                   item.is_sensitive
-                    ? t("environments.sensitive_badge") || "敏感密钥"
-                    : t("environments.public_badge") || "公开变量"
+                    ? t("environments.sensitive_badge") || "Sensitive"
+                    : t("environments.public_badge") || "Public"
                 }}</span>
               </span>
               <!-- Profile Override Badges -->
               <span v-if="item.is_override" class="sec-tag override" :title="'基准默认值: ' + item.base_value">
-                <span>🔄 {{ t("environments.badge_override") || "已覆盖" }}</span>
+                <span>🔄 {{ t("environments.badge_override") || "Overridden" }}</span>
               </span>
               <span v-else-if="item.is_profile_only" class="sec-tag profile-only">
-                <span>🌱 {{ t("environments.badge_profile_only") || "环境专属" }}</span>
+                <span>🌱 {{ t("environments.badge_profile_only") || "Profile Only" }}</span>
               </span>
               <span v-else-if="item.is_inherited && activeProfile" class="sec-tag inherited">
-                <span>⚡ {{ t("environments.badge_inherited") || "继承基准" }}</span>
+                <span>⚡ {{ t("environments.badge_inherited") || "Inherited" }}</span>
               </span>
 
               <span class="scope-tag" :class="item.scope">
                 {{
                   item.scope === "user"
-                    ? t("environments.scope_user") || "用户"
-                    : t("environments.scope_workspace") || "工作区"
+                    ? t("environments.scope_user") || "User"
+                    : t("environments.scope_workspace") || "Workspace"
                 }}
               </span>
             </div>
@@ -277,21 +284,21 @@
                 v-if="item.is_override"
                 class="btn btn-icon success restore-btn"
                 @click="restoreBaseValue(item.name)"
-                :title="t('environments.restore_base') || '恢复基准值'"
+                :title="t('environments.restore_base') || 'Restore Base'"
               >
                 <TechIcon id="workbench:sync" :size="13" />
               </button>
               <button
                 class="btn btn-icon accent edit-btn"
                 @click="openEditModal(item)"
-                :title="t('environments.edit_btn') || '编辑'"
+                :title="t('environments.edit_btn') || 'Edit'"
               >
                 <TechIcon id="workbench:edit" :size="14" />
               </button>
               <button
                 class="btn btn-icon danger delete-btn"
                 @click="confirmDelete(item.name)"
-                :title="t('environments.delete_btn') || '删除'"
+                :title="t('environments.delete_btn') || 'Delete'"
               >
                 <TechIcon id="workbench:delete" :size="14" />
               </button>
@@ -315,12 +322,14 @@
                 :class="{ active: item.isRevealed }"
                 @click="toggleReveal(item)"
                 :title="
-                  item.isRevealed ? t('environments.conceal') || '脱密隐藏' : t('environments.reveal') || '显示明文'
+                  item.isRevealed
+                    ? t('environments.conceal') || 'Mask Secret'
+                    : t('environments.reveal') || 'Show Plaintext'
                 "
               >
                 <TechIcon :id="item.isRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="14" />
                 <span class="btn-text-sm">{{
-                  item.isRevealed ? t("environments.conceal_short") || "密文" : t("environments.reveal_short") || "明文"
+                  item.isRevealed ? t("environments.conceal_short") || "Mask" : t("environments.reveal_short") || "Show"
                 }}</span>
               </button>
 
@@ -328,12 +337,12 @@
               <button
                 class="value-btn copy-btn"
                 @click="copyValue(item)"
-                :title="t('environments.copy_val') || '复制真实值'"
+                :title="t('environments.copy_val') || 'Copy Value'"
               >
                 <TechIcon v-if="copiedKey === item.name" id="workbench:success" :size="13" class="copy-check" />
                 <TechIcon v-else id="workbench:copy" :size="13" />
                 <span class="btn-text-sm">{{
-                  copiedKey === item.name ? t("common.copied") || "已复制" : t("common.copy") || "复制"
+                  copiedKey === item.name ? t("common.copied") || "Copied" : t("common.copy") || "Copy"
                 }}</span>
               </button>
             </div>
@@ -346,10 +355,10 @@
         <table class="env-table">
           <thead>
             <tr>
-              <th class="th-key">{{ t("environments.col_key") || "变量名" }}</th>
-              <th class="th-scope">{{ t("environments.col_scope") || "作用域" }}</th>
-              <th class="th-value">{{ t("environments.col_value") || "变量值" }}</th>
-              <th class="th-actions">{{ t("environments.col_actions") || "操作" }}</th>
+              <th class="th-key">{{ t("environments.col_key") || "Variable Name" }}</th>
+              <th class="th-scope">{{ t("environments.col_scope") || "Scope" }}</th>
+              <th class="th-value">{{ t("environments.col_value") || "Value" }}</th>
+              <th class="th-actions">{{ t("environments.col_actions") || "Actions" }}</th>
             </tr>
           </thead>
           <tbody>
@@ -372,20 +381,20 @@
                   <span
                     v-if="item.is_sensitive"
                     class="sec-tag sensitive mini"
-                    :title="t('environments.sensitive_badge') || '敏感密钥'"
+                    :title="t('environments.sensitive_badge') || 'Sensitive'"
                   >
                     <TechIcon id="workbench:lock" :size="10" />
-                    <span>{{ t("environments.sensitive_badge") || "敏感" }}</span>
+                    <span>{{ t("environments.sensitive_badge") || "Sensitive" }}</span>
                   </span>
                   <!-- Profile Override Badges in Table View -->
                   <span v-if="item.is_override" class="sec-tag override mini" :title="'基准默认值: ' + item.base_value">
-                    <span>🔄 {{ t("environments.badge_override") || "已覆盖" }}</span>
+                    <span>🔄 {{ t("environments.badge_override") || "Overridden" }}</span>
                   </span>
                   <span v-else-if="item.is_profile_only" class="sec-tag profile-only mini">
-                    <span>🌱 {{ t("environments.badge_profile_only") || "环境专属" }}</span>
+                    <span>🌱 {{ t("environments.badge_profile_only") || "Profile Only" }}</span>
                   </span>
                   <span v-else-if="item.is_inherited && activeProfile" class="sec-tag inherited mini">
-                    <span>⚡ {{ t("environments.badge_inherited") || "继承基准" }}</span>
+                    <span>⚡ {{ t("environments.badge_inherited") || "Inherited" }}</span>
                   </span>
                 </div>
               </td>
@@ -395,8 +404,8 @@
                 <span class="scope-tag" :class="item.scope">
                   {{
                     item.scope === "user"
-                      ? t("environments.scope_user") || "用户"
-                      : t("environments.scope_workspace") || "工作区"
+                      ? t("environments.scope_user") || "User"
+                      : t("environments.scope_workspace") || "Workspace"
                   }}
                 </span>
               </td>
@@ -418,8 +427,8 @@
                       @click="toggleReveal(item)"
                       :title="
                         item.isRevealed
-                          ? t('environments.conceal') || '脱密隐藏'
-                          : t('environments.reveal') || '显示明文'
+                          ? t('environments.conceal') || 'Mask Secret'
+                          : t('environments.reveal') || 'Show Plaintext'
                       "
                     >
                       <TechIcon :id="item.isRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="13" />
@@ -427,7 +436,7 @@
                     <button
                       class="value-btn copy-btn mini"
                       @click="copyValue(item)"
-                      :title="t('environments.copy_val') || '复制真实值'"
+                      :title="t('environments.copy_val') || 'Copy Value'"
                     >
                       <TechIcon v-if="copiedKey === item.name" id="workbench:success" :size="13" class="copy-check" />
                       <TechIcon v-else id="workbench:copy" :size="13" />
@@ -443,21 +452,21 @@
                     v-if="item.is_override"
                     class="btn btn-icon success restore-btn"
                     @click="restoreBaseValue(item.name)"
-                    :title="t('environments.restore_base') || '恢复基准值'"
+                    :title="t('environments.restore_base') || 'Restore Base'"
                   >
                     <TechIcon id="workbench:sync" :size="13" />
                   </button>
                   <button
                     class="btn btn-icon accent edit-btn"
                     @click="openEditModal(item)"
-                    :title="t('environments.edit_btn') || '编辑'"
+                    :title="t('environments.edit_btn') || 'Edit'"
                   >
                     <TechIcon id="workbench:edit" :size="14" />
                   </button>
                   <button
                     class="btn btn-icon danger delete-btn"
                     @click="confirmDelete(item.name)"
-                    :title="t('environments.delete_btn') || '删除'"
+                    :title="t('environments.delete_btn') || 'Delete'"
                   >
                     <TechIcon id="workbench:delete" :size="14" />
                   </button>
@@ -485,12 +494,12 @@
       <div class="confirm-modal glass-card" style="max-width: 440px">
         <div class="confirm-header">
           <TechIcon id="workbench:environments" :size="20" />
-          <h4>{{ t("environments.create_profile_title") || "新建环境 Profile" }}</h4>
+          <h4>{{ t("environments.create_profile_title") || "Create Environment Profile" }}</h4>
         </div>
         <p class="confirm-desc">
           {{
             t("environments.create_profile_desc") ||
-            "为特定场景（如本地开发、CI 检查、测试环境）定义差异化环境变量覆盖。"
+            "Define environment-specific variable overrides for development, CI, testing, etc."
           }}
         </p>
         <div class="profile-modal-body" style="display: flex; flex-direction: column; gap: 10px; margin: 12px 0">
@@ -499,7 +508,7 @@
             type="text"
             class="env-search-input font-mono"
             style="width: 100%; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 6px"
-            :placeholder="t('environments.profile_name_placeholder') || '例如 development, ci, staging'"
+            :placeholder="t('environments.profile_name_placeholder') || 'e.g. development, ci, staging'"
             @keydown.enter="executeCreateProfile"
           />
           <div style="display: flex; gap: 6px; flex-wrap: wrap">
@@ -516,10 +525,10 @@
         </div>
         <div class="confirm-actions">
           <button class="tool-action-btn secondary" @click="isNewProfileModalOpen = false">
-            {{ t("common.cancel") || "取消" }}
+            {{ t("common.cancel") || "Cancel" }}
           </button>
           <button class="tool-action-btn primary" :disabled="!newProfileName.trim()" @click="executeCreateProfile">
-            <span>{{ t("common.create") || "创建" }}</span>
+            <span>{{ t("common.create") || "Create" }}</span>
           </button>
         </div>
       </div>
@@ -530,17 +539,17 @@
       <div class="confirm-modal glass-card">
         <div class="confirm-header">
           <TechIcon id="workbench:warning" :size="22" />
-          <h4>{{ t("environments.delete_profile_title") || "确认删除环境 Profile" }}</h4>
+          <h4>{{ t("environments.delete_profile_title") || "Delete Environment Profile" }}</h4>
         </div>
         <p class="confirm-desc">
           {{ t("environments.delete_profile_warning", { profile: deleteProfileConfirm }) }}
         </p>
         <div class="confirm-actions">
           <button class="tool-action-btn secondary" @click="deleteProfileConfirm = ''">
-            {{ t("common.cancel") || "取消" }}
+            {{ t("common.cancel") || "Cancel" }}
           </button>
           <button class="tool-action-btn danger" @click="executeDeleteProfile(deleteProfileConfirm)">
-            <span>{{ t("common.delete") || "删除" }}</span>
+            <span>{{ t("common.delete") || "Delete" }}</span>
           </button>
         </div>
       </div>
@@ -551,7 +560,7 @@
       <div class="confirm-modal glass-card">
         <div class="confirm-header">
           <TechIcon id="workbench:warning" :size="22" />
-          <h4>{{ t("environments.delete_title") || "确认删除环境变量" }}</h4>
+          <h4>{{ t("environments.delete_title") || "Delete Environment Variable" }}</h4>
         </div>
         <p class="confirm-desc">
           {{
@@ -559,19 +568,20 @@
               key: deleteConfirmKey,
               scope:
                 activeScope === "user"
-                  ? t("environments.scope_user") || "用户"
-                  : t("environments.scope_workspace") || "工作区",
+                  ? t("environments.scope_user") ||
+                    "Are you sure you want to permanently delete {key} from {scope}? This action cannot be undone."
+                  : t("environments.scope_workspace") || "Workspace",
             }) ||
             `确定要从 ${activeScope === "user" ? "用户全局配置" : "当前工作区配置"} 中彻底删除环境变量 ${deleteConfirmKey} 吗？删除后将不可恢复。`
           }}
         </p>
         <div class="confirm-actions">
           <button class="tool-action-btn secondary" @click="deleteConfirmKey = ''" :disabled="isDeleting">
-            {{ t("common.cancel") || "取消" }}
+            {{ t("common.cancel") || "Cancel" }}
           </button>
           <button class="tool-action-btn danger" @click="executeDelete(deleteConfirmKey)" :disabled="isDeleting">
             <TechIcon v-if="isDeleting" id="workbench:sync" :size="14" class="spin-icon" />
-            <span>{{ isDeleting ? t("common.deleting") || "删除中..." : t("common.delete") || "删除" }}</span>
+            <span>{{ isDeleting ? t("common.deleting") || "Deleting..." : t("common.delete") || "Delete" }}</span>
           </button>
         </div>
       </div>
@@ -673,7 +683,7 @@ async function executeCreateProfile() {
     });
     if (res.ok) {
       isNewProfileModalOpen.value = false;
-      showToast(`✓ ${t("environments.create_profile") || "创建环境 Profile"}: ${p}`);
+      showToast(`✓ ${t("environments.create_profile") || "New Profile"}: ${p}`);
       activeProfile.value = p;
       await fetchEnvVars();
     } else {
@@ -833,7 +843,7 @@ async function copyValue(item: EnvItem) {
     }
     copiedKey.value = item.name;
     showToast(
-      `✓ ${t("environments.copied_to_clipboard", { key: item.name }) || "已复制 " + item.name + " 真实值到剪贴板"}`
+      `✓ ${t("environments.copied_to_clipboard", { key: item.name }) || "Copied value of {key} to clipboard" + item.name + " 真实值到剪贴板"}`
     );
     setTimeout(() => {
       if (copiedKey.value === item.name) {
@@ -857,7 +867,7 @@ function copyKeyName(name: string) {
       document.execCommand("copy");
       document.body.removeChild(input);
     }
-    showToast(`✓ ${t("environments.copied_key_to_clipboard", { key: name }) || "已复制变量名 " + name}`);
+    showToast(`✓ ${t("environments.copied_key_to_clipboard", { key: name }) || "Copied variable name {key}" + name}`);
   } catch {
     showToast("复制失败");
   }
@@ -896,8 +906,8 @@ async function handleSaveEnv(payload: {
       isModalOpen.value = false;
       showToast(
         modalMode.value === "create"
-          ? `✓ ${t("environments.create_success", { key: payload.key }) || "成功创建环境变量 " + payload.key}`
-          : `✓ ${t("environments.update_success", { key: payload.key }) || "成功更新环境变量 " + payload.key}`
+          ? `✓ ${t("environments.create_success", { key: payload.key }) || "Successfully created environment variable {key}" + payload.key}`
+          : `✓ ${t("environments.update_success", { key: payload.key }) || "Successfully updated environment variable {key}" + payload.key}`
       );
       await fetchEnvVars();
       notifyEnvsChanged();
@@ -926,7 +936,9 @@ async function executeDelete(name: string) {
     });
     if (res.ok) {
       deleteConfirmKey.value = "";
-      showToast(`✓ ${t("environments.delete_success", { key: name }) || "已成功删除环境变量 " + name}`);
+      showToast(
+        `✓ ${t("environments.delete_success", { key: name }) || "Successfully deleted environment variable {key}" + name}`
+      );
       await fetchEnvVars();
       notifyEnvsChanged();
     } else {

@@ -9,15 +9,15 @@
             <h3>
               {{
                 isEdit
-                  ? t("environments.edit_title") || "编辑环境变量"
-                  : t("environments.create_title") || "新建环境变量"
+                  ? t("environments.edit_title") || "Edit Environment Variable"
+                  : t("environments.create_title") || "New Environment Variable"
               }}
             </h3>
             <span class="sub-title">
               {{
                 form.scope === "user"
-                  ? t("environments.scope_user") || "用户"
-                  : t("environments.scope_workspace") || "工作区"
+                  ? t("environments.scope_user") || "User"
+                  : t("environments.scope_workspace") || "Workspace"
               }}
               <span v-if="activeProfile && form.scope === 'workspace'" class="scope-file-tag font-mono"
                 >🌱 {{ activeProfile }} ([environments.{{ activeProfile }}.env])</span
@@ -28,7 +28,7 @@
             </span>
           </div>
         </div>
-        <button class="btn btn-icon close-btn" @click="$emit('close')" :title="t('common.close') || '关闭'">
+        <button class="btn btn-icon close-btn" @click="$emit('close')" :title="t('common.close') || 'Close'">
           <TechIcon id="workbench:close" :size="14" />
         </button>
       </div>
@@ -39,15 +39,17 @@
           <!-- Variable Key -->
           <div class="form-group">
             <label class="form-label required">
-              <span>{{ t("environments.key_label") || "变量名 (Key)" }}</span>
-              <span class="label-hint">{{ t("environments.key_hint") || "（大写字母、数字及下划线组合）" }}</span>
+              <span>{{ t("environments.key_label") || "Variable Key" }}</span>
+              <span class="label-hint">{{
+                t("environments.key_hint") || "(Uppercase letters, numbers and underscores)"
+              }}</span>
             </label>
             <div class="input-with-action">
               <input
                 v-model="form.key"
                 type="text"
                 class="form-input font-mono"
-                :placeholder="t('environments.key_placeholder') || '如 GITHUB_TOKEN, PORT, NODE_ENV'"
+                :placeholder="t('environments.key_placeholder') || 'e.g. GITHUB_TOKEN, PORT, NODE_ENV'"
                 required
                 :disabled="saving"
                 @input="handleKeyInput"
@@ -56,7 +58,7 @@
                 type="button"
                 class="btn btn-secondary btn-uppercase"
                 @click="form.key = form.key.toUpperCase()"
-                :title="t('environments.to_uppercase') || '转换为全大写'"
+                :title="t('environments.to_uppercase') || 'Convert to uppercase'"
               >
                 AA
               </button>
@@ -64,7 +66,7 @@
 
             <!-- Preset Chips -->
             <div class="preset-chips-wrap">
-              <span class="preset-hint">{{ t("environments.presets") || "常用预设:" }}</span>
+              <span class="preset-hint">{{ t("environments.presets") || "Presets:" }}</span>
               <button
                 v-for="chip in PRESET_KEYS"
                 :key="chip"
@@ -81,7 +83,7 @@
               <span class="sec-icon"><TechIcon id="workbench:lock" :size="14" /></span>
               <span>{{
                 t("environments.sensitive_hint") ||
-                "系统已自动判定为敏感密钥，保存后默认脱密遮罩显示，需点击眼睛图标方可查看明文。"
+                "Sensitive secret detected. Masked by default, click eye icon to view plaintext."
               }}</span>
             </div>
           </div>
@@ -89,9 +91,9 @@
           <!-- Variable Value -->
           <div class="form-group">
             <label class="form-label required">
-              <span>{{ t("environments.value_label") || "变量值 (Value)" }}</span>
+              <span>{{ t("environments.value_label") || "Variable Value" }}</span>
               <span v-if="isSensitiveKey" class="label-hint">{{
-                t("environments.sensitive_field_hint") || "（敏感密钥默认脱密，可点击眼睛查看）"
+                t("environments.sensitive_field_hint") || "(Sensitive secret masked by default)"
               }}</span>
             </label>
             <div class="value-input-wrapper">
@@ -100,7 +102,7 @@
                 :type="isSensitiveKey ? (isValueRevealed ? 'text' : 'password') : 'text'"
                 class="form-input font-mono value-input"
                 :class="{ 'has-eye': isSensitiveKey }"
-                :placeholder="t('environments.value_placeholder') || '请输入变量值'"
+                :placeholder="t('environments.value_placeholder') || 'Enter variable value'"
                 required
                 :disabled="saving"
               />
@@ -110,7 +112,9 @@
                 class="btn btn-icon btn-eye-toggle"
                 @click="isValueRevealed = !isValueRevealed"
                 :title="
-                  isValueRevealed ? t('environments.conceal') || '脱密隐藏' : t('environments.reveal') || '显示明文'
+                  isValueRevealed
+                    ? t('environments.conceal') || 'Mask Secret'
+                    : t('environments.reveal') || 'Show Plaintext'
                 "
               >
                 <TechIcon :id="isValueRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="15" />
@@ -121,16 +125,16 @@
           <!-- Modal Footer Actions -->
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary btn-cancel" @click="$emit('close')" :disabled="saving">
-              {{ t("common.cancel") || "取消" }}
+              {{ t("common.cancel") || "Cancel" }}
             </button>
             <button type="submit" class="btn btn-primary btn-submit" :disabled="saving || !form.key.trim()">
               <TechIcon v-if="saving" id="workbench:sync" :size="14" class="spin-icon" />
               <span>{{
                 saving
-                  ? t("common.saving") || "保存中..."
+                  ? t("common.saving") || "Saving..."
                   : isEdit
-                    ? t("common.save_changes") || "保存修改"
-                    : t("common.create") || "新建"
+                    ? t("common.save_changes") || "Save Changes"
+                    : t("common.create") || "Create"
               }}</span>
             </button>
           </div>

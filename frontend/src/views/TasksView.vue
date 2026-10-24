@@ -5,19 +5,21 @@
       <div>
         <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
           <TechIcon id="workbench:tasks" :size="20" />
-          <span>{{ t("tasks.title") || "任务流与工程自动化" }}</span>
+          <span>{{ t("tasks.title") || "Unified Task Runner" }}</span>
         </h2>
         <p class="view-desc">
-          {{
-            t("tasks.desc") ||
-            "由 UniRTM 统一编排运行工程构建、依赖安全审计、代码格式化与自定义脚本，保障跨平台执行一致性。"
-          }}
+          {{ t("tasks.desc") || "Cross-language tasks defined in .unirtm.toml, executed cross-platform in one click." }}
         </p>
       </div>
       <div class="view-actions" style="display: flex; gap: 8px; align-items: center">
-        <button class="tool-action-btn secondary" @click="fetchTasks" :disabled="loading" title="刷新任务列表">
+        <button
+          class="tool-action-btn secondary"
+          @click="fetchTasks"
+          :disabled="loading"
+          :title="t('tasks.refresh_title') || 'Refresh tasks list'"
+        >
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': loading }" />
-          <span>{{ loading ? t("common.refreshing") || "刷新中..." : t("common.refresh") || "刷新" }}</span>
+          <span>{{ loading ? t("common.refreshing") || "Refreshing..." : t("common.refresh") || "Refresh" }}</span>
         </button>
       </div>
     </div>
@@ -32,16 +34,14 @@
             :colored="false"
           />
           {{
-            activeScope === "user"
-              ? t("runtimes.scope_user") || "用户全局任务"
-              : t("runtimes.scope_workspace") || "工作区项目任务"
+            activeScope === "user" ? t("runtimes.scope_user") || "User" : t("runtimes.scope_workspace") || "Workspace"
           }}
         </span>
         <span class="scope-hint-text">
           {{
             activeScope === "user"
-              ? t("runtimes.scope_user_desc") || "展示当前用户全局配置文件 (~/.config/unirtm/unirtm.toml) 定义的任务"
-              : t("runtimes.scope_workspace_desc") || "解析当前工作区项目配置文件 (unirtm.toml) 定义的自动化任务"
+              ? t("runtimes.scope_user_desc") || "Default fallback environment for user profile"
+              : t("runtimes.scope_workspace_desc") || "Lock language versions for current workspace"
           }}
         </span>
       </div>
@@ -64,15 +64,21 @@
           v-model="searchKey"
           type="text"
           class="task-search-input"
-          placeholder="搜索任务名称、依赖、命令或描述..."
+          :placeholder="t('tasks.search_placeholder') || 'Search task name, dependency, command, or description...'"
         />
-        <button v-if="searchKey" type="button" class="search-clear-btn" title="清空搜索" @click="searchKey = ''">
+        <button
+          v-if="searchKey"
+          type="button"
+          class="search-clear-btn"
+          :title="t('tasks.clear_search') || 'Clear search'"
+          @click="searchKey = ''"
+        >
           <span class="codicon codicon-close"></span>
         </button>
       </div>
       <div class="task-stats-badges">
         <span class="stat-badge">
-          <b>{{ filteredTasks.length }}</b> {{ t("tasks.count_suffix") || "个任务" }}
+          <b>{{ filteredTasks.length }}</b> {{ t("tasks.count_suffix") || "Tasks" }}
         </span>
 
         <!-- View Mode Switcher -->
@@ -82,7 +88,7 @@
             class="view-mode-btn"
             :class="{ active: viewMode === 'cards' }"
             @click="setViewMode('cards')"
-            :title="t('environments.view_cards') || '卡片视图'"
+            :title="t('environments.view_cards') || 'Cards View'"
           >
             <TechIcon id="workbench:cards" :size="14" />
           </button>
@@ -91,7 +97,7 @@
             class="view-mode-btn"
             :class="{ active: viewMode === 'list' }"
             @click="setViewMode('list')"
-            :title="t('environments.view_list') || '列表视图'"
+            :title="t('environments.view_list') || 'List View'"
           >
             <TechIcon id="workbench:list" :size="14" />
           </button>
@@ -101,9 +107,9 @@
           class="tool-action-btn primary small"
           id="btn-add-task"
           @click="openCreateModal"
-          title="新建工程自动化任务"
+          :title="t('tasks.create_title') || 'Create new automated project task'"
         >
-          <span>+ {{ t("tasks.create_btn") || "新建任务" }}</span>
+          <span>+ {{ t("tasks.create_btn") || "New Task" }}</span>
         </button>
       </div>
     </div>
@@ -113,7 +119,9 @@
       <!-- Loading State -->
       <div v-if="loading && tasks.length === 0" class="tasks-empty-box">
         <TechIcon id="workbench:sync" :size="24" class="spin-icon" />
-        <span style="font-size: 0.85rem; color: var(--text-muted)">正在解析配置文件中的任务...</span>
+        <span style="font-size: 0.85rem; color: var(--text-muted)">{{
+          t("tasks.loading_tasks") || "Parsing tasks from configuration..."
+        }}</span>
       </div>
 
       <!-- Empty State -->
@@ -122,28 +130,31 @@
         <div class="empty-title">
           {{
             searchKey
-              ? `未找到匹配 "${searchKey}" 的任务`
+              ? t("tasks.empty_search", { query: searchKey }) || `No tasks found matching "${searchKey}"`
               : activeScope === "user"
-                ? "用户全局环境暂未定义任务"
-                : "当前工作区配置文件暂未定义 [tasks]"
+                ? t("tasks.empty_user") || "No tasks defined in user global profile"
+                : t("tasks.empty_workspace") || "No [tasks] defined in current workspace config"
           }}
         </div>
         <p class="empty-desc">
           {{
             searchKey
-              ? "可尝试缩短关键词或搜索其他自动化命令、依赖名称。"
+              ? t("tasks.empty_search_desc") ||
+                "Try shortening keywords or searching for other commands or dependencies."
               : activeScope === "user"
-                ? "可在用户配置文件 (~/.config/unirtm/unirtm.toml) 中配置 [tasks.task-name] 定义通用任务。"
-                : "可在项目根目录的 unirtm.toml 中添加 [tasks.task-name] 定义构建、测试与安全扫描等自动化脚本。"
+                ? t("tasks.empty_user_desc") ||
+                  "Configure [tasks.task-name] in user profile (~/.config/unirtm/unirtm.toml) to define common tasks."
+                : t("tasks.empty_workspace_desc") ||
+                  "Add [tasks.task-name] in workspace unirtm.toml to define builds, tests, and security scans."
           }}
         </p>
         <button v-if="searchKey" class="tool-action-btn secondary" style="margin-top: 0.75rem" @click="searchKey = ''">
           <span class="codicon codicon-clear-all"></span>
-          <span>清空搜索条件</span>
+          <span>{{ t("tasks.clear_search_btn") || "Clear Search Filter" }}</span>
         </button>
         <button v-else class="tool-action-btn primary" style="margin-top: 0.75rem" @click="openCreateModal">
           <TechIcon id="workbench:edit" :size="14" />
-          <span>{{ t("tasks.create_first") || "创建第一个任务" }}</span>
+          <span>{{ t("tasks.create_first") || "Create First Task" }}</span>
         </button>
       </div>
 
@@ -161,11 +172,15 @@
                 <TechIcon id="workbench:tasks" :size="14" />
                 {{ task.name }}
               </span>
-              <span v-if="task.env" class="task-env-pill font-mono" :title="`环境变量: ${task.env}`">
+              <span
+                v-if="task.env"
+                class="task-env-pill font-mono"
+                :title="`${t('tasks.col_env') || 'Environment'}: ${task.env}`"
+              >
                 env: {{ task.env }}
               </span>
               <div v-if="task.depends && task.depends.length > 0" class="task-depends-wrap">
-                <span class="depends-label">依赖:</span>
+                <span class="depends-label">{{ t("tasks.depends_label") || "Depends:" }}</span>
                 <span v-for="dep in task.depends" :key="dep" class="depends-pill font-mono">
                   {{ dep }}
                 </span>
@@ -187,7 +202,7 @@
                 class="task-more-btn"
                 :class="{ active: activeMenuTask === task.name }"
                 @click.stop="toggleTaskMenu(task.name)"
-                :title="`更多操作: ${task.name}`"
+                :title="`${t('common.more_actions') || 'More Actions'}: ${task.name}`"
               >
                 <TechIcon id="workbench:more" :size="15" />
               </button>
@@ -195,11 +210,11 @@
                 <div v-if="activeMenuTask === task.name" class="task-dropdown-menu">
                   <button class="dropdown-item" @click.stop="handleEditFromMenu(task)">
                     <TechIcon id="workbench:edit" :size="13" />
-                    <span>{{ t("common.edit") || "编辑" }}</span>
+                    <span>{{ t("common.edit") || "Edit" }}</span>
                   </button>
                   <button class="dropdown-item danger" @click.stop="handleDeleteFromMenu(task)">
                     <TechIcon id="workbench:delete" :size="13" />
-                    <span>{{ t("common.delete") || "删除" }}</span>
+                    <span>{{ t("common.delete") || "Delete" }}</span>
                   </button>
                 </div>
               </transition>
@@ -208,15 +223,15 @@
               class="run-task-btn"
               :disabled="runningTask !== null"
               @click="executeTask(task)"
-              :title="`运行任务: unirtm run ${task.name}`"
+              :title="`${t('tasks.run_task') || 'Run Task'}: unirtm run ${task.name}`"
             >
               <span v-if="runningTask === task.name" style="display: inline-flex; align-items: center; gap: 6px">
                 <TechIcon id="workbench:sync" :size="12" class="spin-icon" />
-                <span>{{ t("tasks.running") || "运行中..." }}</span>
+                <span>{{ t("tasks.running") || "Running" }}</span>
               </span>
               <span v-else style="display: inline-flex; align-items: center; gap: 4px">
                 <TechIcon id="workbench:tasks" :size="12" :colored="false" />
-                <span>{{ t("tasks.run") || "运行" }}</span>
+                <span>{{ t("tasks.run") || "Run" }}</span>
               </span>
             </button>
           </div>
@@ -228,10 +243,10 @@
         <table class="tasks-table">
           <thead>
             <tr>
-              <th class="th-name">{{ t("tasks.col_name") || "任务名称" }}</th>
-              <th class="th-command">{{ t("tasks.col_command") || "命令" }}</th>
-              <th class="th-depends">{{ t("tasks.col_depends") || "依赖与描述" }}</th>
-              <th class="th-actions">{{ t("tasks.col_actions") || "操作" }}</th>
+              <th class="th-name">{{ t("tasks.col_name") || "Task Name" }}</th>
+              <th class="th-command">{{ t("tasks.col_command") || "Command" }}</th>
+              <th class="th-depends">{{ t("tasks.col_depends") || "Dependencies & Info" }}</th>
+              <th class="th-actions">{{ t("tasks.col_actions") || "Actions" }}</th>
             </tr>
           </thead>
           <tbody>
@@ -246,7 +261,11 @@
                 <div class="table-name-cell">
                   <TechIcon id="workbench:tasks" :size="15" class="task-icon" />
                   <span class="task-name font-mono">{{ task.name }}</span>
-                  <span v-if="task.env" class="task-env-pill font-mono" :title="`环境变量: ${task.env}`">
+                  <span
+                    v-if="task.env"
+                    class="task-env-pill font-mono"
+                    :title="`${t('tasks.col_env') || 'Environment'}: ${task.env}`"
+                  >
                     env: {{ task.env }}
                   </span>
                 </div>
@@ -288,7 +307,7 @@
                       class="task-more-btn table-more-btn"
                       :class="{ active: activeMenuTask === task.name }"
                       @click.stop="toggleTaskMenu(task.name)"
-                      :title="`更多操作: ${task.name}`"
+                      :title="`${t('common.more_actions') || 'More Actions'}: ${task.name}`"
                     >
                       <TechIcon id="workbench:more" :size="14" />
                     </button>
@@ -296,11 +315,11 @@
                       <div v-if="activeMenuTask === task.name" class="task-dropdown-menu table-menu" @click.stop>
                         <button class="dropdown-item" @click.stop="handleEditFromMenu(task)">
                           <TechIcon id="workbench:edit" :size="13" />
-                          <span>{{ t("common.edit") || "编辑" }}</span>
+                          <span>{{ t("common.edit") || "Edit" }}</span>
                         </button>
                         <button class="dropdown-item danger" @click.stop="handleDeleteFromMenu(task)">
                           <TechIcon id="workbench:delete" :size="13" />
-                          <span>{{ t("common.delete") || "删除" }}</span>
+                          <span>{{ t("common.delete") || "Delete" }}</span>
                         </button>
                       </div>
                     </transition>
@@ -311,15 +330,15 @@
                     class="run-task-btn small"
                     :disabled="runningTask !== null"
                     @click="executeTask(task)"
-                    :title="`运行任务: unirtm run ${task.name}`"
+                    :title="`${t('tasks.run_task') || 'Run Task'}: unirtm run ${task.name}`"
                   >
                     <span v-if="runningTask === task.name" style="display: inline-flex; align-items: center; gap: 4px">
                       <TechIcon id="workbench:sync" :size="12" class="spin-icon" />
-                      <span>{{ t("tasks.running") || "运行中..." }}</span>
+                      <span>{{ t("tasks.running") || "Running" }}</span>
                     </span>
                     <span v-else style="display: inline-flex; align-items: center; gap: 4px">
                       <TechIcon id="workbench:tasks" :size="12" :colored="false" />
-                      <span>{{ t("tasks.run") || "运行" }}</span>
+                      <span>{{ t("tasks.run") || "Run" }}</span>
                     </span>
                   </button>
                 </div>
@@ -348,9 +367,9 @@
         <div class="modal-header">
           <div class="header-title" style="color: #ef4444">
             <TechIcon id="workbench:warning" :size="20" />
-            <h3 style="margin: 0; font-size: 1.05rem">{{ t("tasks.delete_title") || "确认删除任务" }}</h3>
+            <h3 style="margin: 0; font-size: 1.05rem">{{ t("tasks.delete_title") || "Delete Task" }}</h3>
           </div>
-          <button class="btn btn-icon close-btn" @click="taskToDelete = null" :title="t('common.close') || '关闭'">
+          <button class="btn btn-icon close-btn" @click="taskToDelete = null" :title="t('common.close') || 'Close'">
             <TechIcon id="workbench:close" :size="14" />
           </button>
         </div>
@@ -377,11 +396,11 @@
             "
           >
             <button class="tool-action-btn secondary" @click="taskToDelete = null" :disabled="deletingTask">
-              {{ t("common.cancel") || "取消" }}
+              {{ t("common.cancel") || "Cancel" }}
             </button>
             <button class="tool-action-btn danger" @click="handleConfirmDelete" :disabled="deletingTask">
               <TechIcon v-if="deletingTask" id="workbench:sync" :size="14" class="spin-icon" />
-              <span>{{ deletingTask ? t("common.deleting") || "删除中..." : t("common.delete") || "确认删除" }}</span>
+              <span>{{ deletingTask ? t("common.deleting") || "Deleting..." : t("common.delete") || "Delete" }}</span>
             </button>
           </div>
         </div>
@@ -505,17 +524,22 @@ async function handleSaveTask(formData: TaskFormData) {
     });
     const data = await res.json();
     if (res.ok && data.success) {
-      showToast(isEditMode.value ? `任务 ${formData.name} 已更新` : `任务 ${formData.name} 创建成功`, "success");
-      emit("log-event", "SUCCESS", `[任务管理] 任务 ${formData.name} 保存成功`, undefined, "tasks");
+      showToast(
+        isEditMode.value
+          ? t("tasks.updated_msg", { name: formData.name }) || `Task ${formData.name} updated successfully`
+          : t("tasks.created_msg", { name: formData.name }) || `Task ${formData.name} created successfully`,
+        "success"
+      );
+      emit("log-event", "SUCCESS", `[Tasks] ${formData.name} saved successfully`, undefined, "tasks");
       isTaskModalOpen.value = false;
       await fetchTasks();
       notifyTasksChanged();
     } else {
-      showToast(data.error || "保存任务失败", "error");
-      emit("log-event", "ERROR", `[任务管理] 任务 ${formData.name} 保存失败: ${data.error}`, undefined, "tasks");
+      showToast(data.error || t("tasks.save_failed") || "Failed to save task", "error");
+      emit("log-event", "ERROR", `[Tasks] ${formData.name} save failed: ${data.error}`, undefined, "tasks");
     }
   } catch (err: any) {
-    showToast(`保存异常: ${err.message}`, "error");
+    showToast(err.message, "error");
   } finally {
     savingTask.value = false;
   }
@@ -531,16 +555,16 @@ async function handleConfirmDelete() {
     });
     const data = await res.json();
     if (res.ok && data.success) {
-      showToast(`任务 ${name} 已从配置中删除`, "success");
-      emit("log-event", "SUCCESS", `[任务管理] 任务 ${name} 已删除`, undefined, "tasks");
+      showToast(t("tasks.deleted_msg", { name }) || `Task ${name} deleted successfully`, "success");
+      emit("log-event", "SUCCESS", `[Tasks] ${name} deleted`, undefined, "tasks");
       taskToDelete.value = null;
       await fetchTasks();
       notifyTasksChanged();
     } else {
-      showToast(data.error || "删除任务失败", "error");
+      showToast(data.error || t("tasks.delete_failed") || "Failed to delete task", "error");
     }
   } catch (err: any) {
-    showToast(`删除异常: ${err.message}`, "error");
+    showToast(err.message, "error");
   } finally {
     deletingTask.value = false;
   }
@@ -571,7 +595,13 @@ async function fetchTasks() {
       }
     }
   } catch (err: any) {
-    emit("log-event", "ERROR", `获取任务列表失败: ${err.message}`, undefined, "tasks");
+    emit(
+      "log-event",
+      "ERROR",
+      `${t("tasks.fetch_failed") || "Failed to fetch task list"}: ${err.message}`,
+      undefined,
+      "tasks"
+    );
   } finally {
     loading.value = false;
   }
@@ -645,7 +675,13 @@ async function executeTask(task: ProjectTask) {
   if (!taskName) return;
   runningTask.value = taskName;
   emit("task-started", taskName);
-  emit("log-event", "INFO", `[unirtm run ${taskName}] 正在启动任务...`, `执行命令: ${task.command}`, "tasks");
+  emit(
+    "log-event",
+    "INFO",
+    t("tasks.running_task", { taskName }) || `[unirtm run ${taskName}] Starting task...`,
+    t("tasks.exec_command", { command: task.command }) || `Executing command: ${task.command}`,
+    "tasks"
+  );
 
   try {
     const res = await fetch("/api/tasks/run", {
@@ -663,7 +699,7 @@ async function executeTask(task: ProjectTask) {
       emit(
         "log-event",
         "SUCCESS",
-        `[${taskName}] 任务执行成功 (退出码: 0)`,
+        t("tasks.task_success", { taskName }) || `[${taskName}] Task executed successfully (exit code: 0)`,
         data.output ? data.output : undefined,
         "tasks"
       );
@@ -671,13 +707,21 @@ async function executeTask(task: ProjectTask) {
       emit(
         "log-event",
         "ERROR",
-        `[${taskName}] 任务执行失败 (退出码: ${data.exit_code ?? 1})`,
+        t("tasks.task_failed", { taskName, code: data.exit_code ?? 1 }) ||
+          `[${taskName}] Task execution failed (exit code: ${data.exit_code ?? 1})`,
         data.output || data.error || undefined,
         "tasks"
       );
     }
   } catch (err: any) {
-    emit("log-event", "ERROR", `[${taskName}] 执行网络异常: ${err.message}`, undefined, "tasks");
+    emit(
+      "log-event",
+      "ERROR",
+      t("tasks.network_error", { taskName, error: err.message }) ||
+        `[${taskName}] Network execution error: ${err.message}`,
+      undefined,
+      "tasks"
+    );
   } finally {
     emit("task-finished", taskName);
     runningTask.value = null;
@@ -1183,7 +1227,7 @@ async function executeTask(task: ProjectTask) {
   color: #f87171;
 }
 
-/* 下拉菜单动画 */
+/* Dropdown menu animation */
 .dropdown-fade-enter-active,
 .dropdown-fade-leave-active {
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);

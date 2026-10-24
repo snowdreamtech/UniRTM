@@ -6,13 +6,13 @@
         <span class="sparkle-icon">
           <TechIcon id="workbench:sparkle" :size="14" />
         </span>
-        <span>{{ t("app.template_badge") || "UniRTM • 通用运行时管理器" }}</span>
+        <span>{{ t("app.template_badge") || "UniRTM • Universal Runtime Manager" }}</span>
       </div>
-      <h1 class="hero-title">{{ t("app.greeting") || "欢迎使用 UniRTM！" }}</h1>
+      <h1 class="hero-title">{{ t("app.greeting") || "Welcome to UniRTM!" }}</h1>
       <p class="hero-desc">
         {{
           t("app.template_desc") ||
-          "在编写代码前，让一切各就各位。快速、简单、跨平台地统一管理开发工具、环境变量与任务。"
+          "The fast, simple, cross-platform tool to manage your dev tools, environments, and tasks."
         }}
       </p>
 
@@ -21,24 +21,31 @@
         <div class="kpi-card" @click="$emit('select-tab', 'tools')">
           <span class="kpi-icon"><TechIcon id="workbench:tools" :size="30" /></span>
           <div class="kpi-info">
-            <span class="kpi-val">5 项</span>
-            <span class="kpi-lbl">{{ t("dashboard.kpi_tools") }}</span>
+            <span class="kpi-val"
+              >{{ installedToolsCount !== undefined ? installedToolsCount : 5 }}
+              {{ t("explorer.items_suffix") || "items" }}</span
+            >
+            <span class="kpi-lbl">{{ t("dashboard.kpi_tools") || "Installed Tools" }}</span>
           </div>
         </div>
 
         <div class="kpi-card" @click="$emit('select-tab', 'tasks')">
           <span class="kpi-icon"><TechIcon id="workbench:tasks" :size="30" /></span>
           <div class="kpi-info">
-            <span class="kpi-val">4 个</span>
-            <span class="kpi-lbl">{{ t("dashboard.kpi_tasks") }}</span>
+            <span class="kpi-val"
+              >{{ totalTasksCount !== undefined ? totalTasksCount : 4 }} {{ t("tasks.count_suffix") || "Tasks" }}</span
+            >
+            <span class="kpi-lbl">{{ t("dashboard.kpi_tasks") || "Tasks" }}</span>
           </div>
         </div>
 
         <div class="kpi-card" @click="handleTestNetwork">
           <span class="kpi-icon"><TechIcon id="workbench:runtimes" :size="30" /></span>
           <div class="kpi-info">
-            <span class="kpi-val">{{ latencyMs !== null ? latencyMs + "ms" : "畅通" }}</span>
-            <span class="kpi-lbl">{{ t("dashboard.kpi_mirror") }}</span>
+            <span class="kpi-val">{{
+              latencyMs !== null ? latencyMs + "ms" : t("dashboard.network_optimal") || "Optimal"
+            }}</span>
+            <span class="kpi-lbl">{{ t("dashboard.kpi_mirror") || "Mirror Network" }}</span>
           </div>
         </div>
 
@@ -59,29 +66,31 @@
         <div class="card-title-row">
           <div class="card-icon cyan"><TechIcon id="workbench:dashboard" :size="24" /></div>
           <div>
-            <h3>{{ t("hello.system_title") || "运行环境" }}</h3>
-            <span class="sub-muted">{{ t("hello.system_desc") || "底层操作系统、架构与 Go 运行时信息" }}</span>
+            <h3>{{ t("hello.system_title") || "Runtime Environment" }}</h3>
+            <span class="sub-muted">{{
+              t("hello.system_desc") || "Operating system, architecture, and Go runtime specs"
+            }}</span>
           </div>
         </div>
 
         <div class="specs-table">
           <div class="spec-row">
-            <span class="spec-name">{{ t("hello.os_platform") || "系统平台与架构" }}</span>
+            <span class="spec-name">{{ t("hello.os_platform") || "Platform & Arch" }}</span>
             <span class="spec-val font-mono">Linux x86_64</span>
           </div>
           <div class="spec-row">
-            <span class="spec-name">{{ t("hello.go_version") || "Go 编译版本" }}</span>
+            <span class="spec-name">{{ t("hello.go_version") || "Go Runtime Version" }}</span>
             <span class="spec-val font-mono"
               ><TechIcon id="go" :size="18" style="margin-right: 6px; vertical-align: middle" />go1.24.0
               linux/amd64</span
             >
           </div>
           <div class="spec-row">
-            <span class="spec-name">{{ t("hello.app_version") || "核心版本" }}</span>
+            <span class="spec-name">{{ t("hello.app_version") || "Template Version" }}</span>
             <span class="spec-val font-mono">UniRTM v0.35.0 (dev)</span>
           </div>
           <div class="spec-row">
-            <span class="spec-name">{{ t("hello.wails_engine") || "GUI / Web 模式" }}</span>
+            <span class="spec-name">{{ t("hello.wails_engine") || "GUI Engine" }}</span>
             <span class="spec-val font-mono">Vite + Vue 3 Standalone</span>
           </div>
         </div>
@@ -92,30 +101,32 @@
         <div class="card-title-row">
           <div class="card-icon purple"><TechIcon id="workbench:runtimes" :size="24" /></div>
           <div>
-            <h3>{{ t("hello.network_title") || "网络与代理" }}</h3>
-            <span class="sub-muted">{{ t("hello.network_desc") || "生态镜像方案与网络代理状态诊断" }}</span>
+            <h3>{{ t("hello.network_title") || "Network & Proxy" }}</h3>
+            <span class="sub-muted">{{
+              t("hello.network_desc") || "Proxy routing and GitHub mirror connectivity diagnostic"
+            }}</span>
           </div>
         </div>
 
         <div class="specs-table">
           <div class="spec-row">
-            <span class="spec-name">{{ t("network.col_profile") || "当前配置方案" }}</span>
+            <span class="spec-name">{{ t("network.col_profile") || "Active Profile" }}</span>
             <span class="spec-badge badge-neutral font-mono">
               {{ networkStatus?.active_profile || "official" }}
             </span>
           </div>
           <div class="spec-row">
-            <span class="spec-name">{{ t("network.tab_proxy") || "网络代理" }}</span>
+            <span class="spec-name">{{ t("network.tab_proxy") || "Network Proxy" }}</span>
             <span class="spec-badge font-mono" :class="networkStatus?.proxy?.enabled ? 'badge-on' : 'badge-neutral'">
               {{
                 networkStatus?.proxy?.enabled
-                  ? networkStatus.proxy.url || t("network.proxy_enabled") || "已启用"
-                  : t("network.direct_mode") || "官方直连"
+                  ? networkStatus.proxy.url || t("network.proxy_enabled") || "Enable Network Proxy"
+                  : t("network.direct_mode") || "Direct Mode"
               }}
             </span>
           </div>
           <div class="spec-row">
-            <span class="spec-name">{{ t("hello.ping_latency") || "往返延迟" }}</span>
+            <span class="spec-name">{{ t("hello.ping_latency") || "Round-Trip Latency (RTT)" }}</span>
             <span class="spec-val font-mono" :class="{ 'text-success': networkConnected }">
               {{ latencyDisplay }}
             </span>
@@ -128,11 +139,11 @@
               <span class="spin-icon">
                 <TechIcon id="workbench:sync" :size="16" />
               </span>
-              <span>{{ t("hello.testing") || "正在测速..." }}</span>
+              <span>{{ t("hello.testing") || "Testing..." }}</span>
             </span>
             <span v-else class="btn-content">
               <TechIcon id="workbench:tasks" :size="16" :colored="false" />
-              <span>{{ t("hello.test_speed_btn") || "测试网络联通性" }}</span>
+              <span>{{ t("hello.test_speed_btn") || "Test Connectivity" }}</span>
             </span>
           </button>
         </div>
@@ -161,9 +172,9 @@ const networkConnected = ref<boolean | null>(null);
 const networkStatus = ref<any>(null);
 
 const latencyDisplay = computed(() => {
-  if (testingNetwork.value) return t("network.testing") || "正在测速...";
+  if (testingNetwork.value) return t("network.testing") || "Testing...";
   if (latencyMs.value !== null) return `${latencyMs.value} ms`;
-  return t("network.untested") || "未测速";
+  return t("network.untested") || "Untested";
 });
 
 async function loadNetworkStatus() {

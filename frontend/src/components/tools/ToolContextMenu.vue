@@ -8,20 +8,20 @@
         <!-- 1. 切换 (Switch) -->
         <div class="menu-item" @click="handleAction('switch')">
           <span class="menu-icon codicon codicon-arrow-swap"></span>
-          <span class="menu-label">{{ t("runtimes.action_switch") || "切换" }}</span>
+          <span class="menu-label">{{ t("runtimes.action_switch") || "Switch" }}</span>
         </div>
 
         <!-- 2. 安装 (Install) -->
         <div class="menu-item" @click="handleAction('install')">
           <span class="menu-icon codicon codicon-cloud-download"></span>
-          <span class="menu-label">{{ t("runtimes.action_install") || "安装" }}</span>
+          <span class="menu-label">{{ t("runtimes.action_install") || "Install" }}</span>
         </div>
 
         <!-- 3. 锁定 / 解锁 (Lock / Unlock) -->
         <div class="menu-item" @click="handleAction('toggle-pin')">
           <span class="menu-icon codicon" :class="isPinned ? 'codicon-unlock' : 'codicon-lock'"></span>
           <span class="menu-label">
-            {{ isPinned ? t("runtimes.action_unlock") || "解锁" : t("runtimes.action_lock") || "锁定" }}
+            {{ isPinned ? t("runtimes.action_unlock") || "Unlock" : t("runtimes.action_lock") || "Lock" }}
           </span>
         </div>
 
@@ -30,7 +30,7 @@
         <!-- 4. 删除 (Delete) -->
         <div class="menu-item danger" @click="handleAction('delete')">
           <span class="menu-icon codicon codicon-trash"></span>
-          <span class="menu-label">{{ t("runtimes.action_delete") || "删除" }}</span>
+          <span class="menu-label">{{ t("runtimes.action_delete") || "Delete" }}</span>
         </div>
       </div>
     </div>

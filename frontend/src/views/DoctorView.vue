@@ -8,7 +8,7 @@
       <div>
         <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
           <TechIcon id="workbench:doctor" :size="20" />
-          <span>{{ t("doctor.title") || "项目与环境全面体检" }}</span>
+          <span>{{ t("doctor.title") || "UniRTM Doctor Diagnostics" }}</span>
         </h2>
         <p class="view-desc">
           基于 UniRTM Doctor 系统诊断引擎，全景探测核心运行时、Shims 路由、磁盘足迹、云端 API 配额及安全配置。
@@ -63,7 +63,7 @@
               isLoading
                 ? "正在执行 UniRTM 全景环境健康检查..."
                 : report?.score === 100
-                  ? t("doctor.healthy") || "项目环境完全健康"
+                  ? t("doctor.healthy") || "Environment Fully Healthy"
                   : report && report.score >= 80
                     ? "环境基本就绪，存在优化建议"
                     : "检测到环境配置隐患，建议核查修复"
@@ -122,7 +122,7 @@
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:dashboard" :size="16" /></span>
-            <span class="card-title">{{ t("doctor.dim_core") || "核心与执行环境" }}</span>
+            <span class="card-title">{{ t("doctor.dim_core") || "Core & Shell" }}</span>
           </div>
           <span class="badge-status" :class="report.core.shims_on_path ? 'pass' : 'warn'">
             {{ report.core.shims_on_path ? "Shims 已就绪" : "Shims 需配置" }}
@@ -157,7 +157,7 @@
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:runtimes" :size="16" /></span>
-            <span class="card-title">{{ t("doctor.dim_network") || "网络联通与 API 配额" }}</span>
+            <span class="card-title">{{ t("doctor.dim_network") || "Network & Quotas" }}</span>
           </div>
           <span
             class="badge-status"
@@ -242,7 +242,7 @@
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:folder" :size="16" /></span>
-            <span class="card-title">{{ t("doctor.dim_directories") || "磁盘占用与存储路径" }}</span>
+            <span class="card-title">{{ t("doctor.dim_directories") || "Storage & Directories" }}</span>
           </div>
         </div>
         <div class="card-dirs-list">
@@ -261,7 +261,7 @@
         <div class="card-header">
           <div class="card-title-group">
             <span class="card-icon"><TechIcon id="workbench:settings" :size="16" /></span>
-            <span class="card-title">{{ t("doctor.dim_database") || "状态数据库与配置层叠" }}</span>
+            <span class="card-title">{{ t("doctor.dim_database") || "Database & Config" }}</span>
           </div>
           <span class="badge-status" :class="report.health.database_ok ? 'pass' : 'fail'">
             {{ report.health.database_ok ? "SQLite OK" : "DB 异常" }}

@@ -6,7 +6,7 @@
       :class="{ active: isDrawerHeightDragging }"
       @pointerdown="handleDrawerHeightPointerDown"
       @dblclick="handleToggleMaximizeOrReset"
-      title="双击切换最大化，上下拖拽调节高度"
+      :title="t('drawer.drag_resizer_tooltip') || 'Double-click to toggle maximize, drag up/down to resize'"
     >
       <div class="sash-indicator-horizontal"></div>
     </div>
@@ -26,7 +26,7 @@
             'drop-indicator-right': dropTargetTabId === tabId && dropTargetPosition === 'after',
           }"
           draggable="true"
-          :title="t('drawer.drag_reorder_tip') || '拖拽调整标签页顺序，右键重置'"
+          :title="t('drawer.drag_reorder_tip') || 'Drag to reorder tabs, right-click to manage views or reset'"
           @dragstart="handleTabDragStart($event, tabId)"
           @dragover="handleTabDragOver($event, tabId)"
           @dragleave="handleTabDragLeave($event, tabId)"
@@ -52,8 +52,8 @@
           <div class="terminal-action-group">
             <button
               class="drawer-action-btn term-action-btn"
-              :title="t('terminal.new_terminal') || '新建终端'"
-              :data-tooltip="t('terminal.new_terminal') || '新建终端'"
+              :title="t('terminal.new_terminal') || 'New Terminal'"
+              :data-tooltip="t('terminal.new_terminal') || 'New Terminal'"
               @click="handleCreateDefaultSession"
             >
               <svg
@@ -72,7 +72,7 @@
             <button
               class="drawer-action-btn term-action-arrow"
               :class="{ active: isNewMenuOpen }"
-              title="选择 Shell 新建终端"
+              :title="t('drawer.new_shell_tooltip') || 'Select Shell and Create Terminal'"
               @click.stop="isNewMenuOpen = !isNewMenuOpen"
             >
               <svg
@@ -91,7 +91,7 @@
 
             <!-- Dropdown to select Shell for new session -->
             <div v-if="isNewMenuOpen" class="term-new-dropdown font-mono" @click.stop>
-              <div class="dropdown-header">{{ t("terminal.new_terminal") || "新建终端" }}</div>
+              <div class="dropdown-header">{{ t("terminal.new_terminal") || "New Terminal" }}</div>
               <div
                 v-for="term in terminals"
                 :key="term.path"
@@ -101,7 +101,7 @@
                 <div class="shell-option-main">
                   <span class="shell-option-name font-mono">{{ term.name }}</span>
                   <span v-if="term.is_default" class="shell-default-pill">{{
-                    t("terminal.default_badge") || "系统默认"
+                    t("terminal.default_badge") || "System Default"
                   }}</span>
                 </div>
                 <span class="shell-option-path font-mono">{{ term.path }}</span>
@@ -110,13 +110,13 @@
           </div>
         </template>
 
-        <!-- "更多" (More Actions) Dropdown Menu (复制日志, 清空日志, 关闭终端) -->
+        <!-- More Actions Dropdown Menu (Copy logs, Clear logs, Close terminal) -->
         <div class="drawer-more-wrapper">
           <button
             class="drawer-action-btn"
             :class="{ active: isMoreMenuOpen }"
-            title="更多操作"
-            data-tooltip="更多操作"
+            :title="t('common.more_actions') || 'More Actions'"
+            :data-tooltip="t('common.more_actions') || 'More Actions'"
             @click.stop="isMoreMenuOpen = !isMoreMenuOpen"
           >
             <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
@@ -128,7 +128,7 @@
 
           <!-- Dropdown menu with icons + text in exact required order -->
           <div v-if="isMoreMenuOpen" class="drawer-more-dropdown font-mono" @click.stop>
-            <!-- 1. 复制日志 -->
+            <!-- 1. Copy logs -->
             <button class="more-menu-item" @click="handleMenuCopyLogs">
               <svg
                 viewBox="0 0 16 16"
@@ -143,10 +143,10 @@
                 <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
                 <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 0 2.5 3.5v5a1.5 1.5 0 0 0 1.5 1.5h1.5" />
               </svg>
-              <span>{{ t("drawer.copy_all") || "复制日志" }}</span>
+              <span>{{ t("drawer.copy_all") || "Copy Logs" }}</span>
             </button>
 
-            <!-- 2. 清空日志 -->
+            <!-- 2. Clear logs -->
             <button class="more-menu-item" @click="handleMenuClearLogs">
               <svg
                 viewBox="0 0 16 16"
@@ -161,10 +161,10 @@
                 <circle cx="8" cy="8" r="6" />
                 <path d="M3.8 3.8l8.4 8.4" />
               </svg>
-              <span>{{ t("drawer.clear_logs") || "清空日志" }}</span>
+              <span>{{ t("drawer.clear_logs") || "Clear Logs" }}</span>
             </button>
 
-            <!-- 3. 关闭终端 (在终端 Tab 下提供) -->
+            <!-- 3. Close terminal -->
             <button v-if="currentTab === 'terminal'" class="more-menu-item danger" @click="handleMenuKillTerminal">
               <svg
                 viewBox="0 0 16 16"
@@ -181,7 +181,7 @@
                 />
                 <path d="M6.5 7.5v4M9.5 7.5v4" />
               </svg>
-              <span>{{ t("terminal.kill_terminal") || "关闭终端" }}</span>
+              <span>{{ t("terminal.kill_terminal") || "Kill Terminal" }}</span>
             </button>
           </div>
         </div>
@@ -294,14 +294,18 @@
               <span class="term-shell-info font-mono">{{ pane.shellName }}</span>
               <span class="term-shell-path font-mono">({{ pane.shellPath }})</span>
               <span v-if="activeSession?.splitDirection !== 'none'" class="term-split-pill">
-                {{ activeSession?.splitDirection === "vertical" ? "竖直拆分" : "横向拆分" }}
+                {{
+                  activeSession?.splitDirection === "vertical"
+                    ? t("drawer.split_vertical") || "Split Vertical"
+                    : t("drawer.split_horizontal") || "Split Horizontal"
+                }}
               </span>
             </div>
             <div class="pane-banner-right">
               <button
                 v-if="(activeSession?.panes.length || 0) > 1"
                 class="pane-close-btn"
-                :title="t('terminal.kill_terminal') || '关闭此窗格'"
+                :title="t('terminal.kill_terminal') || 'Kill Terminal'"
                 @click.stop="closePane(pane.id)"
               >
                 <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2">
@@ -330,7 +334,7 @@
         :class="{ active: isTermSidebarDragging }"
         @pointerdown="handleTermSidebarPointerDown"
         @dblclick="resetTermSidebarWidth"
-        title="双击恢复默认宽度，拖拽调节大小"
+        :title="t('drawer.sidebar_resizer_tooltip') || 'Double-click to reset width, drag to resize'"
       >
         <div class="sash-indicator"></div>
       </div>
@@ -338,10 +342,10 @@
       <!-- Right: VSCode-style Terminal Tabs Sidebar -->
       <div class="terminal-sidebar" :style="{ width: `${termSidebarWidth}px` }">
         <div class="terminal-sidebar-header">
-          <span class="sidebar-title">{{ t("terminal.tabs_title") || "终端" }}</span>
+          <span class="sidebar-title">{{ t("terminal.tabs_title") || "Terminal Tabs" }}</span>
           <button
             class="sidebar-add-btn"
-            :title="t('terminal.new_terminal') || '新建终端'"
+            :title="t('terminal.new_terminal') || 'New Terminal'"
             @click="handleCreateDefaultSession"
           >
             <svg
@@ -409,7 +413,7 @@
             <div v-if="s.id === activeSessionId" class="tab-item-split-actions">
               <button
                 class="tab-action-btn"
-                :title="t('terminal.split_vertical') || '竖直拆分终端 (一分为二)'"
+                :title="t('terminal.split_vertical') || 'Split Terminal Vertically'"
                 @click.stop="handleSplitVertical"
               >
                 <svg
@@ -428,7 +432,7 @@
               </button>
               <button
                 class="tab-action-btn"
-                :title="t('terminal.split_horizontal') || '水平拆分终端 (一分为二)'"
+                :title="t('terminal.split_horizontal') || 'Split Terminal Horizontally'"
                 @click.stop="handleSplitHorizontal"
               >
                 <svg
@@ -449,7 +453,7 @@
 
             <button
               class="tab-item-close-btn"
-              :title="t('terminal.kill_terminal') || '关闭终端'"
+              :title="t('terminal.kill_terminal') || 'Kill Terminal'"
               @click.stop="closeSession(s.id)"
             >
               <svg
@@ -506,7 +510,7 @@
           class="log-row-copy-btn"
           :class="{ copied: copiedRowIdx === idx }"
           @click.stop="handleCopyRow(log, idx)"
-          :title="t('drawer.copy_row') || '复制单行日志'"
+          :title="t('drawer.copy_row') || 'Copy Line'"
         >
           <svg
             v-if="copiedRowIdx !== idx"
@@ -560,7 +564,7 @@
         :style="{ top: `${tabContextMenuY}px`, left: `${tabContextMenuX}px` }"
         @click.stop
       >
-        <div class="context-menu-header">{{ t("drawer.panel_views") || "面板视图" }}</div>
+        <div class="context-menu-header">{{ t("drawer.panel_views") || "Panel Views" }}</div>
         <div
           v-for="tabId in DEFAULT_TAB_ORDER"
           :key="tabId"
@@ -604,7 +608,7 @@
             <path d="M2.5 8a5.5 5.5 0 1 0 1.5-3.8L2 6" />
             <path d="M2 2.5v3.5h3.5" />
           </svg>
-          <span>{{ t("drawer.reset_tab_order") || "重置标签页顺序与可见性" }}</span>
+          <span>{{ t("drawer.reset_tab_order") || "Reset Location and Visibility" }}</span>
         </div>
       </div>
     </Teleport>
@@ -674,7 +678,7 @@ const {
 
 const { getActiveProcess, getEffectiveTitle, setCustomTitle } = useTerminalProcessWatcher();
 
-// 双击就地重命名终端 Tab
+// Double-click inline rename terminal tab
 const editingSessionId = ref<string | null>(null);
 const editingTitleInput = ref("");
 
@@ -988,36 +992,36 @@ interface TabDefinition {
 const tabDefinitions = computed<Record<DrawerTab, TabDefinition>>(() => ({
   terminal: {
     id: "terminal",
-    label: t("drawer.tab_terminal") || "终端",
+    label: t("drawer.tab_terminal") || "Terminal",
     icon: "workbench:terminal",
   },
   output: {
     id: "output",
-    label: t("drawer.tab_output") || "输出",
+    label: t("drawer.tab_output") || "Output",
     icon: "workbench:logs",
     badge: outputLogs.value.length,
   },
   tasks: {
     id: "tasks",
-    label: t("drawer.tab_tasks") || "任务",
+    label: t("drawer.tab_tasks") || "Tasks",
     icon: "workbench:tasks",
     badge: tasksLogs.value.length,
   },
   doctor: {
     id: "doctor",
-    label: t("drawer.tab_doctor") || "诊断",
+    label: t("drawer.tab_doctor") || "Doctor",
     icon: "workbench:doctor",
     badge: doctorLogs.value.length,
   },
   ports: {
     id: "ports",
-    label: t("drawer.tab_ports") || "端口",
+    label: t("drawer.tab_ports") || "Ports",
     icon: "workbench:ports",
     badge: activePortsCount.value,
   },
 }));
 
-// Tab 拖拽排序逻辑 (VS Code style Drag and Drop)
+// Tab drag-and-drop ordering (VS Code style)
 const draggedTabId = ref<DrawerTab | null>(null);
 const dropTargetTabId = ref<DrawerTab | null>(null);
 const dropTargetPosition = ref<"before" | "after" | null>(null);
@@ -1114,7 +1118,7 @@ function handleTabClick(tabId: DrawerTab) {
   currentTab.value = tabId;
 }
 
-// Tab 右键菜单 (VS Code style right-click to reset)
+// Tab right-click context menu (VS Code style)
 const isTabContextMenuOpen = ref(false);
 const tabContextMenuX = ref(0);
 const tabContextMenuY = ref(0);
@@ -1131,13 +1135,13 @@ function toggleTabVisibility(tabId: DrawerTab) {
   if (newHidden.has(tabId)) {
     newHidden.delete(tabId);
   } else {
-    // 保护：至少保留 1 个可见 Tab
+    // Guard: keep at least 1 tab visible
     if (visibleTabs.value.length <= 1) {
       return;
     }
     newHidden.add(tabId);
 
-    // 如果被隐藏的 Tab 正好是当前激活的 Tab，则自动切换到剩余可见的第一个 Tab
+    // If hidden tab is currently active, switch to the first remaining visible tab
     if (currentTab.value === tabId) {
       const remaining = tabOrder.value.filter((id) => !newHidden.has(id));
       if (remaining.length > 0) {
@@ -1173,17 +1177,29 @@ const displayLogs = computed(() => {
 
 const emptyStateText = computed(() => {
   if (currentTab.value === "tasks") {
-    return t("drawer.empty_tasks") || "暂无任务执行日志。在任务视图中点击“运行”以在此查看执行终端输出。";
+    return t("drawer.empty_tasks") || "No task execution logs. Run a task to inspect terminal outputs here.";
   }
   if (currentTab.value === "doctor") {
-    return t("drawer.empty_doctor") || "暂无环境体检报告。在环境诊断视图中执行“全面体检”以查看详情。";
+    return t("drawer.empty_doctor") || "No diagnostic reports. Run a doctor check to inspect results here.";
   }
-  return t("drawer.empty_logs") || "暂无系统输出日志。系统运行与扩展事件将在此显示。";
+  return t("drawer.empty_logs") || "No system output logs. Runtime and extension events will appear here.";
 });
 
-const autoScrollTitle = computed(() => (autoScroll.value ? "自动滚动 (开启)" : "自动滚动 (关闭)"));
-const maximizeTitle = computed(() => (isMaximized.value ? "还原面板高度" : "最大化面板高度"));
-const closeTitle = computed(() => (isMac ? "关闭面板 (⌘` 或 Esc)" : "关闭面板 (Ctrl+` 或 Esc)"));
+const autoScrollTitle = computed(() =>
+  autoScroll.value
+    ? t("drawer.auto_scroll_on") || "Auto Scroll (On)"
+    : t("drawer.auto_scroll_off") || "Auto Scroll (Off)"
+);
+const maximizeTitle = computed(() =>
+  isMaximized.value
+    ? t("drawer.restore_height") || "Restore Panel Height"
+    : t("drawer.maximize_height") || "Maximize Panel Height"
+);
+const closeTitle = computed(
+  () =>
+    t("drawer.close_panel_tooltip", { shortcut: isMac ? "⌘` / Esc" : "Ctrl+` / Esc" }) ||
+    (isMac ? "Close Panel (⌘` / Esc)" : "Close Panel (Ctrl+` / Esc)")
+);
 
 const isCopiedAll = ref(false);
 const copiedRowIdx = ref<number | null>(null);
@@ -1228,7 +1244,7 @@ async function copyText(text: string): Promise<boolean> {
 async function handleCopyAll() {
   if (currentTab.value === "terminal") {
     if (!activePane.value || activePane.value.lines.length === 0) {
-      showToast(t("drawer.empty_copy") || "当前暂无日志可复制", "warning");
+      showToast(t("drawer.empty_copy") || "No logs available to copy", "warning");
       return;
     }
     const text = activePane.value.lines.map((l) => l.text).join("\n");
@@ -1238,13 +1254,13 @@ async function handleCopyAll() {
       setTimeout(() => {
         isCopiedAll.value = false;
       }, 1500);
-      showToast(t("drawer.copy_all_success") || "已复制当前面板全部日志到剪贴板", "success");
+      showToast(t("drawer.copy_all_success") || "Logs copied to clipboard", "success");
     }
     return;
   }
 
   if (displayLogs.value.length === 0) {
-    showToast(t("drawer.empty_copy") || "当前暂无日志可复制", "warning");
+    showToast(t("drawer.empty_copy") || "No logs available to copy", "warning");
     return;
   }
   const text = displayLogs.value.map(formatLogLine).join("\n");
@@ -1254,7 +1270,7 @@ async function handleCopyAll() {
     setTimeout(() => {
       isCopiedAll.value = false;
     }, 1500);
-    showToast(t("drawer.copy_all_success") || "已复制当前面板全部日志到剪贴板", "success");
+    showToast(t("drawer.copy_all_success") || "Logs copied to clipboard", "success");
   }
 }
 
@@ -1275,7 +1291,7 @@ async function handleCopyRow(log: LogItem, idx: number) {
         copiedRowIdx.value = null;
       }
     }, 1500);
-    showToast(t("drawer.copy_row_success") || "已复制单行日志", "success");
+    showToast(t("drawer.copy_row_success") || "Log line copied to clipboard", "success");
   }
 }
 
@@ -1283,23 +1299,23 @@ function handleCreateDefaultSession() {
   const s = createSession(
     currentTerminal.value ? { name: currentTerminal.value.name, path: currentTerminal.value.path } : undefined
   );
-  showToast(`${t("terminal.new_terminal") || "新建终端"}: ${s.title}`, "info");
+  showToast(`${t("terminal.new_terminal") || "New Terminal"}: ${s.title}`, "info");
 }
 
 function handleCreateSessionWithShell(term: TerminalItem) {
   isNewMenuOpen.value = false;
   const s = createSession({ name: term.name, path: term.path });
-  showToast(`${t("terminal.new_terminal") || "新建终端"}: ${s.title}`, "info");
+  showToast(`${t("terminal.new_terminal") || "New Terminal"}: ${s.title}`, "info");
 }
 
 function handleSplitVertical() {
   splitActiveSession("vertical");
-  showToast(t("terminal.split_vertical") || "竖直拆分终端 (一分为二)", "info");
+  showToast(t("terminal.split_vertical") || "Split Terminal Vertically", "info");
 }
 
 function handleSplitHorizontal() {
   splitActiveSession("horizontal");
-  showToast(t("terminal.split_horizontal") || "横向拆分终端 (一分为二)", "info");
+  showToast(t("terminal.split_horizontal") || "Split Terminal Horizontally", "info");
 }
 
 function handleKillCurrentTerminal() {
@@ -1483,7 +1499,7 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.04);
 }
 
-/* VS Code 风格的插入垂直指示线 */
+/* VS Code style insertion indicator */
 .drawer-tab.drop-indicator-left::before,
 .drawer-tab.drop-indicator-right::after {
   content: "";
@@ -1534,7 +1550,7 @@ onUnmounted(() => {
   color: var(--accent-cyan);
 }
 
-/* Tab 右键上下文菜单 (VS Code style) */
+/* Tab context menu (VS Code style) */
 .tab-context-menu {
   position: fixed;
   z-index: var(--z-context-menu-popover, 1001);

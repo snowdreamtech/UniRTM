@@ -620,7 +620,7 @@
             <div class="reports-header-titles">
               <h3 class="reports-title">
                 <span class="codicon codicon-checklist text-cyan"></span>
-                <span>{{ t("guard.diagnostics.checklist") || "质量守卫全套规则清单与执行状态" }}</span>
+                <span>{{ t("guard.diagnostics.checklist") || "Execution Checklist" }}</span>
                 <span class="rules-total-count font-mono">{{ filteredRichRules.length }} / 38</span>
               </h3>
               <p class="reports-sub">
@@ -826,7 +826,7 @@
             @click="settingsSubTab = 'builtin'"
           >
             <span class="codicon codicon-shield text-cyan"></span>
-            <span>{{ t("guard.tabs.builtin") || "Built-in Rules (原生)" }} ({{ BUILTIN_GUARD_RULES.length }})</span>
+            <span>{{ t("guard.tabs.builtin") || "Built-in Rules" }} ({{ BUILTIN_GUARD_RULES.length }})</span>
           </button>
           <button class="sub-tab-btn" :class="{ active: settingsSubTab === 'slots' }" @click="settingsSubTab = 'slots'">
             <span class="codicon codicon-symbol-class"></span>

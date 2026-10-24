@@ -124,7 +124,7 @@
               <div
                 class="header-branch-pill"
                 :class="{ active: isBranchMenuOpen }"
-                :title="`${t('scm.branch.current') || '当前分支'}: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''}`"
+                :title="`${t('scm.branch.current') || 'Current Branch'}: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''}`"
                 @click="toggleBranchMenu"
               >
                 <span class="codicon codicon-git-branch"></span>
@@ -139,11 +139,11 @@
               <!-- Branch Switcher Dropdown Popover -->
               <div v-if="isBranchMenuOpen" class="header-branch-dropdown" @click.stop>
                 <div class="branch-dropdown-header">
-                  <span class="dropdown-title">{{ t("scm.branch.switch") || "切换分支" }}</span>
+                  <span class="dropdown-title">{{ t("scm.branch.switch") || "Switch Branch" }}</span>
                   <div class="dropdown-header-actions">
                     <button
                       class="branch-action-icon-btn"
-                      :title="t('scm.actions.refresh') || '刷新'"
+                      :title="t('scm.actions.refresh') || 'Refresh Status'"
                       @click.stop="handleRefreshBranches"
                     >
                       <span
@@ -162,7 +162,7 @@
                     v-model="branchSearchQuery"
                     type="text"
                     class="branch-search-input"
-                    :placeholder="t('scm.branch.filter') || '搜索分支...'"
+                    :placeholder="t('scm.branch.filter') || 'Filter branches...'"
                     ref="branchSearchInputRef"
                     @keydown.esc="isBranchMenuOpen = false"
                   />
@@ -176,7 +176,7 @@
                 <!-- Branches List -->
                 <div class="branch-list-scroll">
                   <div v-if="filteredBranches.length === 0" class="branch-empty-hint">
-                    <span>{{ t("scm.branch.no_match") || "无匹配分支" }}</span>
+                    <span>{{ t("scm.branch.no_match") || "No matching branches" }}</span>
                   </div>
                   <div
                     v-for="b in filteredBranches"
@@ -190,7 +190,7 @@
                       :class="b.current ? 'codicon-check current-check' : 'codicon-git-branch'"
                     ></span>
                     <span class="branch-item-name font-mono">{{ b.name }}</span>
-                    <span v-if="b.remote" class="branch-remote-tag">{{ t("scm.branch.remote") || "远程" }}</span>
+                    <span v-if="b.remote" class="branch-remote-tag">{{ t("scm.branch.remote") || "Remote" }}</span>
                   </div>
                 </div>
               </div>
@@ -252,10 +252,10 @@
                 <span class="stat-value">{{ guardCardValue }}</span>
                 <span
                   class="codicon codicon-link-external guard-link-icon"
-                  :title="t('guard.open_guard_hub') || '前往质量守卫中心'"
+                  :title="t('guard.open_guard_hub') || 'Open Quality Guard Hub'"
                 ></span>
               </div>
-              <span class="stat-label">{{ t("guard.title") || "质量守卫" }}</span>
+              <span class="stat-label">{{ t("guard.title") || "Quality Guard" }}</span>
             </div>
           </div>
         </div>
@@ -273,7 +273,7 @@
                 class="codicon"
                 :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"
               ></span>
-              <span>{{ t("guard.actions.auto_fix") || "一键自动修复" }} ({{ guardStatus.fixable_count }})</span>
+              <span>{{ t("guard.actions.auto_fix") || "Auto Fix" }} ({{ guardStatus.fixable_count }})</span>
             </button>
             <button class="action-pill primary" :disabled="status.unstaged.length === 0" @click="stage([])">
               <span class="codicon codicon-add"></span>
@@ -700,7 +700,7 @@ const guardTooltip = computed(() => {
 async function handleRunGuardFix() {
   const ok = await runGuardFix("staged");
   if (ok) {
-    showToast(t("guard.toast.fixed") || "✨ 已自动完成代码格式与卫生修复", "success");
+    showToast(t("guard.toast.fixed") || "✨ Auto-fixed formatting and hygiene issues", "success");
     await fetchStatus();
   }
 }

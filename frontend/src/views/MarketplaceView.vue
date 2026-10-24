@@ -65,7 +65,7 @@
                 <span class="hero-version font-mono">v{{ activeDetail.version }}</span>
                 <span v-if="isDetailActive" class="badge-active-pill">● 当前生效使用中</span>
                 <span v-else-if="activeDetail.is_installed" class="badge-installed"
-                  >✓ {{ t("settings.installed") || "已安装" }}</span
+                  >✓ {{ t("settings.installed") || "Installed" }}</span
                 >
               </div>
               <div class="hero-meta-row">
@@ -94,7 +94,9 @@
             >
               <span v-if="mpIsInstalling(activeDetail)" class="spinner-small"></span>
               <span>{{
-                mpIsInstalling(activeDetail) ? t("settings.installing") || "安装中..." : t("settings.install") || "安装"
+                mpIsInstalling(activeDetail)
+                  ? t("settings.installing") || "Installing package..."
+                  : t("settings.install") || "Install"
               }}</span>
             </button>
             <div v-else class="installed-action-buttons">
@@ -183,16 +185,16 @@
                       v-if="activeDetail.is_installed && isSubColorActive(sub.label, sub.id)"
                       class="btn-applied-current"
                       disabled
-                      :title="t('marketplace.current_active') || '当前正在生效的主题'"
+                      :title="t('marketplace.current_active') || 'Currently active theme'"
                     >
-                      {{ t("marketplace.currently_applied") || "已应用" }}
+                      {{ t("marketplace.currently_applied") || "Applied" }}
                     </button>
                     <button
                       v-else-if="activeDetail.is_installed"
                       class="btn-apply-sub"
                       @click="onApplySubColorTheme(sub.label)"
                     >
-                      {{ t("settings.apply") || "应用" }}
+                      {{ t("settings.apply") || "Apply" }}
                     </button>
                   </div>
                 </div>
@@ -208,22 +210,22 @@
                   <div v-for="sub in activeDetail.contributes.iconThemes" :key="sub.label" class="contribute-item">
                     <div class="sub-info">
                       <span class="sub-label">{{ sub.label }}</span>
-                      <span class="sub-mode-tag mode-icon">{{ t("marketplace.filter_icons") || "文件图标" }}</span>
+                      <span class="sub-mode-tag mode-icon">{{ t("marketplace.filter_icons") || "File Icons" }}</span>
                     </div>
                     <button
                       v-if="activeDetail.is_installed && isSubIconActive(sub.label, sub.id)"
                       class="btn-applied-current"
                       disabled
-                      :title="t('marketplace.current_active') || '当前正在生效的主题'"
+                      :title="t('marketplace.current_active') || 'Currently active theme'"
                     >
-                      {{ t("marketplace.currently_applied") || "已应用" }}
+                      {{ t("marketplace.currently_applied") || "Applied" }}
                     </button>
                     <button
                       v-else-if="activeDetail.is_installed"
                       class="btn-apply-sub"
                       @click="onApplySubIconTheme(sub.label)"
                     >
-                      {{ t("settings.apply") || "应用" }}
+                      {{ t("settings.apply") || "Apply" }}
                     </button>
                   </div>
                 </div>
@@ -246,23 +248,23 @@
                     <div class="sub-info">
                       <span class="sub-label">{{ sub.label }}</span>
                       <span class="sub-mode-tag mode-product">{{
-                        t("marketplace.filter_product_icons") || "界面图标"
+                        t("marketplace.filter_product_icons") || "Product Icons"
                       }}</span>
                     </div>
                     <button
                       v-if="activeDetail.is_installed && isSubProductIconActive(sub.label, sub.id)"
                       class="btn-applied-current"
                       disabled
-                      :title="t('marketplace.current_active') || '当前正在生效的主题'"
+                      :title="t('marketplace.current_active') || 'Currently active theme'"
                     >
-                      {{ t("marketplace.currently_applied") || "已应用" }}
+                      {{ t("marketplace.currently_applied") || "Applied" }}
                     </button>
                     <button
                       v-else-if="activeDetail.is_installed"
                       class="btn-apply-sub"
                       @click="onApplySubProductIconTheme(sub.id || sub.label)"
                     >
-                      {{ t("settings.apply") || "应用" }}
+                      {{ t("settings.apply") || "Apply" }}
                     </button>
                   </div>
                 </div>
@@ -392,7 +394,7 @@
       <!-- View Header -->
       <div class="view-header-row">
         <div>
-          <h2 class="view-title">{{ t("nav.marketplace") || "扩展与主题市场" }}</h2>
+          <h2 class="view-title">{{ t("nav.marketplace") || "Marketplace" }}</h2>
           <p class="view-desc">探索与安装 VS Code 兼容的主题与图标集，以及扩展 UniRTM 原生能力的开发者功能套件。</p>
         </div>
 
@@ -400,7 +402,7 @@
         <div class="channel-tabs glass-card">
           <button class="channel-btn" :class="{ active: currentChannel === 'themes' }" @click="switchChannel('themes')">
             <TechIcon id="workbench:marketplace" :size="16" />
-            <span>{{ t("settings.theme_tab_marketplace") || "主题与图标 (Open VSX)" }}</span>
+            <span>{{ t("settings.theme_tab_marketplace") || "Online Marketplace (Open VSX)" }}</span>
           </button>
           <button
             class="channel-btn"
@@ -408,7 +410,7 @@
             @click="switchChannel('plugins')"
           >
             <TechIcon id="workbench:tools" :size="16" />
-            <span>{{ t("settings.cat_plugins") || "功能插件 (UniRTM 生态)" }}</span>
+            <span>{{ t("settings.cat_plugins") || "Extensions" }}</span>
             <span class="channel-soon-tag">开发中</span>
           </button>
         </div>
@@ -424,7 +426,7 @@
             @click="switchThemeTypeTab('all')"
           >
             <TechIcon id="workbench:marketplace" :size="15" />
-            <span>{{ t("marketplace.filter_all") || "全部" }}</span>
+            <span>{{ t("marketplace.filter_all") || "All" }}</span>
           </button>
           <button
             class="type-tab-btn"
@@ -432,7 +434,7 @@
             @click="switchThemeTypeTab('color')"
           >
             <span>🎨</span>
-            <span>{{ t("marketplace.filter_themes") || "颜色主题" }}</span>
+            <span>{{ t("marketplace.filter_themes") || "Color Themes" }}</span>
           </button>
           <button
             class="type-tab-btn"
@@ -440,7 +442,7 @@
             @click="switchThemeTypeTab('icon')"
           >
             <span>📁</span>
-            <span>{{ t("marketplace.filter_icons") || "文件图标" }}</span>
+            <span>{{ t("marketplace.filter_icons") || "File Icons" }}</span>
           </button>
           <button
             class="type-tab-btn"
@@ -448,7 +450,7 @@
             @click="switchThemeTypeTab('product_icon')"
           >
             <span>⚡</span>
-            <span>{{ t("marketplace.filter_product_icons") || "界面图标" }}</span>
+            <span>{{ t("marketplace.filter_product_icons") || "Product Icons" }}</span>
           </button>
           <button
             class="type-tab-btn type-tab-installed"
@@ -456,7 +458,7 @@
             @click="switchThemeTypeTab('installed')"
           >
             <span>📦</span>
-            <span>{{ t("marketplace.filter_installed") || "已安装" }}</span>
+            <span>{{ t("marketplace.filter_installed") || "Installed" }}</span>
             <span v-if="installedExtensions.length > 0" class="tab-badge font-mono">{{
               installedExtensions.length
             }}</span>
@@ -480,7 +482,7 @@
           </div>
           <button class="btn-search-action" :disabled="mpIsSearching" @click="onSearchThemes(mpSearchQuery)">
             <span v-if="mpIsSearching" class="spinner-small"></span>
-            <span v-else>{{ t("marketplace.search") || "搜索" }}</span>
+            <span v-else>{{ t("marketplace.search") || "Search" }}</span>
           </button>
 
           <!-- View Mode Switcher -->
@@ -490,7 +492,7 @@
               class="view-mode-btn"
               :class="{ active: viewMode === 'cards' }"
               @click="setViewMode('cards')"
-              :title="t('environments.view_cards') || '卡片视图'"
+              :title="t('environments.view_cards') || 'Cards View'"
             >
               <TechIcon id="workbench:cards" :size="14" />
             </button>
@@ -499,7 +501,7 @@
               class="view-mode-btn"
               :class="{ active: viewMode === 'list' }"
               @click="setViewMode('list')"
-              :title="t('environments.view_list') || '列表视图'"
+              :title="t('environments.view_list') || 'List View'"
             >
               <TechIcon id="workbench:list" :size="14" />
             </button>
@@ -512,7 +514,7 @@
             <span class="chips-label">{{
               activeThemeTypeTab === "installed"
                 ? "类型过滤:"
-                : (t("marketplace.recommended_categories") || "推荐分类") + ":"
+                : (t("marketplace.recommended_categories") || "Recommended Categories") + ":"
             }}</span>
             <button
               v-for="chip in contextualChips"
@@ -557,14 +559,16 @@
             <span>{{ mpError }}</span>
           </span>
           <button class="btn-retry" @click="onSearchThemes(mpSearchQuery)">
-            {{ t("marketplace.retry") || "重试" }}
+            {{ t("marketplace.retry") || "Retry" }}
           </button>
         </div>
 
         <!-- Loading State -->
         <div v-if="mpIsSearching && activeThemeTypeTab !== 'installed'" class="market-loading-box glass-card">
           <div class="spinner-small"></div>
-          <span>{{ t("marketplace.searching_openvsx") || "正在实时连接 Open VSX 检索主题与图标..." }}</span>
+          <span>{{
+            t("marketplace.searching_openvsx") || "Connecting to Open VSX to search themes and icons..."
+          }}</span>
         </div>
 
         <!-- Empty State -->
@@ -574,7 +578,7 @@
           </span>
           <p>{{ emptyStateMessage }}</p>
           <button class="btn-reset-chip" @click="onResetToPopular">
-            {{ t("marketplace.view_popular") || "查看热门推荐" }}
+            {{ t("marketplace.view_popular") || "View Popular Recommendations" }}
           </button>
         </div>
 
@@ -619,12 +623,12 @@
                     {{ item.displayName || item.name }}
                   </span>
                   <span v-if="item.is_builtin" class="badge-builtin-pill">{{
-                    t("network.tag_builtin") || "官方内置"
+                    t("network.tag_builtin") || "Built-in"
                   }}</span>
                   <span v-else class="card-version font-mono">v{{ item.version }}</span>
                   <span v-if="isExtensionActive(item)" class="badge-active-pill">
                     <span class="active-dot"></span>
-                    <span>{{ t("marketplace.active") || "生效中" }}</span>
+                    <span>{{ t("marketplace.active") || "Active" }}</span>
                   </span>
                 </div>
                 <div class="card-subtitle-row">
@@ -645,10 +649,10 @@
                     />
                     {{
                       getCardDisplayType(item) === "product_icon"
-                        ? t("marketplace.filter_product_icons") || "界面图标"
+                        ? t("marketplace.filter_product_icons") || "Product Icons"
                         : getCardDisplayType(item) === "icon"
-                          ? t("marketplace.filter_icons") || "文件图标"
-                          : t("marketplace.filter_themes") || "颜色主题"
+                          ? t("marketplace.filter_icons") || "File Icons"
+                          : t("marketplace.filter_themes") || "Color Themes"
                     }}
                   </span>
                 </div>
@@ -673,25 +677,25 @@
                     ✓
                     {{
                       isExtensionActive(item)
-                        ? t("marketplace.in_use") || "使用中"
-                        : t("settings.installed") || "已安装"
+                        ? t("marketplace.in_use") || "In Use"
+                        : t("settings.installed") || "Installed"
                     }}
                   </span>
                   <button
                     v-if="!isExtensionActive(item)"
                     class="btn-apply-theme"
-                    :title="t('settings.apply_theme') || '应用此主题'"
+                    :title="t('settings.apply_theme') || 'Apply Theme'"
                     @click="onApplyTheme(item)"
                   >
-                    {{ t("settings.apply") || "应用" }}
+                    {{ t("settings.apply") || "Apply" }}
                   </button>
                   <button
                     v-else
                     class="btn-applied-current"
                     disabled
-                    :title="t('marketplace.current_active') || '当前正在生效的主题'"
+                    :title="t('marketplace.current_active') || 'Currently active theme'"
                   >
-                    {{ t("marketplace.currently_applied") || "已应用" }}
+                    {{ t("marketplace.currently_applied") || "Applied" }}
                   </button>
                   <!-- More Menu for Installed Themes (Uninstall) -->
                   <div
@@ -703,7 +707,7 @@
                       class="btn-theme-more"
                       :class="{ 'is-active': activeMenuThemePkgId === (item.package_id || item.name) }"
                       @click.stop="toggleThemeMenu(item.package_id || item.name)"
-                      :title="t('common.more_actions') || '更多操作'"
+                      :title="t('common.more_actions') || 'More Actions'"
                     >
                       <TechIcon id="workbench:more" :size="14" />
                     </button>
@@ -716,10 +720,10 @@
                         <button
                           class="dropdown-item danger"
                           @click.stop="handleUninstallFromMenu(item)"
-                          :title="t('common.delete') || '卸载此主题包'"
+                          :title="t('common.delete') || 'Delete'"
                         >
                           <TechIcon id="workbench:delete" :size="13" />
-                          <span>{{ t("common.delete") || "卸载此主题包" }}</span>
+                          <span>{{ t("common.delete") || "Delete" }}</span>
                         </button>
                       </div>
                     </transition>
@@ -728,7 +732,9 @@
                 <button v-else class="btn-install-theme" :disabled="mpIsInstalling(item)" @click="onInstallTheme(item)">
                   <span v-if="mpIsInstalling(item)" class="spinner-small"></span>
                   <span>{{
-                    mpIsInstalling(item) ? t("settings.installing") || "安装中..." : t("settings.install") || "安装"
+                    mpIsInstalling(item)
+                      ? t("settings.installing") || "Installing package..."
+                      : t("settings.install") || "Install"
                   }}</span>
                 </button>
               </div>
@@ -741,11 +747,11 @@
           <table class="market-table">
             <thead>
               <tr>
-                <th class="th-extension">{{ t("marketplace.col_extension") || "扩展与主题" }}</th>
-                <th class="th-publisher">{{ t("marketplace.col_publisher") || "发布者与分类" }}</th>
-                <th class="th-desc">{{ t("marketplace.col_desc") || "描述" }}</th>
-                <th class="th-stats">{{ t("marketplace.col_stats") || "数据" }}</th>
-                <th class="th-actions">{{ t("marketplace.col_actions") || "操作" }}</th>
+                <th class="th-extension">{{ t("marketplace.col_extension") || "Extension & Theme" }}</th>
+                <th class="th-publisher">{{ t("marketplace.col_publisher") || "Publisher & Category" }}</th>
+                <th class="th-desc">{{ t("marketplace.col_desc") || "Description" }}</th>
+                <th class="th-stats">{{ t("marketplace.col_stats") || "Stats" }}</th>
+                <th class="th-actions">{{ t("marketplace.col_actions") || "Actions" }}</th>
               </tr>
             </thead>
             <tbody>
@@ -788,12 +794,12 @@
                       <div class="table-ext-title-row">
                         <span class="ext-name">{{ item.displayName || item.name }}</span>
                         <span v-if="item.is_builtin" class="badge-builtin-pill">{{
-                          t("network.tag_builtin") || "官方内置"
+                          t("network.tag_builtin") || "Built-in"
                         }}</span>
                         <span v-else class="ext-ver font-mono">v{{ item.version }}</span>
                         <span v-if="isExtensionActive(item)" class="badge-active-pill small">
                           <span class="active-dot"></span>
-                          <span>{{ t("marketplace.active") || "生效中" }}</span>
+                          <span>{{ t("marketplace.active") || "Active" }}</span>
                         </span>
                       </div>
                     </div>
@@ -820,10 +826,10 @@
                       />
                       {{
                         getCardDisplayType(item) === "product_icon"
-                          ? t("marketplace.filter_product_icons") || "界面图标"
+                          ? t("marketplace.filter_product_icons") || "Product Icons"
                           : getCardDisplayType(item) === "icon"
-                            ? t("marketplace.filter_icons") || "文件图标"
-                            : t("marketplace.filter_themes") || "颜色主题"
+                            ? t("marketplace.filter_icons") || "File Icons"
+                            : t("marketplace.filter_themes") || "Color Themes"
                       }}
                     </span>
                   </div>
@@ -853,18 +859,18 @@
                       <button
                         v-if="!isExtensionActive(item)"
                         class="btn btn-capsule btn-apply-theme"
-                        :title="t('settings.apply_theme') || '应用此主题'"
+                        :title="t('settings.apply_theme') || 'Apply Theme'"
                         @click="onApplyTheme(item)"
                       >
-                        {{ t("settings.apply") || "应用" }}
+                        {{ t("settings.apply") || "Apply" }}
                       </button>
                       <button
                         v-else
                         class="btn btn-capsule applied btn-applied-current"
                         disabled
-                        :title="t('marketplace.current_active') || '当前正在生效的主题'"
+                        :title="t('marketplace.current_active') || 'Currently active theme'"
                       >
-                        {{ t("marketplace.currently_applied") || "已应用" }}
+                        {{ t("marketplace.currently_applied") || "Applied" }}
                       </button>
                       <!-- More Menu for Installed Themes (Uninstall) -->
                       <div
@@ -876,7 +882,7 @@
                           class="btn-theme-more table-more-btn"
                           :class="{ 'is-active': activeMenuThemePkgId === (item.package_id || item.name) }"
                           @click.stop="toggleThemeMenu(item.package_id || item.name)"
-                          :title="t('common.more_actions') || '更多操作'"
+                          :title="t('common.more_actions') || 'More Actions'"
                         >
                           <TechIcon id="workbench:more" :size="13" />
                         </button>
@@ -889,10 +895,10 @@
                             <button
                               class="dropdown-item danger"
                               @click.stop="handleUninstallFromMenu(item)"
-                              :title="t('common.delete') || '卸载此主题包'"
+                              :title="t('common.delete') || 'Delete'"
                             >
                               <TechIcon id="workbench:delete" :size="13" />
-                              <span>{{ t("common.delete") || "卸载此主题包" }}</span>
+                              <span>{{ t("common.delete") || "Delete" }}</span>
                             </button>
                           </div>
                         </transition>
@@ -906,7 +912,9 @@
                     >
                       <span v-if="mpIsInstalling(item)" class="spinner-small"></span>
                       <span>{{
-                        mpIsInstalling(item) ? t("settings.installing") || "安装中..." : t("settings.install") || "安装"
+                        mpIsInstalling(item)
+                          ? t("settings.installing") || "Installing package..."
+                          : t("settings.install") || "Install"
                       }}</span>
                     </button>
                   </div>
@@ -933,7 +941,7 @@
             <button
               class="btn-page-nav"
               :disabled="mpCurrentPage <= 1 || mpIsSearching"
-              :title="t('marketplace.first_page') || '第一页'"
+              :title="t('marketplace.first_page') || 'First Page'"
               @click="onPageChange(1)"
             >
               «
@@ -941,7 +949,7 @@
             <button
               class="btn-page-nav"
               :disabled="mpCurrentPage <= 1 || mpIsSearching"
-              :title="t('marketplace.prev_page') || '上一页'"
+              :title="t('marketplace.prev_page') || 'Previous Page'"
               @click="onPageChange(mpCurrentPage - 1)"
             >
               ‹
@@ -963,7 +971,7 @@
             <button
               class="btn-page-nav"
               :disabled="mpCurrentPage >= mpTotalPages || mpIsSearching"
-              :title="t('marketplace.next_page') || '下一页'"
+              :title="t('marketplace.next_page') || 'Next Page'"
               @click="onPageChange(mpCurrentPage + 1)"
             >
               ›
@@ -971,7 +979,7 @@
             <button
               class="btn-page-nav"
               :disabled="mpCurrentPage >= mpTotalPages || mpIsSearching"
-              :title="t('marketplace.last_page') || '最后一页'"
+              :title="t('marketplace.last_page') || 'Last Page'"
               @click="onPageChange(mpTotalPages)"
             >
               »
@@ -980,7 +988,7 @@
 
           <div class="pagination-tools">
             <div class="page-jump-box">
-              <span>{{ t("marketplace.jump_to") || "跳至" }}</span>
+              <span>{{ t("marketplace.jump_to") || "Jump to" }}</span>
               <input
                 v-model.number="jumpPageInput"
                 type="number"
@@ -993,7 +1001,7 @@
                 @keydown.enter="onJumpPage"
               />
               <button class="btn-jump-submit" :disabled="mpIsSearching" @click="onJumpPage">
-                {{ t("marketplace.jump_btn") || "跳转" }}
+                {{ t("marketplace.jump_btn") || "Go" }}
               </button>
             </div>
 
@@ -1004,9 +1012,9 @@
                 :disabled="mpIsSearching"
                 @change="onChangePageSize(Number(($event.target as HTMLSelectElement).value))"
               >
-                <option :value="12">{{ t("marketplace.page_size_item", { size: 12 }) || "12 条 / 页" }}</option>
-                <option :value="24">{{ t("marketplace.page_size_item", { size: 24 }) || "24 条 / 页" }}</option>
-                <option :value="48">{{ t("marketplace.page_size_item", { size: 48 }) || "48 条 / 页" }}</option>
+                <option :value="12">{{ t("marketplace.page_size_item", { size: 12 }) || "{size} / page" }}</option>
+                <option :value="24">{{ t("marketplace.page_size_item", { size: 24 }) || "{size} / page" }}</option>
+                <option :value="48">{{ t("marketplace.page_size_item", { size: 48 }) || "{size} / page" }}</option>
               </select>
             </div>
           </div>
@@ -1302,22 +1310,22 @@ interface ThemeChipItem {
 const contextualChips = computed<ThemeChipItem[]>(() => {
   if (activeThemeTypeTab.value === "installed") {
     return [
-      { id: "installed-all", name: t("marketplace.filter_all") || "全部已安装", query: "", isInstalled: true },
+      { id: "installed-all", name: t("marketplace.filter_all") || "All", query: "", isInstalled: true },
       {
         id: "installed-color",
-        name: "🎨 " + (t("marketplace.filter_themes") || "颜色主题"),
+        name: "🎨 " + (t("marketplace.filter_themes") || "Color Themes"),
         query: "",
         isInstalled: true,
       },
       {
         id: "installed-icon",
-        name: "📁 " + (t("marketplace.filter_icons") || "文件图标"),
+        name: "📁 " + (t("marketplace.filter_icons") || "File Icons"),
         query: "",
         isInstalled: true,
       },
       {
         id: "installed-product",
-        name: "⚡ " + (t("marketplace.filter_product_icons") || "界面图标"),
+        name: "⚡ " + (t("marketplace.filter_product_icons") || "Product Icons"),
         query: "",
         isInstalled: true,
       },
@@ -1326,7 +1334,7 @@ const contextualChips = computed<ThemeChipItem[]>(() => {
 
   if (activeThemeTypeTab.value === "color") {
     return [
-      { id: "color-all", name: t("marketplace.filter_all") || "全部颜色主题", query: "" },
+      { id: "color-all", name: t("marketplace.filter_all") || "All", query: "" },
       { id: "dracula", name: "Dracula", query: "Dracula" },
       { id: "one-dark", name: "One Dark", query: "One Dark" },
       { id: "catppuccin", name: "Catppuccin", query: "Catppuccin" },
@@ -1339,7 +1347,7 @@ const contextualChips = computed<ThemeChipItem[]>(() => {
 
   if (activeThemeTypeTab.value === "icon") {
     return [
-      { id: "icon-all", name: t("marketplace.filter_all") || "全部文件图标", query: "icon" },
+      { id: "icon-all", name: t("marketplace.filter_all") || "All", query: "icon" },
       { id: "material-icons", name: "Material Icon", query: "Material Icon Theme" },
       { id: "vscode-icons", name: "VSCode Icons", query: "vscode-icons" },
       { id: "seti", name: "Seti Icons", query: "seti-icons" },
@@ -1351,7 +1359,7 @@ const contextualChips = computed<ThemeChipItem[]>(() => {
 
   if (activeThemeTypeTab.value === "product_icon") {
     return [
-      { id: "product-all", name: t("marketplace.filter_all") || "全部界面图标", query: "product icon" },
+      { id: "product-all", name: t("marketplace.filter_all") || "All", query: "product icon" },
       { id: "fluent-icons", name: "Fluent Icons", query: "fluent-icons" },
       { id: "carbon-icons", name: "Carbon Product Icons", query: "carbon product icons" },
       { id: "codicons", name: "Codicons", query: "codicons" },
@@ -1385,13 +1393,13 @@ const searchPlaceholder = computed(() => {
     return "在 Open VSX 搜索界面图标主题 (如 Fluent Icons, Codicons)...";
   }
   return (
-    t("settings.marketplace_search_placeholder") || "在 Open VSX 搜索主题或图标集 (如 Dracula, Material, Catppuccin)..."
+    t("settings.marketplace_search_placeholder") || "Search themes or icon sets (e.g. Dracula, Material, Catppuccin)..."
   );
 });
 
 const emptyStateMessage = computed(() => {
   if (activeThemeTypeTab.value === "installed") {
-    return t("marketplace.empty_installed") || "暂未安装任何第三方主题或图标包";
+    return t("marketplace.empty_installed") || "No third-party themes or icon packs installed yet";
   }
   if (activeThemeTypeTab.value === "color") {
     return "未找到符合条件的颜色主题";
@@ -1402,7 +1410,7 @@ const emptyStateMessage = computed(() => {
   if (activeThemeTypeTab.value === "product_icon") {
     return "未找到符合条件的界面图标主题";
   }
-  return t("marketplace.empty_results") || "未找到符合条件的主题或图标包";
+  return t("marketplace.empty_results") || "No matching themes or icon packs found";
 });
 
 const installedExtensions = computed<MarketplaceExtension[]>(() => {

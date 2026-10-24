@@ -46,8 +46,8 @@
             <label class="form-label" for="passphrase-input">
               {{
                 pendingRequest.type === "gpg"
-                  ? t("credential.gpg_passphrase_label") || "GPG 签名私钥密码"
-                  : t("credential.passphrase_label") || "私钥密码 (Passphrase)"
+                  ? t("credential.gpg_passphrase_label") || "GPG Passphrase"
+                  : t("credential.passphrase_label") || "Passphrase"
               }}
               <span class="required">*</span>
             </label>
@@ -60,8 +60,8 @@
                 class="form-input font-mono"
                 :placeholder="
                   pendingRequest.type === 'gpg'
-                    ? t('credential.gpg_placeholder') || '输入 GPG 密码短语...'
-                    : t('credential.ssh_placeholder') || '输入 SSH 私钥密码短语...'
+                    ? t('credential.gpg_placeholder') || 'Enter GPG passphrase...'
+                    : t('credential.ssh_placeholder') || 'Enter SSH passphrase...'
                 "
                 autocomplete="off"
                 spellcheck="false"
@@ -71,7 +71,7 @@
               <button
                 type="button"
                 class="toggle-eye-btn"
-                :title="showPassword ? t('common.hide') || '隐藏密码' : t('common.show') || '显示密码'"
+                :title="showPassword ? t('common.hide') || 'Hide' : t('common.show') || 'Show'"
                 @click="showPassword = !showPassword"
               >
                 <span class="codicon" :class="showPassword ? 'codicon-eye' : 'codicon-eye-closed'"></span>
@@ -81,7 +81,7 @@
             <!-- Caps Lock Indicator -->
             <div v-if="capsLockOn" class="caps-lock-warning">
               <span class="codicon codicon-warning"></span>
-              <span>{{ t("credential.caps_lock") || "大写锁定已开启 (Caps Lock On)" }}</span>
+              <span>{{ t("credential.caps_lock") || "Caps Lock On" }}</span>
             </div>
           </div>
 
@@ -89,10 +89,12 @@
           <div class="form-checkbox-row">
             <label class="checkbox-label">
               <input v-model="rememberSession" type="checkbox" class="form-checkbox" />
-              <span>{{ t("credential.remember_session") || "在当前工作区会话期间记住此密码 (Session Cache)" }}</span>
+              <span>{{
+                t("credential.remember_session") || "Remember passphrase for this workspace session (Session Cache)"
+              }}</span>
             </label>
             <span class="checkbox-hint">{{
-              t("credential.remember_hint") || "仅在当前运行的内存中临时安全保留，退出或重载后失效"
+              t("credential.remember_hint") || "Securely stored in volatile memory only; expires on exit or reload"
             }}</span>
           </div>
 
@@ -106,14 +108,14 @@
         <!-- Modal Footer Actions -->
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" :disabled="isSubmitting" @click="handleCancel">
-            {{ t("common.cancel") || "取消 (Esc)" }}
+            {{ t("common.cancel") || "Cancel" }}
           </button>
           <button type="button" class="btn btn-primary" :disabled="!passphrase || isSubmitting" @click="handleConfirm">
             <span v-if="isSubmitting" class="codicon codicon-loading codicon-modifier-spin"></span>
             <span>{{
               isSubmitting
-                ? t("credential.validating_btn") || "验证中..."
-                : t("credential.unlock_btn") || "解锁并继续 (Enter)"
+                ? t("credential.validating_btn") || "Validating..."
+                : t("credential.unlock_btn") || "Unlock & Continue (Enter)"
             }}</span>
           </button>
         </div>
@@ -137,14 +139,14 @@ const capsLockOn = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
 
 const modalTitle = computed(() => {
-  if (!pendingRequest.value) return t("credential.unlock_git_title") || "解锁凭据";
+  if (!pendingRequest.value) return t("credential.unlock_git_title") || "Enter Git Authentication Credential";
   switch (pendingRequest.value.type) {
     case "gpg":
-      return t("credential.unlock_gpg_title") || "解锁 GPG 签名私钥";
+      return t("credential.unlock_gpg_title") || "Unlock GPG Signing Key";
     case "ssh":
-      return t("credential.unlock_ssh_title") || "解锁 SSH 私钥凭据";
+      return t("credential.unlock_ssh_title") || "Unlock SSH Private Key";
     default:
-      return t("credential.unlock_git_title") || "输入 Git 认证凭据";
+      return t("credential.unlock_git_title") || "Enter Git Authentication Credential";
   }
 });
 

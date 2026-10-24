@@ -13,33 +13,38 @@
             ></span>
           </span>
           <div>
-            <h3 class="modal-title">{{ t("explorer.add_folder_title") || "将文件夹添加到工作区" }}</h3>
+            <h3 class="modal-title">{{ t("explorer.add_folder_title") || "Add Folder to Workspace" }}</h3>
             <p class="modal-desc">
-              {{ t("explorer.add_folder_desc") || "输入本地文件夹相对路径或绝对路径，将其作为顶级根挂载至当前工作区" }}
+              {{
+                t("explorer.add_folder_desc") ||
+                "Enter local folder relative or absolute path to mount as a root folder in workspace"
+              }}
             </p>
           </div>
         </div>
-        <button class="btn btn-icon modal-close-btn" @click="closeAddFolderModal" :title="t('common.close') || '关闭'">
+        <button class="btn btn-icon modal-close-btn" @click="closeAddFolderModal" :title="t('common.close') || 'Close'">
           <span class="codicon codicon-close"></span>
         </button>
       </div>
 
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">{{ t("explorer.folder_path_label") || "文件夹路径" }}</label>
+          <label class="form-label">{{ t("explorer.folder_path_label") || "Folder Path" }}</label>
           <input
             ref="inputRef"
             v-model="inputPath"
             type="text"
             class="modal-text-input font-mono"
-            :placeholder="t('explorer.folder_path_placeholder') || '例如: frontend 或 /path/to/folder'"
+            :placeholder="t('explorer.folder_path_placeholder') || 'e.g. frontend or /path/to/folder'"
             @keydown.enter="handleSubmit"
             @keydown.esc="closeAddFolderModal"
           />
         </div>
 
         <div v-if="suggestedFolders.length > 0" class="suggestions-section">
-          <span class="suggestions-label">{{ t("explorer.quick_suggestions") || "当前可用子文件夹快捷添加：" }}</span>
+          <span class="suggestions-label">{{
+            t("explorer.quick_suggestions") || "Quick select available subfolders:"
+          }}</span>
           <div class="suggestion-chips">
             <button
               v-for="folder in suggestedFolders"
@@ -58,11 +63,11 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" @click="closeAddFolderModal">
-          {{ t("common.cancel") || "取消" }}
+          {{ t("common.cancel") || "Cancel" }}
         </button>
         <button type="button" class="btn btn-primary" :disabled="!inputPath.trim() || submitting" @click="handleSubmit">
-          <span v-if="submitting">{{ t("common.saving") || "添加中..." }}</span>
-          <span v-else>{{ t("explorer.confirm_add") || "添加到工作区" }}</span>
+          <span v-if="submitting">{{ t("common.saving") || "Saving..." }}</span>
+          <span v-else>{{ t("explorer.confirm_add") || "Add to Workspace" }}</span>
         </button>
       </div>
     </div>

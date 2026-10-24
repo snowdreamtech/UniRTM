@@ -152,7 +152,7 @@ export function useFileTree() {
       if (Array.isArray(data.roots)) {
         workspaceRoots.value = data.roots;
       }
-      showToast(t("explorer.added_to_workspace") || "已将文件夹添加到工作区", "success");
+      showToast(t("explorer.added_to_workspace") || "Added folder to workspace", "success");
       await fetchTree();
       return true;
     } catch (err: any) {
@@ -176,7 +176,7 @@ export function useFileTree() {
       if (Array.isArray(data.roots)) {
         workspaceRoots.value = data.roots;
       }
-      showToast(t("explorer.removed_from_workspace") || "已将文件夹从工作区删除", "info");
+      showToast(t("explorer.removed_from_workspace") || "Removed folder from workspace", "info");
       await fetchTree();
       return true;
     } catch (err: any) {
@@ -382,7 +382,7 @@ export function useFileTree() {
       });
       const data = await res.json();
       if (res.ok && !data.error && data.success !== false) {
-        showToast(t("explorer.created") || "文件创建成功", "success");
+        showToast(t("explorer.created") || "Created successfully", "success");
         inlineAction.value = null;
         expandPath(parentPath);
         await fetchTree();
@@ -409,7 +409,7 @@ export function useFileTree() {
       });
       const data = await res.json();
       if (res.ok && !data.error && data.success !== false) {
-        showToast(t("explorer.created") || "文件夹创建成功", "success");
+        showToast(t("explorer.created") || "Created successfully", "success");
         inlineAction.value = null;
         expandPath(parentPath);
         await fetchTree();
@@ -445,7 +445,7 @@ export function useFileTree() {
       });
       const data = await res.json();
       if (res.ok && !data.error && data.success !== false) {
-        showToast(t("explorer.renamed") || "重命名成功", "success");
+        showToast(t("explorer.renamed") || "Renamed successfully", "success");
         inlineAction.value = null;
         if (selectedNode.value?.path === oldPath) {
           selectedNode.value.path = newPath;
@@ -476,7 +476,7 @@ export function useFileTree() {
       });
       const data = await res.json();
       if (res.ok && !data.error && data.success !== false) {
-        showToast(t("explorer.deleted") || "删除成功", "success");
+        showToast(t("explorer.deleted") || "Deleted successfully", "success");
         if (selectedNode.value?.path === path || selectedNode.value?.path.startsWith(`${path}/`)) {
           selectedNode.value = null;
           activeFileContent.value = "";

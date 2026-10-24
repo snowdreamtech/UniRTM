@@ -6,13 +6,11 @@
         <div class="header-title">
           <TechIcon id="workbench:tasks" :size="20" />
           <div>
-            <h3>{{ isEdit ? t("tasks.edit_title") || "编辑任务" : t("tasks.create_title") || "新建工程任务" }}</h3>
+            <h3>
+              {{ isEdit ? t("tasks.edit_title") || "Edit Task" : t("tasks.create_title") || "Create Project Task" }}
+            </h3>
             <span class="sub-title">
-              {{
-                scope === "user"
-                  ? t("runtimes.scope_user") || "用户全局配置"
-                  : t("runtimes.scope_workspace") || "工作区项目配置"
-              }}
+              {{ scope === "user" ? t("runtimes.scope_user") || "User" : t("runtimes.scope_workspace") || "Workspace" }}
               <span class="scope-file-tag font-mono">{{
                 scope === "user" ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml"
               }}</span>
@@ -28,8 +26,10 @@
           <!-- Task Name -->
           <div class="form-group">
             <label class="form-label required">
-              <span>{{ t("tasks.field_name") || "任务名称" }}</span>
-              <span class="label-hint">{{ t("tasks.name_hint") || "（唯一标识，如 build, test, lint:fix）" }}</span>
+              <span>{{ t("tasks.field_name") || "Task Name" }}</span>
+              <span class="label-hint">{{
+                t("tasks.name_hint") || "(Unique identifier, e.g. build, test, lint:fix)"
+              }}</span>
             </label>
             <input
               v-model="form.name"
@@ -44,8 +44,10 @@
           <!-- Command / Run Script -->
           <div class="form-group">
             <label class="form-label required">
-              <span>{{ t("tasks.field_command") || "执行命令 (Command / Script)" }}</span>
-              <span class="label-hint">{{ t("tasks.command_hint") || "（支持单行命令或多行脚本）" }}</span>
+              <span>{{ t("tasks.field_command") || "Command / Script" }}</span>
+              <span class="label-hint">{{
+                t("tasks.command_hint") || "(Supports single-line command or multi-line script)"
+              }}</span>
             </label>
             <textarea
               v-model="form.command"
@@ -60,8 +62,8 @@
           <!-- Description -->
           <div class="form-group">
             <label class="form-label">
-              <span>{{ t("tasks.field_desc") || "任务描述" }}</span>
-              <span class="label-hint">{{ t("tasks.desc_hint") || "（选填，说明该任务的用途与触发时机）" }}</span>
+              <span>{{ t("tasks.field_desc") || "Description" }}</span>
+              <span class="label-hint">{{ t("tasks.desc_hint") || "(Optional, describe purpose & triggers)" }}</span>
             </label>
             <input
               v-model="form.description"
@@ -75,9 +77,9 @@
           <!-- Depends (Dependencies) -->
           <div class="form-group">
             <label class="form-label">
-              <span>{{ t("tasks.field_depends") || "依赖前置任务 (Depends)" }}</span>
+              <span>{{ t("tasks.field_depends") || "Dependencies (Depends)" }}</span>
               <span class="label-hint">{{
-                t("tasks.depends_hint") || "（选填，执行当前任务前必须先完成的任务）"
+                t("tasks.depends_hint") || "(Optional, prerequisite tasks to run first)"
               }}</span>
             </label>
             <div class="depends-selector-wrap">
@@ -109,11 +111,11 @@
                   @click="addCustomDependency"
                   :disabled="!customDepInput.trim() || saving"
                 >
-                  {{ t("tasks.add_dep") || "添加依赖" }}
+                  {{ t("tasks.add_dep") || "Add Dependency" }}
                 </button>
               </div>
               <div v-if="form.depends.length > 0" class="current-selected-deps">
-                <span class="selected-label">{{ t("tasks.dep_order") || "当前选定顺序:" }}</span>
+                <span class="selected-label">{{ t("tasks.dep_order") || "Current execution order:" }}</span>
                 <span v-for="dep in form.depends" :key="dep" class="selected-dep-badge font-mono">
                   {{ dep }}
                   <span class="remove-dep" @click="removeDependency(dep)">✕</span>
@@ -125,7 +127,7 @@
           <!-- Modal Footer Actions -->
           <div class="modal-footer">
             <button type="button" class="tool-action-btn secondary" @click="$emit('close')" :disabled="saving">
-              {{ t("common.cancel") || "取消" }}
+              {{ t("common.cancel") || "Cancel" }}
             </button>
             <button
               type="submit"
@@ -135,10 +137,10 @@
               <TechIcon v-if="saving" id="workbench:sync" :size="14" class="spin-icon" />
               <span>{{
                 saving
-                  ? t("common.saving") || "保存中..."
+                  ? t("common.saving") || "Saving..."
                   : isEdit
-                    ? t("common.save_changes") || "保存修改"
-                    : t("tasks.create_btn") || "创建任务"
+                    ? t("common.save_changes") || "Save Changes"
+                    : t("tasks.create_btn") || "New Task"
               }}</span>
             </button>
           </div>

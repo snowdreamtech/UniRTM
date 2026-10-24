@@ -90,15 +90,15 @@ export function useTerminal() {
         }),
       });
       if (res.ok) {
-        showToast(t("terminal.save_success") || "默认终端已更新", "success");
+        showToast(t("terminal.save_success") || "Default terminal updated successfully", "success");
         return true;
       } else {
         const errData = await res.json().catch(() => ({}));
-        showToast(errData.error || t("terminal.save_failed") || "保存终端设置失败", "error");
+        showToast(errData.error || t("terminal.save_failed") || "Failed to update terminal setting", "error");
         return false;
       }
     } catch (err: any) {
-      showToast(err.message || t("terminal.save_failed") || "保存终端设置失败", "error");
+      showToast(err.message || t("terminal.save_failed") || "Failed to update terminal setting", "error");
       return false;
     }
   }

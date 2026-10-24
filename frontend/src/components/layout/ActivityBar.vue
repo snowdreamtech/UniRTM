@@ -20,7 +20,12 @@
           'drop-indicator-bottom': dropTargetTabId === item.id && dropTargetPosition === 'after',
         }"
         draggable="true"
-        :title="item.label + ' (' + (t('activity_bar.drag_reorder_tip') || '拖拽调整顺序，右键重置') + ')'"
+        :title="
+          item.label +
+          ' (' +
+          (t('activity_bar.drag_reorder_tip') || 'Drag to reorder icons, right-click to manage views or reset') +
+          ')'
+        "
         @dragstart="handleDragStart($event, item.id as ActivityTabId)"
         @dragover="handleDragOver($event, item.id as ActivityTabId)"
         @dragleave="handleDragLeave($event, item.id as ActivityTabId)"
@@ -87,7 +92,7 @@
         :style="{ top: `${contextMenuY}px`, left: `${contextMenuX}px` }"
         @click.stop
       >
-        <div class="context-menu-header">{{ t("activity_bar.views") || "活动栏视图" }}</div>
+        <div class="context-menu-header">{{ t("activity_bar.views") || "Activity Bar Views" }}</div>
         <div
           v-for="tab in rawTabsList"
           :key="tab.id"
@@ -131,7 +136,7 @@
             <path d="M2.5 8a5.5 5.5 0 1 0 1.5-3.8L2 6" />
             <path d="M2 2.5v3.5h3.5" />
           </svg>
-          <span>{{ t("activity_bar.reset_order") || "重置图标顺序与可见性" }}</span>
+          <span>{{ t("activity_bar.reset_order") || "Reset Activity Bar Order" }}</span>
         </div>
       </div>
     </Teleport>
@@ -197,7 +202,7 @@ const rawTabsList = computed<ActivityTab[]>(() => [
   {
     id: "scm",
     icon: "workbench:scm",
-    label: t("nav.scm") || "源代码管理",
+    label: t("nav.scm") || "Source Control",
     badge: totalChanges.value > 0 ? totalChanges.value : undefined,
   },
   {

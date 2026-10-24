@@ -7,7 +7,7 @@
           <span class="codicon codicon-shield header-icon text-cyan"></span>
           <div>
             <h2 class="modal-title">
-              {{ t("guard.builtin_modal.title") || "配置内置守卫规则" }}
+              {{ t("guard.builtin_modal.title") || "Configure Built-in Guard Rule" }}
             </h2>
             <div class="rule-id-sub font-mono">{{ rule?.id }}</div>
           </div>
@@ -21,11 +21,11 @@
       <div class="builtin-notice-box">
         <span class="codicon codicon-info notice-icon"></span>
         <div class="notice-text">
-          <strong>{{ t("guard.builtin_modal.notice_bold") || "系统核心内置规则（不可删除）" }}</strong>
+          <strong>{{ t("guard.builtin_modal.notice_bold") || "Core Built-in Rule (Non-deletable)" }}</strong>
           <span>
             {{
               t("guard.builtin_modal.notice_desc") ||
-              "此规则由 UniRTM Go 原生引擎预置，无法从系统删除。你可以按需开启/跳过，或自定义排除路径、文件体积限制与适用后缀。"
+              "Built-in rules run at native speed via the UniRTM binary. You can adjust active status, thresholds, or excluded paths here; all settings auto-sync to .unirtm.toml."
             }}
           </span>
         </div>
@@ -52,7 +52,7 @@
         <!-- Form: Enable / Skip Toggle -->
         <div class="form-group toggle-group-box">
           <label class="form-label font-bold">
-            {{ t("guard.builtin_modal.status_label") || "规则启用状态" }}
+            {{ t("guard.builtin_modal.status_label") || "Rule Active Status" }}
           </label>
           <div class="status-toggle-wrapper">
             <button type="button" class="toggle-choice-btn" :class="{ active: isEnabled }" @click="isEnabled = true">
@@ -81,7 +81,7 @@
         <!-- Form: Severity Level -->
         <div class="form-group">
           <label class="form-label font-bold">
-            {{ t("guard.builtin_modal.severity_label") || "门禁阻断级别 (Severity)" }}
+            {{ t("guard.builtin_modal.severity_label") || "Severity Level" }}
           </label>
           <div class="select-wrapper">
             <select v-model="formData.severity" class="form-select">
@@ -97,7 +97,7 @@
         <!-- Form: Max File Size (Specifically useful for large-files rule) -->
         <div v-if="rule.id === 'builtin:check-added-large-files'" class="form-group">
           <label class="form-label font-bold">
-            {{ t("guard.builtin_modal.max_file_size") || "单文件体积拦截阈值 (字节或 MB)" }}
+            {{ t("guard.builtin_modal.max_file_size") || "Max File Size Threshold (MB)" }}
           </label>
           <div class="input-with-unit">
             <input
@@ -116,7 +116,7 @@
         <!-- Form: Exclude Dirs -->
         <div class="form-group">
           <label class="form-label font-bold">
-            {{ t("guard.builtin_modal.exclude_dirs") || "排除目录 (Exclude Dirs)" }}
+            {{ t("guard.builtin_modal.exclude_dirs") || "Exclude Directories" }}
           </label>
           <input
             v-model="excludeDirsStr"
@@ -130,7 +130,7 @@
         <!-- Form: Exclude Files -->
         <div class="form-group">
           <label class="form-label font-bold">
-            {{ t("guard.builtin_modal.exclude_files") || "排除特定文件 (Exclude Files)" }}
+            {{ t("guard.builtin_modal.exclude_files") || "Exclude Specific Files" }}
           </label>
           <input
             v-model="excludeFilesStr"
@@ -144,7 +144,7 @@
         <!-- Form: Extensions Override -->
         <div class="form-group">
           <label class="form-label font-bold">
-            {{ t("guard.builtin_modal.extensions_override") || "自定义适用文件扩展名 (可选覆盖)" }}
+            {{ t("guard.builtin_modal.extensions_override") || "Custom File Extensions Override" }}
           </label>
           <input
             v-model="extensionsStr"
@@ -170,11 +170,11 @@
 
         <div class="footer-right">
           <button type="button" class="btn-cancel" @click="$emit('close')">
-            {{ t("guard.actions.cancel") || "取消" }}
+            {{ t("guard.actions.cancel") || "Cancel" }}
           </button>
           <button type="button" class="btn-save" @click="handleSave">
             <span class="codicon codicon-save"></span>
-            <span>{{ t("guard.actions.save_config") || "保存配置至 .unirtm.toml" }}</span>
+            <span>{{ t("guard.actions.save_config") || "Save to .unirtm.toml" }}</span>
           </button>
         </div>
       </div>

@@ -5,16 +5,16 @@
       <div>
         <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
           <TechIcon id="workbench:about" :size="20" />
-          <span>{{ t("about.title") || "关于" }} (About UniRTM)</span>
+          <span>{{ t("about.title") || "About" }} (About UniRTM)</span>
         </h2>
         <p class="view-desc">
-          {{ t("about.subtitle") || "通用运行时与开发环境多版本统一管理器" }}
+          {{ t("about.subtitle") || "Universal Runtime Manager" }}
         </p>
       </div>
       <div class="view-actions">
         <button class="about-action-btn secondary" @click="copySystemInfo" :disabled="copied">
           <TechIcon id="workbench:config" :size="14" />
-          <span>{{ copied ? t("about.copied") || "已复制到剪贴板" : t("about.copyInfo") || "复制系统信息" }}</span>
+          <span>{{ copied ? t("about.copied") || "Copied" : t("about.copyInfo") || "Copy Info" }}</span>
         </button>
 
         <button
@@ -28,15 +28,15 @@
             <span class="spin-icon">
               <TechIcon id="workbench:sync" :size="14" />
             </span>
-            <span>{{ t("about.checking") || "检查中..." }}</span>
+            <span>{{ t("about.checking") || "Checking..." }}</span>
           </span>
           <span v-else-if="isLatestChecked" style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:check" :size="14" />
-            <span>{{ t("about.isLatest") || "已是最新版本" }}</span>
+            <span>{{ t("about.isLatest") || "Already Latest Version" }}</span>
           </span>
           <span v-else style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:search" :size="14" />
-            <span>{{ t("about.checkUpdate") || "检查更新" }}</span>
+            <span>{{ t("about.checkUpdate") || "Check Updates" }}</span>
           </span>
         </button>
 
@@ -49,7 +49,7 @@
           <span style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:speed" :size="14" />
             <span>{{
-              restarting ? t("about.restarting") || "正在重启..." : t("about.restartToApply") || "立即重启生效"
+              restarting ? t("about.restarting") || "Restarting..." : t("about.restartToApply") || "Restart to Apply"
             }}</span>
           </span>
         </button>
@@ -57,7 +57,7 @@
         <button v-else-if="upgradeHint" class="about-action-btn update" @click="copyUpgradeCommand">
           <span style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:config" :size="14" />
-            <span>{{ copiedUpgrade ? t("about.copied") || "已复制" : "复制更新命令" }}</span>
+            <span>{{ copiedUpgrade ? t("about.copied") || "Copied" : "复制更新命令" }}</span>
           </span>
         </button>
 
@@ -162,22 +162,22 @@
     <!-- Core Specs Grid -->
     <div class="specs-grid">
       <div class="glass-card spec-card">
-        <span class="spec-label">{{ t("about.gitTag") || "发行版本 (Git Tag)" }}</span>
+        <span class="spec-label">{{ t("about.gitTag") || "Git Tag" }}</span>
         <span class="spec-value font-mono">{{ displayGitTag }}</span>
       </div>
 
       <div class="glass-card spec-card">
-        <span class="spec-label">{{ t("about.commitHash") || "提交哈希 (Commit)" }}</span>
+        <span class="spec-label">{{ t("about.commitHash") || "Commit Hash" }}</span>
         <span class="spec-value font-mono">{{ displayCommitHash }}</span>
       </div>
 
       <div class="glass-card spec-card">
-        <span class="spec-label">{{ t("about.buildTime") || "编译时间 (Build Time)" }}</span>
+        <span class="spec-label">{{ t("about.buildTime") || "Build Time" }}</span>
         <span class="spec-value font-mono">{{ displayBuildTime }}</span>
       </div>
 
       <div class="glass-card spec-card">
-        <span class="spec-label">{{ t("about.environment") || "运行环境 (Platform)" }}</span>
+        <span class="spec-label">{{ t("about.environment") || "Environment" }}</span>
         <span class="spec-value font-mono"
           >{{ appInfo.osArch || "Linux / Darwin / Windows" }} ({{ appInfo.goVersion || "Go 1.27+" }})</span
         >
@@ -221,10 +221,13 @@
     <div class="glass-card about-credits-card">
       <div class="credits-header">
         <TechIcon id="workbench:about" :size="18" />
-        <h3>{{ t("about.credits_title") || "开源鸣谢与图标集许可声明 (Open Source & Icon Credits)" }}</h3>
+        <h3>{{ t("about.credits_title") || "Open Source & Icon Credits" }}</h3>
       </div>
       <p class="credits-desc">
-        {{ t("about.credits_desc") || "UniRTM 深度融合现代开源开发生态，严格遵循开源软件分发与商业许可合规标准：" }}
+        {{
+          t("about.credits_desc") ||
+          "UniRTM embraces modern open-source ecosystems in compliance with standard commercial and open-source licenses:"
+        }}
       </p>
       <div class="credits-grid">
         <div class="credit-item">
@@ -251,7 +254,7 @@
           <p>
             {{
               t("about.credits_codicons_desc") ||
-              "UniRTM 工作台标准产品操作与界面图标集。由 Microsoft 官方维护，遵循 CC-BY-4.0 商业可用许可，提供官方标准工作台交互视觉语言。"
+              "Visual Studio Code official workbench & product icon set, maintained by Microsoft under CC-BY-4.0 commercial-friendly license."
             }}
           </p>
         </div>
@@ -280,7 +283,7 @@
           <p>
             {{
               t("about.credits_seti_desc") ||
-              "UniRTM 默认文件与开发语言图标集。由 Jesse Weed 与 Visual Studio Code 团队维护，遵循 MIT 许可，精准映射文件扩展名与语言标识。"
+              "UniRTM default file and language icon set, maintained by Jesse Weed and the VS Code team under MIT license."
             }}
           </p>
         </div>
@@ -304,7 +307,7 @@
           <p>
             {{
               t("about.credits_themes_desc") ||
-              "原生兼容 VS Code 三大扩展主题维度：颜色主题 (contributes.themes)、文件图标 (contributes.iconThemes) 与界面产品图标 (contributes.productIconThemes)。"
+              "Native support for VS Code theme manifests across color themes (contributes.themes), file icon themes (contributes.iconThemes), and product icon themes (contributes.productIconThemes)."
             }}
           </p>
           <div class="manifest-links" style="margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap">
@@ -432,7 +435,7 @@ const copyUpgradeCommand = async () => {
       await navigator.clipboard.writeText(upgradeHint.value);
     }
     copiedUpgrade.value = true;
-    showToast(t("about.copied") || "已复制更新命令到剪贴板", "success");
+    showToast(t("about.copied") || "Copied", "success");
     setTimeout(() => {
       copiedUpgrade.value = false;
     }, 2500);
@@ -554,7 +557,7 @@ const handleCheckUpdate = async () => {
     }
   } catch (err: any) {
     console.warn("Failed to check update from /api/system/check-update:", err);
-    showToast(t("about.checkFailed") || "检查更新失败，请稍后重试", "error");
+    showToast(t("about.checkFailed") || "Check Failed", "error");
   } finally {
     checking.value = false;
   }
@@ -595,7 +598,8 @@ const handlePerformUpdate = async () => {
         currentProgress.value = { stage: "ready", percentage: 100 };
         isRestartReady.value = true;
         hasUpdateAvailable.value = false;
-        updateMessage.value = t("about.updateCompleteRestart") || "新版本已准备就绪，重启应用后即可生效";
+        updateMessage.value =
+          t("about.updateCompleteRestart") || "New version ready. Restart the application to apply.";
         updateStatusClass.value = "is-latest";
         showToast(updateMessage.value, "success");
       } else {
@@ -615,7 +619,7 @@ const handlePerformUpdate = async () => {
 
 const handleRestartApp = async () => {
   restarting.value = true;
-  updateMessage.value = t("about.restarting") || "正在刷新重载...";
+  updateMessage.value = t("about.restarting") || "Restarting...";
   setTimeout(() => {
     window.location.reload();
   }, 600);

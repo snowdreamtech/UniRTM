@@ -126,7 +126,7 @@
         <!-- Floating Refreshing Badge when commits are already loaded -->
         <div v-if="isGraphLoading && filteredCommits.length > 0" class="graph-refreshing-badge">
           <span class="codicon codicon-loading codicon-modifier-spin"></span>
-          <span>{{ t("scm.graph.refreshing") || "正在更新 Git 图谱..." }}</span>
+          <span>{{ t("scm.graph.refreshing") || "Updating Git Graph..." }}</span>
         </div>
 
         <div class="graph-table-header">
@@ -414,7 +414,7 @@
                 <button
                   v-if="filesViewMode === 'tree'"
                   class="inline-icon-btn"
-                  :title="t('scm.detail.collapse_all') || '折叠全部目录'"
+                  :title="t('scm.detail.collapse_all') || 'Collapse All'"
                   @click="collapseAllFolders"
                 >
                   <span class="codicon codicon-collapse-all"></span>
@@ -422,7 +422,7 @@
                 <button
                   v-if="filesViewMode === 'tree'"
                   class="inline-icon-btn"
-                  :title="t('scm.detail.expand_all') || '展开全部目录'"
+                  :title="t('scm.detail.expand_all') || 'Expand All'"
                   @click="expandAllFolders"
                 >
                   <span class="codicon codicon-expand-all"></span>
@@ -684,7 +684,7 @@
                         </div>
                         <button
                           class="inline-copy-msg-btn"
-                          :title="t('scm.actions.copy_message') || '复制提交信息'"
+                          :title="t('scm.actions.copy_message') || 'Copy Message'"
                           @click.stop="
                             handleCopyCommitDetailMessage(selectedCommitDetail?.message || selectedCommit.message)
                           "
@@ -886,9 +886,9 @@
               <span class="codicon codicon-loading codicon-modifier-spin loading-spinner"></span>
             </div>
             <div class="loading-text-group">
-              <span class="loading-primary-text">{{ t("scm.graph.loading") || "正在加载 Git 提交图谱..." }}</span>
+              <span class="loading-primary-text">{{ t("scm.graph.loading") || "Loading Git Graph..." }}</span>
               <span class="loading-secondary-text">{{
-                t("scm.graph.loading_desc") || "正在解析提交拓扑与分支历史，请稍候..."
+                t("scm.graph.loading_desc") || "Parsing commit topology and branch history, please wait..."
               }}</span>
             </div>
           </div>
@@ -1253,7 +1253,7 @@ function parseFullCommitMessage(rawMsg: string) {
 async function handleCopyCommitDetailMessage(msg: string) {
   try {
     await navigator.clipboard.writeText(msg);
-    showToast(t("scm.actions.copied") || "已复制提交说明", "info");
+    showToast(t("scm.actions.copied") || "Copied to clipboard", "info");
   } catch {
     showToast("Copy failed", "error");
   }

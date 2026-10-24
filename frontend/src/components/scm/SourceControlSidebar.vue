@@ -8,7 +8,7 @@
             class="codicon twistie"
             :class="isReposExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"
           ></span>
-          <span class="group-title">{{ t("scm.repositories") || "存储库" }}</span>
+          <span class="group-title">{{ t("scm.repositories") || "Repositories" }}</span>
           <span class="group-count">{{ repositories.length }}</span>
         </div>
         <div class="group-actions" @click.stop>
@@ -139,17 +139,17 @@
             >{{ commitValidation.type }}<span v-if="commitValidation.scope">({{ commitValidation.scope }})</span></span
           >
           <span class="validation-msg">{{
-            commitValidation.warning || t("scm.commit.conventional_valid") || "Conventional Commits 合规"
+            commitValidation.warning || t("scm.commit.conventional_valid") || "Valid Conventional Commit"
           }}</span>
         </div>
         <button
           v-if="commitValidation.canAutoFix"
           class="commit-auto-fix-btn"
-          :title="t('guard.actions.auto_fix') || '自动修复格式'"
+          :title="t('guard.actions.auto_fix') || 'Auto Fix'"
           @click.stop="handleAutoFixCommitMessage"
         >
           <span class="codicon codicon-wand"></span>
-          <span>{{ t("guard.actions.fix") || "规范化" }}</span>
+          <span>{{ t("guard.actions.fix") || "Fix" }}</span>
         </button>
       </div>
 
@@ -169,7 +169,7 @@
           <span v-if="guardIssuesCount > 0" class="guard-count-pill">{{ guardIssuesCount }}</span>
           <span
             class="codicon codicon-link-external capsule-link-hint"
-            :title="t('guard.open_guard_hub') || '前往质量守卫中心'"
+            :title="t('guard.open_guard_hub') || 'Open Quality Guard Hub'"
           ></span>
         </div>
         <div class="guard-actions-group">
@@ -177,19 +177,19 @@
             v-if="guardStatus.fixable_count > 0"
             class="guard-btn-fix"
             :disabled="isGuardFixing"
-            :title="t('guard.actions.auto_fix') || '一键自动修复'"
+            :title="t('guard.actions.auto_fix') || 'Auto Fix'"
             @click.stop="() => handleRunGuardFix()"
           >
             <span
               class="codicon"
               :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"
             ></span>
-            <span>{{ t("guard.actions.fix") || "自动修复" }}</span>
+            <span>{{ t("guard.actions.fix") || "Fix" }}</span>
           </button>
           <button
             class="guard-btn-refresh"
             :disabled="isGuardLoading"
-            :title="t('guard.actions.rescan') || '重新质检'"
+            :title="t('guard.actions.rescan') || 'Rescan'"
             @click.stop="handleRefreshGuard"
           >
             <span class="codicon codicon-refresh" :class="{ 'codicon-modifier-spin': isGuardLoading }"></span>
@@ -201,13 +201,13 @@
       <div v-if="isGuardDetailsOpen && guardStatus.issues.length > 0" class="guard-diagnostics-drawer">
         <div class="guard-drawer-header">
           <div class="drawer-header-left">
-            <span class="guard-drawer-title">{{ t("guard.diagnostics.title") || "质量守卫诊断结果" }}</span>
+            <span class="guard-drawer-title">{{ t("guard.diagnostics.title") || "Quality Guard Diagnostics" }}</span>
             <button
               class="drawer-guard-hub-link"
               @click="navigateToGuard"
-              :title="t('guard.open_guard_hub') || '前往质量守卫中心'"
+              :title="t('guard.open_guard_hub') || 'Open Quality Guard Hub'"
             >
-              <span>{{ t("guard.title") || "守卫中心" }}</span>
+              <span>{{ t("guard.title") || "Quality Guard" }}</span>
               <span class="codicon codicon-link-external"></span>
             </button>
           </div>
@@ -231,10 +231,10 @@
             <button
               v-if="iss.fixable"
               class="guard-single-fix-btn"
-              :title="t('guard.actions.auto_fix') || '自动修复此文件'"
+              :title="t('guard.actions.auto_fix') || 'Auto Fix'"
               @click.stop="handleRunGuardFix([iss.file_path])"
             >
-              ⚡ {{ t("guard.fixable") || "可修复" }}
+              ⚡ {{ t("guard.fixable") || "Fixable" }}
             </button>
           </div>
         </div>
@@ -246,19 +246,22 @@
           <span class="codicon codicon-error block-error-icon"></span>
           <div class="block-banner-text">
             <span class="block-banner-title">
-              {{ t("guard.status.blocked") || "质量守卫阻断提交" }} ({{ guardStatus.errors_count }})
+              {{ t("guard.status.blocked") || "Blocked Violations" }} ({{ guardStatus.errors_count }})
             </span>
             <span class="block-banner-sub">
-              {{ t("guard.toast.blocked_desc") || "检测到门禁阻断违规，请先在守卫中心修复" }}
+              {{
+                t("guard.toast.blocked_desc") ||
+                "Blocker violations detected. Please resolve them in Quality Guard Hub."
+              }}
             </span>
           </div>
         </div>
         <button
           class="block-banner-action-btn"
           @click="navigateToGuard"
-          :title="t('guard.open_guard_hub') || '前往质量守卫中心'"
+          :title="t('guard.open_guard_hub') || 'Open Quality Guard Hub'"
         >
-          <span>{{ t("guard.view_details") || "前往查看" }}</span>
+          <span>{{ t("guard.view_details") || "View Details" }}</span>
           <span class="codicon codicon-arrow-right"></span>
         </button>
       </div>
@@ -269,10 +272,9 @@
         :disabled="isCommitting || !commitMessage.trim() || guardStatus.errors_count > 0"
         :title="
           guardStatus.errors_count > 0
-            ? t('guard.toast.blocked') || '质量守卫阻断提交：请先解决违规项'
-            : isMac
-              ? '提交 (⌘Enter)'
-              : '提交 (Ctrl+Enter)'
+            ? t('guard.toast.blocked') || 'Quality Guard detected blocking issues, please fix before committing'
+            : t('scm.sidebar.commit_shortcut', { shortcut: isMac ? '⌘Enter' : 'Ctrl+Enter' }) ||
+              (isMac ? 'Commit (⌘Enter)' : 'Commit (Ctrl+Enter)')
         "
         @click="handleCommit"
       >
@@ -280,7 +282,7 @@
         <span v-else-if="guardStatus.errors_count > 0" class="codicon codicon-error"></span>
         <span v-else class="codicon codicon-check"></span>
         <span>{{
-          guardStatus.errors_count > 0 ? t("guard.status.blocked") || "守卫阻断中" : t("scm.sidebar.commit")
+          guardStatus.errors_count > 0 ? t("guard.status.blocked") || "Blocked Violations" : t("scm.sidebar.commit")
         }}</span>
       </button>
     </div>
@@ -533,17 +535,17 @@ const activeModalType = ref<GitModalActionType | null>(null);
 const modalTargetRefName = ref<string | undefined>(undefined);
 
 const quickCommitPrefixes = [
-  { label: "feat", prefix: "feat: ", title: "新功能 (Feature)" },
-  { label: "fix", prefix: "fix: ", title: "修复缺陷 (Bug fix)" },
-  { label: "docs", prefix: "docs: ", title: "文档变更 (Documentation)" },
-  { label: "style", prefix: "style: ", title: "代码格式 (Code style)" },
-  { label: "refactor", prefix: "refactor: ", title: "代码重构 (Refactor)" },
-  { label: "perf", prefix: "perf: ", title: "性能优化 (Performance)" },
-  { label: "test", prefix: "test: ", title: "测试用例 (Test)" },
-  { label: "build", prefix: "build: ", title: "构建与依赖 (Build)" },
-  { label: "ci", prefix: "ci: ", title: "持续集成 (CI/CD)" },
-  { label: "chore", prefix: "chore: ", title: "日常维护 (Chore)" },
-  { label: "revert", prefix: "revert: ", title: "代码回滚 (Revert)" },
+  { label: "feat", prefix: "feat: ", title: t("scm.commit_type.feat") || "Feature (feat)" },
+  { label: "fix", prefix: "fix: ", title: t("scm.commit_type.fix") || "Bug fix (fix)" },
+  { label: "docs", prefix: "docs: ", title: t("scm.commit_type.docs") || "Documentation (docs)" },
+  { label: "style", prefix: "style: ", title: t("scm.commit_type.style") || "Code style (style)" },
+  { label: "refactor", prefix: "refactor: ", title: t("scm.commit_type.refactor") || "Refactor (refactor)" },
+  { label: "perf", prefix: "perf: ", title: t("scm.commit_type.perf") || "Performance (perf)" },
+  { label: "test", prefix: "test: ", title: t("scm.commit_type.test") || "Test (test)" },
+  { label: "build", prefix: "build: ", title: t("scm.commit_type.build") || "Build (build)" },
+  { label: "ci", prefix: "ci: ", title: t("scm.commit_type.ci") || "CI/CD (ci)" },
+  { label: "chore", prefix: "chore: ", title: t("scm.commit_type.chore") || "Chore (chore)" },
+  { label: "revert", prefix: "revert: ", title: t("scm.commit_type.revert") || "Revert (revert)" },
 ];
 
 const commitValidation = computed<CommitMessageValidation>(() => {
@@ -585,7 +587,7 @@ const commitPlaceholder = computed(() => {
   if (raw && raw.includes("Enter") && !raw.includes("Ctrl") && !raw.includes("⌘")) {
     return raw.replace(/Enter/g, shortcut);
   }
-  return `消息 (按 ${shortcut} 在 "${currentBranch.value}" 提交)`;
+  return `Message (${shortcut} to commit on "${currentBranch.value}")`;
 });
 
 onMounted(async () => {
@@ -681,12 +683,12 @@ const guardIconClass = computed(() => {
 });
 
 const guardLabelText = computed(() => {
-  if (isGuardLoading.value) return t("guard.status.checking") || "守卫质检中...";
-  if (isGuardFixing.value) return t("guard.status.fixing") || "正在自动修复...";
-  if (guardStatus.value.errors_count > 0) return t("guard.status.blocked") || "拦截违规";
+  if (isGuardLoading.value) return t("guard.status.checking") || "Inspecting Quality...";
+  if (isGuardFixing.value) return t("guard.status.fixing") || "Auto-fixing...";
+  if (guardStatus.value.errors_count > 0) return t("guard.status.blocked") || "Blocked Violations";
   if (guardStatus.value.fixable_count > 0)
-    return `${guardStatus.value.fixable_count} ` + (t("guard.status.fixable") || "处可自愈");
-  return t("guard.status.passed") || "质量守卫通过";
+    return `${guardStatus.value.fixable_count} ` + (t("guard.status.fixable") || "Fixable Issues");
+  return t("guard.status.passed") || "Quality Guard Passed";
 });
 
 const guardTooltip = computed(() => {
@@ -709,7 +711,7 @@ function handleCapsuleClick() {
 async function handleRunGuardFix(targetFiles?: string[]) {
   const ok = await runGuardFix("staged", targetFiles);
   if (ok) {
-    showToast(t("guard.toast.fixed") || "✨ 已自动完成代码格式与卫生修复", "success");
+    showToast(t("guard.toast.fixed") || "✨ Auto-fixed formatting and hygiene issues", "success");
     await fetchStatus();
   }
 }
@@ -724,7 +726,7 @@ async function handleCommit() {
     isGuardDetailsOpen.value = true;
     showToast(
       t("guard.toast.blocked") ||
-        `质量守卫拦截：存在 ${guardStatus.value.errors_count} 处阻断违规，请在质量守卫中心处理`,
+        `Quality Guard blocked: ${guardStatus.value.errors_count} blocking issue(s) detected, please resolve in Guard Center`,
       "error"
     );
     return;

@@ -283,9 +283,9 @@ const currentTabLabel = computed(() => {
     case "doctor":
       return t("nav.doctor") || "Doctor Diagnostics";
     case "settings":
-      return t("settings.title") || "设置";
+      return t("settings.title") || "Preferences";
     case "about":
-      return t("about.title") || "关于";
+      return t("about.title") || "About";
     default:
       return currentTab.value.toUpperCase();
   }

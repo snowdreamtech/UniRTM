@@ -8,13 +8,13 @@
         <!-- 1. 运行 (Run) -->
         <div class="menu-item" @click="handleAction('run')">
           <span class="menu-icon codicon codicon-play"></span>
-          <span class="menu-label">{{ t("tasks.run") || "运行" }}</span>
+          <span class="menu-label">{{ t("tasks.run") || "Run" }}</span>
         </div>
 
         <!-- 2. 编辑 (Edit) -->
         <div class="menu-item" @click="handleAction('edit')">
           <span class="menu-icon codicon codicon-edit"></span>
-          <span class="menu-label">{{ t("common.edit") || "编辑" }}</span>
+          <span class="menu-label">{{ t("common.edit") || "Edit" }}</span>
         </div>
 
         <div class="menu-separator"></div>
@@ -22,7 +22,7 @@
         <!-- 3. 删除 (Delete) -->
         <div class="menu-item danger" @click="handleAction('delete')">
           <span class="menu-icon codicon codicon-trash"></span>
-          <span class="menu-label">{{ t("common.delete") || "删除" }}</span>
+          <span class="menu-label">{{ t("common.delete") || "Delete" }}</span>
         </div>
       </div>
     </div>

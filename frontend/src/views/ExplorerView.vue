@@ -7,8 +7,8 @@
           <span class="codicon codicon-arrow-left"></span>
           <span>{{
             route.query.from === "settings"
-              ? t("settings.return_to_settings") || "返回设置"
-              : t("guard.actions.return_to_guard") || "返回质量守卫"
+              ? t("settings.return_to_settings") || "Return to Settings"
+              : t("guard.actions.return_to_guard") || "Return to Quality Guard"
           }}</span>
         </button>
         <span class="return-guard-divider">|</span>
@@ -19,8 +19,8 @@
           ></span>
           {{
             route.query.from === "settings"
-              ? t("settings.editing_context") || "正在编辑设置配置文件"
-              : t("guard.config.editing_context") || "正在编辑质量守卫配置文件"
+              ? t("settings.editing_context") || "Editing Settings configuration file"
+              : t("guard.config.editing_context") || "Editing Quality Guard configuration file"
           }}: <strong>{{ route.query.file || activeTab?.name }}</strong>
         </span>
       </div>
@@ -70,22 +70,40 @@
         <button
           v-if="activeTab?.isDirty && !activeTab?.isBinary"
           class="action-btn primary"
-          :title="isMac ? '保存当前文件 (⌘S)' : '保存当前文件 (Ctrl+S)'"
+          :title="
+            t('explorer.save_current', { shortcut: isMac ? '⌘S' : 'Ctrl+S' }) ||
+            (isMac ? 'Save Current File (⌘S)' : 'Save Current File (Ctrl+S)')
+          "
           @click="handleSave"
         >
           <span class="codicon codicon-save"></span>
-          <span>保存</span>
+          <span>{{ t("common.save") || "Save" }}</span>
         </button>
-        <button v-if="hasDirtyTabs" class="action-btn" title="全部保存" @click="saveAllTabs">
+        <button
+          v-if="hasDirtyTabs"
+          class="action-btn"
+          :title="t('explorer.save_all') || 'Save All Tabs'"
+          @click="saveAllTabs"
+        >
           <span class="codicon codicon-save-all"></span>
         </button>
-        <button v-if="activeTab" class="action-btn" title="复制相对路径" @click="handleCopyPath">
+        <button
+          v-if="activeTab"
+          class="action-btn"
+          :title="t('explorer.copy_relative_path') || 'Copy Relative Path'"
+          @click="handleCopyPath"
+        >
           <span class="codicon codicon-copy"></span>
         </button>
-        <button v-if="activeTab" class="action-btn" title="在集成终端中打开所在目录" @click="handleOpenParentTerminal">
+        <button
+          v-if="activeTab"
+          class="action-btn"
+          :title="t('explorer.open_parent_terminal') || 'Open Containing Folder in Integrated Terminal'"
+          @click="handleOpenParentTerminal"
+        >
           <span class="codicon codicon-terminal"></span>
         </button>
-        <button class="action-btn" title="关闭全部标签页" @click="() => closeAllTabs()">
+        <button class="action-btn" :title="t('explorer.close_all') || 'Close All Tabs'" @click="() => closeAllTabs()">
           <span class="codicon codicon-close-all"></span>
         </button>
       </div>
@@ -154,7 +172,9 @@
                 <div class="binary-card">
                   <span class="codicon codicon-file-binary binary-hero-icon"></span>
                   <h4 class="binary-title">{{ activeTab.name }}</h4>
-                  <p class="binary-message">无法在拆分视图中编辑二进制文件</p>
+                  <p class="binary-message">
+                    {{ t("explorer.binary_notice_msg") || "Cannot edit binary files in split view." }}
+                  </p>
                 </div>
               </div>
               <MonacoEditor
@@ -176,13 +196,19 @@
             <div class="split-pane-header">
               <div class="split-pane-info">
                 <TechIcon :id="splitState.tab.name" :size="14" class="split-pane-icon" />
-                <span class="split-pane-name"
-                  >{{ splitState.tab.name }}{{ splitState.inGroup ? " (组内拆分)" : "" }}</span
-                >
+                <span class="split-pane-name">
+                  {{ splitState.tab.name
+                  }}{{ splitState.inGroup ? ` (${t("explorer.split_in_group") || "Split in Group"})` : "" }}
+                </span>
                 <span v-if="splitState.tab.isDirty" class="dirty-dot">●</span>
               </div>
               <div class="split-pane-tools">
-                <button type="button" class="split-tool-btn" title="关闭拆分视图" @click="closeSplitEditor">
+                <button
+                  type="button"
+                  class="split-tool-btn"
+                  :title="t('explorer.close_split') || 'Close Split Editor'"
+                  @click="closeSplitEditor"
+                >
                   <span class="codicon codicon-close"></span>
                 </button>
               </div>
@@ -201,7 +227,9 @@
                 <div class="binary-card">
                   <span class="codicon codicon-file-binary binary-hero-icon"></span>
                   <h4 class="binary-title">{{ splitState.tab.name }}</h4>
-                  <p class="binary-message">无法在拆分视图中编辑二进制文件</p>
+                  <p class="binary-message">
+                    {{ t("explorer.binary_notice_msg") || "Cannot edit binary files in split view." }}
+                  </p>
                 </div>
               </div>
               <MonacoEditor
@@ -237,24 +265,28 @@
               <div class="binary-meta">
                 <span v-if="activeTab.size" class="binary-badge">{{ formatFileSize(activeTab.size) }}</span>
                 <span class="binary-badge tag">{{
-                  activeTab.binaryReason === "too_large" ? "大文件" : "二进制文件"
+                  activeTab.binaryReason === "too_large"
+                    ? t("explorer.large_file") || "Large File"
+                    : t("explorer.binary_notice_title") || "Binary File"
                 }}</span>
               </div>
               <p class="binary-message">
                 {{
                   activeTab.binaryReason === "too_large"
-                    ? "该文件体积过大 (超过 10 MB)，无法在文本编辑器中显示。"
-                    : "该文件未在文本编辑器中显示，因为它是二进制文件或使用了不受支持的文本编码。"
+                    ? t("explorer.large_file_msg") ||
+                      "The file is too large (over 10 MB) to be displayed in the editor."
+                    : t("explorer.binary_notice_msg") ||
+                      "The file is not displayed in the editor because it is either binary or uses an unsupported text encoding."
                 }}
               </p>
               <div class="binary-actions">
                 <button type="button" class="action-btn-primary" @click="handleOpenParentTerminal">
                   <span class="codicon codicon-terminal"></span>
-                  <span>在终端中查看 / 运行</span>
+                  <span>{{ t("explorer.view_in_terminal") || "View / Run in Terminal" }}</span>
                 </button>
                 <button type="button" class="action-btn-secondary" @click="handleCopyPath">
                   <span class="codicon codicon-copy"></span>
-                  <span>复制相对路径</span>
+                  <span>{{ t("explorer.copy_relative_path") || "Copy Relative Path" }}</span>
                 </button>
               </div>
             </div>
@@ -307,7 +339,11 @@
           </template>
         </div>
         <div class="footer-right">
-          <span v-if="!activeTab.isBinary" class="footer-item">行 {{ cursorLine }}, 列 {{ cursorColumn }}</span>
+          <span v-if="!activeTab.isBinary" class="footer-item">
+            {{
+              t("editor.line_col", { line: cursorLine, col: cursorColumn }) || `Ln ${cursorLine}, Col ${cursorColumn}`
+            }}
+          </span>
         </div>
       </div>
     </div>
@@ -319,39 +355,43 @@
           <TechIcon id="codicon:folder-opened" :size="48" />
         </div>
         <div class="folder-info">
-          <h2 class="folder-title">{{ selectedNode.name || "工作区根目录" }}</h2>
+          <h2 class="folder-title">{{ selectedNode.name || t("explorer.workspace_root") || "Workspace Root" }}</h2>
           <p class="folder-path">{{ selectedNode.path || "/" }}</p>
           <div class="folder-stats">
-            <span class="badge">{{ selectedNode.children?.length || 0 }} 个项目</span>
+            <span class="badge"
+              >{{ selectedNode.children?.length || 0 }} {{ t("explorer.items_suffix") || "items" }}</span
+            >
             <span v-if="selectedNode.mod_time" class="mod-time">
-              修改于: {{ new Date(selectedNode.mod_time).toLocaleString() }}
+              {{ t("explorer.modified_at") || "Modified" }}: {{ new Date(selectedNode.mod_time).toLocaleString() }}
             </span>
           </div>
         </div>
       </div>
 
       <div class="folder-quick-actions">
-        <h4 class="section-heading">快捷操作</h4>
+        <h4 class="section-heading">{{ t("explorer.quick_actions") || "Quick Actions" }}</h4>
         <div class="action-grid">
           <div class="action-card" @click="handleCreateFileInside">
             <span class="codicon codicon-new-file card-icon"></span>
             <div class="card-text">
-              <span class="card-title">新建文件</span>
-              <span class="card-desc">在此文件夹下创建新文件</span>
+              <span class="card-title">{{ t("explorer.new_file") || "New File" }}</span>
+              <span class="card-desc">{{ t("explorer.new_file_desc") || "Create a new file in this folder" }}</span>
             </div>
           </div>
           <div class="action-card" @click="handleCreateFolderInside">
             <span class="codicon codicon-new-folder card-icon"></span>
             <div class="card-text">
-              <span class="card-title">新建子文件夹</span>
-              <span class="card-desc">创建嵌套子目录</span>
+              <span class="card-title">{{ t("explorer.new_folder") || "New Folder" }}</span>
+              <span class="card-desc">{{ t("explorer.new_folder_desc") || "Create a nested subdirectory" }}</span>
             </div>
           </div>
           <div class="action-card" @click="handleOpenFolderInTerminal">
             <span class="codicon codicon-terminal card-icon"></span>
             <div class="card-text">
-              <span class="card-title">在终端中打开</span>
-              <span class="card-desc">在下方终端中导航至此目录</span>
+              <span class="card-title">{{ t("explorer.open_in_terminal") || "Open in Terminal" }}</span>
+              <span class="card-desc">{{
+                t("explorer.open_in_terminal_desc") || "Navigate to this folder in integrated terminal"
+              }}</span>
             </div>
           </div>
         </div>
@@ -365,28 +405,49 @@
           <TechIcon id="workbench:explorer" :size="48" class="watermark-icon" />
           <div class="hero-glow"></div>
         </div>
-        <h2 class="welcome-title">{{ t("explorer.title") || "资源管理器" }}</h2>
-        <p class="welcome-desc">UniRTM 统一工作台：在左侧选择文件编辑，或通过全局快捷键与命令快速开启高效开发流。</p>
+        <h2 class="welcome-title">{{ t("explorer.title") || "Explorer" }}</h2>
+        <p class="welcome-desc">
+          {{
+            t("explorer.welcome_subtitle") ||
+            "UniRTM Unified Workbench: Select a file on the left to edit, or use shortcuts to accelerate your workflow."
+          }}
+        </p>
 
         <!-- Quick Launch Cards -->
         <div class="welcome-quick-actions">
-          <button class="quick-action-pill" @click="handleOpenCommandPalette" title="快速查找命令或文件">
+          <button
+            class="quick-action-pill"
+            @click="handleOpenCommandPalette"
+            :title="t('explorer.command_palette') || 'Command Palette'"
+          >
             <span class="codicon codicon-terminal-cmd"></span>
-            <span class="quick-action-label">命令面板</span>
+            <span class="quick-action-label">{{ t("explorer.command_palette") || "Command Palette" }}</span>
             <span class="key-badge">{{ isMac ? "⌘⇧P" : "Ctrl+Shift+P" }}</span>
           </button>
-          <button class="quick-action-pill" @click="handleOpenTerminal" title="开启或唤起底部集成终端">
+          <button
+            class="quick-action-pill"
+            @click="handleOpenTerminal"
+            :title="t('explorer.integrated_terminal') || 'Integrated Terminal'"
+          >
             <span class="codicon codicon-terminal"></span>
-            <span class="quick-action-label">集成终端</span>
+            <span class="quick-action-label">{{ t("explorer.integrated_terminal") || "Integrated Terminal" }}</span>
             <span class="key-badge">{{ isMac ? "⌘`" : "Ctrl+`" }}</span>
           </button>
-          <button class="quick-action-pill" @click="handleCreateNewFileRoot" title="在工作区根目录新建文件">
+          <button
+            class="quick-action-pill"
+            @click="handleCreateNewFileRoot"
+            :title="t('explorer.new_file') || 'New File'"
+          >
             <span class="codicon codicon-new-file"></span>
-            <span class="quick-action-label">新建文件</span>
+            <span class="quick-action-label">{{ t("explorer.new_file") || "New File" }}</span>
           </button>
-          <button class="quick-action-pill" @click="handleOpenKeyboardShortcuts" title="查看全部快捷键绑定">
+          <button
+            class="quick-action-pill"
+            @click="handleOpenKeyboardShortcuts"
+            :title="t('explorer.keyboard_shortcuts') || 'Keyboard Shortcuts'"
+          >
             <span class="codicon codicon-keyboard"></span>
-            <span class="quick-action-label">快捷键一览</span>
+            <span class="quick-action-label">{{ t("explorer.keyboard_shortcuts") || "Keyboard Shortcuts" }}</span>
             <span class="key-badge">{{ isMac ? "⌘K ⌘S" : "Ctrl+K Ctrl+S" }}</span>
           </button>
         </div>
@@ -394,28 +455,40 @@
         <div class="welcome-shortcuts">
           <div class="shortcut-list">
             <div class="shortcut-row">
-              <span class="key-badge">单击文件</span>
-              <span class="shortcut-desc">打开文件代码编辑器标签页</span>
+              <span class="key-badge">{{ t("explorer.shortcut_click_file") || "Click file" }}</span>
+              <span class="shortcut-desc">{{
+                t("explorer.shortcut_click_file_desc") || "Open editor tab for this file"
+              }}</span>
             </div>
             <div class="shortcut-row">
-              <span class="key-badge">中键 / ✕</span>
-              <span class="shortcut-desc">关闭当前文件标签页</span>
+              <span class="key-badge">{{ t("explorer.shortcut_close_tab") || "Middle click / ✕" }}</span>
+              <span class="shortcut-desc">{{
+                t("explorer.shortcut_close_tab_desc") || "Close current editor tab"
+              }}</span>
             </div>
             <div class="shortcut-row">
-              <span class="key-badge">双击 / 箭头</span>
-              <span class="shortcut-desc">展开或折叠子目录</span>
+              <span class="key-badge">{{ t("explorer.shortcut_expand_folder") || "Double click / Arrow" }}</span>
+              <span class="shortcut-desc">{{
+                t("explorer.shortcut_expand_folder_desc") || "Expand or collapse folder"
+              }}</span>
             </div>
             <div class="shortcut-row">
-              <span class="key-badge">右键</span>
-              <span class="shortcut-desc">弹出上下文菜单 (重命名、删除、在终端打开)</span>
+              <span class="key-badge">{{ t("explorer.shortcut_context_menu") || "Right click" }}</span>
+              <span class="shortcut-desc">{{
+                t("explorer.shortcut_context_menu_desc") || "Context menu (Rename, Delete, Open in Terminal)"
+              }}</span>
             </div>
             <div class="shortcut-row">
               <span class="key-badge">F2</span>
-              <span class="shortcut-desc">就地原地重命名文件或文件夹</span>
+              <span class="shortcut-desc">{{
+                t("explorer.shortcut_rename_desc") || "Inline rename file or folder"
+              }}</span>
             </div>
             <div class="shortcut-row">
               <span class="key-badge">{{ isMac ? "⌘S" : "Ctrl+S" }}</span>
-              <span class="shortcut-desc">快速保存当前正在编辑的文件</span>
+              <span class="shortcut-desc">{{
+                t("explorer.shortcut_save_desc") || "Quickly save current active file"
+              }}</span>
             </div>
           </div>
         </div>
@@ -439,34 +512,34 @@
               <li class="action-item" role="none" @click="handleCloseCurrent">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-close"></span>
-                  <span class="action-label">关闭</span>
+                  <span class="action-label">{{ t("common.close") || "Close" }}</span>
                   <span class="keybinding">{{ isMac ? "⌘W" : "Ctrl+W" }}</span>
                 </a>
               </li>
               <li class="action-item" :class="{ disabled: !canCloseOthers }" role="none" @click="handleCloseOthers">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-close-all"></span>
-                  <span class="action-label">关闭其他</span>
+                  <span class="action-label">{{ t("explorer.close_others") || "Close Others" }}</span>
                   <span class="keybinding">{{ isMac ? "⌥⌘T" : "Alt+Ctrl+T" }}</span>
                 </a>
               </li>
               <li class="action-item" :class="{ disabled: !canCloseToRight }" role="none" @click="handleCloseToRight">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-arrow-right"></span>
-                  <span class="action-label">关闭右侧标签页</span>
+                  <span class="action-label">{{ t("explorer.close_to_right") || "Close to the Right" }}</span>
                 </a>
               </li>
               <li class="action-item" :class="{ disabled: !canCloseSaved }" role="none" @click="handleCloseSaved">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-check"></span>
-                  <span class="action-label">关闭已保存</span>
+                  <span class="action-label">{{ t("explorer.close_saved") || "Close Saved" }}</span>
                   <span class="keybinding">{{ isMac ? "[⌘K U]" : "[Ctrl+K U]" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click="handleCloseAll">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-clear-all"></span>
-                  <span class="action-label">全部关闭</span>
+                  <span class="action-label">{{ t("explorer.close_all") || "Close All" }}</span>
                   <span class="keybinding">{{ isMac ? "[⌘K W]" : "[Ctrl+K W]" }}</span>
                 </a>
               </li>
@@ -478,14 +551,14 @@
               <li class="action-item" role="none" @click="handleCopyAbsolutePath">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-copy"></span>
-                  <span class="action-label">复制路径</span>
+                  <span class="action-label">{{ t("explorer.copy_path") || "Copy Path" }}</span>
                   <span class="keybinding">{{ isMac ? "⌥⌘C" : "Shift+Alt+C" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click="handleCopyRelativePath">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-copy"></span>
-                  <span class="action-label">复制相对路径</span>
+                  <span class="action-label">{{ t("explorer.copy_relative_path") || "Copy Relative Path" }}</span>
                   <span class="keybinding">{{ isMac ? "⌥⇧⌘C" : "Ctrl+K Ctrl+C" }}</span>
                 </a>
               </li>
@@ -497,7 +570,7 @@
               <li class="action-item" role="none" @click="handleRevealInExplorer">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-files"></span>
-                  <span class="action-label">在资源管理器视图中显示</span>
+                  <span class="action-label">{{ t("explorer.reveal_in_side_bar") || "Reveal in Side Bar" }}</span>
                 </a>
               </li>
 
@@ -508,13 +581,15 @@
               <li class="action-item" role="none" @click="handleViewFileGitGraph">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-git-commit"></span>
-                  <span class="action-label">在 Git Graph 中查看该文件提交历史</span>
+                  <span class="action-label">{{
+                    t("explorer.view_git_history") || "View File History in Git Graph"
+                  }}</span>
                 </a>
               </li>
               <li v-if="targetTabHasGitChanges" class="action-item" role="none" @click="handleOpenTabDiff">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-diff"></span>
-                  <span class="action-label">打开差异比对 (Diff)</span>
+                  <span class="action-label">{{ t("explorer.open_diff") || "Open Changes (Diff)" }}</span>
                 </a>
               </li>
 
@@ -525,7 +600,9 @@
               <li class="action-item" role="none" @click="handleTogglePin">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-pin"></span>
-                  <span class="action-label">{{ targetTab?.isPinned ? "取消固定" : "固定" }}</span>
+                  <span class="action-label">{{
+                    targetTab?.isPinned ? t("explorer.unpin") || "Unpin" : t("explorer.pin") || "Pin"
+                  }}</span>
                   <span class="keybinding">{{
                     targetTab?.isPinned
                       ? isMac
@@ -545,7 +622,7 @@
               <li class="action-item" role="none" @click="handleSplitRight">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-split-horizontal"></span>
-                  <span class="action-label">向右拆分</span>
+                  <span class="action-label">{{ t("explorer.split_right") || "Split Right" }}</span>
                 </a>
               </li>
               <li
@@ -558,7 +635,7 @@
               >
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-split-vertical"></span>
-                  <span class="action-label">拆分和移动</span>
+                  <span class="action-label">{{ t("explorer.split_and_move") || "Split and Move" }}</span>
                   <span class="codicon codicon-chevron-right submenu-arrow"></span>
                 </a>
               </li>
@@ -585,25 +662,25 @@
               <li class="action-item" role="none" @click.stop="handleSplitEditor('up')">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-arrow-up"></span>
-                  <span class="action-label">向上拆分</span>
+                  <span class="action-label">{{ t("explorer.split_up") || "Split Up" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('down')">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-arrow-down"></span>
-                  <span class="action-label">向下拆分</span>
+                  <span class="action-label">{{ t("explorer.split_down") || "Split Down" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('left')">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-arrow-left"></span>
-                  <span class="action-label">向左拆分</span>
+                  <span class="action-label">{{ t("explorer.split_left") || "Split Left" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-arrow-right"></span>
-                  <span class="action-label">向右拆分</span>
+                  <span class="action-label">{{ t("explorer.split_right") || "Split Right" }}</span>
                 </a>
               </li>
 
@@ -612,25 +689,25 @@
               <li class="action-item" role="none" @click.stop="handleSplitEditor('up')">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-chevron-up"></span>
-                  <span class="action-label">上移</span>
+                  <span class="action-label">{{ t("explorer.move_up") || "Move Up" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('down')">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-chevron-down"></span>
-                  <span class="action-label">下移</span>
+                  <span class="action-label">{{ t("explorer.move_down") || "Move Down" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('left')">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-chevron-left"></span>
-                  <span class="action-label">左移</span>
+                  <span class="action-label">{{ t("explorer.move_left") || "Move Left" }}</span>
                 </a>
               </li>
               <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-chevron-right"></span>
-                  <span class="action-label">右移</span>
+                  <span class="action-label">{{ t("explorer.move_right") || "Move Right" }}</span>
                 </a>
               </li>
 
@@ -640,7 +717,9 @@
                 <a class="action-menu-item" role="menuitem">
                   <span class="menu-icon codicon codicon-layout-panel"></span>
                   <span class="action-label">{{
-                    splitState.active && splitState.inGroup ? "加入编辑器组" : "在组中拆分"
+                    splitState.active && splitState.inGroup
+                      ? t("explorer.join_editor_group") || "Join Editor Group"
+                      : t("explorer.split_in_group") || "Split in Group"
                   }}</span>
                 </a>
               </li>
