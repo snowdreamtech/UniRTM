@@ -88,7 +88,7 @@
             :disabled="isFixing || isChecking"
             @click.stop="isFixDropdownOpen = !isFixDropdownOpen"
             :aria-expanded="isFixDropdownOpen"
-            title="Switch fix scope (Staged, Workspace, or Project)"
+            :title="t('guard.actions.fix_scope_title') || 'Select Auto-Fix Scope'"
           >
             <span class="codicon codicon-chevron-down"></span>
           </button>

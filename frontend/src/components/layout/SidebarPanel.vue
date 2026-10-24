@@ -632,7 +632,8 @@ const dashboardItems = computed(() => [
     sectionId: "dashboard-section-hero",
     icon: "workbench:dashboard",
     label: t("sidebar.group_overview") || "PROJECT OVERVIEW",
-    meta: activeScope.value === "user" ? "User" : "Workspace",
+    meta:
+      activeScope.value === "user" ? t("settings.scope_user") || "User" : t("settings.scope_workspace") || "Workspace",
   },
   {
     id: "tools",
