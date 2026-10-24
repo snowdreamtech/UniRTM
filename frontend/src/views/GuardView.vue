@@ -624,7 +624,10 @@
                 <span class="rules-total-count font-mono">{{ filteredRichRules.length }} / 38</span>
               </h3>
               <p class="reports-sub">
-                涵盖代码卫生清洗、格式化对齐、深层语法门禁与凭据安全防泄露全套流水线，实时展示执行耗时与检测结论。
+                {{
+                  t("guard.pipeline_coverage_desc") ||
+                  "Covers code hygiene, formatting, deep syntax linting, and secret leak prevention pipelines with real-time metrics."
+                }}
               </p>
             </div>
 
@@ -636,7 +639,7 @@
                   :class="{ active: selectedRuleCategory === 'all' }"
                   @click="selectedRuleCategory = 'all'"
                 >
-                  全部 (38)
+                  {{ t("guard.tab_all_rules", { count: 38 }) || "All (38)" }}
                 </button>
                 <button
                   class="cat-pill-btn"
@@ -644,7 +647,7 @@
                   @click="selectedRuleCategory = 'hygiene'"
                 >
                   <span class="codicon codicon-wand text-green"></span>
-                  原生自愈 (8)
+                  {{ t("guard.tab_native_fixer", { count: 8 }) || "Native Healing (8)" }}
                 </button>
                 <button
                   class="cat-pill-btn"
@@ -652,7 +655,7 @@
                   @click="selectedRuleCategory = 'formatting'"
                 >
                   <span class="codicon codicon-diff-modified text-blue"></span>
-                  格式排版 (5)
+                  {{ t("guard.tab_formatter", { count: 5 }) || "Formatting (5)" }}
                 </button>
                 <button
                   class="cat-pill-btn"
@@ -660,7 +663,7 @@
                   @click="selectedRuleCategory = 'linter'"
                 >
                   <span class="codicon codicon-pass text-amber"></span>
-                  规范门禁 (19)
+                  {{ t("guard.tab_linter", { count: 19 }) || "Linting (19)" }}
                 </button>
                 <button
                   class="cat-pill-btn"
@@ -668,7 +671,7 @@
                   @click="selectedRuleCategory = 'security'"
                 >
                   <span class="codicon codicon-shield text-purple"></span>
-                  凭据安全 (6)
+                  {{ t("guard.tab_security", { count: 6 }) || "Security (6)" }}
                 </button>
               </div>
 
@@ -679,7 +682,9 @@
                   v-model="ruleSearchKeyword"
                   type="text"
                   class="rule-search-input"
-                  placeholder="搜索规则名称、ID、扩展名 (.go, .ts) 或工具..."
+                  :placeholder="
+                    t('guard.filter_rules_placeholder') || 'Search rule name, ID, extensions (.go, .ts) or tools...'
+                  "
                 />
                 <span
                   v-if="ruleSearchKeyword"
@@ -729,7 +734,7 @@
                     ></span>
                   </div>
                   <div class="rule-names">
-                    <div class="rule-chinese-name">{{ rule.name }}</div>
+                    <div class="rule-chinese-name">{{ getGuardRuleName(rule) }}</div>
                     <code class="rule-id-code font-mono">{{ rule.id }}</code>
                   </div>
                 </div>
@@ -738,34 +743,40 @@
                   <span v-if="rule.status !== 'idle'" class="rule-run-badge font-mono" :class="'badge-' + rule.status">
                     {{
                       rule.status === "passed"
-                        ? "✔ 通过"
+                        ? t("guard.rule_status_passed") || "✔ Passed"
                         : rule.status === "fixed"
-                          ? "⚡ 已自愈"
+                          ? t("guard.rule_status_fixed") || "⚡ Healed"
                           : rule.status === "warn"
-                            ? `! ${rule.issuesCount} 警告`
-                            : `✕ ${rule.issuesCount} 阻断`
+                            ? t("guard.rule_status_warn", { count: rule.issuesCount }) ||
+                              `! ${rule.issuesCount} Warnings`
+                            : t("guard.rule_status_blocker", { count: rule.issuesCount }) ||
+                              `✕ ${rule.issuesCount} Blockers`
                     }}
                     <span v-if="rule.duration">· {{ rule.duration }}</span>
                   </span>
-                  <span v-else class="rule-idle-badge font-mono">就绪待命</span>
+                  <span v-else class="rule-idle-badge font-mono">{{ t("guard.rule_status_idle") || "Standby" }}</span>
                 </div>
               </div>
 
-              <!-- Card Description (实质内容) -->
-              <p class="rule-description">{{ rule.description }}</p>
+              <!-- Card Description -->
+              <p class="rule-description">{{ getGuardRuleDesc(rule) }}</p>
 
               <!-- Card Meta & Extension Tags -->
               <div class="rule-card-bottom">
                 <div class="rule-meta-chips">
                   <span class="meta-chip phase-chip" :class="'phase-' + rule.phase">{{ rule.phaseLabel }}</span>
                   <span class="meta-chip tool-chip font-mono">{{ rule.toolName }}</span>
-                  <span v-if="rule.fixable" class="meta-chip fixable-chip">⚡ 可自愈</span>
-                  <span v-if="rule.severity === 'blocker'" class="meta-chip blocker-chip">🛑 阻断门禁</span>
-                  <span v-else class="meta-chip warn-chip">⚠️ 建议告警</span>
+                  <span v-if="rule.fixable" class="meta-chip fixable-chip">{{
+                    t("guard.chip_fixable") || "⚡ Auto-healable"
+                  }}</span>
+                  <span v-if="rule.severity === 'blocker'" class="meta-chip blocker-chip">{{
+                    t("guard.chip_blocker") || "🛑 Blocker"
+                  }}</span>
+                  <span v-else class="meta-chip warn-chip">{{ t("guard.chip_warning") || "⚠️ Advisory" }}</span>
                 </div>
 
                 <div class="rule-extensions-row">
-                  <span class="ext-label font-mono">适用:</span>
+                  <span class="ext-label font-mono">{{ t("guard.applies_to") || "Applies:" }}</span>
                   <span v-for="ext in rule.extensions" :key="ext" class="ext-badge font-mono">{{ ext }}</span>
                 </div>
               </div>
@@ -774,7 +785,12 @@
 
           <div v-else class="empty-reports-box">
             <span class="codicon codicon-search empty-reports-icon"></span>
-            <p>未找到匹配 "{{ ruleSearchKeyword }}" 的守卫规则</p>
+            <p>
+              {{
+                t("guard.no_matching_rules", { keyword: ruleSearchKeyword }) ||
+                `No guard rules matching "${ruleSearchKeyword}"`
+              }}
+            </p>
             <button
               class="btn-clear-filter"
               @click="
@@ -782,7 +798,7 @@
                 selectedRuleCategory = 'all';
               "
             >
-              重置筛选条件
+              {{ t("guard.reset_filter") || "Reset Filter" }}
             </button>
           </div>
         </div>
@@ -867,13 +883,13 @@
                     v-else-if="getBuiltinRuleForExtAndCategory(row.extension, 'linter')"
                     class="tool-cell builtin-cell"
                     @click="openConfigureBuiltinRule(getBuiltinRuleForExtAndCategory(row.extension, 'linter')!)"
-                    title="点击配置该原生内置规则参数"
+                    :title="t('guard.configure_rule') || 'Configure Rule'"
                   >
                     <span class="tool-name text-cyan"
                       ><span class="codicon codicon-shield"></span>
                       {{ getBuiltinRuleForExtAndCategory(row.extension, "linter")!.name }}</span
                     >
-                    <span class="builtin-note font-mono">原生守卫 (点击配置)</span>
+                    <span class="builtin-note font-mono">{{ t("guard.configure_rule") || "Configure Rule" }}</span>
                   </div>
                   <span v-else class="cell-empty font-mono">—</span>
                 </td>
@@ -899,13 +915,13 @@
                     v-else-if="getBuiltinRuleForExtAndCategory(row.extension, 'fixer')"
                     class="tool-cell builtin-cell"
                     @click="openConfigureBuiltinRule(getBuiltinRuleForExtAndCategory(row.extension, 'fixer')!)"
-                    title="点击配置该原生自愈规则参数"
+                    :title="t('guard.configure_rule') || 'Configure Rule'"
                   >
                     <span class="tool-name text-green"
                       ><span class="codicon codicon-wand"></span>
                       {{ getBuiltinRuleForExtAndCategory(row.extension, "fixer")!.name }}</span
                     >
-                    <span class="builtin-note font-mono">原生自愈 (点击配置)</span>
+                    <span class="builtin-note font-mono">{{ t("guard.configure_rule") || "Configure Rule" }}</span>
                   </div>
                   <span v-else class="cell-empty font-mono">—</span>
                 </td>
@@ -920,13 +936,13 @@
                     v-else-if="getBuiltinRuleForExtAndCategory(row.extension, 'security')"
                     class="tool-cell builtin-cell"
                     @click="openConfigureBuiltinRule(getBuiltinRuleForExtAndCategory(row.extension, 'security')!)"
-                    title="点击配置该原生安全规则参数"
+                    :title="t('guard.configure_rule') || 'Configure Rule'"
                   >
                     <span class="tool-name text-purple"
                       ><span class="codicon codicon-shield text-purple"></span>
                       {{ getBuiltinRuleForExtAndCategory(row.extension, "security")!.name }}</span
                     >
-                    <span class="builtin-note font-mono">原生凭据安全 (点击配置)</span>
+                    <span class="builtin-note font-mono">{{ t("guard.configure_rule") || "Configure Rule" }}</span>
                   </div>
                   <span v-else class="cell-empty font-mono">—</span>
                 </td>
@@ -970,21 +986,33 @@
             <div class="banner-left">
               <span class="codicon codicon-shield banner-icon text-cyan"></span>
               <div>
-                <h4 class="banner-title">UniRTM Go 原生引擎核心内置规则 (25项)</h4>
+                <h4 class="banner-title">
+                  {{ t("guard.builtin_rules_title") || "Core Built-in Rules (UniRTM Native Engine)" }}
+                </h4>
                 <p class="banner-subtitle">
-                  所有内置规则均由轻量级原生引擎驱动，零外部依赖、极速毫秒级执行。
-                  <strong>系统核心预置规则·不可删除</strong>，但支持在此自由修改参数、排除目录/文件或灵活开启/跳过。
+                  {{
+                    t("guard.builtin_rules_desc") ||
+                    "All built-in rules are driven by lightweight native engine with zero external dependencies and millisecond execution."
+                  }}
+                  {{
+                    t("guard.builtin_rules_note") ||
+                    "System core preset rules cannot be deleted, but you can configure parameters, exclude paths, or skip rules."
+                  }}
                 </p>
               </div>
             </div>
             <div class="banner-stats">
               <span class="stat-pill active-pill">
                 <span class="dot dot-green"></span>
-                <span>已启用: {{ activeBuiltinCount }}</span>
+                <span>{{
+                  t("guard.active_count", { count: activeBuiltinCount }) || "Active: " + activeBuiltinCount
+                }}</span>
               </span>
               <span class="stat-pill skip-pill">
                 <span class="dot dot-amber"></span>
-                <span>已跳过: {{ skippedBuiltinCount }}</span>
+                <span>{{
+                  t("guard.skipped_count", { count: skippedBuiltinCount }) || "Skipped: " + skippedBuiltinCount
+                }}</span>
               </span>
             </div>
           </div>
@@ -999,25 +1027,35 @@
             >
               <div class="builtin-card-top">
                 <div class="builtin-title-group">
-                  <span class="builtin-cn-name">{{ rule.name }}</span>
+                  <span class="builtin-cn-name">{{ getGuardRuleName(rule) }}</span>
                   <code class="builtin-id-code font-mono">{{ rule.id }}</code>
                 </div>
 
                 <div class="builtin-actions-group">
                   <!-- Non-deletable lock badge -->
-                  <span class="badge-lock-tag font-mono" title="系统核心内置规则，无法被删除">
-                    <span class="codicon codicon-lock"></span> 不可删除
-                  </span>
+                  <span
+                    class="badge-lock-tag font-mono"
+                    :title="t('guard.cannot_delete_tip') || 'Core built-in rule cannot be deleted'"
+                    ><span class="codicon codicon-lock"></span> {{ t("guard.cannot_delete") || "Locked" }}</span
+                  >
 
                   <!-- Status Toggle Switch -->
                   <button
                     class="btn-toggle-switch"
                     :class="{ active: !isRuleSkipped(rule.id) }"
-                    :title="isRuleSkipped(rule.id) ? '点击恢复启用此规则' : '点击跳过此规则'"
+                    :title="
+                      isRuleSkipped(rule.id)
+                        ? t('guard.status_skipped') || 'Skipped'
+                        : t('guard.status_active') || 'Active'
+                    "
                     @click.stop="toggleBuiltinRule(rule.id)"
                   >
                     <span class="toggle-thumb"></span>
-                    <span class="toggle-label font-mono">{{ isRuleSkipped(rule.id) ? "已跳过" : "已启用" }}</span>
+                    <span class="toggle-label font-mono">{{
+                      isRuleSkipped(rule.id)
+                        ? t("guard.status_skipped") || "Skipped"
+                        : t("guard.status_active") || "Active"
+                    }}</span>
                   </button>
                 </div>
               </div>
@@ -1027,25 +1065,32 @@
               <!-- Custom configured indicator if any -->
               <div v-if="hasRuleCustomConfig(rule.id)" class="builtin-custom-tag-row">
                 <span class="codicon codicon-check text-cyan"></span>
-                <span class="custom-hint font-mono">已配置: {{ getRuleCustomSummary(rule.id) }}</span>
+                <span class="custom-hint font-mono">{{
+                  t("guard.configured_label", { summary: getRuleCustomSummary(rule.id) }) ||
+                  "Configured: " + getRuleCustomSummary(rule.id)
+                }}</span>
               </div>
 
               <div class="builtin-card-footer">
                 <div class="builtin-chips">
                   <span class="chip phase-chip" :class="'phase-' + rule.phase">{{ rule.phaseLabel }}</span>
-                  <span v-if="rule.fixable" class="chip fix-chip">⚡ 可自愈</span>
-                  <span v-if="rule.severity === 'blocker'" class="chip blocker-chip">🛑 阻断</span>
-                  <span v-else class="chip warn-chip">⚠️ 告警</span>
+                  <span v-if="rule.fixable" class="chip fix-chip">{{
+                    t("guard.chip_fixable") || "⚡ Auto-healable"
+                  }}</span>
+                  <span v-if="rule.severity === 'blocker'" class="chip blocker-chip">{{
+                    t("guard.chip_blocker") || "🛑 Blocker"
+                  }}</span>
+                  <span v-else class="chip warn-chip">{{ t("guard.chip_warning") || "⚠️ Advisory" }}</span>
                 </div>
 
                 <div class="builtin-footer-right">
                   <button
                     class="btn-configure-builtin"
-                    title="配置此内置规则的运行参数与排除路径"
+                    :title="t('guard.configure_rule') || 'Configure Rule'"
                     @click="openConfigureBuiltinRule(rule)"
                   >
                     <span class="codicon codicon-settings"></span>
-                    <span>配置规则</span>
+                    <span>{{ t("guard.configure_rule") || "Configure Rule" }}</span>
                   </button>
                 </div>
               </div>
@@ -1140,6 +1185,8 @@ import {
   ALL_38_GUARD_RULES,
   BUILTIN_GUARD_RULES,
   formatGuardDuration,
+  getGuardRuleName,
+  getGuardRuleDesc,
   type DetailedGuardRule,
 } from "../utils/guardRulesMeta";
 import { parseGuardConfigFromToml, updateBuiltinRuleInToml, type ParsedGuardConfig } from "../utils/tomlGuardHelper";
@@ -2105,17 +2152,17 @@ function getRuleCustomSummary(ruleId: string): string {
   if (!r) return "";
   const parts: string[] = [];
   if (r.severity && r.severity !== "default") {
-    parts.push(`级别: ${r.severity}`);
+    parts.push(`Severity: ${r.severity}`);
   }
   if (r.max_file_size && r.max_file_size > 0) {
     const mb = Math.round((r.max_file_size / (1024 * 1024)) * 10) / 10;
-    parts.push(`体积上限: ${mb}MB`);
+    parts.push(`Max size: ${mb}MB`);
   }
   if (r.exclude_dirs && r.exclude_dirs.length > 0) {
-    parts.push(`排除目录: ${r.exclude_dirs.join(",")}`);
+    parts.push(`Exclude dirs: ${r.exclude_dirs.join(",")}`);
   }
   if (r.exclude_files && r.exclude_files.length > 0) {
-    parts.push(`排除文件: ${r.exclude_files.join(",")}`);
+    parts.push(`Exclude files: ${r.exclude_files.join(",")}`);
   }
   return parts.join(" · ");
 }
@@ -2173,10 +2220,11 @@ async function toggleBuiltinRule(ruleId: string) {
   const ok = await saveRawTomlConfig(updatedToml);
   if (ok) {
     await loadGuardTomlConfig();
+    const ruleName = ruleMeta ? getGuardRuleName(ruleMeta) : ruleId;
     showToast(
       targetEnabled
-        ? `内置规则 "${ruleMeta ? ruleMeta.name : ruleId}" 已恢复启用`
-        : `内置规则 "${ruleMeta ? ruleMeta.name : ruleId}" 已加入跳过列表 (Skip)`,
+        ? t("guard.toast_rule_enabled", { name: ruleName }) || `Built-in rule "${ruleName}" re-enabled`
+        : t("guard.toast_rule_skipped", { name: ruleName }) || `Built-in rule "${ruleName}" added to skip list`,
       "success"
     );
   }
@@ -2189,7 +2237,10 @@ async function onSaveBuiltinRule(config: BuiltinRuleCustomConfig) {
   if (ok) {
     isBuiltinModalOpen.value = false;
     await loadGuardTomlConfig();
-    showToast(`内置规则 "${config.id}" 配置已成功保存至 .unirtm.toml`, "success");
+    showToast(
+      t("guard.toast_config_saved", { id: config.id }) || `Built-in rule "${config.id}" config saved to .unirtm.toml`,
+      "success"
+    );
   }
 }
 

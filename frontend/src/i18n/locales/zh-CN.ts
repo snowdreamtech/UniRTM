@@ -1,6 +1,165 @@
 import type { TranslationDict } from "../types";
 
 export const zhCn: TranslationDict = {
+  "guard.modal.restore_defaults": "恢复默认设置",
+  "guard.modal.ext_hint": "留空则使用默认配置。多个扩展名用逗号分隔（如 .go, .ts, .vue）。",
+  "guard.modal.exclude_files_hint": "多个文件名或 glob 模式用逗号隔开。",
+  "guard.modal.exclude_dirs_hint": "多个目录用逗号隔开，匹配到的目录及其子文件将不受此规则检查。",
+  "guard.modal.max_size_hint": "默认拦截超过 10 MB 的大文件被意外提交进 Git 仓库。",
+  "guard.modal.severity_warn_opt": "⚠️ 建议告警 (Warning - 高亮提示违规，不打断流程)",
+  "guard.modal.severity_blocker_opt": "🛑 强制阻断 (Blocker - 发现违规阻止提交与构建)",
+  "guard.modal.follow_default": "跟随系统默认 ({sev})",
+  "guard.modal.skip_desc": "规则将被添加至 .unirtm.toml 的 [guard] skip 列表中，质检时跳过。",
+  "guard.modal.active_desc": "规则将在 pre-commit 及 check 质检时正常执行。",
+  "guard.modal.skip_opt": "跳过此规则 (Skip)",
+  "guard.modal.active_opt": "正常启用 (Active)",
+  "guard.modal.default_applies": "默认适用:",
+  "guard.modal.read_only": "只读审查",
+  "guard.modal.supports_fix": "⚡ 支持自动修复",
+  "guard.modal.healing_label": "自愈能力:",
+  "guard.modal.category_label": "分类:",
+  "guard.toast_config_saved": '内置规则 "{id}" 配置已成功保存至 .unirtm.toml',
+  "guard.toast_rule_skipped": '内置规则 "{name}" 已加入跳过列表 (Skip)',
+  "guard.toast_rule_enabled": '内置规则 "{name}" 已恢复启用',
+  "guard.configured_label": "已配置: {summary}",
+  "guard.status_skipped": "已跳过",
+  "guard.status_active": "已启用",
+  "guard.cannot_delete_tip": "系统核心内置规则，无法被删除",
+  "guard.cannot_delete": "不可删除",
+  "guard.skipped_count": "已跳过: {count}",
+  "guard.active_count": "已启用: {count}",
+  "guard.configure_rule": "配置规则",
+  "guard.reset_filter": "重置筛选条件",
+  "guard.no_matching_rules": '未找到匹配 "{keyword}" 的守卫规则',
+  "guard.applies_to": "适用:",
+  "guard.chip_warning": "⚠️ 建议告警",
+  "guard.chip_blocker": "🛑 阻断门禁",
+  "guard.chip_fixable": "⚡ 可自愈",
+  "guard.rule_status_idle": "就绪待命",
+  "guard.rule_status_blocker": "✕ {count} 阻断",
+  "guard.rule_status_warn": "! {count} 警告",
+  "guard.rule_status_fixed": "⚡ 已自愈",
+  "guard.rule_status_passed": "✔ 通过",
+  "guard.filter_rules_placeholder": "搜索规则名称、ID、扩展名 (.go, .ts) 或工具...",
+  "guard.tab_security": "凭据安全 ({count})",
+  "guard.tab_linter": "规范门禁 ({count})",
+  "guard.tab_formatter": "格式排版 ({count})",
+  "guard.tab_native_fixer": "原生自愈 ({count})",
+  "guard.tab_all_rules": "全部 ({count})",
+  "guard.pipeline_coverage_desc":
+    "涵盖代码卫生清洗、格式化对齐、深层语法门禁与凭据安全防泄露全套流水线，实时展示执行耗时与检测结论。",
+  "guard.builtin_rules_note": "系统核心预置规则·不可删除，但支持在此自由修改参数、排除目录/文件或灵活开启/跳过。",
+  "guard.builtin_rules_desc": "所有内置规则均由轻量级原生引擎驱动，零外部依赖、极速毫秒级执行。",
+  "guard.builtin_rules_title": "UniRTM Go 原生引擎核心内置规则 (25项)",
+  "guard.rule.slot_supplychain_trivy.desc":
+    "全面审查操作系统层、依赖库层安全漏洞与不良开源许可协议 (License 合规性)，防止供应链投毒。",
+  "guard.rule.slot_supplychain_trivy.name": "全栈软件供应链与 SBOM 安全审计 (trivy)",
+  "guard.rule.slot_audit_osv.desc":
+    "依据 Google Open Source Vulnerabilities (OSV) 权威数据库审计多语言第三方开源组件已知 CVE 隐患。",
+  "guard.rule.slot_audit_osv.name": "跨生态依赖漏洞联合排查 (osv-scanner)",
+  "guard.rule.slot_vuln_govulncheck.desc":
+    "直连 Go 官方安全响应中心已知脆弱性数据库 (Go Vulnerability Database)，精确判定可达函数风险。",
+  "guard.rule.slot_vuln_govulncheck.name": "Go 依赖已知安全漏洞数据库比对 (govulncheck)",
+  "guard.rule.slot_ci_zizmor.desc":
+    "针对 GitHub Actions CI/CD 流水线进行深度威胁建模，严防 Runner 提权、凭据盗用与投毒攻击。",
+  "guard.rule.slot_ci_zizmor.name": "GitHub Actions 工作流安全加固审查 (zizmor)",
+  "guard.rule.slot_security_gosec.desc":
+    "对 Go 抽象语法树执行全面安全扫描，拦截 SQL 注入、弱随机数、不安全加密与文件包含缺陷。",
+  "guard.rule.slot_security_gosec.name": "Go 源码 AST 安全隐患与漏洞探测 (gosec)",
+  "guard.rule.slot_secret_gitleaks.desc":
+    "深度利用 Gitleaks 引擎全量审计暂存区、工作区及增量 Diff 中的 API Token、Password、OAuth 凭据。",
+  "guard.rule.slot_secret_gitleaks.name": "全仓库与提交历史凭据扫描 (Gitleaks)",
+  "guard.rule.slot_go_linter.desc":
+    "集成 errcheck、govet、staticcheck、unused 等数十个 Go 工业级检查器，全面杜绝隐藏 Bug。",
+  "guard.rule.slot_go_linter.name": "Go 全面静态代码分析与异味审查 (golangci-lint)",
+  "guard.rule.slot_web_linter.desc":
+    "采用 ESLint 深入检查 Vue 组件、TypeScript 类型约束、代码异味、潜在死循环与逻辑缺陷。",
+  "guard.rule.slot_web_linter.name": "前端现代语法与静态代码分析 (ESLint)",
+  "guard.rule.builtin_forbid_ip_addresses.desc":
+    "扫描源码与配置中遗留的硬编码 IPv4/IPv6 地址，防范网络拓扑与内网服务暴露风险。",
+  "guard.rule.builtin_forbid_ip_addresses.name": "硬编码内网/公网 IP 审计",
+  "guard.rule.builtin_check_markdown.desc":
+    "检测 README 与文档中的标题层级不规范、未闭合代码块以及 Markdown 格式异味。",
+  "guard.rule.builtin_check_markdown.name": "Markdown 排版与语法规范检查",
+  "guard.rule.builtin_forbid_empty_code_files.desc":
+    "防止开发者由于误操作或重构残留将完全空白的 0 字节源码文件检入版本库。",
+  "guard.rule.builtin_forbid_empty_code_files.name": "空代码文件意外提交拦截",
+  "guard.rule.builtin_forbid_binary_artifacts.desc":
+    "拦截各类 ELF 可执行程序、Windows .exe/.dll、macOS Mach-O 二进制文件以及 .class 字节码进入 Git 树。",
+  "guard.rule.builtin_forbid_binary_artifacts.name": "二进制编译产物意外提交拦截",
+  "guard.rule.builtin_forbid_debug_statements.desc":
+    "拦截源码中遗留的 console.log、debugger、fmt.Println、print() 等非受控临时调试代码入库。",
+  "guard.rule.builtin_forbid_debug_statements.name": "代码残留调试打印拦截",
+  "guard.rule.builtin_check_yaml.desc": "验证所有 YAML/YML 缩进、冒号间距、锚点引用以及多文档分隔语法的合法性。",
+  "guard.rule.builtin_check_yaml.name": "YAML 语法结构与格式校验",
+  "guard.rule.builtin_commit_msg.desc":
+    "在 commit-msg 阶段强制校验 Git 提交日志格式 (feat/fix/docs/refactor/chore 等类型)，保障团队协作基准。",
+  "guard.rule.builtin_commit_msg.name": "Conventional Commits 规范校验",
+  "guard.rule.builtin_detect_cloud_secrets.desc":
+    "原生高频匹配 AWS、Aliyun、Tencent Cloud、GCP、Azure 等主流公有云的 AccessKey/SecretKey 特征字符串。",
+  "guard.rule.builtin_detect_cloud_secrets.name": "云厂商 AK/SK 凭据泄露探测",
+  "guard.rule.builtin_check_xml.desc": "验证 XML、XSLT、SVG 配置文件的闭合标记与属性语法完整性。",
+  "guard.rule.builtin_check_xml.name": "XML 语法完整性校验",
+  "guard.rule.builtin_check_toml.desc": "使用高性能解析器严密校验 .unirtm.toml 等核心配置文件的语意与结构正确性。",
+  "guard.rule.builtin_check_toml.name": "TOML 语法与规范性校验",
+  "guard.rule.builtin_check_json.desc": "校验所有 JSON 文件的语法合法性，拦截尾随逗号、未闭合括号及编码错误。",
+  "guard.rule.builtin_check_json.name": "JSON 语法与格式严谨性校验",
+  "guard.rule.builtin_check_svg_safety.desc":
+    "深度解析 SVG 矢量图资源，阻断其中包含的 <script> 标签、内联 JavaScript 事件等 XSS 潜在风险。",
+  "guard.rule.builtin_check_svg_safety.name": "SVG 恶意脚本防注入审查",
+  "guard.rule.builtin_check_executables_have_shebangs.desc":
+    "确保被赋予可执行权限 (+x) 的文本脚本头部第一行必须声明合法有效的解释器路径。",
+  "guard.rule.builtin_check_executables_have_shebangs.name": "可执行文件 Shebang 声明检查",
+  "guard.rule.builtin_check_symlinks.desc":
+    "遍历并验证所有软链接目标有效性，防止断头链接或指向本地主机绝对路径的符号链接被提交。",
+  "guard.rule.builtin_check_symlinks.name": "失效死链与绝对软链接检查",
+  "guard.rule.builtin_forbidden_files.desc":
+    "阻止各类操作系统缓存、编辑器临时文件 (.DS_Store, Thumbs.db, desktop.ini, *.bak, *.orig) 混入代码库。",
+  "guard.rule.builtin_forbidden_files.name": "黑名单垃圾文件与目录拦截",
+  "guard.rule.builtin_check_lockfile_conflicts.desc":
+    "检查前端及 Go 依赖版本锁定文件是否处于被合并损坏或版本不一致状态。",
+  "guard.rule.builtin_check_lockfile_conflicts.name": "锁文件版本分支冲突拦截",
+  "guard.rule.builtin_check_lockfile_coexistence.desc":
+    "严禁同一项目中并存 package-lock.json、yarn.lock、pnpm-lock.yaml、bun.lockb 等互斥锁文件，保障确定性构建。",
+  "guard.rule.builtin_check_lockfile_coexistence.name": "多包管理器锁文件并存拦截",
+  "guard.rule.builtin_check_case_conflict.desc":
+    "在 macOS / Windows 大小写不敏感与 Linux 大小写敏感文件系统之间提供一致性保护，杜绝跨平台检出冲突。",
+  "guard.rule.builtin_check_case_conflict.name": "跨平台文件名大小写冲突检查",
+  "guard.rule.builtin_check_added_large_files.desc":
+    "阻止单文件体积超过 10MB 的非受管大型文件检入版本库，防止 Git 仓库不可逆膨胀。",
+  "guard.rule.builtin_check_added_large_files.name": "大文件意外提交拦截",
+  "guard.rule.builtin_check_env_safety.desc":
+    "严防 .env、.env.local、.env.production 等包含生产密钥与凭据的本地配置文件意外提交到版本库。",
+  "guard.rule.builtin_check_env_safety.name": "环境变量敏感文件防提交",
+  "guard.rule.builtin_detect_private_key.desc":
+    "全量扫描代码与文本资产，硬性阻断各类 PEM/RSA/DSA/EC/PGP 私有密钥与证书原文件泄露。",
+  "guard.rule.builtin_detect_private_key.name": "私钥与证书泄露检测",
+  "guard.rule.builtin_check_merge_conflict.desc":
+    "严格拦截源码中残留的 <<<<<<< HEAD、=======、>>>>>>> 等 Git 合并冲突标记，防止灾难性合并。",
+  "guard.rule.builtin_check_merge_conflict.name": "未解决合并冲突标记拦截",
+  "guard.rule.slot_go_formatter.desc": "执行 Go 官方标准代码格式化，自动补全、增删并规范排序 Go import 依赖包引用。",
+  "guard.rule.slot_go_formatter.name": "Go 源码格式化与导包自愈 (goimports)",
+  "guard.rule.slot_web_formatter.desc":
+    "对 Vue、TypeScript、JavaScript、JSON、CSS、YAML、Markdown 等前端代码进行工业级美化自愈与格式化对齐。",
+  "guard.rule.slot_web_formatter.name": "Web 前端代码自愈排版 (Prettier)",
+  "guard.rule.builtin_forbid_crlf_in_scripts.desc":
+    "防止 Windows 下编写的 Shell 脚本因回车符 (\\r) 导致在 Linux CI 中报语法错误。",
+  "guard.rule.builtin_forbid_crlf_in_scripts.name": "Shell 脚本 CRLF 拦截与转换",
+  "guard.rule.builtin_mixed_line_endings.desc":
+    "严禁跨平台开发中混用 CRLF 与 LF，自动规整换行风格为 Linux/macOS 标准单换行。",
+  "guard.rule.builtin_mixed_line_endings.name": "换行符统一规范 (LF)",
+  "guard.rule.builtin_check_shebang_scripts_are_executable.desc":
+    "检测包含 Shebang (#!) 声明的脚本文件，确保其在 Git 索引与文件系统中具备 +x 可执行属性。",
+  "guard.rule.builtin_check_shebang_scripts_are_executable.name": "脚本可执行权限自动赋予",
+  "guard.rule.builtin_check_utf8_bom.desc":
+    "自动识别并移除 Windows 编辑器生成的 UTF-8 BOM 字节序前缀 (EF BB BF)，杜绝解析器乱码。",
+  "guard.rule.builtin_check_utf8_bom.name": "UTF-8 BOM 字节序清洗",
+  "guard.rule.builtin_end_of_file.desc":
+    "确保文本文件以且仅以单个换行符 (LF) 结尾，符合 POSIX 标准并防止差异显示无换行警告。",
+  "guard.rule.builtin_end_of_file.name": "文件末尾单空行规范",
+  "guard.rule.builtin_trailing_whitespace.desc":
+    "检测并自动修剪源码及文本行尾的多余空格与制表符，避免 Git Diff 污染与无意义冲突。",
+  "guard.rule.builtin_trailing_whitespace.name": "行尾多余空白清洗",
   "scm.toast.fetch_failed": "抓取失败",
   "scm.toast.pull_failed": "拉取失败",
   "scm.toast.clean_untracked_failed": "清理未跟踪文件失败",

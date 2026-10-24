@@ -1,6 +1,172 @@
 import type { TranslationDict } from "../types";
 
 export const faIr: TranslationDict = {
+  "guard.modal.restore_defaults": "Restore Defaults",
+  "guard.modal.ext_hint": "Leave empty to use defaults. Comma-separated extensions (e.g. .go, .ts, .vue).",
+  "guard.modal.exclude_files_hint": "Comma-separated filenames or glob patterns to exclude.",
+  "guard.modal.exclude_dirs_hint": "Comma-separated directories to exclude from this rule.",
+  "guard.modal.max_size_hint": "Intercept large files exceeding threshold from being committed into Git repository.",
+  "guard.modal.severity_warn_opt": "⚠️ Warning (Highlight violation without breaking workflow)",
+  "guard.modal.severity_blocker_opt": "🛑 Blocker (Prevent commit and build on violation)",
+  "guard.modal.follow_default": "Follow Default ({sev})",
+  "guard.modal.skip_desc": "Rule will be added to [guard] skip list in .unirtm.toml and skipped during checks.",
+  "guard.modal.active_desc": "Rule runs normally during pre-commit and check inspections.",
+  "guard.modal.skip_opt": "Skip",
+  "guard.modal.active_opt": "Active",
+  "guard.modal.default_applies": "Default Scope:",
+  "guard.modal.read_only": "Read-only Inspection",
+  "guard.modal.supports_fix": "⚡ Auto-fix Supported",
+  "guard.modal.healing_label": "Auto-healing:",
+  "guard.modal.category_label": "Category:",
+  "guard.toast_config_saved": 'Built-in rule "{id}" config saved to .unirtm.toml',
+  "guard.toast_rule_skipped": 'Built-in rule "{name}" added to skip list',
+  "guard.toast_rule_enabled": 'Built-in rule "{name}" re-enabled',
+  "guard.configured_label": "Configured: {summary}",
+  "guard.status_skipped": "Skipped",
+  "guard.status_active": "Active",
+  "guard.cannot_delete_tip": "Core built-in rule cannot be deleted",
+  "guard.cannot_delete": "Locked",
+  "guard.skipped_count": "Skipped: {count}",
+  "guard.active_count": "Active: {count}",
+  "guard.configure_rule": "Configure Rule",
+  "guard.reset_filter": "Reset Filter",
+  "guard.no_matching_rules": 'No guard rules matching "{keyword}"',
+  "guard.applies_to": "Applies:",
+  "guard.chip_warning": "⚠️ Advisory",
+  "guard.chip_blocker": "🛑 Blocker",
+  "guard.chip_fixable": "⚡ Auto-healable",
+  "guard.rule_status_idle": "Standby",
+  "guard.rule_status_blocker": "✕ {count} Blockers",
+  "guard.rule_status_warn": "! {count} Warnings",
+  "guard.rule_status_fixed": "⚡ Healed",
+  "guard.rule_status_passed": "✔ Passed",
+  "guard.filter_rules_placeholder": "Search rule name, ID, extensions (.go, .ts) or tools...",
+  "guard.tab_security": "Security ({count})",
+  "guard.tab_linter": "Linting ({count})",
+  "guard.tab_formatter": "Formatting ({count})",
+  "guard.tab_native_fixer": "Native Healing ({count})",
+  "guard.tab_all_rules": "All ({count})",
+  "guard.pipeline_coverage_desc":
+    "Covers code hygiene, formatting, deep syntax linting, and secret leak prevention pipelines with real-time metrics.",
+  "guard.builtin_rules_note":
+    "System core preset rules cannot be deleted, but you can configure parameters, exclude paths, or skip rules.",
+  "guard.builtin_rules_desc":
+    "All built-in rules are driven by lightweight native engine with zero external dependencies and millisecond execution.",
+  "guard.builtin_rules_title": "Core Built-in Rules (UniRTM Native Engine)",
+  "guard.rule.slot_supplychain_trivy.desc":
+    "Full-stack software supply chain and SBOM security scanner, inspecting dependencies and license compliance.",
+  "guard.rule.slot_supplychain_trivy.name": "Supply Chain & SBOM Security Scanner (trivy)",
+  "guard.rule.slot_audit_osv.desc":
+    "Audits dependencies against the Google Open Source Vulnerabilities (OSV) database for known CVEs.",
+  "guard.rule.slot_audit_osv.name": "Multi-Ecosystem Vulnerability Scanner (osv-scanner)",
+  "guard.rule.slot_vuln_govulncheck.desc":
+    "Queries the official Go Vulnerability Database to accurately determine reachable dependency vulnerabilities.",
+  "guard.rule.slot_vuln_govulncheck.name": "Go Known Vulnerabilities Audit (govulncheck)",
+  "guard.rule.slot_ci_zizmor.desc":
+    "Threat modeling for GitHub Actions workflows, preventing runner privilege escalation and secret exfiltration.",
+  "guard.rule.slot_ci_zizmor.name": "GitHub Actions Security Linter (zizmor)",
+  "guard.rule.slot_security_gosec.desc":
+    "AST-based security scanner for Go source files, flagging SQL injections, weak crypto, and file traversal vulnerabilities.",
+  "guard.rule.slot_security_gosec.name": "Go AST Security Scanner (gosec)",
+  "guard.rule.slot_secret_gitleaks.desc":
+    "Uses Gitleaks to perform deep audits across working tree, staged index, and commit history for exposed secrets.",
+  "guard.rule.slot_secret_gitleaks.name": "Git History Secrets Audit (Gitleaks)",
+  "guard.rule.slot_go_linter.desc":
+    "Comprehensive Go static analysis combining errcheck, govet, staticcheck, and unused to catch latent defects.",
+  "guard.rule.slot_go_linter.name": "Go Code Linter (golangci-lint)",
+  "guard.rule.slot_web_linter.desc":
+    "Deep static analysis for Vue components, TypeScript typings, code smells, and potential logic defects via ESLint.",
+  "guard.rule.slot_web_linter.name": "Web Code Linter (ESLint)",
+  "guard.rule.builtin_forbid_ip_addresses.desc":
+    "Scans for hardcoded IPv4 and IPv6 addresses in source code to prevent leaking internal network topology.",
+  "guard.rule.builtin_forbid_ip_addresses.name": "Hardcoded IP Guard",
+  "guard.rule.builtin_check_markdown.desc":
+    "Audits README and documentation files for invalid heading hierarchies, unclosed code fences, and formatting smells.",
+  "guard.rule.builtin_check_markdown.name": "Markdown Syntax Linter",
+  "guard.rule.builtin_forbid_empty_code_files.desc":
+    "Prevents 0-byte blank source files accidentally created during refactoring from entering version control.",
+  "guard.rule.builtin_forbid_empty_code_files.name": "Empty Code Files Guard",
+  "guard.rule.builtin_forbid_binary_artifacts.desc":
+    "Intercepts compiled binaries (ELF, .exe, .dll, Mach-O) and Java .class bytecode from being added to version control.",
+  "guard.rule.builtin_forbid_binary_artifacts.name": "Binary Artifacts Guard",
+  "guard.rule.builtin_forbid_debug_statements.desc":
+    "Blocks leftover debug logging statements like console.log, debugger, fmt.Println, and print() from source files.",
+  "guard.rule.builtin_forbid_debug_statements.name": "Debug Statements Guard",
+  "guard.rule.builtin_check_yaml.desc":
+    "Verifies YAML and YML syntax, indentation levels, colon spacing, and anchor references across all pipelines.",
+  "guard.rule.builtin_check_yaml.name": "YAML Syntax Linter",
+  "guard.rule.builtin_commit_msg.desc":
+    "Enforces Conventional Commits standards (feat, fix, docs, refactor, chore) during commit-msg hook verification.",
+  "guard.rule.builtin_commit_msg.name": "Conventional Commits Validator",
+  "guard.rule.builtin_detect_cloud_secrets.desc":
+    "High-speed matching for AWS, Aliyun, Tencent Cloud, GCP, and Azure AccessKey/SecretKey credential tokens.",
+  "guard.rule.builtin_detect_cloud_secrets.name": "Cloud Credentials Detector",
+  "guard.rule.builtin_check_xml.desc":
+    "Validates XML, XSLT, and SVG configuration files for proper tag nesting and attribute formatting.",
+  "guard.rule.builtin_check_xml.name": "XML Syntax Linter",
+  "guard.rule.builtin_check_toml.desc":
+    "Parses and verifies TOML configuration files including .unirtm.toml for structural and grammatical correctness.",
+  "guard.rule.builtin_check_toml.name": "TOML Syntax Linter",
+  "guard.rule.builtin_check_json.desc":
+    "Validates JSON syntax, blocking trailing commas, unmatched brackets, and character encoding anomalies.",
+  "guard.rule.builtin_check_json.name": "JSON Syntax Linter",
+  "guard.rule.builtin_check_svg_safety.desc":
+    "Inspects SVG vector images to block embedded <script> tags and inline JavaScript handlers from introducing XSS flaws.",
+  "guard.rule.builtin_check_svg_safety.name": "SVG Script Safety Guard",
+  "guard.rule.builtin_check_executables_have_shebangs.desc":
+    "Ensures all non-binary executable files (+x) start with a valid interpreter shebang on their first line.",
+  "guard.rule.builtin_check_executables_have_shebangs.name": "Executable Shebang Guard",
+  "guard.rule.builtin_check_symlinks.desc":
+    "Validates symlink destinations to prevent broken links or links pointing to absolute host paths from entering Git.",
+  "guard.rule.builtin_check_symlinks.name": "Broken Symlinks Guard",
+  "guard.rule.builtin_forbidden_files.desc":
+    "Blocks OS metadata and editor temporary files (.DS_Store, Thumbs.db, desktop.ini, *.bak, *.orig) from being committed.",
+  "guard.rule.builtin_forbidden_files.name": "Forbidden Files Guard",
+  "guard.rule.builtin_check_lockfile_conflicts.desc":
+    "Verifies dependency lockfiles are not damaged or desynchronized by unresolved branch merge operations.",
+  "guard.rule.builtin_check_lockfile_conflicts.name": "Lockfile Conflict Guard",
+  "guard.rule.builtin_check_lockfile_coexistence.desc":
+    "Prevents conflicting package manager lockfiles (npm, yarn, pnpm, bun) from coexisting, ensuring reproducible builds.",
+  "guard.rule.builtin_check_lockfile_coexistence.name": "Lockfile Coexistence Guard",
+  "guard.rule.builtin_check_case_conflict.desc":
+    "Checks for case-conflicting filenames across case-insensitive (macOS/Windows) and case-sensitive (Linux) systems.",
+  "guard.rule.builtin_check_case_conflict.name": "Filename Case Conflict Guard",
+  "guard.rule.builtin_check_added_large_files.desc":
+    "Prevents unmanaged large binary files (>10MB) from being committed, preventing permanent Git repository bloat.",
+  "guard.rule.builtin_check_added_large_files.name": "Large File Threshold Guard",
+  "guard.rule.builtin_check_env_safety.desc":
+    "Blocks sensitive environment files like .env, .env.local, and .env.production from being committed to source control.",
+  "guard.rule.builtin_check_env_safety.name": "Env Files Secret Leak Guard",
+  "guard.rule.builtin_detect_private_key.desc":
+    "Scans workspace assets and prevents accidental commits of PEM, RSA, DSA, EC, or PGP private keys and certificates.",
+  "guard.rule.builtin_detect_private_key.name": "Private Key Leak Detector",
+  "guard.rule.builtin_check_merge_conflict.desc":
+    "Intercepts unresolved Git merge conflict markers (<<<<<<< HEAD, =======, >>>>>>>) left in source files.",
+  "guard.rule.builtin_check_merge_conflict.name": "Merge Conflict Markers Detector",
+  "guard.rule.slot_go_formatter.desc":
+    "Formats Go source files to Go standards and automatically organizes, adds, and removes import declarations.",
+  "guard.rule.slot_go_formatter.name": "Go Code Formatter (goimports)",
+  "guard.rule.slot_web_formatter.desc":
+    "Industrial-grade automated code formatting for Vue, TypeScript, JavaScript, JSON, CSS, YAML, and Markdown files.",
+  "guard.rule.slot_web_formatter.name": "Web Code Formatter (Prettier)",
+  "guard.rule.builtin_forbid_crlf_in_scripts.desc":
+    "Prevents Windows carriage return (\\r) characters in Shell scripts that cause syntax errors in Linux CI environments.",
+  "guard.rule.builtin_forbid_crlf_in_scripts.name": "Script CRLF Forbidden",
+  "guard.rule.builtin_mixed_line_endings.desc":
+    "Enforces consistent POSIX LF line endings across all platforms and converts Windows CRLF line endings automatically.",
+  "guard.rule.builtin_mixed_line_endings.name": "Line Endings Unifier (LF)",
+  "guard.rule.builtin_check_shebang_scripts_are_executable.desc":
+    "Ensures scripts containing a shebang (#!) declaration have the +x executable permission flag in Git index and filesystem.",
+  "guard.rule.builtin_check_shebang_scripts_are_executable.name": "Shebang Executable Bit Fixer",
+  "guard.rule.builtin_check_utf8_bom.desc":
+    "Detects and removes UTF-8 BOM byte order prefixes (EF BB BF) generated by Windows editors to prevent parser errors.",
+  "guard.rule.builtin_check_utf8_bom.name": "UTF-8 BOM Byte Order Fixer",
+  "guard.rule.builtin_end_of_file.desc":
+    "Ensures text files end with exactly one newline (LF), complying with POSIX standards and preventing missing newline warnings.",
+  "guard.rule.builtin_end_of_file.name": "End of File Newline Fixer",
+  "guard.rule.builtin_trailing_whitespace.desc":
+    "Detects and trims trailing whitespace and tabs from source code and text files, preventing Git diff pollution and noise.",
+  "guard.rule.builtin_trailing_whitespace.name": "Trailing Whitespace Trimmer",
   "scm.toast.fetch_failed": "Fetch failed",
   "scm.toast.pull_failed": "Pull failed",
   "scm.toast.clean_untracked_failed": "Failed to clean untracked files",

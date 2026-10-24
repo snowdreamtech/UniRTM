@@ -36,16 +36,26 @@
         <!-- Rule Basic Overview -->
         <div class="rule-summary-card">
           <div class="summary-top">
-            <span class="summary-name">{{ rule.name }}</span>
+            <span class="summary-name">{{ getGuardRuleName(rule) }}</span>
             <span class="summary-phase-badge font-mono">{{ rule.phaseLabel }}</span>
           </div>
-          <p class="summary-desc">{{ rule.description }}</p>
+          <p class="summary-desc">{{ getGuardRuleDesc(rule) }}</p>
           <div class="summary-meta-row">
-            <span class="summary-meta-item"> <strong>分类:</strong> {{ rule.categoryLabel }} </span>
             <span class="summary-meta-item">
-              <strong>自愈能力:</strong> {{ rule.fixable ? "⚡ 支持自动修复" : "只读审查" }}
+              <strong>{{ t("guard.modal.category_label") || "Category:" }}</strong> {{ rule.categoryLabel }}
             </span>
-            <span class="summary-meta-item"> <strong>默认适用:</strong> {{ rule.extensions.join(", ") }} </span>
+            <span class="summary-meta-item">
+              <strong>{{ t("guard.modal.healing_label") || "Auto-healing:" }}</strong>
+              {{
+                rule.fixable
+                  ? t("guard.modal.supports_fix") || "⚡ Auto-fix Supported"
+                  : t("guard.modal.read_only") || "Read-only Inspection"
+              }}
+            </span>
+            <span class="summary-meta-item">
+              <strong>{{ t("guard.modal.default_applies") || "Default Scope:" }}</strong>
+              {{ rule.extensions.join(", ") }}
+            </span>
           </div>
         </div>
 
@@ -57,7 +67,7 @@
           <div class="status-toggle-wrapper">
             <button type="button" class="toggle-choice-btn" :class="{ active: isEnabled }" @click="isEnabled = true">
               <span class="codicon codicon-check"></span>
-              <span>正常启用 (Active)</span>
+              <span>{{ t("guard.modal.active_opt") || "Active" }}</span>
             </button>
             <button
               type="button"
@@ -66,14 +76,15 @@
               @click="isEnabled = false"
             >
               <span class="codicon codicon-debug-step-over"></span>
-              <span>跳过此规则 (Skip)</span>
+              <span>{{ t("guard.modal.skip_opt") || "Skip" }}</span>
             </button>
           </div>
           <span class="form-hint">
             {{
               isEnabled
-                ? "规则将在 pre-commit 及 check 质检时正常执行。"
-                : "规则将被添加至 .unirtm.toml 的 [guard] skip 列表中，质检时跳过。"
+                ? t("guard.modal.active_desc") || "Rule runs normally during pre-commit and check inspections."
+                : t("guard.modal.skip_desc") ||
+                  "Rule will be added to [guard] skip list in .unirtm.toml and skipped during checks."
             }}
           </span>
         </div>
@@ -86,10 +97,21 @@
           <div class="select-wrapper">
             <select v-model="formData.severity" class="form-select">
               <option value="default">
-                跟随系统默认 ({{ rule.severity === "blocker" ? "阻断门禁" : "建议告警" }})
+                {{
+                  t("guard.modal.follow_default", {
+                    sev:
+                      rule.severity === "blocker"
+                        ? t("guard.chip_blocker") || "Blocker"
+                        : t("guard.chip_warning") || "Advisory",
+                  }) || "Follow Default (" + rule.severity + ")"
+                }}
               </option>
-              <option value="blocker">🛑 强制阻断 (Blocker - 发现违规阻止提交与构建)</option>
-              <option value="warning">⚠️ 建议告警 (Warning - 高亮提示违规，不打断流程)</option>
+              <option value="blocker">
+                {{ t("guard.modal.severity_blocker_opt") || "🛑 Blocker (Prevent commit and build on violation)" }}
+              </option>
+              <option value="warning">
+                {{ t("guard.modal.severity_warn_opt") || "⚠️ Warning (Highlight violation without breaking workflow)" }}
+              </option>
             </select>
           </div>
         </div>
@@ -110,7 +132,12 @@
             />
             <span class="unit-badge">MB</span>
           </div>
-          <span class="form-hint"> 默认拦截超过 10 MB 的大文件被意外提交进 Git 仓库。 </span>
+          <span class="form-hint">
+            {{
+              t("guard.modal.max_size_hint") ||
+              "Intercept large files exceeding threshold from being committed into Git repository."
+            }}
+          </span>
         </div>
 
         <!-- Form: Exclude Dirs -->
@@ -124,7 +151,9 @@
             class="form-input font-mono"
             placeholder="e.g. vendor, testdata, dist, tmp"
           />
-          <span class="form-hint"> 多个目录用逗号隔开，匹配到的目录及其子文件将不受此规则检查。 </span>
+          <span class="form-hint">
+            {{ t("guard.modal.exclude_dirs_hint") || "Comma-separated directories to exclude from this rule." }}
+          </span>
         </div>
 
         <!-- Form: Exclude Files -->
@@ -138,7 +167,9 @@
             class="form-input font-mono"
             placeholder="e.g. *.min.js, config/local.json, test.env"
           />
-          <span class="form-hint"> 多个文件名或 glob 模式用逗号隔开。 </span>
+          <span class="form-hint">
+            {{ t("guard.modal.exclude_files_hint") || "Comma-separated filenames or glob patterns to exclude." }}
+          </span>
         </div>
 
         <!-- Form: Extensions Override -->
@@ -152,7 +183,10 @@
             class="form-input font-mono"
             :placeholder="rule.extensions.join(', ')"
           />
-          <span class="form-hint"> 留空则使用默认配置。多个扩展名用逗号分隔（如 <code>.go, .ts, .vue</code>）。 </span>
+          <span class="form-hint">{{
+            t("guard.modal.ext_hint") ||
+            "Leave empty to use defaults. Comma-separated extensions (e.g. .go, .ts, .vue)."
+          }}</span>
         </div>
       </div>
 
@@ -160,11 +194,11 @@
       <div class="modal-footer">
         <div class="footer-left">
           <span class="badge-unremovable font-mono">
-            <span class="codicon codicon-lock"></span> 系统内置·不可删除
+            <span class="codicon codicon-lock"></span> {{ t("guard.cannot_delete") || "Locked" }}
           </span>
           <button type="button" class="btn-reset-default" @click="resetToDefault">
             <span class="codicon codicon-discard"></span>
-            <span>恢复默认设置</span>
+            <span>{{ t("guard.modal.restore_defaults") || "Restore Defaults" }}</span>
           </button>
         </div>
 
@@ -186,6 +220,7 @@
 import { ref, watch } from "vue";
 import { t } from "../../i18n";
 import type { DetailedGuardRule } from "../../utils/guardRulesMeta";
+import { getGuardRuleName, getGuardRuleDesc } from "../../utils/guardRulesMeta";
 import type { BuiltinRuleCustomConfig } from "../../utils/tomlGuardHelper";
 
 export type { BuiltinRuleCustomConfig };
