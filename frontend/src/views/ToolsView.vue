@@ -10,8 +10,10 @@
           <span>{{ t("nav.tools") || "Toolchains" }}</span>
         </h2>
         <p class="view-desc">
-          由 UniRTM 统一版本锁定与高性能垫片（Go Shims）路由，替换 NVM、GVM、Pyenv
-          等异构管理器，提供跨平台一致的工具链环境。
+          {{
+            t("runtimes.desc") ||
+            "Manage Node.js, Go, Python, and more — superseding NVM, GVM, and Pyenv with unified cross-platform versioning."
+          }}
         </p>
       </div>
       <div class="view-actions" style="display: flex; gap: 8px; align-items: center">
@@ -20,10 +22,14 @@
           id="btn-check-updates"
           @click="checkRemoteUpdates"
           :disabled="checkingUpdates || loading"
-          title="检测所有工具最新远程版本与升级差异"
+          :title="t('runtimes.check_updates_title') || 'Check for latest remote releases and updates for all tools'"
         >
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': checkingUpdates }" />
-          <span>{{ checkingUpdates ? "正在检测更新..." : "检测更新" }}</span>
+          <span>{{
+            checkingUpdates
+              ? t("runtimes.checking_updates") || "Checking updates..."
+              : t("runtimes.check_updates") || "Check Updates"
+          }}</span>
         </button>
         <button class="tool-action-btn secondary" @click="fetchStatus" :disabled="loading">
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': loading }" />
@@ -112,14 +118,14 @@
           <b>{{ filteredRuntimes.length }}</b> {{ t("runtimes.count_runtimes_suffix") || "tools" }}
         </span>
 
-        <!-- 待安装统计徽标：遵循低噪音原则，仅在 > 0 时醒目呈现，支持点击一键切换筛选 -->
+        <!-- Missing count badge -->
         <span
           v-if="scopeMissingCount > 0"
           class="stat-badge stat-badge-missing clickable"
           :class="{ active: filterOnlyMissing }"
           :title="
             t('runtimes.missing_tooltip', { count: scopeMissingCount }) ||
-            `当前作用域有 ${scopeMissingCount} 个工具配置了但本地尚未安装，点击快速筛选`
+            `${scopeMissingCount} tools configured but not installed locally. Click to filter.`
           "
           @click="filterOnlyMissing = !filterOnlyMissing"
         >
@@ -127,14 +133,14 @@
           <b>{{ scopeMissingCount }}</b> {{ t("runtimes.count_missing_suffix") || "Missing" }}
         </span>
 
-        <!-- 可升级统计徽标：绿色专属升级状态 -->
+        <!-- Upgradable status badge -->
         <span
           class="stat-badge"
           :class="{ highlight: scopeUpgradableCount > 0, clickable: scopeUpgradableCount > 0 }"
           :title="
             scopeUpgradableCount > 0
               ? t('runtimes.upgradable_tooltip', { count: scopeUpgradableCount }) ||
-                `当前作用域有 ${scopeUpgradableCount} 个工具可升级，点击查看详情`
+                `${scopeUpgradableCount} upgradable tools in current scope. Click for details.`
               : ''
           "
           @click="scopeUpgradableCount > 0 ? (isDiffDrawerOpen = true) : undefined"
@@ -176,13 +182,19 @@
         <TechIcon id="workbench:tools" :size="32" :colored="false" />
       </div>
       <div class="empty-title">
-        {{ currentScope === "user" ? "用户默认环境暂未配置工具" : "当前工作区暂未配置工具" }}
+        {{
+          currentScope === "user"
+            ? t("runtimes.empty_user_title") || "No tools configured in user profile"
+            : t("runtimes.empty_workspace_title") || "No tools configured in current workspace"
+        }}
       </div>
       <p class="empty-desc">
         {{
           currentScope === "user"
-            ? "用户区配置文件 (~/.config/unirtm/unirtm.toml) 提供未绑定工作区时的全局兜底环境，可通过上方「+ 添加运行环境」进行配置。"
-            : "工作区配置文件 (.unirtm.toml) 暂无匹配工具，可通过上方「+ 添加运行环境」添加。"
+            ? t("runtimes.empty_user_desc") ||
+              "User configuration (~/.config/unirtm/unirtm.toml) provides global fallback environments when unattached to any workspace. Use '+ Add Runtime' above to configure."
+            : t("runtimes.empty_workspace_desc") ||
+              "Workspace configuration (.unirtm.toml) has no tools configured. Use '+ Add Runtime' above to add."
         }}
       </p>
       <button class="tool-action-btn primary small" @click="openAddModal">
@@ -209,25 +221,28 @@
                 target="_blank"
                 rel="noopener noreferrer"
                 class="runtime-name"
-                :title="`${formatToolTitle(rt.name)} (访问官方主页/代码仓库)`"
+                :title="`${formatToolTitle(rt.name)} (${t('runtimes.visit_homepage') || 'Visit official homepage / repository'})`"
               >
                 {{ formatToolTitle(rt.name) }}
               </a>
               <div class="runtime-header-badges">
-                <!-- 1. 未配置态 -->
+                <!-- 1. Unconfigured state -->
                 <span
                   v-if="getToolStatus(rt).state === 'unconfigured'"
                   class="runtime-version-badge is-muted font-mono"
-                  :title="t('runtimes.unconfigured')"
+                  :title="t('runtimes.unconfigured') || 'Unconfigured'"
                 >
-                  {{ t("runtimes.unconfigured") }}
+                  {{ t("runtimes.unconfigured") || "Unconfigured" }}
                 </span>
 
-                <!-- 2. 已配置但未安装 (Missing) -> 琥珀警示色 -->
+                <!-- 2. Configured but not installed (Missing) -->
                 <span
                   v-else-if="getToolStatus(rt).state === 'missing'"
                   class="runtime-version-badge is-missing font-mono"
-                  :title="`工作区配置了 ${formatVersion(getToolStatus(rt).configuredVersion)}，但本地磁盘尚未安装`"
+                  :title="
+                    t('runtimes.missing_tooltip', { ver: formatVersion(getToolStatus(rt).configuredVersion) }) ||
+                    `Configured ${formatVersion(getToolStatus(rt).configuredVersion)}, but not installed locally`
+                  "
                 >
                   <span class="missing-dot">●</span>
                   <span
@@ -237,7 +252,7 @@
                   >
                 </span>
 
-                <!-- 3. 已安装且已就绪 (Ready) -> 沉稳中性低噪音，不展示任何图标 -->
+                <!-- 3. Installed and ready -->
                 <span
                   v-else
                   class="runtime-version-badge is-ready font-mono"
@@ -246,12 +261,16 @@
                   {{ formatVersion(getToolStatus(rt).configuredVersion) }}
                 </span>
 
-                <!-- 4. 专属绿色升级徽标 (Upgradable) -> 绿色留给可升级状态 -->
+                <!-- 4. Upgradable status badge -->
                 <button
                   v-if="getToolStatus(rt).state === 'upgradable' && getToolStatus(rt).upgradableVersion"
                   type="button"
                   class="runtime-upgrade-pill font-mono"
-                  :title="`可升级至最新版本 ${formatVersion(getToolStatus(rt).upgradableVersion!)}`"
+                  :title="
+                    t('runtimes.upgradable_tooltip', {
+                      ver: formatVersion(getToolStatus(rt).upgradableVersion!),
+                    }) || `Can upgrade to latest version ${formatVersion(getToolStatus(rt).upgradableVersion!)}`
+                  "
                   @click.stop="openRemoteModal(rt)"
                 >
                   <span class="upgrade-arrow">↑</span>
@@ -267,7 +286,7 @@
           </div>
         </div>
 
-        <!-- Card Actions: Primary [切换] [安装] + More Menu [···] (锁定, 删除) -->
+        <!-- Card Actions: Primary [Switch] [Install] + More Menu [...] -->
         <div class="runtime-card-footer">
           <button
             class="card-action-btn action-switch"
@@ -360,7 +379,7 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   class="tool-title font-mono"
-                  :title="`${formatToolTitle(rt.name)} (访问官方主页/代码仓库)`"
+                  :title="`${formatToolTitle(rt.name)} (${t('runtimes.visit_homepage') || 'Visit official homepage / repository'})`"
                 >
                   {{ formatToolTitle(rt.name) }}
                 </a>
@@ -373,14 +392,17 @@
                 <span
                   v-if="getToolStatus(rt).state === 'unconfigured'"
                   class="runtime-version-badge is-muted font-mono"
-                  :title="t('runtimes.unconfigured')"
+                  :title="t('runtimes.unconfigured') || 'Unconfigured'"
                 >
-                  {{ t("runtimes.unconfigured") }}
+                  {{ t("runtimes.unconfigured") || "Unconfigured" }}
                 </span>
                 <span
                   v-else-if="getToolStatus(rt).state === 'missing'"
                   class="runtime-version-badge is-missing font-mono"
-                  :title="`配置了 ${formatVersion(getToolStatus(rt).configuredVersion)}，但本地尚未下载安装`"
+                  :title="
+                    t('runtimes.missing_tooltip', { ver: formatVersion(getToolStatus(rt).configuredVersion) }) ||
+                    `Configured ${formatVersion(getToolStatus(rt).configuredVersion)}, but not installed locally`
+                  "
                 >
                   <span class="missing-dot">●</span>
                   <span
@@ -400,13 +422,20 @@
                   v-if="getToolStatus(rt).state === 'upgradable' && getToolStatus(rt).upgradableVersion"
                   type="button"
                   class="runtime-upgrade-pill font-mono"
-                  :title="`可升级至 ${formatVersion(getToolStatus(rt).upgradableVersion!)}`"
+                  :title="
+                    t('runtimes.upgradable_tooltip', {
+                      ver: formatVersion(getToolStatus(rt).upgradableVersion!),
+                    }) || `Can upgrade to ${formatVersion(getToolStatus(rt).upgradableVersion!)}`
+                  "
                   @click.stop="openRemoteModal(rt)"
                 >
                   <span class="upgrade-arrow">↑</span>
                   <span>{{ formatVersion(getToolStatus(rt).upgradableVersion!) }}</span>
                 </button>
-                <span v-if="rt.pinned" class="pin-indicator" :title="rt.pin_reason || t('runtimes.action_lock')"
+                <span
+                  v-if="rt.pinned"
+                  class="pin-indicator"
+                  :title="rt.pin_reason || t('runtimes.action_lock') || 'Lock'"
                   >📌</span
                 >
               </div>
@@ -574,9 +603,14 @@
                 <span
                   v-if="selectedRuntime?.pinned"
                   class="source-tag source-pinned"
-                  :title="selectedRuntime.pin_reason ? `版本锁定: ${selectedRuntime.pin_reason}` : '版本已锁定'"
+                  :title="
+                    selectedRuntime.pin_reason
+                      ? `${t('runtimes.pinned_reason') || 'Version pinned'}: ${selectedRuntime.pin_reason}`
+                      : t('runtimes.pinned') || 'Pinned'
+                  "
                 >
-                  🔒 已锁定{{ selectedRuntime.pin_reason ? `: ${selectedRuntime.pin_reason}` : "" }}
+                  🔒 {{ t("runtimes.pinned") || "Pinned"
+                  }}{{ selectedRuntime.pin_reason ? `: ${selectedRuntime.pin_reason}` : "" }}
                 </span>
               </div>
               <p class="modal-desc">
@@ -649,10 +683,13 @@
             class="filter-chip installed-chip"
             :class="{ active: selectedMajorFilter === 'installed' }"
             @click="selectedMajorFilter = selectedMajorFilter === 'installed' ? '' : 'installed'"
-            title="只查看本地共享安装池中已有的版本"
+            :title="t('runtimes.installed_filter_tooltip') || 'View only versions already present in local shared pool'"
           >
             <span class="chip-installed-dot">●</span>
-            <span>已安装 ({{ selectedRuntime.installed_versions.length }})</span>
+            <span>{{
+              t("runtimes.installed_versions", { count: selectedRuntime.installed_versions.length }) ||
+              `Installed (${selectedRuntime.installed_versions.length})`
+            }}</span>
           </button>
           <button
             v-for="tag in quickFilterTags"
@@ -723,8 +760,8 @@
                 :class="{ 'active-scope-tag': isActiveInModalScope(selectedRuntime?.id || '', rv.version) }"
                 :title="
                   isActiveInModalScope(selectedRuntime?.id || '', rv.version)
-                    ? '当前生效且已安装在本地'
-                    : '已保存在本地共享安装池中，切换无需下载'
+                    ? t('runtimes.ver_active_installed') || 'Currently active and installed locally'
+                    : t('runtimes.ver_cached') || 'Cached in local pool, switch instantly without download'
                 "
               >
                 {{ t("runtimes.installed") || "Installed" }}
@@ -734,8 +771,8 @@
                 class="installed-tag is-missing"
                 :title="
                   modalInstallScope === 'user'
-                    ? '用户默认已配置该版本，但本地尚未下载安装'
-                    : '工作区已配置该版本，但本地尚未下载安装'
+                    ? t('runtimes.ver_missing_user') || 'Configured in user profile, but not downloaded locally'
+                    : t('runtimes.ver_missing_workspace') || 'Configured in workspace, but not downloaded locally'
                 "
               >
                 {{ t("runtimes.status_missing") || "Missing" }}
@@ -792,7 +829,16 @@
             </span>
             <div>
               <h3 class="modal-title">{{ t("runtimes.add_runtime") || "Add Runtime" }}</h3>
-              <p class="modal-desc">为当前{{ currentScope === "user" ? "用户默认" : "工作区" }}添加工具与版本</p>
+              <p class="modal-desc">
+                {{
+                  t("runtimes.modal_desc", {
+                    scope:
+                      currentScope === "user"
+                        ? t("runtimes.scope_user") || "User"
+                        : t("runtimes.scope_workspace") || "Workspace",
+                  }) || `Add tool and version for current ${currentScope}`
+                }}
+              </p>
             </div>
           </div>
           <button
@@ -844,7 +890,7 @@
             {{ t("tools.custom.section_title") || "Or enter custom tool and explicit version" }}
           </div>
           <div class="custom-add-form">
-            <!-- 1. 常用前缀下拉选择 -->
+            <!-- 1. Ecosystem / provider prefix dropdown -->
             <div class="custom-field prefix-field">
               <select
                 v-model="customPrefix"
@@ -857,7 +903,7 @@
               </select>
             </div>
 
-            <!-- 2. 具体工具名输入框 -->
+            <!-- 2. Tool name input -->
             <div class="custom-field name-field">
               <input
                 v-model="customToolName"
@@ -871,7 +917,7 @@
 
             <span class="custom-at-separator">@</span>
 
-            <!-- 3. 固定确切版本号输入框 (不提供 latest，严禁确定性缺失) -->
+            <!-- 3. Explicit fixed version input -->
             <div class="custom-field version-field">
               <input
                 v-model="customToolVersion"
@@ -883,7 +929,7 @@
               />
             </div>
 
-            <!-- 4. 添加按钮 -->
+            <!-- 4. Add button -->
             <button
               class="tool-action-btn primary small custom-submit-btn"
               :disabled="!isCustomFormValid"
@@ -893,12 +939,15 @@
             </button>
           </div>
 
-          <!-- 5. 实时配置预览 -->
+          <!-- 5. Realtime configuration preview -->
           <div v-if="customSpec.previewToml" class="custom-config-preview">
             <span class="preview-label">{{ t("tools.custom.preview_label") || "Config preview:" }}</span>
             <code class="preview-code">{{ customSpec.previewToml }}</code>
             <span v-if="customToolVersion.toLowerCase() === 'latest'" class="preview-warning text-warning">
-              ⚠️ 不建议使用 latest，请指定固定版本以保证构建确定性
+              ⚠️
+              {{
+                t("runtimes.latest_warning") || "Pin exact version instead of latest to guarantee build reproducibility"
+              }}
             </span>
           </div>
         </div>
@@ -911,12 +960,13 @@
         <!-- Header -->
         <div class="diff-drawer-header">
           <div>
-            <h3 class="diff-drawer-title">可升级工具</h3>
+            <h3 class="diff-drawer-title">{{ t("runtimes.upgradable_tools") || "Upgradable Tools" }}</h3>
             <p class="diff-drawer-desc">
               {{
                 filteredUpdateResults.length > 0
-                  ? `发现 ${filteredUpdateResults.length} 个工具可升级至最新版本，请勾选后确认应用。`
-                  : "当前所有工具均已是最新版本。"
+                  ? t("runtimes.upgrades_found", { count: filteredUpdateResults.length }) ||
+                    `Found ${filteredUpdateResults.length} tools that can be upgraded to latest version.`
+                  : t("runtimes.all_up_to_date") || "All tools are already up to date."
               }}
             </p>
           </div>
@@ -933,7 +983,10 @@
         <div v-if="filteredUpdateResults.length > 0" class="diff-select-all-bar">
           <label class="diff-select-all-label">
             <input type="checkbox" :checked="isAllUpdatableSelected" @change="toggleSelectAllUpdatable" />
-            <span>全选所有可升级工具 ({{ filteredUpdateResults.length }})</span>
+            <span>{{
+              t("runtimes.select_all_upgradable", { count: filteredUpdateResults.length }) ||
+              `Select all upgradable tools (${filteredUpdateResults.length})`
+            }}</span>
           </label>
         </div>
 
@@ -941,8 +994,8 @@
         <div class="diff-drawer-body">
           <div v-if="filteredUpdateResults.length === 0" class="empty-diff-state">
             <span class="empty-diff-icon">✓</span>
-            <p class="empty-diff-title">所有工具均已是最新版本</p>
-            <p class="empty-diff-sub">没有需要升级的工具</p>
+            <p class="empty-diff-title">{{ t("runtimes.all_up_to_date") || "All tools are already up to date" }}</p>
+            <p class="empty-diff-sub">{{ t("runtimes.no_upgrades_needed") || "No tools need updating" }}</p>
           </div>
 
           <div v-else class="diff-items-list">
@@ -966,11 +1019,23 @@
                 </div>
               </div>
               <div class="diff-version-transition">
-                <span class="diff-ver-old font-mono" :title="`当前版本: ${formatVersion(item.current_version)}`">
-                  {{ formatVersion(item.current_version) || "未指定" }}
+                <span
+                  class="diff-ver-old font-mono"
+                  :title="
+                    t('runtimes.current_version_title', { ver: formatVersion(item.current_version) }) ||
+                    `Current version: ${formatVersion(item.current_version)}`
+                  "
+                >
+                  {{ formatVersion(item.current_version) || t("runtimes.unspecified") || "Unspecified" }}
                 </span>
                 <span class="diff-ver-arrow">→</span>
-                <span class="diff-ver-new font-mono" :title="`可升级至最新: ${formatVersion(item.latest_version)}`">
+                <span
+                  class="diff-ver-new font-mono"
+                  :title="
+                    t('runtimes.upgradable_to_title', { ver: formatVersion(item.latest_version) }) ||
+                    `Upgradable to latest: ${formatVersion(item.latest_version)}`
+                  "
+                >
                   {{ formatVersion(item.latest_version) }}
                 </span>
               </div>
@@ -982,12 +1047,15 @@
         <div class="diff-drawer-footer">
           <div class="diff-footer-info">
             <span class="diff-selection-summary">
-              已选中 <b>{{ selectedUpdateTools.length }}</b> 个待升级工具
+              {{
+                t("runtimes.selected_count", { count: selectedUpdateTools.length }) ||
+                `Selected ${selectedUpdateTools.length} tool(s) to upgrade`
+              }}
             </span>
           </div>
           <div class="diff-footer-actions">
             <button class="tool-action-btn secondary" @click="isDiffDrawerOpen = false" :disabled="batchUpdating">
-              取消
+              {{ t("common.cancel") || "Cancel" }}
             </button>
             <button
               class="tool-action-btn primary"
@@ -996,7 +1064,12 @@
               :disabled="selectedUpdateTools.length === 0 || batchUpdating"
             >
               <TechIcon v-if="batchUpdating" id="workbench:sync" :size="14" class="spin-icon" />
-              <span>{{ batchUpdating ? "正在批量升级..." : `一键升级选中项 (${selectedUpdateTools.length})` }}</span>
+              <span>{{
+                batchUpdating
+                  ? t("runtimes.batch_updating") || "Upgrading in batch..."
+                  : t("runtimes.batch_update_btn", { count: selectedUpdateTools.length }) ||
+                    `Upgrade Selected (${selectedUpdateTools.length})`
+              }}</span>
             </button>
           </div>
         </div>
@@ -1139,7 +1212,7 @@ const customSpec = computed(() => {
 
 const customPlaceholder = computed(() => {
   const match = COMMON_TOOL_PREFIXES.find((p) => p.value === customPrefix.value);
-  return match?.placeholder || "例如: zig, elixir, php...";
+  return match?.placeholder || t("runtimes.tool_input_placeholder") || "e.g.: zig, elixir, php...";
 });
 
 const isCustomFormValid = computed(() => {
@@ -1367,21 +1440,23 @@ async function addCustomRuntime() {
   customToolName.value = "";
   customToolVersion.value = "";
   isAddModalOpen.value = false;
-  showToast(`已成功添加 ${toolKey} (v${ver}) 环境`, "success");
+  showToast(
+    t("runtimes.add_success", { tool: toolKey, ver }) || `Successfully added ${toolKey} (v${ver}) environment`,
+    "success"
+  );
 
   await quickSwitch(toolKey, ver, isGlobal);
 }
 
 async function confirmRemoveRuntime(rt: RuntimeItem) {
   const isGlobal = currentScope.value === "user";
-  const scopeName = isGlobal ? "用户配置" : "工作区";
+  const scopeName = isGlobal ? t("runtimes.scope_user") || "User" : t("runtimes.scope_workspace") || "Workspace";
   if (rt.pinned) {
-    const reasonText = rt.pin_reason ? `（锁定原因：${rt.pin_reason}）` : "";
-    if (
-      !window.confirm(
-        `警告：工具 ${rt.name} 当前处于版本锁定保护状态${reasonText}。\n确定要强制将其从${scopeName}中移除吗？`
-      )
-    ) {
+    const reasonText = rt.pin_reason ? ` (${rt.pin_reason})` : "";
+    const promptMsg =
+      t("runtimes.confirm_remove_pinned", { tool: rt.name, reason: reasonText, scope: scopeName }) ||
+      `Warning: Tool ${rt.name} is currently version pinned${reasonText}.\nAre you sure you want to forcibly remove it from ${scopeName}?`;
+    if (!window.confirm(promptMsg)) {
       return;
     }
   }
@@ -1395,7 +1470,10 @@ async function confirmRemoveRuntime(rt: RuntimeItem) {
   // 1. Optimistic removal
   const prevRuntimes = JSON.parse(JSON.stringify(runtimes.value));
   runtimes.value = runtimes.value.filter((r) => r.id !== rt.id);
-  showToast(`正在从${scopeName}移除 ${rt.name}...`, "info");
+  showToast(
+    t("runtimes.removing_tool", { tool: rt.name, scope: scopeName }) || `Removing ${rt.name} from ${scopeName}...`,
+    "info"
+  );
 
   try {
     const res = await fetch("/api/tools/remove", {
@@ -1407,11 +1485,11 @@ async function confirmRemoveRuntime(rt: RuntimeItem) {
       const errData = await res.json().catch(() => ({}));
       throw new Error(errData.error || `HTTP ${res.status}`);
     }
-    showToast(`已成功移除 ${rt.name}`, "success");
+    showToast(t("runtimes.remove_success", { tool: rt.name }) || `Successfully removed ${rt.name}`, "success");
     emit("log-event", "SUCCESS", `Removed runtime ${rt.name} from ${scopeName}`);
   } catch (err: any) {
     runtimes.value = prevRuntimes;
-    showToast(`移除失败: ${err.message}`, "error");
+    showToast(t("runtimes.remove_failed", { error: err.message }) || `Failed to remove: ${err.message}`, "error");
     emit("log-event", "ERROR", `Failed to remove runtime: ${err.message}`);
   }
 }
@@ -1746,18 +1824,21 @@ async function fetchStatus() {
 
 async function togglePin(rt: RuntimeItem) {
   const isGlobal = currentScope.value === "user";
-  const scopeName = isGlobal ? "用户" : "工作区";
+  const scopeName = isGlobal ? t("runtimes.scope_user") || "User" : t("runtimes.scope_workspace") || "Workspace";
   const prevPinned = rt.pinned;
   const prevReason = rt.pin_reason;
 
   if (rt.pinned) {
-    const ok = window.confirm(`确定解除 ${rt.name} 的版本锁定吗？\n解除后将允许自由切换或升级该工具的版本。`);
+    const confirmUnpin =
+      t("runtimes.confirm_unpin", { tool: rt.name }) ||
+      `Are you sure you want to unpin ${rt.name}?\nUnpinning allows freely switching or upgrading its version.`;
+    const ok = window.confirm(confirmUnpin);
     if (!ok) return;
 
     // Optimistic update
     rt.pinned = false;
     rt.pin_reason = "";
-    showToast(`已解除 ${rt.name} 的版本锁定`, "info");
+    showToast(t("runtimes.unpin_success", { tool: rt.name }) || `Unpinned ${rt.name} successfully`, "info");
 
     try {
       const res = await fetch("/api/tools/pin", {
@@ -1773,20 +1854,20 @@ async function togglePin(rt: RuntimeItem) {
     } catch (err: any) {
       rt.pinned = prevPinned;
       rt.pin_reason = prevReason;
-      showToast(`解除锁定失败: ${err.message}`, "error");
+      showToast(t("runtimes.unpin_failed", { error: err.message }) || `Failed to unpin: ${err.message}`, "error");
     }
   } else {
-    const reason = window.prompt(
-      `锁定 ${rt.name} 的当前版本（防止升级/切换破坏项目兼容性，如 macOS 12.7 限制）。\n请输入锁定原因（可选）：`,
-      rt.pin_reason || ""
-    );
+    const promptMsg =
+      t("runtimes.pin_prompt", { tool: rt.name }) ||
+      `Pin current version for ${rt.name} to prevent unintended upgrades.\nEnter pin reason (optional):`;
+    const reason = window.prompt(promptMsg, rt.pin_reason || "");
     if (reason === null) return;
 
     const cleanReason = reason.trim();
     // Optimistic update
     rt.pinned = true;
     rt.pin_reason = cleanReason;
-    showToast(`已成功锁定 ${rt.name} 版本`, "success");
+    showToast(t("runtimes.pin_success", { tool: rt.name }) || `Successfully pinned version for ${rt.name}`, "success");
 
     try {
       const res = await fetch("/api/tools/pin", {
@@ -1802,22 +1883,23 @@ async function togglePin(rt: RuntimeItem) {
     } catch (err: any) {
       rt.pinned = prevPinned;
       rt.pin_reason = prevReason;
-      showToast(`锁定失败: ${err.message}`, "error");
+      showToast(t("runtimes.pin_failed", { error: err.message }) || `Failed to pin: ${err.message}`, "error");
     }
   }
 }
 
 async function quickSwitch(toolId: string, ver: string, targetGlobal?: boolean) {
   const isGlobal = targetGlobal !== undefined ? targetGlobal : currentScope.value === "user";
-  const scopeName = isGlobal ? "用户" : "工作区";
+  const scopeName = isGlobal ? t("runtimes.scope_user") || "User" : t("runtimes.scope_workspace") || "Workspace";
 
   // Check if tool is currently pinned
   const targetRt = runtimes.value.find((r) => r.id === toolId);
   if (targetRt && targetRt.pinned) {
-    const reasonText = targetRt.pin_reason ? `（锁定原因：${targetRt.pin_reason}）` : "";
-    const confirmSwitch = window.confirm(
-      `工具 ${targetRt.name} 当前处于版本锁定状态${reasonText}。\n切换版本将自动解除此锁定，确定要继续切换至 v${ver} 吗？`
-    );
+    const reasonText = targetRt.pin_reason ? ` (${targetRt.pin_reason})` : "";
+    const confirmSwitchMsg =
+      t("runtimes.confirm_switch_pinned", { tool: targetRt.name, reason: reasonText, ver }) ||
+      `Tool ${targetRt.name} is currently version pinned${reasonText}.\nSwitching version will remove this pin. Continue switching to v${ver}?`;
+    const confirmSwitch = window.confirm(confirmSwitchMsg);
     if (!confirmSwitch) {
       return;
     }
@@ -1859,12 +1941,20 @@ async function quickSwitch(toolId: string, ver: string, targetGlobal?: boolean) 
       throw new Error(errData.error || `HTTP ${res.status}`);
     }
 
-    showToast(`已成功将 ${toolId} 的${scopeName}版本设置为 v${ver}`, "success");
+    showToast(
+      t("runtimes.set_version_success", { tool: toolId, scope: scopeName, ver }) ||
+        `Successfully set ${scopeName} version for ${toolId} to v${ver}`,
+      "success"
+    );
     emit("log-event", "SUCCESS", `Set ${toolId} (${scopeName}) to ${ver}`);
   } catch (err: any) {
     // 4. Rollback on failure
     runtimes.value = prevRuntimes;
-    showToast(`设置失败: ${err.message}，已自动回退版本`, "error");
+    showToast(
+      t("runtimes.set_version_failed", { error: err.message }) ||
+        `Failed to set version: ${err.message}, reverted to previous version`,
+      "error"
+    );
     emit("log-event", "ERROR", `Failed to switch version: ${err.message}`);
   }
 }
@@ -1961,16 +2051,17 @@ async function openRemoteModal(rt: RuntimeItem) {
 
 async function installRemoteVersion(toolId: string, ver: string) {
   const isGlobal = modalInstallScope.value === "user";
-  const scopeName = isGlobal ? "用户" : "工作区";
+  const scopeName = isGlobal ? t("runtimes.scope_user") || "User" : t("runtimes.scope_workspace") || "Workspace";
   const alreadyInstalled = isAlreadyInstalled(toolId, ver);
 
   // Check if tool is currently pinned
   const targetRt = runtimes.value.find((r) => r.id === toolId);
   if (targetRt && targetRt.pinned) {
-    const reasonText = targetRt.pin_reason ? `（锁定原因：${targetRt.pin_reason}）` : "";
-    const confirmSwitch = window.confirm(
-      `工具 ${targetRt.name} 当前处于版本锁定状态${reasonText}。\n应用此版本将自动解除此锁定，确定要继续切换至 v${ver} 吗？`
-    );
+    const reasonText = targetRt.pin_reason ? ` (${targetRt.pin_reason})` : "";
+    const confirmSwitchMsg =
+      t("runtimes.confirm_switch_pinned", { tool: targetRt.name, reason: reasonText, ver }) ||
+      `Tool ${targetRt.name} is currently version pinned${reasonText}.\nSwitching version will remove this pin. Continue switching to v${ver}?`;
+    const confirmSwitch = window.confirm(confirmSwitchMsg);
     if (!confirmSwitch) {
       return;
     }
@@ -2038,7 +2129,11 @@ async function installRemoteVersion(toolId: string, ver: string) {
     updateRuntimeState(ver, false);
   } else {
     installingVer.value = ver;
-    showToast(`正在将 ${toolId} v${ver} 应用为${scopeName}...`, "info");
+    showToast(
+      t("runtimes.applying_version", { tool: toolId, ver, scope: scopeName }) ||
+        `Applying ${toolId} v${ver} to ${scopeName}...`,
+      "info"
+    );
   }
 
   try {
@@ -2057,14 +2152,21 @@ async function installRemoteVersion(toolId: string, ver: string) {
       updateRuntimeState(ver, true);
     }
 
-    showToast(`成功将 ${toolId}@${ver} 设置为${scopeName}！`, "success");
+    showToast(
+      t("runtimes.apply_version_success", { tool: toolId, ver, scope: scopeName }) ||
+        `Successfully set ${toolId}@${ver} for ${scopeName}!`,
+      "success"
+    );
     emit("log-event", "INFO", `Set ${toolId}@${ver} as ${scopeName}`);
   } catch (err: any) {
     runtimes.value = prevRuntimes;
     if (prevSelectedRuntime) {
       selectedRuntime.value = prevSelectedRuntime;
     }
-    showToast(`设置失败: ${err.message}`, "error");
+    showToast(
+      t("runtimes.set_version_failed", { error: err.message }) || `Failed to set version: ${err.message}`,
+      "error"
+    );
     emit("log-event", "ERROR", `Failed to set version: ${err.message}`);
   } finally {
     installingVer.value = null;
@@ -2085,15 +2187,26 @@ async function checkRemoteUpdates() {
 
     const pinnedCount = list.filter((r) => r.pinned).length;
     if (autoSelected.length > 0) {
+      const pinnedText =
+        pinnedCount > 0
+          ? t("runtimes.pinned_protected", { count: pinnedCount }) || ` (Protected ${pinnedCount} pinned tool(s))`
+          : "";
       showToast(
-        `检测完成：发现 ${autoSelected.length} 个工具可升级${pinnedCount > 0 ? ` (已自动保护 ${pinnedCount} 个锁定工具)` : ""}`,
+        t("runtimes.check_updates_found", { count: autoSelected.length, pinned: pinnedText }) ||
+          `Check complete: Found ${autoSelected.length} upgradable tool(s)${pinnedText}`,
         "success"
       );
     } else {
-      showToast("检测完成：所有工具均已是最新版本或受保护锁定", "info");
+      showToast(
+        t("runtimes.all_tools_latest") || "Check complete: All tools are up to date or protected by pins",
+        "info"
+      );
     }
   } catch (err: any) {
-    showToast(`检测更新失败: ${err.message}`, "error");
+    showToast(
+      t("runtimes.check_updates_failed", { error: err.message }) || `Failed to check for updates: ${err.message}`,
+      "error"
+    );
   }
 }
 
@@ -2128,9 +2241,11 @@ async function runBatchUpdate() {
     const updatedCount = data.updated ? data.updated.length : 0;
     const skippedCount = data.skipped ? data.skipped.length : 0;
 
-    let msg = `批量升级完成：已成功升级 ${updatedCount} 个工具`;
+    let msg =
+      t("runtimes.batch_update_success", { count: updatedCount }) ||
+      `Batch upgrade complete: Successfully upgraded ${updatedCount} tool(s)`;
     if (skippedCount > 0) {
-      msg += `，跳过 ${skippedCount} 个保护项`;
+      msg += t("runtimes.skipped_pinned", { count: skippedCount }) || `, skipped ${skippedCount} protected item(s)`;
     }
     for (const toolId of selectedUpdateTools.value) {
       markToolUpdated(toolId);
@@ -2140,7 +2255,10 @@ async function runBatchUpdate() {
     emit("log-event", "INFO", `Batch updated ${updatedCount} tools (${isGlobal ? "user" : "workspace"})`);
     await fetchStatus();
   } catch (err: any) {
-    showToast(`批量升级失败: ${err.message}`, "error");
+    showToast(
+      t("runtimes.batch_update_failed", { error: err.message }) || `Batch upgrade failed: ${err.message}`,
+      "error"
+    );
   } finally {
     batchUpdating.value = false;
   }
@@ -2657,7 +2775,7 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
-/* 1. 已安装且就绪（正常态）：沉稳低噪音中性色，不展示任何小图标 */
+/* 1. Ready state: neutral, low-noise, no icon */
 .runtime-version-badge.is-ready,
 .runtime-version-badge.is-active {
   background: rgba(255, 255, 255, 0.08);
@@ -2674,7 +2792,7 @@ onBeforeUnmount(() => {
   border: 1px solid #cbd5e1;
 }
 
-/* 2. 已配置但未安装（缺失态）：醒目琥珀警示色，提醒需要下载安装 */
+/* 2. Configured but not installed (Missing): amber warning color */
 .runtime-version-badge.is-missing {
   background: rgba(245, 158, 11, 0.15);
   color: #f59e0b;
@@ -2694,7 +2812,7 @@ onBeforeUnmount(() => {
   line-height: 1;
 }
 
-/* 3. 可升级状态（专属绿色）：绿色独享给升级状态 */
+/* 3. Upgradable state: dedicated green */
 .runtime-upgrade-pill {
   font-size: 0.72rem;
   font-weight: 700;
@@ -2966,7 +3084,7 @@ onBeforeUnmount(() => {
   font-style: italic;
 }
 
-/* Card footer: Primary [切换] [安装] + More Menu [···] */
+/* Card footer: Primary [Switch] [Install] + More Menu [...] */
 .runtime-card-footer {
   margin-top: auto;
   display: flex;
@@ -2998,7 +3116,7 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-/* 主操作：切换 */
+/* Primary action: Switch */
 .card-action-btn.action-switch {
   background: rgba(2, 132, 199, 0.08);
   border-color: rgba(2, 132, 199, 0.28);
@@ -3011,7 +3129,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
 }
 
-/* 状态操作：安装 */
+/* Status action: Install */
 .card-action-btn.action-install {
   background: rgba(16, 185, 129, 0.08);
   border-color: rgba(16, 185, 129, 0.28);
@@ -3027,7 +3145,7 @@ onBeforeUnmount(() => {
   color: #34d399;
 }
 
-/* 更多操作容器与按钮 */
+/* More action container and button */
 .card-more-action-wrap {
   position: relative;
   display: inline-flex;
@@ -3062,7 +3180,7 @@ onBeforeUnmount(() => {
   color: var(--accent-cyan);
 }
 
-/* 下拉菜单通用样式 */
+/* Dropdown menu common styles */
 .runtime-dropdown-menu {
   position: absolute;
   bottom: calc(100% + 6px);
@@ -3145,7 +3263,7 @@ onBeforeUnmount(() => {
   background: #e2e8f0;
 }
 
-/* 下拉菜单动画 */
+/* Dropdown menu animations */
 .dropdown-fade-enter-active,
 .dropdown-fade-leave-active {
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
@@ -3262,7 +3380,7 @@ onBeforeUnmount(() => {
   outline: none;
 }
 
-/* 当前生效版本：绿色高亮与描边 */
+/* Active version: green highlight and border */
 .switch-ver-pill.is-active {
   background: rgba(16, 185, 129, 0.15);
   border-color: #10b981;
@@ -3291,7 +3409,7 @@ onBeforeUnmount(() => {
   margin-left: 0.2rem;
 }
 
-/* 未生效版本：灰色，悬停变色 */
+/* Inactive version: subtle background, hover accent */
 .switch-ver-pill.is-inactive {
   background: var(--input-bg);
   border-color: var(--card-border);

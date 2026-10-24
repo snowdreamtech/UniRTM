@@ -159,6 +159,8 @@ import TechIcon from "../components/common/TechIcon.vue";
 
 defineProps<{
   appConfig?: any;
+  installedToolsCount?: number;
+  totalTasksCount?: number;
 }>();
 
 const emit = defineEmits<{
