@@ -325,7 +325,7 @@ export const arSa: TranslationDict = {
   "guard.rule.slot_vuln_govulncheck.name": "الذهاب إلى تدقيق الثغرات الأمنية المعروفة (govulncheck)",
   "guard.rule.slot_ci_zizmor.desc":
     "نمذجة التهديدات لسير عمل GitHub Actions، مما يمنع تصعيد امتيازات العداء والتسلل السري.",
-  "guard.rule.slot_ci_zizmor.name": "GitHub Actions Security Linter (zizmor)",
+  "guard.rule.slot_ci_zizmor.name": "مراجعة تقوية أمان سير عمل إجراءات GitHub (zizmor)",
   "guard.rule.slot_security_gosec.desc":
     "أداة فحص الأمان المستندة إلى AST لملفات Go المصدر، ووضع علامات على عمليات حقن SQL، والتشفير الضعيف، ونقاط الضعف في اجتياز الملفات.",
   "guard.rule.slot_security_gosec.name": "الماسح الضوئي الأمني Go AST (gosec)",

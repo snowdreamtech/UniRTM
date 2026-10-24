@@ -645,7 +645,7 @@ export const koKr: TranslationDict = {
   "settings.mirror_goproxy_cn": "goproxy.cn (Qiniu/커뮤니티)",
   "settings.mirror_huawei": "화웨이 클라우드",
   "settings.mirror_tencent": "텐센트 클라우드",
-  "settings.mirror_npmmirror": "npmmirror (Taobao/Aliyun)",
+  "settings.mirror_npmmirror": "npmmirror(타오바오/알리바바 클라우드)",
   "settings.mirror_official": "공식 다이렉트",
   "settings.toast_import_failed": "가져오기 실패: {error}",
   "settings.theme_install_failed": "✕ 설치 실패: {error}",

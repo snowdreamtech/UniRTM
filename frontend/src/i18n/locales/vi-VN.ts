@@ -87,7 +87,7 @@ export const viVn: TranslationDict = {
   "gitgraph.type_chore_tip": "Chỉ hiển thị công việc",
   "gitgraph.type_chore": "việc vặt (việc vặt)",
   "gitgraph.type_ci_tip": "Chỉ hiển thị CI/CD",
-  "gitgraph.type_ci": "ci (CI/CD)",
+  "gitgraph.type_ci": "ci (tích hợp liên tục)",
   "gitgraph.type_build_tip": "Chỉ hiển thị bản dựng và phần phụ thuộc",
   "gitgraph.type_build": "xây dựng (Xây dựng & Phụ thuộc)",
   "gitgraph.type_test_tip": "Chỉ hiển thị các bài kiểm tra",
@@ -325,7 +325,7 @@ export const viVn: TranslationDict = {
   "guard.rule.slot_vuln_govulncheck.name": "Đi kiểm tra các lỗ hổng đã biết (govulncheck)",
   "guard.rule.slot_ci_zizmor.desc":
     "Lập mô hình mối đe dọa cho quy trình làm việc của GitHub Actions, ngăn chặn việc leo thang đặc quyền của người chạy và đánh cắp bí mật.",
-  "guard.rule.slot_ci_zizmor.name": "GitHub Actions Security Linter (zizmor)",
+  "guard.rule.slot_ci_zizmor.name": "Đánh giá tăng cường bảo mật quy trình làm việc GitHub Actions (zizmor)",
   "guard.rule.slot_security_gosec.desc":
     "Trình quét bảo mật dựa trên AST dành cho các tệp nguồn Go, gắn cờ các phần chèn SQL, mật mã yếu và các lỗ hổng truyền tải tệp.",
   "guard.rule.slot_security_gosec.name": "Đi máy quét bảo mật AST (gosec)",
@@ -334,7 +334,7 @@ export const viVn: TranslationDict = {
   "guard.rule.slot_secret_gitleaks.name": "Kiểm tra bí mật lịch sử Git (Gitleaks)",
   "guard.rule.slot_go_linter.desc":
     "Phân tích tĩnh Go toàn diện kết hợp errcheck, govet, staticcheck và không được sử dụng để phát hiện các lỗi tiềm ẩn.",
-  "guard.rule.slot_go_linter.name": "Go Code Linter (golangci-lint)",
+  "guard.rule.slot_go_linter.name": "Đi phân tích mã tĩnh toàn diện và kiểm tra mùi (golangci-lint)",
   "guard.rule.slot_web_linter.desc":
     "Phân tích tĩnh sâu cho các thành phần Vue, kiểu gõ TypeScript, mùi mã và các lỗi logic tiềm ẩn thông qua ESLint.",
   "guard.rule.slot_web_linter.name": "Kẻ nói dối mã web (ESLint)",
@@ -406,7 +406,7 @@ export const viVn: TranslationDict = {
   "guard.rule.builtin_check_merge_conflict.name": "Hợp nhất trình phát hiện dấu hiệu xung đột",
   "guard.rule.slot_go_formatter.desc":
     "Định dạng các tệp nguồn Go theo tiêu chuẩn Go và tự động sắp xếp, thêm và xóa các khai báo nhập.",
-  "guard.rule.slot_go_formatter.name": "Go Code Formatter (goimports)",
+  "guard.rule.slot_go_formatter.name": "Đi định dạng mã nguồn và nhập gói tự phục hồi (goimports)",
   "guard.rule.slot_web_formatter.desc":
     "Định dạng mã tự động cấp công nghiệp cho các tệp Vue, TypeScript, JavaScript, JSON, CSS, YAML và Markdown.",
   "guard.rule.slot_web_formatter.name": "Trình định dạng mã web (Đẹp hơn)",
@@ -656,7 +656,7 @@ export const viVn: TranslationDict = {
   "settings.mirror_goproxy_cn": "goproxy.cn (Qiniu/Cộng đồng)",
   "settings.mirror_huawei": "Đám mây Huawei",
   "settings.mirror_tencent": "Đám mây Tencent",
-  "settings.mirror_npmmirror": "npmmirror (Taobao/Aliyun)",
+  "settings.mirror_npmmirror": "npmmirror (Đám mây Taobao/Alibaba)",
   "settings.mirror_official": "Trực tiếp chính thức",
   "settings.toast_import_failed": "Failed to import:  {error}",
   "settings.theme_install_failed": "✕ Failed to install:  {error}",
@@ -739,7 +739,7 @@ export const viVn: TranslationDict = {
   "settings.ping_connection_timeout": "Đã hết thời gian kết nối",
   "settings.ping_in_progress": "Kiểm tra tốc độ...",
   "settings.ping_click_hint": "Nhấp để kiểm tra độ trễ của gương",
-  "settings.ping_action": "Ping",
+  "settings.ping_action": "Kiểm tra tốc độ",
   "settings.ping_failed": "thất bại",
   "settings.ping_timeout": "Hết giờ",
   "settings.eco_add_and_save": "Thêm & Lưu",
@@ -1043,7 +1043,7 @@ export const viVn: TranslationDict = {
   "scm.sidebar.commit_shortcut": "Cam kết ({shortcut})",
   "scm.commit_type.revert": "Đảo ngược (trở lại)",
   "scm.commit_type.chore": "Việc vặt (việc vặt)",
-  "scm.commit_type.ci": "CI/CD (ci)",
+  "scm.commit_type.ci": "Tích hợp liên tục (CI/CD)",
   "scm.commit_type.build": "Xây dựng (xây dựng)",
   "scm.commit_type.test": "Kiểm tra (kiểm tra)",
   "scm.commit_type.perf": "Hiệu suất (hoàn hảo)",
@@ -2332,7 +2332,7 @@ export const viVn: TranslationDict = {
   "scm.repositories": "Kho lưu trữ",
   "scm.active_repo": "Kho lưu trữ hoạt động",
   "scm.sidebar.commit_placeholder_branch": 'Message (press Enter to commit on " {branch} ")',
-  "scm.graph.repo_label": "Repo:",
+  "scm.graph.repo_label": "Kho lưu trữ:",
   "sidebar.tools_missing": "Thiếu (Đang chờ cài đặt)",
   "sidebar.tools_missing_hint": "Được định cấu hình trong không gian làm việc nhưng không được cài đặt cục bộ",
   "sidebar.tools_upgradable": "Có thể nâng cấp",

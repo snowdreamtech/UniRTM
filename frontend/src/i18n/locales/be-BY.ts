@@ -25,7 +25,7 @@ export const beBy: TranslationDict = {
   "editor.action.goto_type_definition": "Перайдзіце да вызначэння тыпу",
   "editor.action.peek_implementation": "Рэалізацыя Peek",
   "editor.action.goto_implementation": "Перайсці да ўкаранення",
-  "editor.action.peek_references": "Peek References",
+  "editor.action.peek_references": "Прагляд цытат",
   "editor.action.goto_references": 'Перайдзіце ў раздзел "Спіс літаратуры".',
   "editor.action.peek_definition": "Peek Вызначэнне",
   "editor.action.goto_definition": "Перайсці да вызначэння",
@@ -87,7 +87,7 @@ export const beBy: TranslationDict = {
   "gitgraph.type_chore_tip": "Паказаць толькі хатнія справы",
   "gitgraph.type_chore": "хатняя справа (работы)",
   "gitgraph.type_ci_tip": "Паказаць толькі CI/CD",
-  "gitgraph.type_ci": "ci (CI/CD)",
+  "gitgraph.type_ci": "ci (бесперапынная інтэграцыя)",
   "gitgraph.type_build_tip": "Паказаць толькі зборку і залежнасці",
   "gitgraph.type_build": "зборка (зборка і залежнасці)",
   "gitgraph.type_test_tip": "Паказаць толькі тэсты",
@@ -303,7 +303,7 @@ export const beBy: TranslationDict = {
   "guard.rule_status_passed": "✔ Вытрымана",
   "guard.filter_rules_placeholder": "Імя правіла пошуку, ідэнтыфікатар, пашырэнні (.go, .ts) або інструменты...",
   "guard.tab_security": "Бяспека ({count})",
-  "guard.tab_linter": "Linting ({count})",
+  "guard.tab_linter": "Стандартны кантроль доступу ({count})",
   "guard.tab_formatter": "Фарматаванне ({count})",
   "guard.tab_native_fixer": "Натыўнае лячэнне ({count})",
   "guard.tab_all_rules": "Усе ({count})",
@@ -325,7 +325,7 @@ export const beBy: TranslationDict = {
   "guard.rule.slot_vuln_govulncheck.name": "Аўдыт вядомых уразлівасцей (govulncheck)",
   "guard.rule.slot_ci_zizmor.desc":
     "Мадэляванне пагроз для працоўных працэсаў GitHub Actions, прадухіленне эскалацыі прывілеяў бегуна і сакрэтнай эксфільтрацыі.",
-  "guard.rule.slot_ci_zizmor.name": "GitHub Actions Security Linter (zizmor)",
+  "guard.rule.slot_ci_zizmor.name": "Агляд умацавання бяспекі працоўнага працэсу GitHub (zizmor)",
   "guard.rule.slot_security_gosec.desc":
     "Сканер бяспекі на аснове AST для зыходных файлаў Go, пазначаючы ін'екцыі SQL, слабыя крыптаграфіі і ўразлівасці праходжання файлаў.",
   "guard.rule.slot_security_gosec.name": "Сканер бяспекі Go AST (gosec)",
@@ -334,7 +334,7 @@ export const beBy: TranslationDict = {
   "guard.rule.slot_secret_gitleaks.name": "Аўдыт сакрэтаў гісторыі Git (Gitleaks)",
   "guard.rule.slot_go_linter.desc":
     "Комплексны статычны аналіз Go, які спалучае errcheck, govet, staticcheck і unised для выяўлення схаваных дэфектаў.",
-  "guard.rule.slot_go_linter.name": "Go Code Linter (golangci-lint)",
+  "guard.rule.slot_go_linter.name": "Правядзіце комплексны статычны аналіз кода і праверку паху (golangci-lint)",
   "guard.rule.slot_web_linter.desc":
     "Глыбокі статычны аналіз для кампанентаў Vue, уводу TypeScript, пахаў кода і патэнцыйных лагічных дэфектаў праз ESLint.",
   "guard.rule.slot_web_linter.name": "Лінтэр вэб-кода (ESLint)",
@@ -343,7 +343,7 @@ export const beBy: TranslationDict = {
   "guard.rule.builtin_forbid_ip_addresses.name": "Жорстка закодаваны IP Guard",
   "guard.rule.builtin_check_markdown.desc":
     "Аўдыт файлаў README і дакументацыі на недапушчальныя іерархіі загалоўкаў, незакрытыя агароджы кода і пахі фарматавання.",
-  "guard.rule.builtin_check_markdown.name": "Markdown Syntax Linter",
+  "guard.rule.builtin_check_markdown.name": "Вёрстка ўцэнкі і праверка граматычных характарыстык",
   "guard.rule.builtin_forbid_empty_code_files.desc":
     "Прадухіляе 0-байтавыя пустыя зыходныя файлы, выпадкова створаныя падчас рэфактарынгу, ад траплення ў кантроль версій.",
   "guard.rule.builtin_forbid_empty_code_files.name": "Пусты код файлаў Guard",
@@ -373,7 +373,7 @@ export const beBy: TranslationDict = {
   "guard.rule.builtin_check_json.name": "Сінтаксіс JSON Linter",
   "guard.rule.builtin_check_svg_safety.desc":
     "Правярае вектарныя відарысы SVG, каб блакіраваць убудаваныя тэгі <script> і ўбудаваныя апрацоўшчыкі JavaScript ад увядзення недахопаў XSS.",
-  "guard.rule.builtin_check_svg_safety.name": "SVG Script Safety Guard",
+  "guard.rule.builtin_check_svg_safety.name": "Агляд шкоднасных сцэнарыяў SVG супраць ін'екцый",
   "guard.rule.builtin_check_executables_have_shebangs.desc":
     "Гарантуе, што ўсе небінарныя выкананыя файлы (+x) пачынаюцца з сапраўднага інтэрпрэтатара shebang у першым радку.",
   "guard.rule.builtin_check_executables_have_shebangs.name": "Выкананы Shebang Guard",
@@ -385,19 +385,20 @@ export const beBy: TranslationDict = {
   "guard.rule.builtin_forbidden_files.name": "Стражнік забароненых файлаў",
   "guard.rule.builtin_check_lockfile_conflicts.desc":
     "Правярае, што файлы блакіроўкі залежнасцей не пашкоджаны і не дэсінхранізаваны нявырашанымі аперацыямі зліцця галін.",
-  "guard.rule.builtin_check_lockfile_conflicts.name": "Lockfile Conflict Guard",
+  "guard.rule.builtin_check_lockfile_conflicts.name": "Перахоп канфлікту галіны версіі файла блакіроўкі",
   "guard.rule.builtin_check_lockfile_coexistence.desc":
     "Прадухіляе суіснаванне суіснавання канфліктуючых файлаў дыспетчара пакетаў (npm, yarn, pnpm, bun), забяспечваючы ўзнаўляльныя зборкі.",
-  "guard.rule.builtin_check_lockfile_coexistence.name": "Lockfile Coexistence Guard",
+  "guard.rule.builtin_check_lockfile_coexistence.name":
+    "Перахоп суіснавання файла блакіроўкі дыспетчара некалькіх пакетаў",
   "guard.rule.builtin_check_case_conflict.desc":
     "Правярае наяўнасць канфлікту імёнаў файлаў у сістэмах без уліку рэгістра (macOS/Windows) і рэгістра (Linux).",
   "guard.rule.builtin_check_case_conflict.name": "Імя файла Case Conflict Guard",
   "guard.rule.builtin_check_added_large_files.desc":
     "Прадухіляе фіксацыю некіравальных вялікіх бінарных файлаў (>10 МБ), прадухіляючы пастаяннае раздзіманне сховішча Git.",
-  "guard.rule.builtin_check_added_large_files.name": "Large File Threshold Guard",
+  "guard.rule.builtin_check_added_large_files.name": "Блакіраваць нечаканыя адпраўкі вялікіх файлаў",
   "guard.rule.builtin_check_env_safety.desc":
     "Блакуе перадачу канфідэнцыяльных файлаў асяроддзя, такіх як .env, .env.local і .env.production, для кантролю зыходнага кода.",
-  "guard.rule.builtin_check_env_safety.name": "Env Files Secret Leak Guard",
+  "guard.rule.builtin_check_env_safety.name": "Забараніць адпраўку адчувальных да зменных асяроддзя файлаў",
   "guard.rule.builtin_detect_private_key.desc":
     "Сканіруе актывы працоўнай прасторы і прадухіляе выпадковыя фіксацыі закрытых ключоў і сертыфікатаў PEM, RSA, DSA, EC або PGP.",
   "guard.rule.builtin_detect_private_key.name": "Дэтэктар уцечкі прыватнага ключа",
@@ -418,7 +419,7 @@ export const beBy: TranslationDict = {
   "guard.rule.builtin_mixed_line_endings.name": "Аб'яднальнік канчаткаў радкоў (LF)",
   "guard.rule.builtin_check_shebang_scripts_are_executable.desc":
     "Гарантуе, што скрыпты, якія змяшчаюць дэкларацыю shebang (#!), маюць сцяг дазволу на выкананне +x у індэксе і файлавай сістэме Git.",
-  "guard.rule.builtin_check_shebang_scripts_are_executable.name": "Shebang Executable Bit Fixer",
+  "guard.rule.builtin_check_shebang_scripts_are_executable.name": "Дазвол на выкананне сцэнарыя даецца аўтаматычна",
   "guard.rule.builtin_check_utf8_bom.desc":
     "Выяўляе і выдаляе прэфіксы парадку байтаў спецыфікацыі UTF-8 (EF BB BF), створаныя рэдактарамі Windows, каб прадухіліць памылкі аналізатара.",
   "guard.rule.builtin_check_utf8_bom.name": "UTF-8 BOM Парадак байтаў",
@@ -656,7 +657,7 @@ export const beBy: TranslationDict = {
   "settings.mirror_goproxy_cn": "goproxy.cn (Qiniu/Супольнасць)",
   "settings.mirror_huawei": "Воблака Huawei",
   "settings.mirror_tencent": "Воблака Tencent",
-  "settings.mirror_npmmirror": "npmmirror (Taobao/Aliyun)",
+  "settings.mirror_npmmirror": "npmmirror (Taobao/Alibaba Cloud)",
   "settings.mirror_official": "Афіцыйны Direct",
   "settings.toast_import_failed": "Failed to import:  {error}",
   "settings.theme_install_failed": "✕ Failed to install:  {error}",
@@ -685,8 +686,8 @@ export const beBy: TranslationDict = {
   "settings.profile_official_desc":
     "Поўныя афіцыйныя крыніцы і афіцыйныя двайковыя CDN без проксі і старонніх люстэркаў",
   "settings.profile_official_name": "Афіцыйны Direct",
-  "settings.appearance_unirtm_dark": "UniRTM Official Dark",
-  "settings.appearance_unirtm_light": "UniRTM Official Light",
+  "settings.appearance_unirtm_dark": "Афіцыйны цёмны колер UniRTM",
+  "settings.appearance_unirtm_light": "Афіцыйны светлы колер UniRTM",
   "settings.appearance_unirtm_default": "Адаптыўная па змаўчанні UniRTM",
   "settings.toast_applied_product_theme": "Applied product icon theme:  {name}",
   "settings.toast_applied_icon_theme": "Applied file icon theme:  {name}",
@@ -996,7 +997,7 @@ export const beBy: TranslationDict = {
   "doctor.connected": "Падключана",
   "doctor.github_status": "GitHub API",
   "doctor.direct_mode": "Прамы рэжым",
-  "doctor.google_connected": "Google Reachable",
+  "doctor.google_connected": "Google разблакіраваны",
   "doctor.google_status": "Глабальная ўзыходзячая сувязь",
   "doctor.proxy_direct": "Прамое падключэнне",
   "doctor.proxy_configured": "Проксі наладжаны",
@@ -1040,7 +1041,7 @@ export const beBy: TranslationDict = {
   "scm.sidebar.commit_shortcut": "Зафіксаваць ({shortcut})",
   "scm.commit_type.revert": "Вярнуць (вярнуць)",
   "scm.commit_type.chore": "Задача (задача)",
-  "scm.commit_type.ci": "CI/CD (ci)",
+  "scm.commit_type.ci": "Бесперапынная інтэграцыя (CI/CD)",
   "scm.commit_type.build": "Будаваць (будаваць)",
   "scm.commit_type.test": "Тэст (тэст)",
   "scm.commit_type.perf": "Прадукцыйнасць (прадукцыйнасць)",
@@ -1127,7 +1128,7 @@ export const beBy: TranslationDict = {
   "explorer.split_up": "Раскол",
   "explorer.split_right": "Спліт направа",
   "explorer.unpin": "Адмацаваць",
-  "explorer.pin": "Pin",
+  "explorer.pin": "Выпраўлена",
   "explorer.open_diff": "Адкрыць змены (Diff)",
   "explorer.view_git_history": "Прагляд гісторыі файлаў у Git Graph",
   "explorer.reveal_in_side_bar": "Паказаць у бакавой панэлі",
@@ -1309,7 +1310,7 @@ export const beBy: TranslationDict = {
   "sidebar.group_tasks": "ЗАДАННІ (.unirtm.toml)",
   "sidebar.group_marketplace": "ПРАКАМЕНТАНЫЯ ПАШЫРЭННІ",
   "sidebar.group_doctor": "ДЫЯГНОСТЫКА СІСТЭМЫ",
-  "tasks.title": "Unified Task Runner",
+  "tasks.title": "Уніфікаваны бягун задач",
   "tasks.desc": "Міжмоўныя задачы, вызначаныя ў .unirtm.toml, выконваюцца на розных платформах у адзін клік.",
   "tasks.run": "Бегчы",
   "tasks.running": "Бег",
@@ -1454,7 +1455,7 @@ export const beBy: TranslationDict = {
   "network.proxy_socks5": "URL проксі SOCKS5",
   "network.proxy_noproxy": "Абыход спіса проксі (NO_PROXY)",
   "network.profile_title": "Сеткавыя профілі",
-  "network.profile_cn": "China Fast Mirrors",
+  "network.profile_cn": "Кітайскае люстраное паскарэнне",
   "network.profile_cn_desc":
     "Падабраная публічная люстраная матрыца ад лепшых кітайскіх універсітэтаў і воблачных пастаўшчыкоў для хуткага пошуку залежнасцей",
   "network.profile_official": "Афіцыйны Direct",
@@ -1463,7 +1464,7 @@ export const beBy: TranslationDict = {
   "network.profile_tuna": "Tsinghua TUNA Прысвячаецца",
   "network.profile_tuna_desc":
     "Высакахуткасныя адукацыйныя магістральныя люстэркі з прыярытэтам праз люстэрка з адкрытым зыходным кодам універсітэта Цінхуа (TUNA)",
-  "network.profile_aliyun": "Alibaba Cloud Dedicated",
+  "network.profile_aliyun": "Лінія Cloud Mirror Alibaba",
   "network.profile_aliyun_desc":
     "Люстэркі рэестра пакетаў высокай даступнасці з прыярытэтам праз інфраструктуру Alibaba Cloud CDN",
   "network.active_tag": "Актыўны",
@@ -1565,7 +1566,7 @@ export const beBy: TranslationDict = {
   "settings.hooks_empty_desc":
     "Наладзьце хукі Git для аўтаматычнага запуску фарматаў, лінтэраў і тэстаў перад фіксацыяй або адпраўкай.",
   "settings.hooks_recommended_label": "Рэкамендуецца:",
-  "settings.hooks_badge_bridged": "Git Bridged",
+  "settings.hooks_badge_bridged": "Git мост",
   "settings.hooks_badge_unbridged": "Без моста",
   "settings.hooks_run_btn": "Тэст",
   "settings.hooks_run_tip": "Запусціце і пратэстуйце гэты хук",
@@ -1727,7 +1728,7 @@ export const beBy: TranslationDict = {
   "privilege.cancel_btn": "Адмяніць",
   "privilege.success_msg": "Прадастаўлены правы адміністратара",
   "disk.nominal": "Намінальны",
-  "inspector.title": "USB Storage Deep Inspector",
+  "inspector.title": "Глыбокае нізкаўзроўневае выяўленне прылады USB",
   "inspector.subtitle": "Пратакол PHY, хуткасць і апаратны аналіз",
   "inspector.device": "Мэтавая прылада:",
   "inspector.vendor": "Вытворца / Марка:",
@@ -1736,7 +1737,7 @@ export const beBy: TranslationDict = {
   "inspector.fake_text":
     "Падроблены USB 3.0 з паніжанай версіяй (сіні порт, але ўнутраны пратакол - USB 2.0 480 Мбіт/с)",
   "inspector.genuine_text": "Сапраўдны высакахуткасны кантролер USB 3.0/3.1",
-  "inspector.smart": "SMART Health:",
+  "inspector.smart": "SMART здароўе:",
   "inspector.sector": "Памер сектара:",
   "inspector.fake_title": "Падробленае папярэджанне USB 3.0!",
   "inspector.fake_desc":
@@ -1964,7 +1965,7 @@ export const beBy: TranslationDict = {
   "scm.history.empty": "Гісторыя фіксацый не знойдзена",
   "scm.sidebar.filter": "Змены фільтра...",
   "scm.sidebar.commit_placeholder": "Зафіксаваць паведамленне (Ctrl+Enter, каб зафіксаваць)",
-  "scm.sidebar.gpg_sign": "GPG Sign Commit",
+  "scm.sidebar.gpg_sign": "Падпіска GPG",
   "scm.sidebar.commit": "Здзейсніць",
   "scm.sidebar.staged": "Паэтапныя змены",
   "scm.sidebar.unstaged": "Змены",
@@ -1999,7 +2000,7 @@ export const beBy: TranslationDict = {
   "scm.modal.force_delete": "Прымусовае выдаленне (-D)",
   "scm.modal.delete_branch_confirm": "Are you sure you want to delete branch ' {name} '?",
   "scm.modal.new_branch_name": "Новая назва філіяла",
-  "scm.modal.title_push_tag": "Push Tag",
+  "scm.modal.title_push_tag": "штуршок",
   "scm.modal.title_delete_tag": "Выдаліць тэг",
   "scm.modal.title_push_branch": "Аддзяленне Push",
   "scm.modal.title_rebase_branch": "Перабазіраваць галінку",
@@ -2012,7 +2013,7 @@ export const beBy: TranslationDict = {
   "scm.remote.checkout": "Аддзяленне касы...",
   "scm.tag.copied": "Copied tag name:  {name}",
   "scm.tag.copy_name": "Скапіруйце назву тэга ў буфер абмену",
-  "scm.tag.push": "Push Tag...",
+  "scm.tag.push": "Push тэгі...",
   "scm.tag.delete": "Выдаліць тэг...",
   "scm.tag.create_branch": "Стварыць галінку з тэга...",
   "scm.branch.copied": "Copied branch name:  {name}",
@@ -2351,7 +2352,7 @@ export const beBy: TranslationDict = {
   "guard.status.checking": "Праверка якасці...",
   "guard.status.fixing": "Аўтафіксацыя...",
   "guard.actions.auto_fix": "Аўтавыпраўленне",
-  "guard.actions.fix_staged": "Fix Staged",
+  "guard.actions.fix_staged": "Рамонт пастановачнай пляцоўкі",
   "guard.actions.fix_changed": "Выправіць рабочую вобласць",
   "guard.actions.fix_all": "Выправіць праект",
   "guard.actions.fix_scope_title": "Выберыце Auto-Fix Scope",
@@ -2360,7 +2361,7 @@ export const beBy: TranslationDict = {
   "guard.actions.fix_all_desc": "Выправіць фарматаванне ва ўсім праекце ($ unirtm check --all --fix)",
   "guard.actions.fix": "Выправіць",
   "guard.actions.rescan": "Паўторнае сканаванне",
-  "guard.diagnostics.title": "Quality Guard Diagnostics",
+  "guard.diagnostics.title": "Вынікі дыягностыкі Quality Guard",
   "guard.diagnostics.issues": "Праблемы і парушэнні",
   "guard.diagnostics.checklist": "Кантрольны спіс выканання",
   "guard.diagnostics.view_checklist": "Прагляд кантрольнага спісу выканання",
@@ -2434,7 +2435,7 @@ export const beBy: TranslationDict = {
   "guard.banner.title": "Quality Guard перайшоў у цэнтр 1-га класа",
   "guard.banner.desc":
     "Кіруйце канвеерамі пашырэнняў файлаў, слотамі інструментаў і візуальнымі наладамі CRUD у спецыяльным цэнтры.",
-  "guard.banner.open_hub": "Open Quality Guard",
+  "guard.banner.open_hub": "Перайдзіце ў Цэнтр аховы якасці",
   "guard.modal.edit_title": "Рэдагаваць слот інструмента і адлюстраванне пашырэння",
   "guard.modal.create_title": "Дадайце слот для інструмента і адлюстраванне пашырэння",
   "guard.modal.pick_tool": "Выберыце з кіраваных інструментаў UniRTM (аўтаматычнае запаўненне)",

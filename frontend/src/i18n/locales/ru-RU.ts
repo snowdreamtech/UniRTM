@@ -337,7 +337,7 @@ export const ruRu: TranslationDict = {
   "guard.rule.slot_secret_gitleaks.name": "Аудит секретов истории Git (Gitleaks)",
   "guard.rule.slot_go_linter.desc":
     "Комплексный статический анализ Go, сочетающий в себе проверки ошибок, проверки, статические проверки и unused для выявления скрытых дефектов.",
-  "guard.rule.slot_go_linter.name": "Go Code Linter (golangci-lint)",
+  "guard.rule.slot_go_linter.name": "Комплексный статический анализ кода и проверка запахов (golangci-lint)",
   "guard.rule.slot_web_linter.desc":
     "Глубокий статический анализ компонентов Vue, типизации TypeScript, запахов кода и потенциальных логических дефектов с помощью ESLint.",
   "guard.rule.slot_web_linter.name": "Линтер веб-кода (ESLint)",

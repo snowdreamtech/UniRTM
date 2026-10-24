@@ -417,7 +417,7 @@ export const thTh: TranslationDict = {
   "guard.rule.builtin_check_shebang_scripts_are_executable.name": "Shebang โปรแกรมแก้ไขบิตที่ปฏิบัติการได้",
   "guard.rule.builtin_check_utf8_bom.desc":
     "ตรวจจับและลบคำนำหน้าลำดับไบต์ UTF-8 BOM (EF BB BF) ที่สร้างโดยตัวแก้ไข Windows เพื่อป้องกันข้อผิดพลาดของตัวแยกวิเคราะห์",
-  "guard.rule.builtin_check_utf8_bom.name": "UTF-8 BOM Byte Order Fixer",
+  "guard.rule.builtin_check_utf8_bom.name": "การทำความสะอาดคำสั่งไบต์ UTF-8 BOM",
   "guard.rule.builtin_end_of_file.desc":
     "ตรวจสอบให้แน่ใจว่าไฟล์ข้อความลงท้ายด้วยการขึ้นบรรทัดใหม่ (LF) หนึ่งบรรทัดพอดี ซึ่งเป็นไปตามมาตรฐาน POSIX และป้องกันไม่ให้คำเตือนการขึ้นบรรทัดใหม่หายไป",
   "guard.rule.builtin_end_of_file.name": "จุดสิ้นสุดของไฟล์ Newline Fixer",

@@ -1649,14 +1649,16 @@ export const srCyrl: TranslationDict = {
   "settings.official_direct": "Директно (званично)",
   "settings.test_connection": "Тест Цоннецтион",
   "settings.plugin_isolation_title": "Изолација простора имена",
-  "settings.plugin_isolation_desc": "All extension configurations are strictly isolated under plugins.<id>.",
+  "settings.plugin_isolation_desc":
+    "Сва конфигурација додатака треће стране је строго изолована у области додатака.<ид>.",
   "settings.no_plugins": "Још нема конфигурација додатака.",
   "settings.sec_core_title": "Резервисани столови",
   "settings.sec_core_desc": "Строго штити алате, задатке, формат, енв, подешавања од преписивања трећих страна.",
   "settings.sec_lock_title": "Филе Лоцк",
-  "settings.sec_lock_desc": "Acquires an exclusive lock to prevent concurrent write corruption.",
+  "settings.sec_lock_desc":
+    "Аутоматски стекните ексклузивне браве приликом писања конфигурација како бисте спречили да истовремено оштети податке.",
   "settings.sec_ast_title": "Цоммент Пресерватион",
-  "settings.sec_ast_desc": "Updates preserve existing comments and formatting.",
+  "settings.sec_ast_desc": "Ажурирање конфигурације не уништава оригиналну ручну напомену и монтажу.",
   "settings.status_protected": "Заштићено",
   "settings.status_active": "Активан",
   "settings.status_ast_safe": "АСТ Сафе",
@@ -1703,7 +1705,7 @@ export const srCyrl: TranslationDict = {
   "about.credits_seti_desc":
     "УниРТМ подразумевани сет датотека и икона језика, који одржавају Јессе Веед и ВС Цоде тим под МИТ лиценцом.",
   "about.credits_themes_desc":
-    "Native support for VS Code theme manifests across color themes (contributes.themes), file icon themes (contributes.iconThemes), and product icon themes (contributes.productIconThemes).",
+    "Изворно компатибилан са три проширене димензије теме ВС Цоде-а: темом у боји (цонтрибутес.тхемес), иконом датотеке (цонтрибутес.ицонТхемес) и иконом производа интерфејса (цонтрибутес.продуцтИцонТхемес).",
   "privilege.status_elevated": "Овлашћени",
   "privilege.status_standard": "Неовлашћено",
   "privilege.btn_elevate": "Захтевајте администраторски приступ",
@@ -1783,7 +1785,8 @@ export const srCyrl: TranslationDict = {
   "icon_picker.hdd_desc": '2,5" преносиви механички чврсти диск',
   "icon_picker.key_desc": "ФИДО2 сигурносни кључ Хардвер",
   "marketplace.title": "Маркетплаце",
-  "marketplace.subtitle": "Explore and install VS Code compatible themes, icon sets, and UniRTM developer tool suites.",
+  "marketplace.subtitle":
+    "Истражите и инсталирајте теме и скупове икона компатибилне са ВС Цоде-ом, као и скуп програмских функција које проширују изворне могућности УниРТМ-а.",
   "marketplace.tab_themes": "Теме (Опен ВСКС)",
   "marketplace.tab_plugins": "Додаци (УниРТМ)",
   "marketplace.search": "Тражи",
@@ -1796,8 +1799,8 @@ export const srCyrl: TranslationDict = {
   "marketplace.filter_product_icons": "Иконе производа",
   "marketplace.installed_count": "[[В0]] инсталиране теме и пакети икона",
   "marketplace.total_count": "[[В0]] теме и пакети икона укупно",
-  "marketplace.searching_openvsx": "Connecting to Open VSX to search themes and icons...",
-  "marketplace.empty_installed": "No third-party themes or icon packs installed yet",
+  "marketplace.searching_openvsx": "Повезивање на Опен ВСКС у реалном времену ради преузимања тема и икона...",
+  "marketplace.empty_installed": "Још увек нису инсталиране теме или пакети икона треће стране",
   "marketplace.empty_results": "Нису пронађене одговарајуће теме или пакети икона",
   "marketplace.view_popular": "Погледајте популарне препоруке",
   "marketplace.active": "Активан",
@@ -1826,10 +1829,10 @@ export const srCyrl: TranslationDict = {
   "environments.desc":
     "Manage scoped environment variables across workspace (.unirtm.toml) and user profiles (~/.config/unirtm/unirtm.toml). Осетљиве вредности су подразумевано маскиране.",
   "environments.scope_workspace": "Радни простор",
-  "environments.scope_workspace_desc": "Configured in local project (.unirtm.toml) under [env] section",
+  "environments.scope_workspace_desc": "Дефинисано у блоку конфигурације [енв] тренутног пројекта .униртм.томл",
   "environments.scope_user": "User Global Env Vars",
   "environments.scope_user_desc":
-    "Configured in user global profile (~/.config/unirtm/unirtm.toml) under [env] section",
+    "Дефинисано у [енв] конфигурационом блоку глобалног корисника ~/.цонфиг/униртм/униртм.томл",
   "environments.create_btn": "Нова променљива",
   "environments.create_first": "Креирајте прву променљиву",
   "environments.edit_btn": "Уреди",
@@ -1847,11 +1850,12 @@ export const srCyrl: TranslationDict = {
   "environments.scope_label": "Таргет Сцопе",
   "environments.empty_title": "Нема дефинисаних променљивих окружења",
   "environments.empty_desc":
-    "Configure environment variables in the [env] section to share across team runtimes and local scripts.",
-  "environments.empty_workspace_desc": "Configure environment variables in project .unirtm.toml under [env] section.",
+    "Уобичајено коришћене варијабле окружења могу се конфигурисати у блоку [енв] да би се обезбедило уједињено окружење за подметање, ток задатака и извршавање аутоматизације терминала тренутног пројекта.",
+  "environments.empty_workspace_desc":
+    "Можете додати [енв] блок у .униртм.томл у основни директоријум тренутног пројекта да бисте закључали ексклузивне променљиве окружења и сервисне портове тренутног пројекта.",
   "environments.empty_user_desc":
-    "Configure global default environment variables in ~/.config/unirtm/unirtm.toml under [env] section.",
-  "environments.delete_confirm": "Are you sure you want to delete environment variable",
+    "Можете додати блок [енв] у глобалну конфигурацију корисника (~/.цонфиг/униртм/униртм.томл) да бисте обезбедили свеобухватне променљиве окружења за сва глобална развојна окружења.",
+  "environments.delete_confirm": "Да ли сте сигурни да желите да избришете ову променљиву окружења?",
   "environments.save_btn": "Сачувај промене",
   "environments.create_title": "Нова варијабла окружења",
   "environments.edit_title": "Уреди променљиву окружења",
@@ -1866,7 +1870,7 @@ export const srCyrl: TranslationDict = {
   "environments.delete_title": "Обриши променљиву окружења",
   "environments.delete_warning":
     "Are you sure you want to permanently delete  {key}  from  {scope} ? Ова радња се не може опозвати.",
-  "environments.search_placeholder": "Search environment variable name, keyword, or value...",
+  "environments.search_placeholder": "Потражите имена променљивих окружења, кључне речи или вредности...",
   "environments.empty_search": "Ниједна променљива окружења не одговара „[[В0]]“",
   "environments.reveal_short": "Схов",
   "environments.conceal_short": "Маска",
@@ -1878,7 +1882,7 @@ export const srCyrl: TranslationDict = {
   "environments.create_profile": "Нови профил",
   "environments.create_profile_title": "Креирајте профил окружења",
   "environments.create_profile_desc":
-    "Define environment-specific variable overrides for development, CI, testing, etc.",
+    "Дефинишите диференцирану покривеност варијабли окружења за специфичне сценарије (нпр. локални развој, ЦИ провере, тестна окружења).",
   "environments.profile_name_label": "Име профила",
   "environments.profile_name_placeholder": "нпр. развој, ци, инсценација",
   "environments.profile_overrides_chip": "надјачава",
@@ -1939,7 +1943,8 @@ export const srCyrl: TranslationDict = {
   "explorer.delete_warning": "Ова радња се не може опозвати.",
   "nav.scm": "Контрола извора",
   "scm.title": "Контрола извора",
-  "scm.subtitle": "Unified Version Control Center · Branch, Working Tree & Commit Graph Management",
+  "scm.subtitle":
+    "Јединствени центар за контролу верзија · Интегрисано управљање гранама, променама и графовима урезивања",
   "scm.tabs.changes": "Промене у радном простору",
   "scm.tabs.graph": "Графикон урезивања",
   "scm.branch.active": "Ацтиве Бранцх",
