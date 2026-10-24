@@ -98,12 +98,12 @@ const envActionListeners = new Set<EnvActionListener>();
 const envsChangeListeners = new Set<EnvsChangeListener>();
 
 /**
- * useWorkspaceBus: 轻量级跨组件协同状态总线
- * 负责文件管理器 (Explorer)、主编辑器 (Editor) 与 源代码管理 (SCM) 的双向定位与行为派发
+ * useWorkspaceBus: Lightweight cross-component coordination bus
+ * Responsible for bidirectional navigation and dispatching between Explorer, Editor, and SCM
  */
 export function useWorkspaceBus() {
   /**
-   * 在文件管理器中揭示并高亮指定文件
+   * Reveal and highlight specified file in Explorer
    */
   function revealInExplorer(path: string): void {
     if (!path) return;
@@ -119,7 +119,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册文件揭示监听器
+   * Register file reveal listener
    */
   function onRevealFile(listener: RevealListener): () => void {
     revealListeners.add(listener);
@@ -129,7 +129,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 广播 Git 状态发生变动，驱动 Explorer 树和 SCM 列表协同刷新
+   * Broadcast Git status change to refresh Explorer tree and SCM list
    */
   function notifyGitStatusChanged(): void {
     gitStatusChangeListeners.forEach((fn) => {
@@ -142,7 +142,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册 Git 状态变动监听器
+   * Register Git status change listener
    */
   function onGitStatusChanged(listener: GitStatusChangeListener): () => void {
     gitStatusChangeListeners.add(listener);
@@ -152,7 +152,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 请求在主编辑器中打开差异比对标签页
+   * Request opening diff comparison tab in Editor
    */
   function openDiff(req: WorkspaceDiffRequest): void {
     openDiffListeners.forEach((fn) => {
@@ -165,7 +165,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册差异比对打开监听器
+   * Register diff comparison open listener
    */
   function onOpenDiff(listener: OpenDiffListener): () => void {
     openDiffListeners.add(listener);
@@ -175,7 +175,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 通知指定路径的文件需要从磁盘重新加载最新内容（如执行了 Git Discard、外部变更或 Checkout）
+   * Notify specified file path to reload latest content from disk (Git Discard, external change, Checkout)
    */
   function notifyFileReloadNeeded(paths: string[]): void {
     if (!paths || paths.length === 0) return;
@@ -189,7 +189,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册文件重新加载监听器
+   * Register file reload listener
    */
   function onFileReloadNeeded(listener: FileReloadListener): () => void {
     fileReloadListeners.add(listener);
@@ -199,7 +199,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 广播文件或目录重命名事件
+   * Broadcast file or directory rename event
    */
   function notifyFileRenamed(evt: FileRenameEvent): void {
     if (!evt || !evt.oldPath || !evt.newPath) return;
@@ -213,7 +213,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册文件或目录重命名监听器
+   * Register file or directory rename listener
    */
   function onFileRenamed(listener: FileRenameListener): () => void {
     fileRenameListeners.add(listener);
@@ -223,7 +223,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 广播文件或目录删除事件
+   * Broadcast file or directory delete event
    */
   function notifyFileDeleted(path: string): void {
     if (!path) return;
@@ -237,7 +237,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册文件或目录删除监听器
+   * Register file or directory delete listener
    */
   function onFileDeleted(listener: FileDeleteListener): () => void {
     fileDeleteListeners.add(listener);
@@ -247,14 +247,14 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 记录当前编辑器聚焦的活跃文件
+   * Record currently active focused file in editor
    */
   function setActiveFilePath(path: string): void {
     currentActiveFilePath.value = path;
   }
 
   /**
-   * 在主编辑器中打开指定文件并定位到特定行/列
+   * Open specified file in Editor and navigate to line/column
    */
   function openInEditor(req: { path: string; line?: number; column?: number }): void {
     if (!req || !req.path) return;
@@ -274,7 +274,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册在主编辑器中打开文件的监听器
+   * Register open file in Editor listener
    */
   function onOpenInEditor(listener: OpenInEditorListener): () => void {
     openInEditorListeners.add(listener);
@@ -284,7 +284,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 发送指令或代码到当前活动终端执行
+   * Send command or code to active terminal for execution
    */
   function sendToTerminal(req: SendToTerminalRequest): void {
     if (!req || req.text === undefined) return;
@@ -298,7 +298,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册发送至终端的监听器
+   * Register send to terminal listener
    */
   function onSendToTerminal(listener: SendToTerminalListener): () => void {
     sendToTerminalListeners.add(listener);
@@ -308,7 +308,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 在集成终端中打开指定工作目录
+   * Open specified working directory in integrated terminal
    */
   function revealInTerminal(directoryPath: string): void {
     if (!directoryPath) return;
@@ -323,7 +323,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册在集成终端中打开目录的监听器
+   * Register open directory in terminal listener
    */
   function onRevealInTerminal(listener: RevealInTerminalListener): () => void {
     revealInTerminalListeners.add(listener);
@@ -333,7 +333,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 触发工具链操作（如从侧边栏右键菜单请求主画布执行切换、安装、锁定、删除）
+   * Trigger toolchain action (switch, install, pin, remove from sidebar menu)
    */
   function triggerToolAction(req: ToolActionRequest): void {
     if (!req || !req.toolId) return;
@@ -347,7 +347,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册工具链操作监听器
+   * Register toolchain action listener
    */
   function onToolAction(listener: ToolActionListener): () => void {
     toolActionListeners.add(listener);
@@ -357,7 +357,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 广播工具链配置或状态发生变动
+   * Broadcast toolchain configuration or status change
    */
   function notifyToolsChanged(): void {
     toolsChangeListeners.forEach((fn) => {
@@ -370,7 +370,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册工具链变动监听器
+   * Register toolchain change listener
    */
   function onToolsChanged(listener: ToolsChangeListener): () => void {
     toolsChangeListeners.add(listener);
@@ -380,7 +380,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 触发工程自动化任务操作（如从侧边栏右键菜单请求主画布执行运行、编辑、复制、删除）
+   * Trigger task action (run, edit, duplicate, remove from sidebar menu)
    */
   function triggerTaskAction(req: TaskActionRequest): void {
     if (!req || !req.taskName) return;
@@ -394,7 +394,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册工程自动化任务操作监听器
+   * Register task action listener
    */
   function onTaskAction(listener: TaskActionListener): () => void {
     taskActionListeners.add(listener);
@@ -404,7 +404,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 广播任务列表发生变动
+   * Broadcast task list change
    */
   function notifyTasksChanged(): void {
     tasksChangeListeners.forEach((fn) => {
@@ -417,7 +417,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册任务列表变动监听器
+   * Register task list change listener
    */
   function onTasksChanged(listener: TasksChangeListener): () => void {
     tasksChangeListeners.add(listener);
@@ -427,7 +427,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 广播系统环境诊断变动
+   * Broadcast environment doctor diagnosis change
    */
   function notifyDoctorChanged(): void {
     doctorChangeListeners.forEach((fn) => {
@@ -440,7 +440,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册系统环境诊断变动监听器
+   * Register environment doctor change listener
    */
   function onDoctorChanged(listener: DoctorChangeListener): () => void {
     doctorChangeListeners.add(listener);
@@ -450,7 +450,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 触发环境变量操作（如从侧边栏右键菜单请求主画布执行编辑、复制真实值、复制变量名、恢复基准值、删除）
+   * Trigger environment variable action (edit, copy value, copy name, restore, delete)
    */
   function triggerEnvAction(req: EnvActionRequest): void {
     if (!req || !req.envName) return;
@@ -464,7 +464,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册环境变量操作监听器
+   * Register environment variable action listener
    */
   function onEnvAction(listener: EnvActionListener): () => void {
     envActionListeners.add(listener);
@@ -474,7 +474,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 广播环境变量配置发生变动
+   * Broadcast environment variable configuration change
    */
   function notifyEnvsChanged(): void {
     envsChangeListeners.forEach((fn) => {
@@ -487,7 +487,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 注册环境变量变动监听器
+   * Register environment variable change listener
    */
   function onEnvsChanged(listener: EnvsChangeListener): () => void {
     envsChangeListeners.add(listener);
@@ -497,7 +497,7 @@ export function useWorkspaceBus() {
   }
 
   /**
-   * 清除所有监听器（主要用于单元测试隔离）
+   * Clear all listeners (for unit test isolation)
    */
   function _clearAllListeners(): void {
     revealListeners.clear();

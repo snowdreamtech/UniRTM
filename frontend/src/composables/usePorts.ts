@@ -282,7 +282,7 @@ export function usePorts() {
   async function addPort(payload: PortForwardPayload): Promise<boolean> {
     const port = Number(payload.port);
     if (!port || port <= 0 || port > 65535) {
-      showToast("端口号无效，请输入 1-65535 之间的有效端口", "error");
+      showToast("Invalid port number, please enter a valid port between 1-65535", "error");
       return false;
     }
 
@@ -313,7 +313,7 @@ export function usePorts() {
     } catch (_) {}
 
     syncPortsList();
-    showToast(`端口 ${port} 转发已添加`, "success");
+    showToast(`Port ${port} forwarding added`, "success");
     return true;
   }
 
@@ -351,7 +351,7 @@ export function usePorts() {
     } catch (_) {}
 
     syncPortsList();
-    showToast(`端口 ${port} 配置已更新`, "success");
+    showToast(`Port ${port} configuration updated`, "success");
     return true;
   }
 
@@ -369,7 +369,7 @@ export function usePorts() {
     } catch (_) {}
 
     syncPortsList();
-    showToast(`已停止端口 ${port} 的转发`, "info");
+    showToast(`Stopped forwarding port ${port}`, "info");
     return true;
   }
 
@@ -387,7 +387,7 @@ export function usePorts() {
     } catch (_) {}
 
     syncPortsList();
-    showToast(`已恢复端口 ${port} 的转发`, "success");
+    showToast(`Resumed forwarding port ${port}`, "success");
     return true;
   }
 
@@ -411,7 +411,7 @@ export function usePorts() {
     } catch (_) {}
 
     syncPortsList();
-    showToast(`已移除端口 ${port}`, "info");
+    showToast(`Removed port ${port}`, "info");
     return true;
   }
 
@@ -437,7 +437,7 @@ export function usePorts() {
     }
 
     syncPortsList();
-    showToast(`侦测到本地端口 ${port} 已就绪，已自动加入端口列表`, "info");
+    showToast(`Detected local port ${port} ready, added to port list`, "info");
   }
 
   /**
@@ -447,10 +447,10 @@ export function usePorts() {
     try {
       const url = item.previewUrl || `http://${item.forwardAddress}/`;
       await navigator.clipboard.writeText(url);
-      showToast(`已复制地址: ${url}`, "success");
+      showToast(`Copied address: ${url}`, "success");
       return true;
     } catch (e) {
-      showToast("复制地址失败", "error");
+      showToast("Failed to copy address", "error");
       return false;
     }
   }
@@ -461,10 +461,10 @@ export function usePorts() {
   async function copyPort(port: number): Promise<boolean> {
     try {
       await navigator.clipboard.writeText(String(port));
-      showToast(`已复制端口号: ${port}`, "success");
+      showToast(`Copied port: ${port}`, "success");
       return true;
     } catch (e) {
-      showToast("复制端口号失败", "error");
+      showToast("Failed to copy port", "error");
       return false;
     }
   }
@@ -516,7 +516,7 @@ export function usePorts() {
       }
     }
     if (count > 0) {
-      showToast(`已将 ${count} 个公开端口全部安全重置为私有模式`, "success");
+      showToast(`Reset all ${count} public ports to private mode`, "success");
     }
     return count;
   }

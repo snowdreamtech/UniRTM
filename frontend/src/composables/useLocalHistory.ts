@@ -105,7 +105,7 @@ export function useLocalHistory() {
 
     openDiff({
       path: snapshot.path,
-      name: `${fileName} (本地快照 ${timeStr} ↔ 当前版本)`,
+      name: `${fileName} (Local Snapshot ${timeStr} ↔ Current)`,
       originalContent: snapshot.content,
       modifiedContent: currentContent,
       isStaged: false,

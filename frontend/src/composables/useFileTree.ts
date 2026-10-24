@@ -156,7 +156,7 @@ export function useFileTree() {
       await fetchTree();
       return true;
     } catch (err: any) {
-      showToast(err.message || "添加文件夹失败", "error");
+      showToast(err.message || "Failed to add folder", "error");
       return false;
     }
   }
@@ -180,7 +180,7 @@ export function useFileTree() {
       await fetchTree();
       return true;
     } catch (err: any) {
-      showToast(err.message || "移除文件夹失败", "error");
+      showToast(err.message || "Failed to remove folder", "error");
       return false;
     }
   }
@@ -229,7 +229,7 @@ export function useFileTree() {
         );
 
         tree.value = {
-          name: t("explorer.workspace_title", { count: roots.length }) || `工作区 (${roots.length} 个文件夹)`,
+          name: t("explorer.workspace_folders_count", { count: roots.length }) || `Workspace (${roots.length} folders)`,
           path: "",
           is_dir: true,
           size: 0,
@@ -507,11 +507,11 @@ export function useFileTree() {
       });
       const data = await res.json();
       if (res.ok && !data.error && data.success !== false) {
-        showToast("文件已保存", "success");
+        showToast("File saved", "success");
         activeFileContent.value = content;
         try {
           const { recordSnapshot } = useLocalHistory();
-          recordSnapshot(path, content, "文件保存");
+          recordSnapshot(path, content, "File saved");
         } catch {
           // ignore
         }
@@ -536,10 +536,10 @@ export function useFileTree() {
     try {
       const fullPath = getAbsolutePath(path);
       await navigator.clipboard.writeText(fullPath);
-      showToast(t("explorer.copied_full_path") || `已复制完整路径: ${fullPath}`, "info");
+      showToast(t("explorer.copied_full_path") || `Copied full path: ${fullPath}`, "info");
       return fullPath;
     } catch {
-      showToast("复制失败", "error");
+      showToast("Failed to copy", "error");
       return "";
     }
   }
@@ -547,10 +547,10 @@ export function useFileTree() {
   async function copyRelativePath(path: string): Promise<string> {
     try {
       await navigator.clipboard.writeText(path);
-      showToast(t("explorer.copied_path") || `已复制相对路径: ${path}`, "info");
+      showToast(t("explorer.copied_path") || `Copied relative path: ${path}`, "info");
       return path;
     } catch {
-      showToast("复制失败", "error");
+      showToast("Failed to copy", "error");
       return "";
     }
   }
@@ -558,10 +558,10 @@ export function useFileTree() {
   async function copyFileName(name: string): Promise<string> {
     try {
       await navigator.clipboard.writeText(name);
-      showToast("已复制文件名", "info");
+      showToast("Copied file name", "info");
       return name;
     } catch {
-      showToast("复制失败", "error");
+      showToast("Failed to copy", "error");
       return "";
     }
   }
@@ -672,7 +672,7 @@ export function useFileTree() {
   function toggleGitFilter(): void {
     isGitFilterActive.value = !isGitFilterActive.value;
     if (isGitFilterActive.value && tree.value) {
-      // 开启 Git 聚焦模式时，自动展开含有变动的目录分支
+      // When Git focus mode is enabled, auto-expand folders with changes
       const gitPaths = getChangedPathsSet();
       gitPaths.forEach((p) => {
         expandPath(p);
@@ -688,7 +688,7 @@ export function useFileTree() {
       const gitPaths = getChangedPathsSet();
       const gitFiltered = filterGitNode(base, gitPaths);
       if (!gitFiltered) {
-        // 无任何改动时返回空子节点的根，避免树结构崩溃
+        // Return root with empty children when no changes exist
         return {
           ...base,
           children: [],

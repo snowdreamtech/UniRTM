@@ -15,19 +15,19 @@ export interface ParsedTerminalLink {
   column?: number;
 }
 
-// 匹配 Web URL
+// Match Web URL
 const URL_REGEX = /https?:\/\/[^\s"'`()<>[\]{}]+/gi;
 
-// 匹配 Python 堆栈: File "xxx", line 123
+// Match Python stack trace: File "xxx", line 123
 const PYTHON_STACK_REGEX = /File\s+"([^"]+)",\s+line\s+(\d+)/gi;
 
-// 匹配标准文件路径以及附带的行号/列号 (如 src/App.vue:42:15, ./main.go:88, /home/user/project/file.ts:10)
-// 支持常见扩展名
+// Match standard file path with line/column (e.g. src/App.vue:42:15, ./main.go:88, /home/user/project/file.ts:10)
+// Support common extensions
 const FILE_PATH_EXT_REGEX =
   /(?:^|[\s([`'"<>=])((?:[a-zA-Z]:[\\/]|(?:\.{1,2}[\\/])|(?:[\w.-]+[\\/]))*[\w.-]+\.(?:ts|js|vue|jsx|tsx|json|md|html|css|scss|sh|go|py|rs|yaml|yml|toml|sql|txt|c|cpp|h|java|php|rb|xml|env))(?::(\d+))?(?::(\d+))?/gi;
 
 /**
- * 解析终端单行字符中的所有可点击超链接（URL 与 文件路径/堆栈）
+ * Parse all clickable hyperlinks from a single line in terminal (URLs and file paths/stacks)
  */
 export function parseTerminalLine(lineText: string): ParsedTerminalLink[] {
   if (!lineText) return [];
@@ -39,14 +39,14 @@ export function parseTerminalLine(lineText: string): ParsedTerminalLink[] {
     return occupiedRanges.some(([s, e]) => Math.max(s, start) < Math.min(e, end));
   }
 
-  // 1. 匹配 Web URL
+  // 1. Match Web URL
   let urlMatch: RegExpExecArray | null;
   URL_REGEX.lastIndex = 0;
   while ((urlMatch = URL_REGEX.exec(lineText)) !== null) {
     const rawUrl = urlMatch[0];
     const startIndex = urlMatch.index;
 
-    // 清理可能误吸入的末尾符号（如句点、逗号、括号）
+    // Strip trailing punctuation (dots, commas, brackets)
     const cleanedUrl = rawUrl.replace(/[.,;:!?)]+$/, "");
     const finalEndIndex = startIndex + cleanedUrl.length;
 
@@ -62,7 +62,7 @@ export function parseTerminalLine(lineText: string): ParsedTerminalLink[] {
     }
   }
 
-  // 2. 匹配 Python 堆栈
+  // 2. Match Python stack trace
   let pyMatch: RegExpExecArray | null;
   PYTHON_STACK_REGEX.lastIndex = 0;
   while ((pyMatch = PYTHON_STACK_REGEX.exec(lineText)) !== null) {
@@ -85,7 +85,7 @@ export function parseTerminalLine(lineText: string): ParsedTerminalLink[] {
     }
   }
 
-  // 3. 匹配常规文件路径加行列号
+  // 3. Match regular file paths with line/column
   let fileMatch: RegExpExecArray | null;
   FILE_PATH_EXT_REGEX.lastIndex = 0;
   while ((fileMatch = FILE_PATH_EXT_REGEX.exec(lineText)) !== null) {
@@ -94,7 +94,7 @@ export function parseTerminalLine(lineText: string): ParsedTerminalLink[] {
     const lineStr = fileMatch[2];
     const colStr = fileMatch[3];
 
-    // 计算实际匹配文本在 lineText 中的起始索引（因为前导可能有空白或括号字符）
+    // Calculate actual start index in lineText
     const offset = fullMatchedStr.indexOf(rawFilePath);
     const startIndex = fileMatch.index + offset;
     const matchedTokenLen =
@@ -108,14 +108,14 @@ export function parseTerminalLine(lineText: string): ParsedTerminalLink[] {
         text: lineText.slice(startIndex, endIndex),
         startIndex,
         endIndex,
-        filePath: rawFilePath.replace(/^\.\//, ""), // 清洗开头的 ./
+        filePath: rawFilePath.replace(/^\.\//, ""), // Strip leading ./
         line: lineStr ? parseInt(lineStr, 10) : undefined,
         column: colStr ? parseInt(colStr, 10) : undefined,
       });
     }
   }
 
-  // 按起始索引升序排列
+  // Sort in ascending order by startIndex
   return results.sort((a, b) => a.startIndex - b.startIndex);
 }
 
@@ -125,7 +125,7 @@ export interface TerminalLinkProviderOptions {
 }
 
 /**
- * 为 xterm 实例构建并注册自定义超链接提供者
+ * Build and register custom hyperlink provider for xterm instance
  */
 export function createTerminalLinkProvider(term: Terminal, options?: TerminalLinkProviderOptions): ILinkProvider {
   const { openInEditor } = useWorkspaceBus();
@@ -150,7 +150,7 @@ export function createTerminalLinkProvider(term: Terminal, options?: TerminalLin
         const links: ILink[] = parsedLinks.map((item) => {
           const range: IBufferRange = {
             start: {
-              x: item.startIndex + 1, // xterm 是 1-indexed
+              x: item.startIndex + 1, // xterm is 1-indexed
               y: bufferLineNumber,
             },
             end: {

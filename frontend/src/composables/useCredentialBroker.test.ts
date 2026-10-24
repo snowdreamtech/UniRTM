@@ -70,7 +70,7 @@ describe("useCredentialBroker composable", () => {
     };
 
     broker.promptCredential(req);
-    // 命中缓存时不打开弹窗
+    // Do not open prompt dialog when hitting cache
     expect(broker.isPromptOpen.value).toBe(false);
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });

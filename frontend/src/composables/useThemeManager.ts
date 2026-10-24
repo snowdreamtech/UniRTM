@@ -12,7 +12,7 @@ const PREF_DARK_KEY = "unirtm_pref_dark_theme";
 const PREF_LIGHT_KEY = "unirtm_pref_light_theme";
 
 const defaultColors: ThemeItem[] = [
-  { id: "default", name: "UniRTM (默认)", type: "color", is_builtin: true, ui_theme: "vs-dark" },
+  { id: "default", name: "UniRTM (Default)", type: "color", is_builtin: true, ui_theme: "vs-dark" },
   { id: "dark", name: "UniRTM Dark", type: "color", is_builtin: true, ui_theme: "vs-dark" },
   { id: "light", name: "UniRTM Light", type: "color", is_builtin: true, ui_theme: "vs" },
 ];
@@ -28,7 +28,7 @@ const defaultIcons: ThemeItem[] = [
 const defaultProducts: ThemeItem[] = [
   {
     id: "codicons",
-    name: "Codicons (默认)",
+    name: "Codicons (Default)",
     type: "product",
     is_builtin: true,
     description: "Official Visual Studio Code product icon theme",

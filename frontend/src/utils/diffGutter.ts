@@ -11,8 +11,8 @@ export interface DiffLineChange {
 }
 
 /**
- * 计算原始文本与当前修改文本之间的行级增量变动（基于 Myers/动态规划行比较）
- * 用于在主编辑器行号槽（Gutter）呈现克制的增加（绿色）、修改（蓝色）指示
+ * Compute line-level incremental changes between original and modified text (Myers/DP line diff)
+ * Used to display subtle added (green) and modified (blue) indicators in editor gutter
  */
 export function computeLineDiff(originalText: string, modifiedText: string): DiffLineChange[] {
   if (originalText === modifiedText) {
@@ -27,7 +27,7 @@ export function computeLineDiff(originalText: string, modifiedText: string): Dif
 
   if (n === 0 && m === 0) return [];
 
-  // 如果原本为空，全部为新增
+  // If original was empty, mark all as added
   if (originalText === "" && modifiedText !== "") {
     return [
       {
@@ -38,10 +38,10 @@ export function computeLineDiff(originalText: string, modifiedText: string): Dif
     ];
   }
 
-  // 经典简明 LCS 矩阵（针对单文件编辑规模极速高效）
-  // 限制最大矩阵规模，防止百万行极端卡顿
+  // Concise LCS matrix (efficient for single file editing scale)
+  // Limit max matrix size to prevent extreme lag on very large files
   if (n > 2000 || m > 2000) {
-    // 大文件回退至行首行尾剪枝简易比较
+    // Fallback to head/tail pruning comparison for huge files
     return computeSimpleLineDiff(origLines, modLines);
   }
 
@@ -57,7 +57,7 @@ export function computeLineDiff(originalText: string, modifiedText: string): Dif
     }
   }
 
-  // 回溯生成 diff edits
+  // Backtrack to generate diff edits
   let i = n;
   let j = m;
   const edits: { op: "same" | "add" | "del"; origIdx: number; modIdx: number }[] = [];
@@ -78,7 +78,7 @@ export function computeLineDiff(originalText: string, modifiedText: string): Dif
 
   edits.reverse();
 
-  // 合并连续 edits 为 DiffLineChange
+  // Merge contiguous edits into DiffLineChange
   const result: DiffLineChange[] = [];
   let k = 0;
 
@@ -130,7 +130,7 @@ export function computeLineDiff(originalText: string, modifiedText: string): Dif
         originalText: "",
       });
     } else if (delCount > 0) {
-      // 纯删除行，标记在前一行或第 1 行
+      // Pure deletion: mark on previous line or line 1
       const refLine = Math.min(Math.max(1, edits[startK].modIdx || 1), m);
       result.push({
         type: "deleted",

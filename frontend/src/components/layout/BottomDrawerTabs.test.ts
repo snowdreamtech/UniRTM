@@ -6,7 +6,7 @@ const DRAWER_TAB_ORDER_KEY = "unirtm_drawer_tab_order";
 const DRAWER_TAB_HIDDEN_KEY = "unirtm_drawer_tab_hidden";
 const DEFAULT_TAB_ORDER: DrawerTab[] = ["terminal", "output", "tasks", "doctor", "ports"];
 
-// 模拟纯逻辑测试与持久化
+// Mock pure logic testing and persistence
 function getInitialTabOrder(storageMock: Record<string, string>): DrawerTab[] {
   try {
     const saved = storageMock[DRAWER_TAB_ORDER_KEY];
@@ -68,7 +68,7 @@ function toggleTabVisibility(
   if (newHidden.has(tabId)) {
     newHidden.delete(tabId);
   } else {
-    // 保护：至少保留 1 个可见 Tab
+    // Guard: Keep at least 1 visible tab
     if (visible.length <= 1) {
       return { newHidden, newCurrentTab: newCurrent };
     }
@@ -130,21 +130,21 @@ describe("BottomDrawer Tab Drag, Drop & Visibility Management", () => {
     const initialHidden = new Set<DrawerTab>();
     const tabOrder = [...DEFAULT_TAB_ORDER];
 
-    // 隐藏当前正在查看的 terminal
+    // Hide currently active tab (terminal)
     const res = toggleTabVisibility(initialHidden, tabOrder, "terminal", "terminal");
     expect(res.newHidden.has("terminal")).toBe(true);
-    // 自动切换到剩余可见的第一个 tab (output)
+    // Automatically switch to first remaining visible tab (output)
     expect(res.newCurrentTab).toBe("output");
   });
 
   it("prevents hiding the last remaining visible tab", () => {
-    // 假设已经隐藏了 4 个
+    // Assume 4 tabs are already hidden
     const almostAllHidden = new Set<DrawerTab>(["output", "tasks", "doctor", "ports"]);
     const tabOrder = [...DEFAULT_TAB_ORDER];
 
-    // 尝试隐藏仅剩的 terminal
+    // Try to hide the last remaining visible tab (terminal)
     const res = toggleTabVisibility(almostAllHidden, tabOrder, "terminal", "terminal");
-    // 保护生效，terminal 不被隐藏
+    // Guard takes effect: terminal remains visible
     expect(res.newHidden.has("terminal")).toBe(false);
     expect(res.newCurrentTab).toBe("terminal");
   });
@@ -164,7 +164,7 @@ describe("BottomDrawer Tab Drag, Drop & Visibility Management", () => {
     expect(getInitialTabOrder(storageMock)).toEqual(["ports", "doctor", "tasks", "output", "terminal"]);
     expect(getInitialHiddenTabs(storageMock).has("tasks")).toBe(true);
 
-    // 重置
+    // Reset
     delete storageMock[DRAWER_TAB_ORDER_KEY];
     delete storageMock[DRAWER_TAB_HIDDEN_KEY];
 

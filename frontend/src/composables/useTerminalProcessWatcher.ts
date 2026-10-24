@@ -71,14 +71,14 @@ const PROCESS_RULES: ProcessRule[] = [
   },
 ];
 
-// 正则检测 shell 提示符返回（表示命令已结束回到空闲态）
+// Regex to detect shell prompt return (command finished, idle state)
 const SHELL_PROMPT_REGEX = /(?:[$#>]\s*$|\(base\)\s*[$#>])/;
 
 const activeProcesses = reactive<Map<string, DetectedProcessInfo>>(new Map());
 const customTitles = reactive<Map<string, string>>(new Map());
 
 /**
- * 从文本流中嗅探当前运行的进程
+ * Sniff active process from output stream
  */
 export function detectProcessFromChunk(text: string): DetectedProcessInfo | null {
   if (!text) return null;
@@ -100,22 +100,22 @@ export function detectProcessFromChunk(text: string): DetectedProcessInfo | null
 
 export function useTerminalProcessWatcher() {
   /**
-   * 记录输出并智能更新对应 pane 的活动进程
+   * Record output and update active process for pane
    */
   function recordChunk(paneId: string, chunk: string): void {
     if (!paneId || !chunk) return;
 
-    // 1. 如果包含 shell 提示符，说明前台进程可能已退回交互状态
+    // 1. If shell prompt returned, foreground process exited to interactive mode
     if (SHELL_PROMPT_REGEX.test(chunk)) {
       activeProcesses.delete(paneId);
       return;
     }
 
-    // 2. 匹配规则
+    // 2. Match rules
     const detected = detectProcessFromChunk(chunk);
     if (detected) {
       const existing = activeProcesses.get(paneId);
-      // 如果类型相同，保留原有的 startTime 以准确统计任务耗时
+      // If same type, retain original startTime for accurate duration
       if (existing && existing.type === detected.type) {
         return;
       }
@@ -124,14 +124,14 @@ export function useTerminalProcessWatcher() {
   }
 
   /**
-   * 获取指定 pane 正在运行的进程信息
+   * Get running process info for pane
    */
   function getActiveProcess(paneId: string): DetectedProcessInfo | null {
     return activeProcesses.get(paneId) || null;
   }
 
   /**
-   * 设置自定义终端标题
+   * Set custom terminal title
    */
   function setCustomTitle(id: string, title: string): void {
     if (!id) return;
@@ -143,14 +143,14 @@ export function useTerminalProcessWatcher() {
   }
 
   /**
-   * 获取自定义终端标题
+   * Get custom terminal title
    */
   function getCustomTitle(id: string): string {
     return customTitles.get(id) || "";
   }
 
   /**
-   * 计算综合有效标题
+   * Compute effective terminal title
    */
   function getEffectiveTitle(id: string, defaultName: string): string {
     const custom = customTitles.get(id);

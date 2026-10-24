@@ -824,7 +824,7 @@ html[dir="rtl"] .opt-check {
   pointer-events: none !important;
 }
 
-/* Hover & Active / Focused: 100% 严格对齐 FileContextMenu 的 --accent-cyan-glow 与 --accent-cyan */
+/* Hover & Active / Focused: Strictly aligns with FileContextMenu --accent-cyan-glow and --accent-cyan */
 .context-view .monaco-menu .action-item.focused,
 .context-view .monaco-menu .action-item:hover,
 .context-view .monaco-menu .action-item.focused > .action-menu-item,

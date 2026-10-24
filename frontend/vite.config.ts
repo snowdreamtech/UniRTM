@@ -2850,7 +2850,7 @@ print(json.dumps({
 
           if ((req.url === "/api/themes" || req.url?.startsWith("/api/themes?")) && req.method === "GET") {
             const colorThemes: any[] = [
-              { id: "default", name: "UniRTM (默认)", type: "color", is_builtin: true, ui_theme: "vs-dark" },
+              { id: "default", name: "UniRTM (Default)", type: "color", is_builtin: true, ui_theme: "vs-dark" },
               { id: "dark", name: "UniRTM Dark", type: "color", is_builtin: true, ui_theme: "vs-dark" },
               { id: "light", name: "UniRTM Light", type: "color", is_builtin: true, ui_theme: "vs" },
             ];
@@ -2866,7 +2866,7 @@ print(json.dumps({
             const productIconThemes: any[] = [
               {
                 id: "codicons",
-                name: "Codicons (默认)",
+                name: "Codicons (Default)",
                 type: "product",
                 is_builtin: true,
                 description: "Official Visual Studio Code product icon theme",

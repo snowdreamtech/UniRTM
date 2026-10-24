@@ -42,7 +42,7 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
     const fixedLines = [lines[0], "", ...lines.slice(1)];
     return {
       isValid: false,
-      warning: "多行提交信息的正文前需保留一个空行 (Second line must be empty)",
+      warning: "Second line must be empty in multi-line commit messages",
       canAutoFix: true,
       fixedMessage: fixedLines.join("\n"),
     };
@@ -57,7 +57,7 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
     const fixed = [fixedFirstLine, ...lines.slice(1)].join("\n");
     return {
       isValid: false,
-      warning: "冒号后应保留一个空格 (Missing space after colon)",
+      warning: "Missing space after colon",
       canAutoFix: true,
       fixedMessage: fixed,
     };
@@ -71,13 +71,13 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
     if (startsWithType) {
       return {
         isValid: false,
-        warning: `格式错误，建议遵循 'type(scope): description'，如: ${startsWithType}: 说明`,
+        warning: `Format error, recommend following 'type(scope): description', e.g. ${startsWithType}: description`,
         canAutoFix: false,
       };
     }
     return {
       isValid: false,
-      warning: "建议遵循规范 (如 'feat: 新增功能' 或 'fix(scope): 修复问题')",
+      warning: "Recommend following conventional format (e.g. 'feat: new feature' or 'fix(scope): fix bug')",
       canAutoFix: false,
     };
   }
@@ -93,7 +93,7 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
     const fixed = [fixedFirstLine, ...lines.slice(1)].join("\n");
     return {
       isValid: false,
-      warning: "首行末尾不应包含句号或点 (Subject should not end with a period)",
+      warning: "Subject should not end with a period",
       canAutoFix: true,
       fixedMessage: fixed,
     };
@@ -107,7 +107,7 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
       scope,
       isBreaking,
       description,
-      warning: "首行超过 120 字符上限 (Header exceeds 120 characters limit)",
+      warning: "Header exceeds 120 characters limit",
       canAutoFix: false,
     };
   }
@@ -120,7 +120,7 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
       scope,
       isBreaking,
       description,
-      warning: "首行超过 72 字符，建议精简摘要 (Subject exceeds 72 chars)",
+      warning: "Header exceeds 72 characters, recommend concise summary",
     };
   }
 

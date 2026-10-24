@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { t, setLanguage, currentLocale, isRtl, SUPPORTED_LANGUAGES } from "./index";
+import { zhCn } from "./locales/zh-CN";
 
 describe("i18n module", () => {
   beforeEach(async () => {
@@ -21,7 +22,7 @@ describe("i18n module", () => {
   it("switches to zh-CN and translates", async () => {
     await setLanguage("zh-CN");
     expect(currentLocale.value).toBe("zh-CN");
-    expect(t("common.close")).toBe("关闭");
+    expect(t("common.close")).toBe(zhCn["common.close"]);
   });
 
   it("identifies RTL languages correctly", async () => {

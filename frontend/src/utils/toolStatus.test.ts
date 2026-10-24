@@ -51,7 +51,7 @@ describe("toolStatus utility", () => {
         id: "nodejs",
         name: "Node.js",
         active_version: "22.1.0",
-        installed_versions: ["20.18.3", "20.18.2"], // 磁盘上没有 22.1.0
+        installed_versions: ["20.18.3", "20.18.2"], // Missing 22.1.0 on disk
       };
       const res = computeToolStatus(tool, "workspace");
       expect(res.state).toBe("missing");
@@ -96,11 +96,11 @@ describe("toolStatus utility", () => {
         name: "Rust",
         active_version: "1.80.0",
         installed_versions: ["1.80.0"],
-        pinned: true, // 锁定版本
+        pinned: true, // Pinned version
       };
       const updates: ToolUpdateCandidate[] = [{ id: "rust", latest_version: "1.82.0", has_update: true }];
       const res = computeToolStatus(tool, "workspace", updates);
-      expect(res.state).toBe("ready"); // 不触发 upgradable
+      expect(res.state).toBe("ready"); // Does not trigger upgradable
       expect(res.upgradableVersion).toBeNull();
     });
 
@@ -108,7 +108,7 @@ describe("toolStatus utility", () => {
       const tool: ToolStatusItem = {
         id: "bun",
         global_version: "1.1.20",
-        active_version: "1.2.0", // workspace 独占
+        active_version: "1.2.0", // Workspace exclusive
         installed_versions: ["1.1.20"],
       };
       const resUser = computeToolStatus(tool, "user");
@@ -116,7 +116,7 @@ describe("toolStatus utility", () => {
       expect(resUser.configuredVersion).toBe("1.1.20");
 
       const resWorkspace = computeToolStatus(tool, "workspace");
-      expect(resWorkspace.state).toBe("missing"); // 本地没有 1.2.0
+      expect(resWorkspace.state).toBe("missing"); // Missing 1.2.0 locally
       expect(resWorkspace.configuredVersion).toBe("1.2.0");
     });
   });
@@ -127,24 +127,24 @@ describe("toolStatus utility", () => {
         id: "node",
         name: "Node.js",
         active_version: "22.1.0",
-        installed_versions: ["20.18.0"], // 缺少 22.1.0 -> missing
+        installed_versions: ["20.18.0"], // Missing 22.1.0 -> missing
       },
       {
         id: "go",
         name: "Go",
         active_version: "1.23.0",
-        installed_versions: ["1.23.0"], // 存在升级 1.24.0 -> upgradable
+        installed_versions: ["1.23.0"], // Higher version 1.24.0 exists -> upgradable
       },
       {
         id: "python",
         name: "Python",
         active_version: "3.12.0",
-        installed_versions: ["3.12.0"], // 已就绪 -> ready
+        installed_versions: ["3.12.0"], // Ready -> ready
       },
       {
         id: "rust",
         name: "Rust",
-        active_version: "", // 未配置 -> unconfigured / skipped
+        active_version: "", // Unconfigured -> unconfigured / skipped
         installed_versions: ["1.80.0"],
       },
     ];

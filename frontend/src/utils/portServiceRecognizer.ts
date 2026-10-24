@@ -395,27 +395,27 @@ export function assessPortRisk(
     proc.includes("postgres") ||
     proc.includes("mongod")
   ) {
-    let name = "数据库或管理服务";
-    if (port === 6379 || lbl.includes("redis") || proc.includes("redis")) name = "Redis 缓存数据库";
-    else if (port === 3306 || lbl.includes("mysql") || proc.includes("mysql")) name = "MySQL / MariaDB 数据库";
-    else if (port === 5432 || lbl.includes("postgres") || proc.includes("postgres")) name = "PostgreSQL 数据库";
-    else if (port === 27017 || lbl.includes("mongo") || proc.includes("mongo")) name = "MongoDB 数据库";
-    else if (port === 2375 || port === 2376 || proc.includes("dockerd")) name = "Docker Daemon 控制守护进程";
-    else if (port === 22 || proc.includes("sshd")) name = "SSH 远程管理服务";
+    let name = "Database or Management Service";
+    if (port === 6379 || lbl.includes("redis") || proc.includes("redis")) name = "Redis Cache Database";
+    else if (port === 3306 || lbl.includes("mysql") || proc.includes("mysql")) name = "MySQL / MariaDB Database";
+    else if (port === 5432 || lbl.includes("postgres") || proc.includes("postgres")) name = "PostgreSQL Database";
+    else if (port === 27017 || lbl.includes("mongo") || proc.includes("mongo")) name = "MongoDB Database";
+    else if (port === 2375 || port === 2376 || proc.includes("dockerd")) name = "Docker Daemon Control Process";
+    else if (port === 22 || proc.includes("sshd")) name = "SSH Remote Management Service";
 
     return {
       level: "high",
       serviceCategory: name,
-      reason: `该端口运行着敏感的 ${name}。将其公开给全网或外部局域网极易导致未授权读取、篡改或勒索攻击。`,
-      recommendation: "强烈建议保持私有访问，通过安全的本地隧道连接使用。",
+      reason: `This port is running sensitive ${name}. Exposing it to public networks or external LAN can lead to unauthorized access, tampering, or ransomware attacks.`,
+      recommendation: "Strongly recommended to keep private and connect via secure local tunnel.",
     };
   }
 
   // Standard Web / API Service
   return {
     level: "standard",
-    serviceCategory: "Web 应用服务",
-    reason: "公开端口后，任何拥有链接或局域网 IP 的人员均可直接访问此 Web 服务。",
-    recommendation: "如仅需临时联调或演示，可在调试完成后一键重置为私有。",
+    serviceCategory: "Web Application Service",
+    reason: "Once public, anyone with the link or LAN IP can access this web service directly.",
+    recommendation: "If used for temporary debugging or demo, remember to reset to private when finished.",
   };
 }

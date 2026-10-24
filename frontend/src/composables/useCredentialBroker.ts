@@ -6,21 +6,21 @@ const isPromptOpen = ref(false);
 const isSubmitting = ref(false);
 const lastError = ref<string | null>(null);
 
-// 前端会话安全缓存 (纯内存)
+// In-memory session keyring cache
 const sessionKeyring = ref<Map<string, string>>(new Map());
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 export function useCredentialBroker() {
   /**
-   * 触发显示凭证输入弹窗
+   * Trigger prompt modal for credential request
    */
   function promptCredential(req: CredentialRequest) {
-    // 检查是否已有会话缓存
+    // Check if session keyring has cached passphrase
     const cacheKey = req.targetKey || req.prompt;
     if (sessionKeyring.value.has(cacheKey)) {
       const cachedPassphrase = sessionKeyring.value.get(cacheKey)!;
-      // 命中会话缓存，自动响应免密通过
+      // Cache hit: automatically respond without prompt
       respondCredential(req.id, cachedPassphrase, false);
       return;
     }
@@ -31,7 +31,7 @@ export function useCredentialBroker() {
   }
 
   /**
-   * 响应凭证请求
+   * Respond to credential request
    */
   async function respondCredential(id: string, passphrase: string, rememberSession: boolean = false): Promise<boolean> {
     isSubmitting.value = true;
@@ -61,10 +61,10 @@ export function useCredentialBroker() {
 
       const data = await res.json();
       if (!data.success) {
-        throw new Error(data.error || "密码验证失败");
+        throw new Error(data.error || "Credential validation failed");
       }
 
-      // 成功响应后关闭弹窗
+      // Close prompt modal upon successful response
       isPromptOpen.value = false;
       pendingRequest.value = null;
       return true;
@@ -77,7 +77,7 @@ export function useCredentialBroker() {
   }
 
   /**
-   * 取消当前凭证请求
+   * Cancel current credential request
    */
   async function cancelCredential(): Promise<void> {
     if (!pendingRequest.value) {
@@ -107,7 +107,7 @@ export function useCredentialBroker() {
   }
 
   /**
-   * 轮询后端是否有正在等待的凭证请求
+   * Poll backend for pending credential requests
    */
   async function checkPendingRequest(): Promise<CredentialRequest | null> {
     try {
@@ -125,7 +125,7 @@ export function useCredentialBroker() {
   }
 
   /**
-   * 启动后台轮询监听
+   * Start background polling
    */
   function startBrokerPolling(intervalMs: number = 800) {
     if (pollTimer) return;
@@ -133,7 +133,7 @@ export function useCredentialBroker() {
   }
 
   /**
-   * 停止轮询监听
+   * Stop polling
    */
   function stopBrokerPolling() {
     if (pollTimer) {
@@ -143,7 +143,7 @@ export function useCredentialBroker() {
   }
 
   /**
-   * 清理全部会话密码缓存
+   * Clear all cached session passphrases
    */
   function clearSessionKeyring() {
     sessionKeyring.value.clear();

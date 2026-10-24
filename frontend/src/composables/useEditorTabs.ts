@@ -208,8 +208,8 @@ export function useEditorTabs() {
           }
         } catch (err: any) {
           if (!isBinary) {
-            fileContent = `// 读取文件失败: ${err.message}`;
-            showToast(`读取文件失败: ${err.message}`, "error");
+            fileContent = `// Failed to read file: ${err.message}`;
+            showToast(`Failed to read file: ${err.message}`, "error");
           }
         }
       }
@@ -280,13 +280,13 @@ export function useEditorTabs() {
       if (res.ok && !data.error && data.success !== false) {
         tab.originalContent = tab.content;
         tab.isDirty = false;
-        showToast(`已保存 ${tab.name}`, "success");
+        showToast(`Saved ${tab.name}`, "success");
         return true;
       } else {
         throw new Error(data.error || "Save failed");
       }
     } catch (err: any) {
-      showToast(`保存失败: ${err.message}`, "error");
+      showToast(`Failed to save: ${err.message}`, "error");
       return false;
     }
   }
@@ -299,8 +299,8 @@ export function useEditorTabs() {
   }
 
   /**
-   * 保存指定路径列表中处于未保存（dirty）状态的标签页。
-   * 如果 paths 未提供或为空，则保存所有处于 dirty 状态的标签页。
+   * Save dirty tabs matching specified path list.
+   * If paths is empty or not provided, save all dirty tabs.
    */
   async function saveDirtyTabsForPaths(paths?: string[]): Promise<void> {
     const pathSet = paths && paths.length > 0 ? new Set(paths) : null;
@@ -311,7 +311,7 @@ export function useEditorTabs() {
   }
 
   /**
-   * 重新拉取指定路径列表在磁盘上的最新内容，用于 Git Discard 或外部文件变更时同步。
+   * Reload disk contents for paths, used for Git Discard or external changes.
    */
   async function reloadTabsForPaths(paths: string[]): Promise<void> {
     if (!paths || paths.length === 0) return;
@@ -334,7 +334,7 @@ export function useEditorTabs() {
   }
 
   /**
-   * 处理文件或目录重命名，平滑迁移已打开标签页的路径和元数据
+   * Handle file or directory rename, migrating open tab paths and metadata
    */
   function handleFileRenamed({ oldPath, newPath }: { oldPath: string; newPath: string }): void {
     const isDirRename = oldPath.endsWith("/") || tabs.value.some((t) => t.path.startsWith(`${oldPath}/`));
@@ -342,7 +342,7 @@ export function useEditorTabs() {
       if (tab.isDiff) return;
 
       if (tab.path === oldPath) {
-        // 单文件重命名
+        // Single file rename
         const newName = newPath.split("/").pop() || newPath;
         tab.path = newPath;
         tab.name = newName;
@@ -354,7 +354,7 @@ export function useEditorTabs() {
           }
         }
       } else if (isDirRename && tab.path.startsWith(`${oldPath}/`)) {
-        // 目录重命名带来的子文件路径迁移
+        // Directory rename: migrate child paths
         const relativeSuffix = tab.path.slice(oldPath.length);
         const updatedPath = `${newPath}${relativeSuffix}`;
         tab.path = updatedPath;
@@ -370,7 +370,7 @@ export function useEditorTabs() {
   }
 
   /**
-   * 处理文件或目录删除，自动关闭相关标签页
+   * Handle file or directory deletion, closing affected tabs
    */
   function handleFileDeleted(deletedPath: string): void {
     const toClose: string[] = [];
@@ -382,7 +382,7 @@ export function useEditorTabs() {
     toClose.forEach((id) => closeTab(id));
   }
 
-  // 监听工作区总线触发的文件重载通知（如 Git Discard、外部变更或分支切换）
+  // Listen for file reload notifications via WorkspaceBus (Git Discard, external edits, branch switch)
   const workspaceBus = useWorkspaceBus();
   workspaceBus.onFileReloadNeeded((paths) => {
     reloadTabsForPaths(paths);
@@ -460,7 +460,7 @@ export function useEditorTabs() {
         if (!a.isPinned && b.isPinned) return 1;
         return 0;
       });
-      showToast(tab.isPinned ? `已固定标签页: ${tab.name}` : `已取消固定: ${tab.name}`, "info");
+      showToast(tab.isPinned ? `Pinned tab: ${tab.name}` : `Unpinned tab: ${tab.name}`, "info");
     }
   }
 

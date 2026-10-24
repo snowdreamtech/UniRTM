@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { formatUpdateProgress } from "./updater";
+import { zhCn } from "../i18n/locales/zh-CN";
 import { setLanguage } from "../i18n";
 
 describe("updater utility", () => {
@@ -63,7 +64,7 @@ describe("updater utility", () => {
 
   it("localizes correctly into zh-CN", async () => {
     await setLanguage("zh-CN");
-    expect(formatUpdateProgress({ stage: "verifying_checksum" })).toBe("正在校验更新包完整性...");
-    expect(formatUpdateProgress({ stage: "mounting" })).toBe("正在挂载磁盘镜像...");
+    expect(formatUpdateProgress({ stage: "verifying_checksum" })).toBe(zhCn["about.verifyingChecksum"]);
+    expect(formatUpdateProgress({ stage: "mounting" })).toBe(zhCn["about.mountingDiskImage"]);
   });
 });

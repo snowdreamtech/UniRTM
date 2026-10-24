@@ -1,33 +1,33 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-const MAX_BUFFER_CHARS = 300_000; // 约 5000 行
+const MAX_BUFFER_CHARS = 300_000; // ~5000 lines
 const STORAGE_PREFIX = "unirtm_term_buf_";
 
 const memoryBuffers = new Map<string, string>();
 
 /**
- * 清除 ANSI 颜色与光标控制字符，输出干净易读的文本
+ * Strip ANSI colors and cursor controls to plain readable text
  */
 export function stripAnsiCodes(text: string): string {
   if (!text) return "";
-  // 匹配标准 ANSI escape sequences
+  // Match standard ANSI escape sequences
   const ansiRegex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
   return text.replace(ansiRegex, "");
 }
 
 /**
- * useTerminalPersistence: 终端历史会话持久化与日志导出管理
+ * useTerminalPersistence: Terminal session history persistence and log export
  */
 export function useTerminalPersistence() {
   /**
-   * 将终端输出追加到指定 pane 的持久化缓冲区
+   * Append terminal output to pane buffer
    */
   function appendChunk(paneId: string, chunk: string): void {
     if (!paneId || !chunk) return;
 
     let current = memoryBuffers.get(paneId) || "";
-    // 如果内存中没有，尝试从 sessionStorage 恢复一次
+    // If not in memory, restore from sessionStorage
     if (!current && typeof sessionStorage !== "undefined") {
       try {
         current = sessionStorage.getItem(`${STORAGE_PREFIX}${paneId}`) || "";
@@ -36,7 +36,7 @@ export function useTerminalPersistence() {
 
     current += chunk;
 
-    // 滑动窗口控制最大字符长度
+    // Sliding window for max buffer size
     if (current.length > MAX_BUFFER_CHARS) {
       current = current.slice(current.length - MAX_BUFFER_CHARS);
     }
@@ -47,13 +47,13 @@ export function useTerminalPersistence() {
       try {
         sessionStorage.setItem(`${STORAGE_PREFIX}${paneId}`, current);
       } catch {
-        // 当达到存储配额时静默降级为仅内存持有
+        // Fall back silently to in-memory only when quota exceeded
       }
     }
   }
 
   /**
-   * 获取指定终端 pane 的全部历史内容
+   * Get complete history buffer for pane
    */
   function getBuffer(paneId: string): string {
     if (!paneId) return "";
@@ -71,14 +71,14 @@ export function useTerminalPersistence() {
   }
 
   /**
-   * 判断指定终端是否有持久化内容
+   * Check if pane has persisted content
    */
   function hasBuffer(paneId: string): boolean {
     return !!getBuffer(paneId);
   }
 
   /**
-   * 清空指定终端的持久化缓冲区
+   * Clear persisted buffer for pane
    */
   function clearBuffer(paneId: string): void {
     if (!paneId) return;
@@ -91,7 +91,7 @@ export function useTerminalPersistence() {
   }
 
   /**
-   * 导出终端日志为 .log 文件
+   * Export terminal log to .log file
    */
   function exportLog(paneId: string, title = "terminal", stripAnsi = true): boolean {
     const rawContent = getBuffer(paneId);

@@ -276,7 +276,7 @@ describe("usePorts composable", () => {
     // Standard Web ports
     const viteRisk = assessPortRisk(5173, { label: "Vite App" });
     expect(viteRisk.level).toBe("standard");
-    expect(viteRisk.serviceCategory).toBe("Web 应用服务");
+    expect(viteRisk.serviceCategory).toBe("Web Application Service");
 
     const nextRisk = assessPortRisk(3000, { label: "Next.js Web" });
     expect(nextRisk.level).toBe("standard");

@@ -53,7 +53,7 @@ describe("useTerminalNotifier", () => {
   });
 
   it("completes short task without triggering toast", () => {
-    notifier.setThreshold(5000); // 5s 阈值
+    notifier.setThreshold(5000); // 5s threshold
     notifier.startTracking("pane-1", "ls -la");
 
     const result = notifier.feedOutput("pane-1", "total 32\r\nuser@host:~$ ");
@@ -65,12 +65,12 @@ describe("useTerminalNotifier", () => {
   });
 
   it("triggers success toast when long task finishes successfully", () => {
-    notifier.setThreshold(100); // 测试用低阈值 100ms
+    notifier.setThreshold(100); // Low threshold for tests: 100ms
     notifier.startTracking("pane-1", "docker compose up -d");
 
     const task = notifier.getActiveTrackedTask("pane-1");
     if (task) {
-      task.startTime = Date.now() - 15000; // 模拟耗时 15s
+      task.startTime = Date.now() - 15000; // Simulated duration 15s
     }
 
     const result = notifier.feedOutput("pane-1", "Container unirtm Started\r\nuser@host:~$ ");
@@ -86,7 +86,7 @@ describe("useTerminalNotifier", () => {
 
     const task = notifier.getActiveTrackedTask("pane-2");
     if (task) {
-      task.startTime = Date.now() - 12000; // 模拟耗时 12s
+      task.startTime = Date.now() - 12000; // Simulated duration 12s
     }
 
     notifier.feedOutput("pane-2", "fatal: test suite panic\r\n");

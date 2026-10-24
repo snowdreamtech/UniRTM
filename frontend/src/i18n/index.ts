@@ -6,10 +6,10 @@ import { zhCn } from "./locales/zh-CN";
 import { enUs } from "./locales/en-US";
 
 export const SUPPORTED_LANGUAGES = [
-  { code: "zh-CN", name: "简体中文", nativeName: "简体中文" },
+  { code: "zh-CN", name: "Simplified Chinese", nativeName: "\u7b80\u4f53\u4e2d\u6587" },
   { code: "en-US", name: "English", nativeName: "English" },
-  { code: "zh-TW", name: "正體中文", nativeName: "正體中文" },
-  { code: "ja-JP", name: "日本語", nativeName: "日本語" },
+  { code: "zh-TW", name: "Traditional Chinese", nativeName: "\u6b63\u9ad4\u4e2d\u6587" },
+  { code: "ja-JP", name: "Japanese", nativeName: "\u65e5\u672c\u8a9e" },
   { code: "ko-KR", name: "한국어", nativeName: "한국어" },
   { code: "de-DE", name: "Deutsch", nativeName: "Deutsch" },
   { code: "fr-FR", name: "Français", nativeName: "Français" },

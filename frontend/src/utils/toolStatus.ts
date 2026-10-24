@@ -33,7 +33,7 @@ function cleanVer(v: string | undefined | null): string {
 }
 
 /**
- * 比较两个语义化版本（降序：v1 > v2 返回负数，v1 < v2 返回正数，相等返回 0）
+ * Compare two semantic versions (descending: v1 > v2 returns negative, v1 < v2 positive, equal 0)
  */
 export function compareSemverDesc(v1: string, v2: string): number {
   const p1 = cleanVer(v1)
@@ -53,7 +53,7 @@ export function compareSemverDesc(v1: string, v2: string): number {
 }
 
 /**
- * 检查指定版本是否已在本地安装列表中
+ * Check if specified version is installed locally
  */
 export function isVersionLocallyInstalled(installedVersions: string[] | undefined | null, version: string): boolean {
   if (!installedVersions || !version) return false;
@@ -64,7 +64,7 @@ export function isVersionLocallyInstalled(installedVersions: string[] | undefine
 }
 
 /**
- * 计算工具在指定作用域下的核心显示状态 (Ready / Upgradable / Missing / Unconfigured)
+ * Compute tool status in specified scope (Ready / Upgradable / Missing / Unconfigured)
  */
 export function computeToolStatus(
   tool: ToolStatusItem,
@@ -84,7 +84,7 @@ export function computeToolStatus(
 
   const isInstalled = isVersionLocallyInstalled(tool.installed_versions, configured);
 
-  // 1. 如果工作区配置了该版本，但本地磁盘中根本没有该版本 -> Missing (待下载)
+  // 1. If configured in scope but not installed on local disk -> Missing
   if (!isInstalled) {
     return {
       state: "missing",
@@ -94,7 +94,7 @@ export function computeToolStatus(
     };
   }
 
-  // 2. 检查是否有更高可用升级版本（且未被锁定）
+  // 2. Check if a higher upgrade version is available (and not pinned)
   if (!tool.pinned) {
     const normId = (id: string) => (id || "").replace(/^github:/, "").toLowerCase();
     const shortName = (id: string) => normId(id).split("/").pop() || "";
@@ -115,7 +115,7 @@ export function computeToolStatus(
     if (matchUpdate && matchUpdate.has_update && matchUpdate.latest_version) {
       const cleanLatest = cleanVer(matchUpdate.latest_version);
       const cleanCur = cleanVer(configured);
-      // cleanLatest 严格大于 cleanCur 时成立
+      // Holds when cleanLatest strictly greater than cleanCur
       if (cleanLatest && cleanLatest !== cleanCur && compareSemverDesc(cleanLatest, cleanCur) < 0) {
         return {
           state: "upgradable",
@@ -127,7 +127,7 @@ export function computeToolStatus(
     }
   }
 
-  // 3. 正常已配置且已安装在本地 -> Ready
+  // 3. Configured and installed locally -> Ready
   return {
     state: "ready",
     configuredVersion: configured,
@@ -154,8 +154,8 @@ export interface CategorizedTools {
 }
 
 /**
- * 将工具列表根据计算出的状态（missing / upgradable / ready）分类归入不同面板分组
- * 并同时支持 searchQuery 过滤
+ * Group tool list by computed status (missing / upgradable / ready)
+ * Also supports filtering by searchQuery
  */
 export function categorizeTools(
   tools: any[],

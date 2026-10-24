@@ -50,7 +50,7 @@ describe("portServiceRecognizer", () => {
       },
       {
         port: 5432,
-        name: "主业务数据库 (Postgres)",
+        name: "Primary Database (Postgres)",
         sourceFile: "docker-compose.yml",
         serviceType: "compose",
         framework: "PostgreSQL",
@@ -58,7 +58,7 @@ describe("portServiceRecognizer", () => {
     );
 
     // Method C provides user's business semantic title
-    expect(resWorkspace.label).toBe("主业务数据库 (Postgres)");
+    expect(resWorkspace.label).toBe("Primary Database (Postgres)");
     expect(resWorkspace.icon).toBe("database");
     expect(resWorkspace.sourceOrigin).toBe("workspace");
   });

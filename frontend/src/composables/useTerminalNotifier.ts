@@ -19,16 +19,16 @@ export interface TaskCompletionResult {
   notified: boolean;
 }
 
-// 默认耗时任务提醒阈值：10 秒
+// Default long-running command notification threshold: 10 seconds
 const DEFAULT_THRESHOLD_MS = 10000;
 let notificationThresholdMs = DEFAULT_THRESHOLD_MS;
 
 const trackedTasks = reactive<Map<string, TrackedTaskInfo>>(new Map());
 
-// 正则检测 shell 提示符（表示命令执行完毕返回交互状态）
+// Regex to detect shell prompt return (command completion)
 const SHELL_PROMPT_REGEX = /(?:[$#>]\s*$|\(base\)\s*[$#>])/;
 
-// 常见命令失败关键字嗅探
+// Common command failure keywords
 const ERROR_PATTERNS = [
   /\b(?:command\s+not\s+found|syntax\s+error|permission\s+denied)\b/i,
   /\b(?:error:\s+|failed\s+with\s+exit\s+code\s+[1-9]\d*)\b/i,
@@ -50,7 +50,7 @@ export function useTerminalNotifier() {
   }
 
   /**
-   * 启动对某个窗格中命令的计时监控
+   * Start timing monitor for command in pane
    */
   function startTracking(paneId: string, command: string): void {
     if (!paneId || !command || !command.trim()) return;
@@ -63,14 +63,14 @@ export function useTerminalNotifier() {
   }
 
   /**
-   * 记录输出 chunk，侦测错误并在检测到提示符返回时结算
+   * Record output chunk, detect errors and settle when prompt returns
    */
   function feedOutput(paneId: string, chunk: string): TaskCompletionResult | null {
     if (!paneId || !chunk) return null;
     const task = trackedTasks.get(paneId);
     if (!task) return null;
 
-    // 检查是否有错误关键字
+    // Check for error keywords
     for (const pattern of ERROR_PATTERNS) {
       if (pattern.test(chunk)) {
         task.hasError = true;
@@ -78,7 +78,7 @@ export function useTerminalNotifier() {
       }
     }
 
-    // 检查是否返回 shell 提示符
+    // Check if shell prompt returned
     if (SHELL_PROMPT_REGEX.test(chunk)) {
       const durationMs = Date.now() - task.startTime;
       const durationSec = Math.round(durationMs / 1000);
