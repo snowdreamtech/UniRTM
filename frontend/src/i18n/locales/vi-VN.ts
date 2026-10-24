@@ -178,6 +178,8 @@ export const viVn: TranslationDict = {
   "titlebar.scope_user_tip": "Người dùng toàn cầu (~/.unirtm) • Nhấp để chuyển đổi (Alt+S)",
   "app.theme_switched_dark": "Đã chuyển sang Chế độ tối",
   "app.theme_switched_light": "Đã chuyển sang Chế độ ánh sáng",
+  "app.language_switched": "Ngôn ngữ đã chuyển sang {lang}",
+  "app.language_switched_auto": "Ngôn ngữ được đặt thành Tự động (theo hệ thống)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

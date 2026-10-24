@@ -178,6 +178,8 @@ export const ltLt: TranslationDict = {
   "titlebar.scope_user_tip": "Visuotinis naudotojas (~/.unirtm) • Spustelėkite, kad perjungtumėte (Alt+S)",
   "app.theme_switched_dark": "Perjungtas į tamsųjį režimą",
   "app.theme_switched_light": "Perjungtas į šviesos režimą",
+  "app.language_switched": "Kalba perjungta į {lang}",
+  "app.language_switched_auto": "Kalba nustatyta į „Auto“ (sekite sistemą)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

@@ -178,6 +178,8 @@ export const hrHr: TranslationDict = {
   "titlebar.scope_user_tip": "Globalni korisnik (~/.unirtm) • Kliknite za prebacivanje (Alt+S)",
   "app.theme_switched_dark": "Prebačeno na tamni način rada",
   "app.theme_switched_light": "Prebačeno na svjetlosni način rada",
+  "app.language_switched": "Jezik promijenjen na {lang}",
+  "app.language_switched_auto": "Jezik postavljen na Automatski (prati sustav)",
   "app.task_finished": "[unirtm run {task} ] Izvršenje zadatka završeno",
   "app.task_error": "[unirtm run {task} ] Pogreška izvršenja zadatka: {err}",
   "app.task_failed": "[unirtm run {task} ] Zadatak nije uspio (izlazni kod: {code} )",

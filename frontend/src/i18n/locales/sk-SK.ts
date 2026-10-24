@@ -178,6 +178,8 @@ export const skSk: TranslationDict = {
   "titlebar.scope_user_tip": "Globálny používateľ (~/.unirtm) • Kliknutím prepnete (Alt+S)",
   "app.theme_switched_dark": "Prepnuté do tmavého režimu",
   "app.theme_switched_light": "Prepnuté do režimu svetla",
+  "app.language_switched": "Jazyk prepnutý na {lang}",
+  "app.language_switched_auto": "Jazyk nastavený na Auto (sledujte systém)",
   "app.task_finished": "[unirtm run {task} ] Vykonávanie úlohy dokončené",
   "app.task_error": "[unirtm run {task} ] Chyba vykonania úlohy: {err}",
   "app.task_failed": "[unirtm run {task} ] Úloha zlyhala (kód ukončenia: {code} )",

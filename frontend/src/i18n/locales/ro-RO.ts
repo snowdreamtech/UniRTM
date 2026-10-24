@@ -178,6 +178,8 @@ export const roRo: TranslationDict = {
   "titlebar.scope_user_tip": "Utilizator global (~/.unirtm) • Faceți clic pentru a comuta (Alt+S)",
   "app.theme_switched_dark": "S-a comutat în modul întunecat",
   "app.theme_switched_light": "S-a comutat în modul Lumină",
+  "app.language_switched": "Limba a fost schimbată la {lang}",
+  "app.language_switched_auto": "Limba setată la Auto (urmărește sistemul)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

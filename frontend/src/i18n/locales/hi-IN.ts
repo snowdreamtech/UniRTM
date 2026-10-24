@@ -177,6 +177,8 @@ export const hiIn: TranslationDict = {
   "titlebar.scope_user_tip": "उपयोगकर्ता वैश्विक (~/.unirtm) • टॉगल करने के लिए क्लिक करें (Alt+S)",
   "app.theme_switched_dark": "डार्क मोड पर स्विच किया गया",
   "app.theme_switched_light": "लाइट मोड पर स्विच किया गया",
+  "app.language_switched": "भाषा {lang} में बदल गई",
+  "app.language_switched_auto": "भाषा ऑटो पर सेट (सिस्टम का पालन करें)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

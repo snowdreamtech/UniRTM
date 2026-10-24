@@ -177,6 +177,8 @@ export const etEe: TranslationDict = {
   "titlebar.scope_user_tip": "Kasutaja globaalne (~/.unirtm) • Klõpsake ümberlülitamiseks (Alt+S)",
   "app.theme_switched_dark": "Lülitati tumedale režiimile",
   "app.theme_switched_light": "Lülitati valgusrežiimile",
+  "app.language_switched": "Keeleks muudeti {lang}",
+  "app.language_switched_auto": "Keeleks on määratud Automaatne (jälgi süsteemi)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

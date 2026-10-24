@@ -173,6 +173,8 @@ export const zhTw: TranslationDict = {
   "titlebar.scope_user_tip": "使用者全域模式 (~/.unirtm) • 點選切換 (Alt+S)",
   "app.theme_switched_dark": "已切換為深色模式",
   "app.theme_switched_light": "已切換為淺色模式",
+  "app.language_switched": "已切換語言為 {lang}",
+  "app.language_switched_auto": "語言已設定為跟隨系統",
   "app.task_finished": "[unirtm run {task} ] 任務執行結束",
   "app.task_error": "[unirtm run {task} ] 任務呼叫異常: {err}",
   "app.task_failed": "[unirtm run {task} ] 任務執行失敗 (退出碼: {code} )",

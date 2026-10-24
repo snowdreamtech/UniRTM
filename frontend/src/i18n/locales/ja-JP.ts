@@ -176,6 +176,8 @@ export const jaJp: TranslationDict = {
   "titlebar.scope_user_tip": "ユーザー グローバル (~/.unirtm) • クリックして切り替えます (Alt+S)",
   "app.theme_switched_dark": "ダークモードに切り替えました",
   "app.theme_switched_light": "ライトモードに切り替えました",
+  "app.language_switched": "言語が {lang} に切り替わりました",
+  "app.language_switched_auto": "言語を自動（システムに従う）に設定しました",
   "app.task_finished": "[unirtm run {task} ] タスクの実行が完了しました",
   "app.task_error": "[unirtm run {task} ] タスク実行エラー: {err}",
   "app.task_failed": "[unirtm run {task} ] タスクが失敗しました (終了コード: {code} )",

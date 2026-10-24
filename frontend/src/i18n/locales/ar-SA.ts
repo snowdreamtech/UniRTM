@@ -176,6 +176,8 @@ export const arSa: TranslationDict = {
   "titlebar.scope_user_tip": "المستخدم العمومي (~/.unirtm) • انقر للتبديل (Alt+S)",
   "app.theme_switched_dark": "تم التبديل إلى الوضع المظلم",
   "app.theme_switched_light": "تحولت إلى وضع الضوء",
+  "app.language_switched": "تم تحويل اللغة إلى {lang}",
+  "app.language_switched_auto": "تم ضبط اللغة على تلقائي (اتبع النظام)",
   "app.task_finished": "[unirtm run {task} ] انتهى تنفيذ المهمة",
   "app.task_error": "[unirtm run {task} ] خطأ في تنفيذ المهمة: {err}",
   "app.task_failed": "[unirtm run {task} ] فشلت المهمة (رمز الخروج: {code} )",

@@ -181,6 +181,8 @@ export const deDe: TranslationDict = {
   "titlebar.scope_user_tip": "Benutzer global (~/.unirtm) • Zum Umschalten klicken (Alt+S)",
   "app.theme_switched_dark": "In den Dunkelmodus gewechselt",
   "app.theme_switched_light": "In den Lichtmodus gewechselt",
+  "app.language_switched": "Sprache auf {lang} umgestellt",
+  "app.language_switched_auto": "Sprache auf „Auto“ eingestellt (System folgen)",
   "app.task_finished": "[unirtm run {task} ] Aufgabenausführung abgeschlossen",
   "app.task_error": "[unirtm run {task} ] Fehler bei der Aufgabenausführung: {err}",
   "app.task_failed": "[unirtm run {task} ] Aufgabe fehlgeschlagen (Exit-Code: {code} )",

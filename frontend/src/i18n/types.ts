@@ -1,4 +1,4 @@
-// Auto-generated strongly typed TranslationDict contract
+// Generated strictly from en-US locale keys. Do NOT add loose index signature.
 export interface TranslationDict {
   "editor.action.peek_call_hierarchy": string;
   "editor.action.show_call_hierarchy": string;
@@ -171,6 +171,8 @@ export interface TranslationDict {
   "titlebar.scope_user_tip": string;
   "app.theme_switched_dark": string;
   "app.theme_switched_light": string;
+  "app.language_switched": string;
+  "app.language_switched_auto": string;
   "app.task_finished": string;
   "app.task_error": string;
   "app.task_failed": string;

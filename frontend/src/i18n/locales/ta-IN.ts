@@ -176,6 +176,8 @@ export const taIn: TranslationDict = {
   "titlebar.scope_user_tip": "பயனர் குளோபல் (~/.unirtm) • மாறுவதற்கு கிளிக் செய்யவும் (Alt+S)",
   "app.theme_switched_dark": "டார்க் பயன்முறைக்கு மாறியது",
   "app.theme_switched_light": "லைட் பயன்முறைக்கு மாறியது",
+  "app.language_switched": "மொழி {lang} க்கு மாறியது",
+  "app.language_switched_auto": "மொழி தானாக அமைக்கப்பட்டது (முறைமையைப் பின்பற்றவும்)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

@@ -178,6 +178,8 @@ export const ruRu: TranslationDict = {
   "titlebar.scope_user_tip": "Пользовательский глобальный (~/.unirtm) • Щелкните для переключения (Alt+S).",
   "app.theme_switched_dark": "Перешел в темный режим",
   "app.theme_switched_light": "Перешел в светлый режим",
+  "app.language_switched": "Язык переключен на {lang}",
+  "app.language_switched_auto": "Язык установлен на «Авто» (в соответствии с системой)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

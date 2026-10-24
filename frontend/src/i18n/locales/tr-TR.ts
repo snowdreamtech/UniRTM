@@ -178,6 +178,8 @@ export const trTr: TranslationDict = {
   "titlebar.scope_user_tip": "Global Kullanıcı (~/.unirtm) • Geçiş yapmak için tıklayın (Alt+S)",
   "app.theme_switched_dark": "Karanlık Moda Geçildi",
   "app.theme_switched_light": "Işık Moduna Geçildi",
+  "app.language_switched": "Dil {lang} olarak değiştirildi",
+  "app.language_switched_auto": "Dil Otomatik olarak ayarlandı (sistemi takip et)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

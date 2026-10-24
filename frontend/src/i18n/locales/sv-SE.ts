@@ -178,6 +178,8 @@ export const svSe: TranslationDict = {
   "titlebar.scope_user_tip": "Användarglobal (~/.unirtm) • Klicka för att växla (Alt+S)",
   "app.theme_switched_dark": "Bytte till mörkt läge",
   "app.theme_switched_light": "Bytte till ljusläge",
+  "app.language_switched": "Språk bytte till {lang}",
+  "app.language_switched_auto": "Språk inställt på Auto (följ systemet)",
   "app.task_finished": "[unirtm körning {task} ] Uppgiftskörningen avslutad",
   "app.task_error": "[unirtm run {task} ] Uppgiftskörningsfel: {err}",
   "app.task_failed": "[unirtm run {task} ] Uppgiften misslyckades (avsluta kod: {code} )",

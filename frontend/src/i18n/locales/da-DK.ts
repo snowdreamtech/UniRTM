@@ -176,6 +176,8 @@ export const daDk: TranslationDict = {
   "titlebar.scope_user_tip": "Bruger global (~/.unirtm) • Klik for at skifte (Alt+S)",
   "app.theme_switched_dark": "Skiftet til mørk tilstand",
   "app.theme_switched_light": "Skiftet til lystilstand",
+  "app.language_switched": "Sprog skiftet til {lang}",
+  "app.language_switched_auto": "Sprog indstillet til Auto (følg systemet)",
   "app.task_finished": "[unirtm run {task} ] Udførelse af opgave afsluttet",
   "app.task_error": "[unirtm run {task} ] Opgaveudførelsesfejl: {err}",
   "app.task_failed": "[unirtm run {task} ] Opgave mislykkedes (afslut kode: {code} )",

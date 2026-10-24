@@ -25,6 +25,17 @@ describe("i18n module", () => {
     expect(t("common.close")).toBe(zhCn["common.close"]);
   });
 
+  it("translates app.language_switched and interpolates native language name", async () => {
+    await setLanguage("zh-CN");
+    expect(t("app.language_switched", { lang: "简体中文" })).toBe("已切换语言为 简体中文");
+
+    await setLanguage("en-US");
+    expect(t("app.language_switched", { lang: "English" })).toBe("Language switched to English");
+
+    await setLanguage("ja-JP");
+    expect(t("app.language_switched", { lang: "日本語" })).toBe("言語が 日本語 に切り替わりました");
+  });
+
   it("identifies RTL languages correctly", async () => {
     await setLanguage("ar-SA");
     expect(isRtl.value).toBe(true);

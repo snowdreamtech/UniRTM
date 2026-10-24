@@ -178,6 +178,8 @@ export const hyAm: TranslationDict = {
   "titlebar.scope_user_tip": "User Global (~/.unirtm) • Սեղմեք փոխարկելու համար (Alt+S)",
   "app.theme_switched_dark": "Անցվել է մութ ռեժիմի",
   "app.theme_switched_light": "Անցվել է Light Mode-ին",
+  "app.language_switched": "Լեզուն փոխվել է {lang}-ի",
+  "app.language_switched_auto": "Լեզուն սահմանվել է Ավտոմատ (հետևել համակարգին)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

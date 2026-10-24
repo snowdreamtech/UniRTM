@@ -178,6 +178,8 @@ export const ocFr: TranslationDict = {
   "titlebar.scope_user_tip": "Global de l'utilizaire (~/.unirtm) • Clicatz per bascular (Alt+S)",
   "app.theme_switched_dark": "Passat en mòde escur",
   "app.theme_switched_light": "Passat en mòde lum",
+  "app.language_switched": "Lenga passada a {lang}",
+  "app.language_switched_auto": "Lenga definida a Auto (sistèma de seguida)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

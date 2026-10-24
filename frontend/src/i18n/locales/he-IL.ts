@@ -174,6 +174,8 @@ export const heIl: TranslationDict = {
   "titlebar.scope_user_tip": "משתמש גלובלי (~/.unirtm) • לחץ כדי לעבור (Alt+S)",
   "app.theme_switched_dark": "עבר למצב כהה",
   "app.theme_switched_light": "עבר למצב אור",
+  "app.language_switched": "השפה התחלפה ל-{lang}",
+  "app.language_switched_auto": "השפה מוגדרת לאוטומטית (עקוב אחר המערכת)",
   "app.task_finished": "[unirtm run {task} ] ביצוע המשימה הסתיים",
   "app.task_error": "[unirtm run {task} ] שגיאת ביצוע משימה: {err}",
   "app.task_failed": "[unirtm run {task} ] המשימה נכשלה (קוד יציאה: {code} )",

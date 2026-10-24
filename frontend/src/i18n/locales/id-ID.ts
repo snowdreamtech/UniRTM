@@ -177,6 +177,8 @@ export const idId: TranslationDict = {
   "titlebar.scope_user_tip": "Pengguna Global (~/.unirtm) • Klik untuk beralih (Alt+S)",
   "app.theme_switched_dark": "Beralih ke Mode Gelap",
   "app.theme_switched_light": "Beralih ke Mode Cahaya",
+  "app.language_switched": "Bahasa dialihkan ke {lang}",
+  "app.language_switched_auto": "Bahasa diatur ke Otomatis (ikuti sistem)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

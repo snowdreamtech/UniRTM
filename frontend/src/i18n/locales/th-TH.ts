@@ -176,6 +176,8 @@ export const thTh: TranslationDict = {
   "titlebar.scope_user_tip": "ผู้ใช้ทั่วโลก (~/.unirtm) • คลิกเพื่อสลับ (Alt+S)",
   "app.theme_switched_dark": "เปลี่ยนเป็นโหมดมืดแล้ว",
   "app.theme_switched_light": "เปลี่ยนเป็นโหมดแสงแล้ว",
+  "app.language_switched": "ภาษาเปลี่ยนเป็น {lang}",
+  "app.language_switched_auto": "ตั้งภาษาเป็น Auto (ตามระบบ)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

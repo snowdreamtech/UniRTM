@@ -178,6 +178,8 @@ export const bgBg: TranslationDict = {
   "titlebar.scope_user_tip": "Глобален потребител (~/.unirtm) • Щракнете за превключване (Alt+S)",
   "app.theme_switched_dark": "Превключихте към тъмен режим",
   "app.theme_switched_light": "Превключен на светъл режим",
+  "app.language_switched": "Езикът е превключен на {lang}",
+  "app.language_switched_auto": "Езикът е зададен на Auto (следвайте системата)",
   "app.task_finished": "[unirtm run {task} ] Изпълнението на задачата приключи",
   "app.task_error": "[unirtm run {task} ] Грешка при изпълнение на задача: {err}",
   "app.task_failed": "[unirtm run {task} ] Задачата е неуспешна (код за изход: {code} )",

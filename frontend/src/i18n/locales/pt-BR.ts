@@ -178,6 +178,8 @@ export const ptBr: TranslationDict = {
   "titlebar.scope_user_tip": "Usuário Global (~/.unirtm) • Clique para alternar (Alt+S)",
   "app.theme_switched_dark": "Mudou para o modo escuro",
   "app.theme_switched_light": "Mudou para o modo claro",
+  "app.language_switched": "Idioma alterado para {lang}",
+  "app.language_switched_auto": "Idioma definido como Automático (seguir sistema)",
   "app.task_finished": "[unirtm run {task} ] Execução da tarefa concluída",
   "app.task_error": "[unirtm run {task} ] Erro de execução da tarefa: {err}",
   "app.task_failed": "[unirtm run {task} ] Falha na tarefa (código de saída: {code} )",

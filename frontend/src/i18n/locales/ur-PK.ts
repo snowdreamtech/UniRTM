@@ -176,6 +176,8 @@ export const urPk: TranslationDict = {
   "titlebar.scope_user_tip": "یوزر گلوبل (~/.unirtm) • ٹوگل کرنے کے لیے کلک کریں (Alt+S)",
   "app.theme_switched_dark": "ڈارک موڈ میں تبدیل ہو گیا۔",
   "app.theme_switched_light": "لائٹ موڈ پر سوئچ کر دیا گیا۔",
+  "app.language_switched": "زبان کو {lang} میں تبدیل کر دیا گیا",
+  "app.language_switched_auto": "زبان آٹو پر سیٹ ہے (سسٹم کی پیروی کریں)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

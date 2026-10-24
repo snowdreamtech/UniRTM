@@ -180,6 +180,8 @@ export const frFr: TranslationDict = {
   "titlebar.scope_user_tip": "Utilisateur global (~/.unirtm) • Cliquez pour basculer (Alt+S)",
   "app.theme_switched_dark": "Passé en mode sombre",
   "app.theme_switched_light": "Passé en mode lumière",
+  "app.language_switched": "Langue passée à {lang}",
+  "app.language_switched_auto": "Langue réglée sur Auto (suivre le système)",
   "app.task_finished": "[unirtm run {task} ] Exécution de la tâche terminée",
   "app.task_error": "[unirtm run {task} ] Erreur d'exécution de la tâche : {err}",
   "app.task_failed": "[unirtm run {task} ] La tâche a échoué (code de sortie : {code} )",

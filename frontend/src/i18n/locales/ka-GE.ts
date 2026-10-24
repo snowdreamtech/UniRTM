@@ -178,6 +178,8 @@ export const kaGe: TranslationDict = {
   "titlebar.scope_user_tip": "მომხმარებლის გლობალური (~/.unirtm) • დააწკაპუნეთ გადასართავად (Alt+S)",
   "app.theme_switched_dark": "გადართულია ბნელ რეჟიმში",
   "app.theme_switched_light": "გადაერთო სინათლის რეჟიმზე",
+  "app.language_switched": "ენა გადართულია {lang}-ზე",
+  "app.language_switched_auto": "ენა დაყენებულია ავტომატზე (მიჰყევით სისტემას)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

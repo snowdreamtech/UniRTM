@@ -178,6 +178,8 @@ export const mlIn: TranslationDict = {
   "titlebar.scope_user_tip": "യൂസർ ഗ്ലോബൽ (~/.unirtm) • ടോഗിൾ ചെയ്യാൻ ക്ലിക്ക് ചെയ്യുക (Alt+S)",
   "app.theme_switched_dark": "ഡാർക്ക് മോഡിലേക്ക് മാറി",
   "app.theme_switched_light": "ലൈറ്റ് മോഡിലേക്ക് മാറി",
+  "app.language_switched": "ഭാഷ {lang} എന്നതിലേക്ക് മാറി",
+  "app.language_switched_auto": "ഭാഷ സ്വയമേവ സജ്ജീകരിച്ചു (സിസ്റ്റം പിന്തുടരുക)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

@@ -178,6 +178,8 @@ export const bnBd: TranslationDict = {
   "titlebar.scope_user_tip": "ইউজার গ্লোবাল (~/.unirtm) • টগল করতে ক্লিক করুন (Alt+S)",
   "app.theme_switched_dark": "ডার্ক মোডে স্যুইচ করা হয়েছে",
   "app.theme_switched_light": "লাইট মোডে স্যুইচ করা হয়েছে",
+  "app.language_switched": "ভাষা {lang}-এ পরিবর্তন করা হয়েছে",
+  "app.language_switched_auto": "ভাষা অটোতে সেট করা হয়েছে (সিস্টেম অনুসরণ করুন)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

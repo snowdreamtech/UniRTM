@@ -178,6 +178,8 @@ export const elGr: TranslationDict = {
   "titlebar.scope_user_tip": "User Global (~/.unirtm) • Κάντε κλικ για εναλλαγή (Alt+S)",
   "app.theme_switched_dark": "Μετάβαση σε Dark Mode",
   "app.theme_switched_light": "Μετάβαση σε λειτουργία φωτός",
+  "app.language_switched": "Η γλώσσα άλλαξε σε {lang}",
+  "app.language_switched_auto": "Η γλώσσα ορίστηκε σε Αυτόματο (ακολουθήστε το σύστημα)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

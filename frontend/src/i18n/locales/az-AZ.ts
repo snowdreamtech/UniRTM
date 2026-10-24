@@ -177,6 +177,8 @@ export const azAz: TranslationDict = {
   "titlebar.scope_user_tip": "İstifadəçi Qlobal (~/.unirtm) • Dəyişdirmək üçün klikləyin (Alt+S)",
   "app.theme_switched_dark": "Qaranlıq rejimə keçildi",
   "app.theme_switched_light": "İşıq rejiminə keçdi",
+  "app.language_switched": "Dil {lang} dilinə dəyişdirildi",
+  "app.language_switched_auto": "Dil Avtomatik olaraq təyin edildi (sistemi izləyin)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

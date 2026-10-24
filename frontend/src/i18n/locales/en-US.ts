@@ -175,6 +175,8 @@ export const enUs: TranslationDict = {
   "titlebar.scope_user_tip": "User Global (~/.unirtm) • Click to toggle (Alt+S)",
   "app.theme_switched_dark": "Switched to Dark Mode",
   "app.theme_switched_light": "Switched to Light Mode",
+  "app.language_switched": "Language switched to {lang}",
+  "app.language_switched_auto": "Language set to Auto (follow system)",
   "app.task_finished": "[unirtm run {task}] Task execution finished",
   "app.task_error": "[unirtm run {task}] Task execution error: {err}",
   "app.task_failed": "[unirtm run {task}] Task failed (exit code: {code})",

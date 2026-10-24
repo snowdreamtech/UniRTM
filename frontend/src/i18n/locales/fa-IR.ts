@@ -176,6 +176,8 @@ export const faIr: TranslationDict = {
   "titlebar.scope_user_tip": "کاربر جهانی (~/.unirtm) • برای جابجایی (Alt+S) کلیک کنید",
   "app.theme_switched_dark": "به حالت تاریک تبدیل شد",
   "app.theme_switched_light": "به حالت نور تغییر کرد",
+  "app.language_switched": "تغییر زبان به {lang}",
+  "app.language_switched_auto": "زبان روی خودکار تنظیم شد (سیستم را دنبال کنید)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

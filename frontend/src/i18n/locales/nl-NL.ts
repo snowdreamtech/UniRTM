@@ -177,6 +177,8 @@ export const nlNl: TranslationDict = {
   "titlebar.scope_user_tip": "Globaal gebruiker (~/.unirtm) • Klik om te schakelen (Alt+S)",
   "app.theme_switched_dark": "Overgeschakeld naar de donkere modus",
   "app.theme_switched_light": "Overgeschakeld naar de lichtmodus",
+  "app.language_switched": "Taal gewijzigd naar {lang}",
+  "app.language_switched_auto": "Taal ingesteld op Auto (systeem volgen)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

@@ -177,6 +177,8 @@ export const srCyrl: TranslationDict = {
   "titlebar.scope_user_tip": "Глобални корисник (~/.униртм) • Кликните да бисте укључили (Алт+С)",
   "app.theme_switched_dark": "Пребачен у тамни режим",
   "app.theme_switched_light": "Пребачен на светлосни режим",
+  "app.language_switched": "Језик је промењен на {lang}",
+  "app.language_switched_auto": "Језик је подешен на аутоматски (прати систем)",
   "app.task_finished": "[униртм рун [[В0]] ] Извршење задатка је завршено",
   "app.task_error": "[униртм рун [[В0]] ] Грешка у извршавању задатка: [[В1]]",
   "app.task_failed": "[униртм рун [[В0]] ] Задатак није успео (излазни код: [[В1]] )",

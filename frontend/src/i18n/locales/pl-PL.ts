@@ -178,6 +178,8 @@ export const plPl: TranslationDict = {
   "titlebar.scope_user_tip": "Użytkownik globalny (~/.unirtm) • Kliknij, aby przełączyć (Alt+S)",
   "app.theme_switched_dark": "Przełączono na tryb ciemny",
   "app.theme_switched_light": "Przełączono na tryb oświetlenia",
+  "app.language_switched": "Język zmieniony na {lang}",
+  "app.language_switched_auto": "Język ustawiony na Auto (zgodnie z systemem)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

@@ -176,6 +176,8 @@ export const nbNo: TranslationDict = {
   "titlebar.scope_user_tip": "Bruker global (~/.unirtm) • Klikk for å veksle (Alt+S)",
   "app.theme_switched_dark": "Byttet til mørk modus",
   "app.theme_switched_light": "Byttet til lysmodus",
+  "app.language_switched": "Språk byttet til {lang}",
+  "app.language_switched_auto": "Språk satt til Auto (følg systemet)",
   "app.task_finished": "[unirtm run {task} ] Oppgavekjøring fullført",
   "app.task_error": "[unirtm run {task} ] Oppgaveutførelsesfeil: {err}",
   "app.task_failed": "[unirtm run {task} ] Oppgaven mislyktes (utgangskode: {code} )",

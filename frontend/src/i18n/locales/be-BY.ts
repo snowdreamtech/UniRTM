@@ -178,6 +178,8 @@ export const beBy: TranslationDict = {
   "titlebar.scope_user_tip": "Глабальны карыстальнік (~/.unirtm) • Націсніце, каб пераключыць (Alt+S)",
   "app.theme_switched_dark": "Пераключыўся на цёмны рэжым",
   "app.theme_switched_light": "Пераключаны ў светлы рэжым",
+  "app.language_switched": "Мова пераключана на {lang}",
+  "app.language_switched_auto": "Мова ўсталявана на Аўтаматычны (прытрымлівацца сістэмы)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

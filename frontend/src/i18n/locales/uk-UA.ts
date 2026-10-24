@@ -178,6 +178,8 @@ export const ukUa: TranslationDict = {
   "titlebar.scope_user_tip": "Глобальний користувач (~/.unirtm) • Натисніть, щоб перемкнути (Alt+S)",
   "app.theme_switched_dark": "Перейшов у темний режим",
   "app.theme_switched_light": "Переключено на світлий режим",
+  "app.language_switched": "Мову змінено на {lang}",
+  "app.language_switched_auto": "Для мови встановлено значення Auto (дотримуватися системи)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

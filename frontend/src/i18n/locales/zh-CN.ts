@@ -173,6 +173,8 @@ export const zhCn: TranslationDict = {
   "titlebar.scope_user_tip": "用户全局模式 (~/.unirtm) • 点击切换 (Alt+S)",
   "app.theme_switched_dark": "已切换为深色模式",
   "app.theme_switched_light": "已切换为浅色模式",
+  "app.language_switched": "已切换语言为 {lang}",
+  "app.language_switched_auto": "语言已设置为跟随系统",
   "app.task_finished": "[unirtm run {task}] 任务执行结束",
   "app.task_error": "[unirtm run {task}] 任务调用异常: {err}",
   "app.task_failed": "[unirtm run {task}] 任务执行失败 (退出码: {code})",

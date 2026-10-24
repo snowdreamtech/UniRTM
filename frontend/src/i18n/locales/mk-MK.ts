@@ -179,6 +179,8 @@ export const mkMk: TranslationDict = {
   "titlebar.scope_user_tip": "Корисничка глобална (~/.unirtm) • Кликнете за да префрлите (Alt+S)",
   "app.theme_switched_dark": "Се префрли на темен режим",
   "app.theme_switched_light": "Префрлен во режим на светлина",
+  "app.language_switched": "Јазикот е префрлен на {lang}",
+  "app.language_switched_auto": "Јазикот е поставен на Автоматски (следи систем)",
   "app.task_finished": "[unirtm run {task} ] Извршувањето на задачата е завршено",
   "app.task_error": "[unirtm run {task} ] Грешка при извршување на задачата: {err}",
   "app.task_failed": "[unirtm run {task} ] Задачата не успеа (излезен код: {code} )",

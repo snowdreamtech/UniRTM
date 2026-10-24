@@ -177,6 +177,8 @@ export const fiFi: TranslationDict = {
   "titlebar.scope_user_tip": "User Global (~/.unirtm) • Napsauta vaihtaaksesi (Alt+S)",
   "app.theme_switched_dark": "Vaihdettu pimeään tilaan",
   "app.theme_switched_light": "Vaihdettu valotilaan",
+  "app.language_switched": "Kieleksi vaihdettu {lang}",
+  "app.language_switched_auto": "Kieli asetettu automaattiseksi (seuraa järjestelmää)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

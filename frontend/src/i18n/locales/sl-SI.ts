@@ -177,6 +177,8 @@ export const slSi: TranslationDict = {
   "titlebar.scope_user_tip": "Globalni uporabnik (~/.unirtm) • Kliknite za preklop (Alt+S)",
   "app.theme_switched_dark": "Preklop na temni način",
   "app.theme_switched_light": "Preklop na svetlobni način",
+  "app.language_switched": "Jezik spremenjen na {lang}",
+  "app.language_switched_auto": "Jezik nastavljen na samodejno (sledi sistemu)",
   "app.task_finished": "[unirtm run {task} ] Izvedba naloge končana",
   "app.task_error": "[unirtm run {task} ] Napaka pri izvajanju naloge: {err}",
   "app.task_failed": "[unirtm run {task} ] Naloga ni uspela (izhodna koda: {code} )",

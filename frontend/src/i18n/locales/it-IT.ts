@@ -178,6 +178,8 @@ export const itIt: TranslationDict = {
   "titlebar.scope_user_tip": "Utente globale (~/.unirtm) • Fare clic per attivare/disattivare (Alt+S)",
   "app.theme_switched_dark": "Passato alla modalità oscura",
   "app.theme_switched_light": "Passato alla modalità luce",
+  "app.language_switched": "La lingua è cambiata in {lang}",
+  "app.language_switched_auto": "Lingua impostata su Auto (segui il sistema)",
   "app.task_finished": "[unirtm run {task} ] Esecuzione dell'attività terminata",
   "app.task_error": "[unirtm run {task} ] Errore di esecuzione dell'attività: {err}",
   "app.task_failed": "[unirtm run {task} ] Attività non riuscita (codice di uscita: {code} )",

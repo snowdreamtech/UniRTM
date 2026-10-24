@@ -133,7 +133,7 @@ import BottomStatusBar from "./components/layout/BottomStatusBar.vue";
 import BottomDrawer, { type LogItem, type DrawerTab } from "./components/layout/BottomDrawer.vue";
 import ToastNotification from "./components/ToastNotification.vue";
 
-import { t, selectedLangSetting, setLanguage } from "./i18n";
+import { t, selectedLangSetting, setLanguage, SUPPORTED_LANGUAGES } from "./i18n";
 import { useTheme } from "./composables/useTheme";
 import { useToast } from "./composables/useToast";
 import { useToolUpdates } from "./composables/useToolUpdates";
@@ -493,13 +493,21 @@ async function saveGlobalSetting(key: string, value: any) {
   }
 }
 
-function selectLanguage(langVal: string) {
-  setLanguage(langVal);
+async function selectLanguage(langVal: string) {
+  await setLanguage(langVal);
   if (appConfig.value) {
     appConfig.value.language = langVal;
   }
   saveGlobalSetting("settings.language", langVal);
-  showToast(`Language switched to ${langVal}`, "info");
+  const matched = SUPPORTED_LANGUAGES.find((l) => l.code === langVal);
+  const langName = matched ? matched.nativeName : langVal === "auto" ? t("common.langAuto") || "Auto" : langVal;
+  const msg =
+    langVal === "auto"
+      ? t("app.language_switched_auto") ||
+        t("app.language_switched", { lang: langName }) ||
+        `Language switched to ${langName}`
+      : t("app.language_switched", { lang: langName }) || `Language switched to ${langName}`;
+  showToast(msg, "info");
 }
 
 async function toggleTheme() {

@@ -177,6 +177,8 @@ export const caEs: TranslationDict = {
   "titlebar.scope_user_tip": "Usuari global (~/.unirtm) • Feu clic per canviar (Alt+S)",
   "app.theme_switched_dark": "S'ha canviat al mode fosc",
   "app.theme_switched_light": "S'ha canviat al mode de llum",
+  "app.language_switched": "S'ha canviat l'idioma a {lang}",
+  "app.language_switched_auto": "L'idioma s'ha definit com a Automàtic (seguir el sistema)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

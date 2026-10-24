@@ -178,6 +178,8 @@ export const csCz: TranslationDict = {
   "titlebar.scope_user_tip": "Globální uživatel (~/.unirtm) • Kliknutím přepnete (Alt+S)",
   "app.theme_switched_dark": "Přepnuto do tmavého režimu",
   "app.theme_switched_light": "Přepnuto do světelného režimu",
+  "app.language_switched": "Jazyk přepnut na {lang}",
+  "app.language_switched_auto": "Jazyk nastaven na Auto (sledovat systém)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

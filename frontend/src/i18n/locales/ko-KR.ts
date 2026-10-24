@@ -175,6 +175,8 @@ export const koKr: TranslationDict = {
   "titlebar.scope_user_tip": "사용자 전역(~/.unirtm) • 클릭하여 전환(Alt+S)",
   "app.theme_switched_dark": "다크 모드로 전환됨",
   "app.theme_switched_light": "라이트 모드로 전환됨",
+  "app.language_switched": "언어가 {lang}으로 전환되었습니다.",
+  "app.language_switched_auto": "언어가 자동으로 설정됨(시스템 따르기)",
   "app.task_finished": "[unirtm run {task} ] 작업 실행이 완료되었습니다.",
   "app.task_error": "[unirtm run {task} ] 작업 실행 오류: {err}",
   "app.task_failed": "[unirtm run {task} ] 작업 실패(종료 코드: {code} )",

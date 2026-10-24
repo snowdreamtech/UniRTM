@@ -178,6 +178,8 @@ export const huHu: TranslationDict = {
   "titlebar.scope_user_tip": "Általános felhasználói (~/.unirtm) • Kattintson a váltáshoz (Alt+S)",
   "app.theme_switched_dark": "Sötét módra váltott",
   "app.theme_switched_light": "Világos módra váltott",
+  "app.language_switched": "A nyelv átváltott erre: {lang}",
+  "app.language_switched_auto": "A nyelv automatikusra állítva (követi a rendszert)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",

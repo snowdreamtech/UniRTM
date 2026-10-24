@@ -177,6 +177,8 @@ export const esEs: TranslationDict = {
   "titlebar.scope_user_tip": "Usuario global (~/.unirtm) • Haga clic para alternar (Alt+S)",
   "app.theme_switched_dark": "Cambiado al modo oscuro",
   "app.theme_switched_light": "Cambiado al modo de luz",
+  "app.language_switched": "Idioma cambiado a {lang}",
+  "app.language_switched_auto": "Idioma configurado en Auto (seguir sistema)",
   "app.task_finished": "[unirtm run {task} ] Ejecución de tarea finalizada",
   "app.task_error": "[unirtm run {task} ] Error de ejecución de tarea: {err}",
   "app.task_failed": "[unirtm run {task} ] Tarea fallida (código de salida: {code} )",

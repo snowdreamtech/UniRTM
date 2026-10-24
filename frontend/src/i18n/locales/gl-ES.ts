@@ -178,6 +178,8 @@ export const glEs: TranslationDict = {
   "titlebar.scope_user_tip": "Usuario global (~/.unirtm) • Fai clic para alternar (Alt+S)",
   "app.theme_switched_dark": "Cambiouse ao modo escuro",
   "app.theme_switched_light": "Cambiouse ao modo de luz",
+  "app.language_switched": "O idioma cambiou a {lang}",
+  "app.language_switched_auto": "Idioma definido como automático (seguir o sistema)",
   "app.task_finished": "[unirtm run  {task} ] Task execution finished",
   "app.task_error": "[unirtm run  {task} ] Task execution error:  {err}",
   "app.task_failed": "[unirtm run  {task} ] Task failed (exit code:  {code} )",
