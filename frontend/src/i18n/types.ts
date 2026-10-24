@@ -1,5 +1,43 @@
-// Generated strictly from en-US locale keys. Do NOT add loose index signature.
+// Auto-generated strongly typed TranslationDict contract
 export interface TranslationDict {
+  "editor.action.peek_call_hierarchy": string;
+  "editor.action.show_call_hierarchy": string;
+  "editor.action.quick_fix": string;
+  "editor.action.unfold_all": string;
+  "editor.action.fold_all": string;
+  "editor.action.unfold": string;
+  "editor.action.fold": string;
+  "editor.action.toggle_block_comment": string;
+  "editor.action.toggle_line_comment": string;
+  "editor.action.delete_line": string;
+  "editor.action.move_line_down": string;
+  "editor.action.move_line_up": string;
+  "editor.action.copy_line_down": string;
+  "editor.action.copy_line_up": string;
+  "editor.action.cut_line": string;
+  "editor.action.redo": string;
+  "editor.action.undo": string;
+  "editor.action.select_all": string;
+  "editor.action.share": string;
+  "editor.action.find_all_references": string;
+  "editor.action.peek_type_definition": string;
+  "editor.action.goto_type_definition": string;
+  "editor.action.peek_implementation": string;
+  "editor.action.goto_implementation": string;
+  "editor.action.peek_references": string;
+  "editor.action.goto_references": string;
+  "editor.action.peek_definition": string;
+  "editor.action.goto_definition": string;
+  "editor.action.rename_symbol": string;
+  "editor.action.source_action": string;
+  "editor.action.refactor": string;
+  "editor.action.format_selection": string;
+  "editor.action.format_document": string;
+  "editor.action.command_palette": string;
+  "editor.action.paste": string;
+  "editor.action.copy": string;
+  "editor.action.cut": string;
+  "editor.action.change_all": string;
   "editor.run_in_terminal": string;
   "editor.next_conflict": string;
   "editor.prev_conflict": string;
