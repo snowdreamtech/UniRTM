@@ -305,7 +305,7 @@ export function useGit() {
   async function stage(paths?: string[]): Promise<boolean> {
     isLoading.value = true;
     try {
-      // 防冲突：如果暂存的文件在编辑器中处于未保存（dirty）状态，先安全刷盘保存
+      // Prevent conflicts: flush unsaved (dirty) editor files safely before staging
       try {
         const { saveDirtyTabsForPaths } = useEditorTabs();
         await saveDirtyTabsForPaths(paths);
@@ -320,13 +320,13 @@ export function useGit() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "暂存操作失败");
+        throw new Error(data.error || t("scm.toast.stage_failed") || "Staging operation failed");
       }
       await fetchStatus();
       useWorkspaceBus().notifyGitStatusChanged();
       return true;
     } catch (err: any) {
-      showToast(err.message || "暂存失败", "error");
+      showToast(err.message || t("scm.toast.stage_failed") || "Staging operation failed", "error");
       return false;
     } finally {
       isLoading.value = false;
@@ -366,12 +366,12 @@ export function useGit() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "取消暂存失败");
+        throw new Error(data.error || t("scm.toast.unstage_failed") || "Unstaging failed");
       }
       await fetchStatus();
       return true;
     } catch (err: any) {
-      showToast(err.message || "取消暂存失败", "error");
+      showToast(err.message || t("scm.toast.unstage_failed") || "Unstaging failed", "error");
       return false;
     } finally {
       isLoading.value = false;
@@ -392,19 +392,22 @@ export function useGit() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "放弃更改失败");
+        throw new Error(data.error || t("scm.toast.discard_failed") || "Failed to discard changes");
       }
-      showToast(`已放弃 ${paths.length} 个文件的更改`, "info");
+      showToast(
+        t("scm.toast.discard_success", { count: paths.length }) || `Discarded changes in ${paths.length} files`,
+        "info"
+      );
       await fetchStatus();
 
-      // 通知编辑器重新加载最新还原后的磁盘内容，防止旧脏状态滞留
+      // Notify editor to reload freshly reverted disk contents, preventing stale dirty state
       const bus = useWorkspaceBus();
       bus.notifyGitStatusChanged();
       bus.notifyFileReloadNeeded(paths);
 
       return true;
     } catch (err: any) {
-      showToast(err.message || "放弃更改失败", "error");
+      showToast(err.message || t("scm.toast.discard_failed") || "Failed to discard changes", "error");
       return false;
     } finally {
       isLoading.value = false;
@@ -417,7 +420,7 @@ export function useGit() {
   async function commit(msg?: string, amend: boolean = false, sign?: boolean): Promise<boolean> {
     const message = (msg !== undefined ? msg : commitMessage.value).trim();
     if (!message && !amend) {
-      showToast("请输入提交信息 (Commit message)", "warning");
+      showToast(t("scm.toast.enter_commit_msg") || "Please enter a commit message", "warning");
       return false;
     }
     isCommitting.value = true;
@@ -433,14 +436,17 @@ export function useGit() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "提交失败");
+        throw new Error(data.error || t("scm.toast.commit_failed") || "Commit failed");
       }
       commitMessage.value = "";
-      showToast(`提交成功: ${message.slice(0, 30)}`, "success");
+      showToast(
+        t("scm.toast.commit_success", { msg: message.slice(0, 30) }) || `Commit successful: ${message.slice(0, 30)}`,
+        "success"
+      );
       await fetchStatus();
       return true;
     } catch (err: any) {
-      showToast(err.message || "提交失败", "error");
+      showToast(err.message || t("scm.toast.commit_failed") || "Commit failed", "error");
       return false;
     } finally {
       isCommitting.value = false;
@@ -461,14 +467,14 @@ export function useGit() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "切换分支失败");
+        throw new Error(data.error || t("scm.toast.switch_branch_failed") || "Failed to switch branch");
       }
-      showToast(`已切换至分支: ${branch}`, "success");
+      showToast(t("scm.toast.switch_branch_success", { branch }) || `Switched to branch: ${branch}`, "success");
       await Promise.all([fetchStatus(), fetchBranches()]);
 
       const bus = useWorkspaceBus();
       bus.notifyGitStatusChanged();
-      // 通知所有已打开的普通标签页刷新内容（因为切换分支后文件版本变了）
+      // Notify all opened tabs to refresh content (files changed after switching branches)
       try {
         const { tabs } = useEditorTabs();
         const openPaths = tabs.value.filter((t) => !t.isDiff).map((t) => t.path);
@@ -481,7 +487,7 @@ export function useGit() {
 
       return true;
     } catch (err: any) {
-      showToast(err.message || "切换分支失败", "error");
+      showToast(err.message || t("scm.toast.switch_branch_failed") || "Failed to switch branch", "error");
       return false;
     } finally {
       isLoading.value = false;
@@ -501,7 +507,10 @@ export function useGit() {
       return await res.json();
     } catch (err: any) {
       console.error("fetchDiff error:", err);
-      showToast(`获取文件差异失败: ${err.message}`, "error");
+      showToast(
+        t("scm.toast.get_diff_failed", { error: err.message }) || `Failed to get file diff: ${err.message}`,
+        "error"
+      );
       return null;
     }
   }
@@ -531,13 +540,13 @@ export function useGit() {
       const res = await gitFetch("/api/git/sync", { method: "POST" });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "同步失败");
+        throw new Error(data.error || t("scm.toast.sync_failed") || "Sync failed");
       }
-      showToast("Git 仓库已与远程同步完成", "success");
+      showToast(t("scm.toast.sync_success") || "Git repository synced with remote", "success");
       await fetchStatus();
       return true;
     } catch (err: any) {
-      showToast(err.message || "同步失败", "error");
+      showToast(err.message || t("scm.toast.sync_failed") || "Sync failed", "error");
       return false;
     } finally {
       isSyncing.value = false;
@@ -585,7 +594,7 @@ export function useGit() {
       return graphCommits.value;
     } catch (err: any) {
       console.error("fetchGraph error:", err);
-      showToast(err.message || "获取 Git 提交图谱失败", "error");
+      showToast(err.message || t("scm.toast.get_graph_failed") || "Failed to get Git commit graph", "error");
       return [];
     } finally {
       isLoadingGraph.value = false;
@@ -628,7 +637,7 @@ export function useGit() {
       }
       return null;
     } catch (err: any) {
-      showToast(err.message || "获取提交详情失败", "error");
+      showToast(err.message || t("scm.toast.get_commit_details_failed") || "Failed to get commit details", "error");
       return null;
     }
   }
@@ -655,7 +664,7 @@ export function useGit() {
       }
       return null;
     } catch (err: any) {
-      showToast(err.message || "获取历史差异对比失败", "error");
+      showToast(err.message || t("scm.toast.get_history_diff_failed") || "Failed to get history diff", "error");
       return null;
     }
   }
@@ -675,7 +684,7 @@ export function useGit() {
       }
       return null;
     } catch (err: any) {
-      showToast(err.message || "比对提交失败", "error");
+      showToast(err.message || t("scm.toast.compare_failed") || "Failed to compare commits", "error");
       return null;
     }
   }
@@ -691,12 +700,13 @@ export function useGit() {
         body: JSON.stringify({ name, hash, message }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "创建标签失败");
-      showToast(`已成功创建标签: ${name}`, "success");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.create_tag_failed") || "Failed to create tag");
+      showToast(t("scm.toast.create_tag_success", { name }) || `Tag created successfully: ${name}`, "success");
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "创建标签失败", "error");
+      showToast(err.message || t("scm.toast.create_tag_failed") || "Failed to create tag", "error");
       return false;
     }
   }
@@ -712,14 +722,20 @@ export function useGit() {
         body: JSON.stringify({ name, hash, checkout: checkoutBranch }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "创建分支失败");
-      showToast(`已成功创建分支: ${name}${checkoutBranch ? " 并已切换" : ""}`, "success");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.create_branch_failed") || "Failed to create branch");
+      showToast(
+        checkoutBranch
+          ? t("scm.toast.create_branch_and_switched", { name }) || `Branch created and switched: ${name}`
+          : t("scm.toast.create_branch_success", { name }) || `Branch created successfully: ${name}`,
+        "success"
+      );
       await fetchBranches();
       await fetchStatus();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "创建分支失败", "error");
+      showToast(err.message || t("scm.toast.create_branch_failed") || "Failed to create branch", "error");
       return false;
     }
   }
@@ -735,13 +751,17 @@ export function useGit() {
         body: JSON.stringify({ hash }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "Cherry-pick 失败");
-      showToast(`已拣选提交: ${hash.slice(0, 8)}`, "success");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.cherry_pick_failed") || "Cherry-pick failed");
+      showToast(
+        t("scm.toast.cherry_pick_success", { hash: hash.slice(0, 8) }) || `Cherry-picked commit: ${hash.slice(0, 8)}`,
+        "success"
+      );
       await fetchStatus();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "Cherry-pick 失败", "error");
+      showToast(err.message || t("scm.toast.cherry_pick_failed") || "Cherry-pick failed", "error");
       return false;
     }
   }
@@ -757,13 +777,17 @@ export function useGit() {
         body: JSON.stringify({ hash }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "撤销提交失败");
-      showToast(`已成功撤销提交: ${hash.slice(0, 8)}`, "success");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.revert_failed") || "Revert commit failed");
+      showToast(
+        t("scm.toast.revert_success", { hash: hash.slice(0, 8) }) || `Reverted commit: ${hash.slice(0, 8)}`,
+        "success"
+      );
       await fetchStatus();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "撤销提交失败", "error");
+      showToast(err.message || t("scm.toast.revert_failed") || "Revert commit failed", "error");
       return false;
     }
   }
@@ -779,13 +803,17 @@ export function useGit() {
         body: JSON.stringify({ hash, mode }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "重置失败");
-      showToast(`已重置到提交 ${hash.slice(0, 8)} (${mode})`, "info");
+      if (!res.ok || !data.success) throw new Error(data.error || t("scm.toast.reset_failed") || "Reset failed");
+      showToast(
+        t("scm.toast.reset_success", { hash: hash.slice(0, 8), mode }) ||
+          `Reset to commit ${hash.slice(0, 8)} (${mode})`,
+        "info"
+      );
       await fetchStatus();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "重置失败", "error");
+      showToast(err.message || t("scm.toast.reset_failed") || "Reset failed", "error");
       return false;
     }
   }
@@ -801,12 +829,13 @@ export function useGit() {
         body: JSON.stringify({ oldName, newName }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "重命名分支失败");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.rename_branch_failed") || "Failed to rename branch");
       await fetchBranches();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "重命名分支失败", "error");
+      showToast(err.message || t("scm.toast.rename_branch_failed") || "Failed to rename branch", "error");
       return false;
     }
   }
@@ -822,12 +851,13 @@ export function useGit() {
         body: JSON.stringify({ name, force }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "删除分支失败");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.delete_branch_failed") || "Failed to delete branch");
       await fetchBranches();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "删除分支失败", "error");
+      showToast(err.message || t("scm.toast.delete_branch_failed") || "Failed to delete branch", "error");
       return false;
     }
   }
@@ -843,12 +873,13 @@ export function useGit() {
         body: JSON.stringify({ branch, noFf, squash }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "合并分支失败");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.merge_branch_failed") || "Failed to merge branch");
       await fetchStatus();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "合并分支失败", "error");
+      showToast(err.message || t("scm.toast.merge_branch_failed") || "Failed to merge branch", "error");
       return false;
     }
   }
@@ -864,12 +895,13 @@ export function useGit() {
         body: JSON.stringify({ branch }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "变基分支失败");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.rebase_branch_failed") || "Failed to rebase branch");
       await fetchStatus();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "变基分支失败", "error");
+      showToast(err.message || t("scm.toast.rebase_branch_failed") || "Failed to rebase branch", "error");
       return false;
     }
   }
@@ -885,12 +917,13 @@ export function useGit() {
         body: JSON.stringify({ branch, setUpstream, force }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "推送分支失败");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.push_branch_failed") || "Failed to push branch");
       await fetchBranches();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "推送分支失败", "error");
+      showToast(err.message || t("scm.toast.push_branch_failed") || "Failed to push branch", "error");
       return false;
     }
   }
@@ -906,11 +939,12 @@ export function useGit() {
         body: JSON.stringify({ name }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "删除标签失败");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.delete_tag_failed") || "Failed to delete tag");
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "删除标签失败", "error");
+      showToast(err.message || t("scm.toast.delete_tag_failed") || "Failed to delete tag", "error");
       return false;
     }
   }
@@ -926,10 +960,11 @@ export function useGit() {
         body: JSON.stringify({ name, force }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "推送标签失败");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.push_tag_failed") || "Failed to push tag");
       return true;
     } catch (err: any) {
-      showToast(err.message || "推送标签失败", "error");
+      showToast(err.message || t("scm.toast.push_tag_failed") || "Failed to push tag", "error");
       return false;
     }
   }
@@ -941,7 +976,7 @@ export function useGit() {
       const res = await gitFetch(`/api/git/archive?ref=${encodeURIComponent(ref)}`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(data.error || "下载归档失败");
+        throw new Error(data.error || t("scm.toast.download_archive_failed") || "Failed to download archive");
       }
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
@@ -958,7 +993,7 @@ export function useGit() {
       try {
         window.open(`/api/git/archive?ref=${encodeURIComponent(ref)}`, "_blank");
       } catch (_) {}
-      showToast(err.message || "下载归档失败", "error");
+      showToast(err.message || t("scm.toast.download_archive_failed") || "Failed to download archive", "error");
       return false;
     }
   }
@@ -984,14 +1019,14 @@ export function useGit() {
         body: JSON.stringify({ message, includeUntracked }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "暂存失败");
+      if (!res.ok || !data.success) throw new Error(data.error || t("scm.toast.stash_failed") || "Stash failed");
       showToast(t("scm.uncommitted.stash_success"), "success");
       await fetchStatus();
       await fetchBranches();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "暂存失败", "error");
+      showToast(err.message || t("scm.toast.stash_failed") || "Stash failed", "error");
       return false;
     }
   }
@@ -1007,13 +1042,14 @@ export function useGit() {
         body: JSON.stringify({ stash }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "应用暂存失败");
-      showToast("已成功应用暂存", "success");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.apply_stash_failed") || "Failed to apply stash");
+      showToast(t("scm.toast.apply_stash_success") || "Stash applied successfully", "success");
       await fetchStatus();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "应用暂存失败", "error");
+      showToast(err.message || t("scm.toast.apply_stash_failed") || "Failed to apply stash", "error");
       return false;
     }
   }
@@ -1029,13 +1065,14 @@ export function useGit() {
         body: JSON.stringify({ stash }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "弹出暂存失败");
-      showToast("已成功弹出暂存", "success");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.pop_stash_failed") || "Failed to pop stash");
+      showToast(t("scm.toast.pop_stash_success") || "Stash popped successfully", "success");
       await fetchStatus();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "弹出暂存失败", "error");
+      showToast(err.message || t("scm.toast.pop_stash_failed") || "Failed to pop stash", "error");
       return false;
     }
   }
@@ -1051,13 +1088,14 @@ export function useGit() {
         body: JSON.stringify({ stash }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "删除暂存失败");
-      showToast("已删除暂存", "success");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.delete_stash_failed") || "Failed to delete stash");
+      showToast(t("scm.toast.delete_stash_success") || "Stash deleted", "success");
       await fetchStatus();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "删除暂存失败", "error");
+      showToast(err.message || t("scm.toast.delete_stash_failed") || "Failed to delete stash", "error");
       return false;
     }
   }
@@ -1073,14 +1111,21 @@ export function useGit() {
         body: JSON.stringify({ branch, stash }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "基于暂存创建分支失败");
-      showToast(`已成功基于暂存创建分支: ${branch}`, "success");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.branch_from_stash_failed") || "Failed to create branch from stash");
+      showToast(
+        t("scm.toast.branch_from_stash_success", { branch }) || `Created branch from stash: ${branch}`,
+        "success"
+      );
       await fetchBranches();
       await fetchStatus();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "基于暂存创建分支失败", "error");
+      showToast(
+        err.message || t("scm.toast.branch_from_stash_failed") || "Failed to create branch from stash",
+        "error"
+      );
       return false;
     }
   }
@@ -1094,14 +1139,18 @@ export function useGit() {
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "重置未提交更改失败");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.reset_uncommitted_failed") || "Failed to reset uncommitted changes");
       showToast(t("scm.uncommitted.reset_success"), "success");
       await fetchStatus();
       await fetchBranches();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "重置未提交更改失败", "error");
+      showToast(
+        err.message || t("scm.toast.reset_uncommitted_failed") || "Failed to reset uncommitted changes",
+        "error"
+      );
       return false;
     }
   }
@@ -1115,14 +1164,15 @@ export function useGit() {
         method: "POST",
       });
       const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || "清理未跟踪文件失败");
+      if (!res.ok || !data.success)
+        throw new Error(data.error || t("scm.toast.clean_untracked_failed") || "Failed to clean untracked files");
       showToast(t("scm.uncommitted.clean_success"), "success");
       await fetchStatus();
       await fetchBranches();
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "清理未跟踪文件失败", "error");
+      showToast(err.message || t("scm.toast.clean_untracked_failed") || "Failed to clean untracked files", "error");
       return false;
     }
   }
@@ -1140,7 +1190,7 @@ export function useGit() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "拉取失败");
+        throw new Error(data.error || t("scm.toast.pull_failed") || "Pull failed");
       }
       showToast(t("scm.actions.pull_success"), "success");
       await fetchStatus();
@@ -1148,7 +1198,7 @@ export function useGit() {
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "拉取失败", "error");
+      showToast(err.message || t("scm.toast.pull_failed") || "Pull failed", "error");
       return false;
     } finally {
       isLoading.value = false;
@@ -1166,7 +1216,7 @@ export function useGit() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "抓取失败");
+        throw new Error(data.error || t("scm.toast.fetch_failed") || "Fetch failed");
       }
       showToast(t("scm.actions.fetch_success"), "success");
       await fetchStatus();
@@ -1174,7 +1224,7 @@ export function useGit() {
       await fetchGraph();
       return true;
     } catch (err: any) {
-      showToast(err.message || "抓取失败", "error");
+      showToast(err.message || t("scm.toast.fetch_failed") || "Fetch failed", "error");
       return false;
     } finally {
       isLoading.value = false;
