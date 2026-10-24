@@ -122,7 +122,11 @@
                 <span class="codicon" :class="isCopied ? 'codicon-check' : 'codicon-copy'"></span>
                 <span>{{ isCopied ? t("settings.copied") || "Copied" : t("common.copy") || "Copy" }}</span>
               </button>
-              <button class="modal-action-btn close" @click="handleCloseTomlEditor" title="关闭 (Esc)">
+              <button
+                class="modal-action-btn close"
+                @click="handleCloseTomlEditor"
+                :title="t('settings.close_toml') || 'Close (Esc)'"
+              >
                 <span class="codicon codicon-close"></span>
               </button>
             </div>
@@ -308,7 +312,9 @@
                   <span class="jump-icon">
                     <TechIcon id="workbench:marketplace" :size="14" />
                   </span>
-                  <span>前往扩展与主题市场挑选... ↗</span>
+                  <span>{{
+                    t("settings.marketplace_browse_link") || "Browse extension & theme marketplace... ↗"
+                  }}</span>
                 </button>
 
                 <div class="local-vsix-upload-wrap">
@@ -397,7 +403,7 @@
             v-if="activeScope === 'user'"
             class="setting-item terminal-setting-item"
             :class="{
-              highlight: matchesSearch('terminal') || matchesSearch('shell') || matchesSearch('终端'),
+              highlight: matchesSearch('terminal') || matchesSearch('shell') || matchesSearch(t('settings.shell')),
             }"
           >
             <div class="setting-meta">
@@ -443,7 +449,7 @@
                     v-model="customTerminalPath"
                     type="text"
                     class="setting-text-input font-mono"
-                    :placeholder="'/bin/bash 或自定义 Shell 路径'"
+                    :placeholder="t('settings.shell_placeholder') || '/bin/bash or custom shell path'"
                     @change="saveSetting('settings.terminal', customTerminalPath)"
                     @blur="saveSetting('settings.terminal', customTerminalPath)"
                     @keydown.enter="saveSetting('settings.terminal', customTerminalPath)"
@@ -678,7 +684,7 @@
                 v-model="taskTimeout"
                 type="text"
                 class="setting-text-input font-mono"
-                placeholder="例如: 10m, 600"
+                :placeholder="t('settings.timeout_placeholder_example') || 'e.g. 10m, 600'"
                 @change="onTaskTimeoutChange"
                 @blur="onTaskTimeoutChange"
                 @keydown.enter="onTaskTimeoutChange"
@@ -714,7 +720,7 @@
                   :class="{ active: (httpTimeout || '30s') === '30s' }"
                   @click="applyHttpTimeoutPreset('30s')"
                 >
-                  <span>🌐 30s (默认)</span>
+                  <span>{{ t("settings.timeout_preset_30s") || "🌐 30s (Default)" }}</span>
                 </button>
                 <button
                   type="button"
@@ -730,7 +736,7 @@
                   :class="{ active: (httpTimeout || '30s') === '120s' }"
                   @click="applyHttpTimeoutPreset('120s')"
                 >
-                  <span>📦 120s (大文件)</span>
+                  <span>{{ t("settings.timeout_preset_120s") || "📦 120s (Large Files)" }}</span>
                 </button>
               </div>
             </div>
@@ -809,7 +815,7 @@
                   class="badge-custom-pkg"
                   style="background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.25)"
                 >
-                  🛡️ 安全防护
+                  {{ t("settings.sec_guard_badge") || "🛡️ Security Guard" }}
                 </span>
               </div>
               <p class="setting-desc">
@@ -870,7 +876,7 @@
                   class="badge-custom-pkg"
                   style="background: rgba(245, 158, 11, 0.12); color: #d97706; border-color: rgba(245, 158, 11, 0.25)"
                 >
-                  🧪 预览阶段
+                  {{ t("settings.preview_badge") || "🧪 Preview Stage" }}
                 </span>
               </div>
               <p class="setting-desc">
@@ -963,21 +969,21 @@
             <div class="hooks-preset-recommendations">
               <span class="preset-label">{{ t("settings.hooks_recommended_label") || "Recommended:" }}</span>
               <button type="button" class="preset-chip-btn" @click="openAddHookModal('pre-commit', 'npm test')">
-                <span>⚡ pre-commit (测试与质检)</span>
+                <span>{{ t("settings.hook_preset_precommit") || "⚡ pre-commit (Lint & Test)" }}</span>
               </button>
               <button
                 type="button"
                 class="preset-chip-btn"
                 @click="openAddHookModal('commit-msg', 'npx commitlint --edit $1')"
               >
-                <span>📝 commit-msg (提交信息规范)</span>
+                <span>{{ t("settings.hook_preset_commitmsg") || "📝 commit-msg (Commit Message Format)" }}</span>
               </button>
               <button
                 type="button"
                 class="preset-chip-btn"
                 @click="openAddHookModal('pre-push', 'npm run lint && npm test')"
               >
-                <span>🛡️ pre-push (推送前全量校验)</span>
+                <span>{{ t("settings.hook_preset_prepush") || "🛡️ pre-push (Pre-push Full Verification)" }}</span>
               </button>
             </div>
           </div>
@@ -1219,15 +1225,15 @@
                   (!networkStatus.proxy.http && !networkStatus.proxy.socks5)
                 "
                 @click="handleTestProxy"
-                title="发起真实网络连接检测该代理是否可用"
+                :title="t('settings.proxy_test_tip') || 'Send real network request to check proxy connectivity'"
               >
                 <span v-if="isTestingProxy" style="display: inline-flex; align-items: center; gap: 4px">
                   <TechIcon id="workbench:sync" :size="13" class="spinning" />
-                  <span>检测中...</span>
+                  <span>{{ t("settings.proxy_testing") || "Testing..." }}</span>
                 </span>
                 <span v-else style="display: inline-flex; align-items: center; gap: 4px">
                   <TechIcon id="workbench:speed" :size="13" />
-                  <span>连通性检测</span>
+                  <span>{{ t("settings.proxy_test_btn") || "Test Connectivity" }}</span>
                 </span>
               </button>
 
@@ -1236,15 +1242,17 @@
                 class="btn-detect-proxy"
                 :disabled="isDetectingProxy"
                 @click="handleDetectProxy(true)"
-                title="自动探测宿主机运行中的代理客户端 (sing-box, Clash 等)"
+                :title="
+                  t('settings.proxy_detect_tip') || 'Auto detect running proxy clients on host (sing-box, Clash, etc.)'
+                "
               >
                 <span v-if="isDetectingProxy" style="display: inline-flex; align-items: center; gap: 4px">
                   <TechIcon id="workbench:sync" :size="13" class="spinning" />
-                  <span>探测中...</span>
+                  <span>{{ t("settings.proxy_detecting") || "Detecting..." }}</span>
                 </span>
                 <span v-else style="display: inline-flex; align-items: center; gap: 4px">
                   <TechIcon id="workbench:search" :size="13" />
-                  <span>自动探测宿主代理</span>
+                  <span>{{ t("settings.proxy_detect_btn") || "Auto-detect Host Proxy" }}</span>
                 </span>
               </button>
             </div>
@@ -1258,7 +1266,7 @@
               <button type="button" class="btn-apply-detected" @click="applyDetectedProxy">
                 <span style="display: inline-flex; align-items: center; gap: 4px">
                   <TechIcon id="workbench:speed" :size="13" />
-                  <span>一键导入</span>
+                  <span>{{ t("settings.proxy_import_btn") || "Import" }}</span>
                 </span>
               </button>
             </div>
@@ -1281,7 +1289,10 @@
                 style="display: inline-flex; align-items: center; gap: 4px"
               >
                 <TechIcon id="workbench:speed" :size="12" />
-                <span>延迟 {{ proxyTestResult.rtt_ms }}ms</span>
+                <span>{{
+                  t("settings.proxy_latency", { rtt: proxyTestResult.rtt_ms }) ||
+                  "Latency " + proxyTestResult.rtt_ms + "ms"
+                }}</span>
               </div>
             </div>
 
@@ -1292,7 +1303,9 @@
                   v-model="networkStatus.proxy.http"
                   type="text"
                   class="setting-text-input font-mono"
-                  placeholder="http://127.0.0.1:7890 (留空为不使用)"
+                  :placeholder="
+                    t('settings.proxy_http_placeholder') || 'http://127.0.0.1:7890 (leave blank to disable)'
+                  "
                   :disabled="!networkStatus.proxy.enabled"
                   @change="handleSaveProxy"
                   @blur="handleSaveProxy"
@@ -1306,7 +1319,7 @@
                   v-model="networkStatus.proxy.socks5"
                   type="text"
                   class="setting-text-input font-mono"
-                  placeholder="socks5://127.0.0.1:10808 (可选)"
+                  :placeholder="t('settings.proxy_socks5_placeholder') || 'socks5://127.0.0.1:10808 (optional)'"
                   :disabled="!networkStatus.proxy.enabled"
                   @change="handleSaveProxy"
                   @blur="handleSaveProxy"
@@ -1342,22 +1355,36 @@
               class="btn-batch-test"
               :disabled="isProbing"
               @click="handleRunProbeAll"
-              title="并发测试当前镜像源矩阵中所有生态的延迟"
+              :title="
+                t('settings.mirrors_ping_all_tip') || 'Concurrently test latency for all ecosystem mirrors in matrix'
+              "
             >
               <span v-if="isProbing" style="display: inline-flex; align-items: center; gap: 4px">
                 <TechIcon id="workbench:sync" :size="13" class="spinning" />
-                <span>测速中...</span>
+                <span>{{ t("settings.mirrors_pinging") || "Testing speed..." }}</span>
               </span>
               <span v-else style="display: inline-flex; align-items: center; gap: 4px">
                 <TechIcon id="workbench:speed" :size="13" />
-                <span>一键测速</span>
+                <span>{{ t("settings.mirrors_ping_all_btn") || "Test All Speeds" }}</span>
               </span>
             </button>
 
             <div class="profile-actions-bar">
               <div class="profile-scroll-nav" v-if="orderedProfiles.length > 3">
-                <button class="btn-scroll-arrow" @click="scrollProfiles('left')" title="向左滚动">‹</button>
-                <button class="btn-scroll-arrow" @click="scrollProfiles('right')" title="向右滚动">›</button>
+                <button
+                  class="btn-scroll-arrow"
+                  @click="scrollProfiles('left')"
+                  :title="t('settings.scroll_left') || 'Scroll left'"
+                >
+                  ‹
+                </button>
+                <button
+                  class="btn-scroll-arrow"
+                  @click="scrollProfiles('right')"
+                  :title="t('settings.scroll_right') || 'Scroll right'"
+                >
+                  ›
+                </button>
               </div>
               <button
                 class="btn-profile-action"
@@ -1431,7 +1458,10 @@
                   </span>
                   <div>
                     <h4>{{ t("network.create_profile") || "New Profile" }}</h4>
-                    <span class="modal-subtitle">将当前网络与各生态镜像配置保存为独立的 Profile 方案</span>
+                    <span class="modal-subtitle">{{
+                      t("settings.profile_modal_sub") ||
+                      "Save current network and ecosystem mirror settings as an independent Profile"
+                    }}</span>
                   </div>
                 </div>
                 <button
@@ -1445,37 +1475,42 @@
 
               <div class="modal-body">
                 <div class="modal-field">
-                  <label>档案标识 (ID) <span class="text-danger">*</span></label>
+                  <label>{{ t("settings.profile_id_label") || "Profile ID" }} <span class="text-danger">*</span></label>
                   <input
                     v-model="newProfileId"
                     type="text"
                     class="setting-text-input font-mono"
-                    placeholder="例如: company-internal 或 fast-mirror"
+                    :placeholder="t('settings.profile_id_placeholder') || 'e.g. company-internal or fast-mirror'"
                     autofocus
                   />
-                  <span class="field-hint">用于 CLI 命令行切换，仅允许英文字母、数字、短横线与下划线</span>
+                  <span class="field-hint">{{
+                    t("settings.profile_id_hint") ||
+                    "Used for CLI switching; alphanumeric characters, hyphens, and underscores only"
+                  }}</span>
                 </div>
 
                 <div class="modal-field">
-                  <label>显示名称</label>
+                  <label>{{ t("settings.profile_name_label") || "Display Name" }}</label>
                   <input
                     v-model="newProfileName"
                     type="text"
                     class="setting-text-input"
-                    placeholder="例如: 公司专线加速"
+                    :placeholder="t('settings.profile_name_placeholder') || 'e.g. Corporate Direct Line'"
                   />
                 </div>
               </div>
 
               <div class="modal-footer">
-                <button class="btn-modal-cancel" @click="showCreateProfileModal = false">取消</button>
+                <button class="btn-modal-cancel" @click="showCreateProfileModal = false">
+                  {{ t("common.cancel") || "Cancel" }}
+                </button>
                 <button
                   class="btn-modal-confirm"
                   :disabled="!newProfileId.trim() || isSavingProfile"
                   @click="handleSaveAsProfile"
                 >
-                  <span v-if="isSavingProfile">正在创建...</span>
-                  <span v-else>创建并激活</span>
+                  <span v-if="isSavingProfile">{{ t("settings.profile_creating") || "Creating..." }}</span>
+                  <span v-else>{{ t("settings.profile_create_and_activate") || "Create & Activate" }}</span>
                 </button>
               </div>
             </div>
@@ -1532,10 +1567,13 @@
                     v-model="newEcoId"
                     type="text"
                     class="setting-text-input font-mono"
-                    placeholder="例如: composer, maven, docker, nuget 等"
+                    :placeholder="t('settings.eco_name_placeholder') || 'e.g. composer, maven, docker, nuget, etc.'"
                     autofocus
                   />
-                  <span class="field-hint">小写字母、数字或短横线，如 composer、maven、docker 等</span>
+                  <span class="field-hint">{{
+                    t("settings.eco_name_hint") ||
+                    "Lowercase letters, numbers, or hyphens (e.g. composer, maven, docker)"
+                  }}</span>
                 </div>
 
                 <div class="modal-field">
@@ -1546,20 +1584,22 @@
                     v-model="newEcoUrl"
                     type="text"
                     class="setting-text-input font-mono"
-                    placeholder="例如: https://repo.packagist.org"
+                    :placeholder="t('settings.eco_url_placeholder') || 'e.g. https://repo.packagist.org'"
                   />
                 </div>
               </div>
 
               <div class="modal-footer">
-                <button class="btn-modal-cancel" @click="showAddEcoModal = false">取消</button>
+                <button class="btn-modal-cancel" @click="showAddEcoModal = false">
+                  {{ t("common.cancel") || "Cancel" }}
+                </button>
                 <button
                   class="btn-modal-confirm"
                   :disabled="!newEcoId.trim() || !newEcoUrl.trim() || isAddingEco"
                   @click="handleAddEcosystem"
                 >
-                  <span v-if="isAddingEco">正在添加...</span>
-                  <span v-else>添加并保存</span>
+                  <span v-if="isAddingEco">{{ t("settings.eco_adding") || "Adding..." }}</span>
+                  <span v-else>{{ t("settings.eco_add_and_save") || "Add & Save" }}</span>
                 </button>
               </div>
             </div>
@@ -1645,7 +1685,7 @@
                     style="display: inline-flex; align-items: center; gap: 4px"
                   >
                     <TechIcon id="workbench:warning" :size="11" />
-                    <span>超时</span>
+                    <span>{{ t("settings.ping_timeout") || "Timeout" }}</span>
                   </span>
                   <span
                     v-else-if="ecoPingStatus[eco]?.status === 'error'"
@@ -1653,11 +1693,11 @@
                     style="display: inline-flex; align-items: center; gap: 4px"
                   >
                     <TechIcon id="workbench:warning" :size="11" />
-                    <span>失败</span>
+                    <span>{{ t("settings.ping_failed") || "Failed" }}</span>
                   </span>
                   <span v-else class="ping-text ping-idle" style="display: inline-flex; align-items: center; gap: 4px">
                     <TechIcon id="workbench:speed" :size="11" />
-                    <span>测速</span>
+                    <span>{{ t("settings.ping_action") || "Ping" }}</span>
                   </span>
                 </button>
 
@@ -1937,8 +1977,9 @@
                 >
                   {{
                     hookRunResult.success
-                      ? "✓ 执行成功 (Exit Code 0)"
-                      : `✕ 执行失败 (Exit Code ${hookRunResult.exit_code})`
+                      ? t("settings.hook_run_success") || "✓ Execution Succeeded (Exit Code 0)"
+                      : t("settings.hook_run_failed", { code: hookRunResult.exit_code }) ||
+                        `✕ Execution Failed (Exit Code ${hookRunResult.exit_code})`
                   }}
                 </span>
               </div>
@@ -1957,7 +1998,7 @@
                   white-space: pre-wrap;
                 "
               >
-                {{ hookRunResult.output || "(无标准输出)" }}
+                {{ hookRunResult.output || t("settings.hook_no_stdout") || "(No standard output)" }}
               </div>
             </div>
           </div>
@@ -2132,15 +2173,21 @@ const isRunningHook = ref(false);
 const hookRunResult = ref<{ success: boolean; exit_code: number; output: string } | null>(null);
 
 const standardHookPresets = [
-  { value: "pre-commit", label: "pre-commit (提交前校验 / Lint & Test)" },
-  { value: "prepare-commit-msg", label: "prepare-commit-msg (准备提交信息模板)" },
-  { value: "commit-msg", label: "commit-msg (提交信息格式规范检查)" },
-  { value: "post-commit", label: "post-commit (提交完成后续动作)" },
-  { value: "pre-push", label: "pre-push (推送远程前全量校验)" },
-  { value: "post-checkout", label: "post-checkout (检出切换分支依赖维护)" },
-  { value: "post-merge", label: "post-merge (合并后自动拉取/安装)" },
-  { value: "pre-rebase", label: "pre-rebase (变基前安全防御)" },
-  { value: "custom", label: "自定义名称 (Custom Hook)..." },
+  { value: "pre-commit", label: t("settings.hook_opt_precommit") || "pre-commit (Lint & Test)" },
+  {
+    value: "prepare-commit-msg",
+    label: t("settings.hook_opt_preparecommitmsg") || "prepare-commit-msg (Prepare commit message template)",
+  },
+  { value: "commit-msg", label: t("settings.hook_opt_commitmsg") || "commit-msg (Commit message format check)" },
+  { value: "post-commit", label: t("settings.hook_opt_postcommit") || "post-commit (Post-commit action)" },
+  { value: "pre-push", label: t("settings.hook_opt_prepush") || "pre-push (Full verification before push)" },
+  {
+    value: "post-checkout",
+    label: t("settings.hook_opt_postcheckout") || "post-checkout (Post-checkout branch maintenance)",
+  },
+  { value: "post-merge", label: t("settings.hook_opt_postmerge") || "post-merge (Auto pull/install after merge)" },
+  { value: "pre-rebase", label: t("settings.hook_opt_prerebase") || "pre-rebase (Safety defense before rebase)" },
+  { value: "custom", label: t("settings.hook_opt_custom") || "Custom Name (Custom Hook)..." },
 ];
 
 async function fetchHooksList() {
@@ -2185,11 +2232,11 @@ function openEditHookModal(hook: HookItem) {
 async function saveHook() {
   const finalName = hookFormName.value === "custom" ? hookFormCustomName.value.trim() : hookFormName.value.trim();
   if (!finalName) {
-    showToast("请输入 Hook 名称", "warning");
+    showToast(t("settings.toast_hook_name_required") || "Hook name is required", "warning");
     return;
   }
   if (!hookFormCommand.value.trim()) {
-    showToast("请输入执行命令", "warning");
+    showToast(t("settings.toast_hook_cmd_required") || "Execution command is required", "warning");
     return;
   }
 
@@ -2206,37 +2253,46 @@ async function saveHook() {
       }),
     });
     if (res.ok) {
-      showToast(isEditingHook.value ? "Hook 更新成功" : "Hook 创建成功", "success");
+      showToast(
+        isEditingHook.value
+          ? t("settings.toast_hook_updated") || "Hook updated successfully"
+          : t("settings.toast_hook_created") || "Hook created successfully",
+        "success"
+      );
       showHookModal.value = false;
       await fetchHooksList();
       await loadConfigData();
     } else {
       const data = await res.json();
-      showToast(`保存失败: ${data.error || "未知错误"}`, "error");
+      showToast(
+        t("settings.status_save_failed", { error: data.error || "Unknown error" }) ||
+          `Save failed: ${data.error || "Unknown error"}`,
+        "error"
+      );
     }
   } catch (err: any) {
-    showToast(`保存失败: ${err.message}`, "error");
+    showToast(t("settings.status_save_failed", { error: err.message }) || `Save failed: ${err.message}`, "error");
   } finally {
     isSavingHook.value = false;
   }
 }
 
 async function deleteHook(name: string) {
-  if (!confirm(`确定要移除钩子 ${name} 吗？`)) return;
+  if (!confirm(t("settings.confirm_remove_hook", { name }) || `Are you sure you want to remove hook ${name}?`)) return;
   try {
     const res = await fetch(`/api/hooks?name=${encodeURIComponent(name)}&scope=${activeScope.value}`, {
       method: "DELETE",
     });
     if (res.ok) {
-      showToast(`已移除 ${name}`, "success");
+      showToast(t("settings.toast_removed_name", { name }) || `Removed ${name}`, "success");
       await fetchHooksList();
       await loadConfigData();
     } else {
       const data = await res.json();
-      showToast(`删除失败: ${data.error}`, "error");
+      showToast(t("settings.toast_delete_failed", { error: data.error }) || `Failed to delete: ${data.error}`, "error");
     }
   } catch (err: any) {
-    showToast(`删除失败: ${err.message}`, "error");
+    showToast(t("settings.toast_delete_failed", { error: err.message }) || `Failed to delete: ${err.message}`, "error");
   }
 }
 
@@ -2250,13 +2306,23 @@ async function installAllGitBridges() {
     });
     const data = await res.json();
     if (res.ok) {
-      showToast(`✨ Git 桥接注入成功: ${data.installed?.join(", ") || "已生效"}`, "success");
+      showToast(
+        t("settings.toast_git_bridge_success", { targets: data.installed?.join(", ") || "Active" }) ||
+          `✨ Git bridge injected successfully: ${data.installed?.join(", ") || "Active"}`,
+        "success"
+      );
       await fetchHooksList();
     } else {
-      showToast(`注入失败: ${data.error}`, "error");
+      showToast(
+        t("settings.toast_bridge_inject_fail", { error: data.error }) || `Failed to inject bridge: ${data.error}`,
+        "error"
+      );
     }
   } catch (err: any) {
-    showToast(`注入失败: ${err.message}`, "error");
+    showToast(
+      t("settings.toast_bridge_inject_fail", { error: err.message }) || `Failed to inject bridge: ${err.message}`,
+      "error"
+    );
   } finally {
     isInstallingBridges.value = false;
   }
@@ -2279,7 +2345,7 @@ async function runHookTest(name: string) {
     hookRunResult.value = {
       success: false,
       exit_code: 1,
-      output: `执行失败: ${err.message}`,
+      output: t("settings.hook_run_failed", { code: err.message }) || `Execution failed: ${err.message}`,
     };
   } finally {
     isRunningHook.value = false;
@@ -2289,7 +2355,7 @@ async function runHookTest(name: string) {
 function copyCommand(cmd: string) {
   if (navigator?.clipboard?.writeText) {
     navigator.clipboard.writeText(cmd);
-    showToast("已复制命令到剪贴板", "success");
+    showToast(t("settings.toast_cmd_copied") || "Command copied to clipboard", "success");
   }
 }
 
@@ -2313,7 +2379,7 @@ const standardToolPresets = [
   { value: "deno", label: "Deno (deno)" },
   { value: "java", label: "Java (java)" },
   { value: "pnpm", label: "pnpm (pnpm)" },
-  { value: "custom", label: "自定义工具 (Custom Tool)..." },
+  { value: "custom", label: t("settings.aliases_opt_custom") || "Custom Tool..." },
 ];
 
 const toolNamesWithAliases = computed(() => {
@@ -2422,9 +2488,10 @@ async function saveAlias() {
 
 async function deleteAlias(tool: string, alias: string) {
   const confirmed = confirm(
-    (t("settings.aliases_delete_confirm") || `确定要删除工具 {tool} 的别名 {alias} 吗？`)
-      .replace("{tool}", tool)
-      .replace("{alias}", alias)
+    t("settings.aliases_delete_confirm", { tool, alias }) ||
+      `Are you sure you want to delete alias ${alias} for tool ${tool}?`
+        .replace("{tool}", tool)
+        .replace("{alias}", alias)
   );
   if (!confirmed) return;
 
@@ -2604,123 +2671,123 @@ const commonEcoTemplates = [
 
 const recommendedMirrors = ref<Record<string, Array<{ name: string; url: string }>>>({
   npm: [
-    { name: "官方直连 (npmjs.org)", url: "https://registry.npmjs.org" },
-    { name: "npmmirror (淘宝/阿里云)", url: "https://registry.npmmirror.com" },
-    { name: "腾讯云镜像", url: "https://mirrors.cloud.tencent.com/npm/" },
-    { name: "华为云镜像", url: "https://repo.huaweicloud.com/repository/npm/" },
+    { name: "Official Direct (npmjs.org)", url: "https://registry.npmjs.org" },
+    { name: "npmmirror (Taobao/Aliyun)", url: "https://registry.npmmirror.com" },
+    { name: "Tencent Cloud", url: "https://mirrors.cloud.tencent.com/npm/" },
+    { name: "Huawei Cloud", url: "https://repo.huaweicloud.com/repository/npm/" },
   ],
   go: [
-    { name: "官方直连 (Google)", url: "https://proxy.golang.org,direct" },
-    { name: "goproxy.cn (七牛云/社区)", url: "https://goproxy.cn,direct" },
-    { name: "阿里云 GoProxy", url: "https://mirrors.aliyun.com/goproxy/,direct" },
+    { name: "Official Direct (Google)", url: "https://proxy.golang.org,direct" },
+    { name: "goproxy.cn (Qiniu/Community)", url: "https://goproxy.cn,direct" },
+    { name: "Alibaba Cloud GoProxy", url: "https://mirrors.aliyun.com/goproxy/,direct" },
     { name: "goproxy.io", url: "https://goproxy.io,direct" },
   ],
   python: [
-    { name: "官方直连 (PyPI)", url: "https://pypi.org/simple" },
-    { name: "清华大学 TUNA", url: "https://pypi.tuna.tsinghua.edu.cn/simple" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/pypi/simple" },
-    { name: "阿里云 PyPI", url: "https://mirrors.aliyun.com/pypi/simple/" },
-    { name: "腾讯云 PyPI", url: "https://mirrors.cloud.tencent.com/pypi/simple/" },
-    { name: "华为云 PyPI", url: "https://repo.huaweicloud.com/repository/pypi/simple/" },
+    { name: "Official Direct (PyPI)", url: "https://pypi.org/simple" },
+    { name: "Tsinghua University (TUNA)", url: "https://pypi.tuna.tsinghua.edu.cn/simple" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/pypi/simple" },
+    { name: "Alibaba Cloud PyPI", url: "https://mirrors.aliyun.com/pypi/simple/" },
+    { name: "Tencent Cloud PyPI", url: "https://mirrors.cloud.tencent.com/pypi/simple/" },
+    { name: "Huawei Cloud PyPI", url: "https://repo.huaweicloud.com/repository/pypi/simple/" },
   ],
   rust: [
-    { name: "官方直连 (crates.io)", url: "https://crates.io" },
-    { name: "rsproxy.cn (字节跳动/社区)", url: "https://rsproxy.cn/crates.io-index" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/crates.io-index" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git" },
+    { name: "Official Direct (crates.io)", url: "https://crates.io" },
+    { name: "rsproxy.cn (ByteDance/Community)", url: "https://rsproxy.cn/crates.io-index" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/crates.io-index" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git" },
   ],
   ruby: [
-    { name: "官方直连 (RubyGems)", url: "https://rubygems.org" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/rubygems/" },
-    { name: "腾讯云 RubyGems", url: "https://mirrors.cloud.tencent.com/rubygems/" },
+    { name: "Official Direct (RubyGems)", url: "https://rubygems.org" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/rubygems/" },
+    { name: "Tencent Cloud RubyGems", url: "https://mirrors.cloud.tencent.com/rubygems/" },
   ],
   composer: [
-    { name: "官方直连 (Packagist)", url: "https://repo.packagist.org" },
-    { name: "阿里云 Composer", url: "https://mirrors.aliyun.com/composer/" },
-    { name: "腾讯云 Composer", url: "https://mirrors.cloud.tencent.com/composer/" },
-    { name: "华为云 Composer", url: "https://repo.huaweicloud.com/repository/php/" },
+    { name: "Official Direct (Packagist)", url: "https://repo.packagist.org" },
+    { name: "Alibaba Cloud Composer", url: "https://mirrors.aliyun.com/composer/" },
+    { name: "Tencent Cloud Composer", url: "https://mirrors.cloud.tencent.com/composer/" },
+    { name: "Huawei Cloud Composer", url: "https://repo.huaweicloud.com/repository/php/" },
   ],
   maven: [
-    { name: "官方直连 (Maven Central)", url: "https://repo1.maven.org/maven2" },
-    { name: "阿里云 Maven", url: "https://maven.aliyun.com/repository/public" },
-    { name: "华为云 Maven", url: "https://repo.huaweicloud.com/repository/maven/" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/maven/" },
+    { name: "Official Direct (Maven Central)", url: "https://repo1.maven.org/maven2" },
+    { name: "Alibaba Cloud Maven", url: "https://maven.aliyun.com/repository/public" },
+    { name: "Huawei Cloud Maven", url: "https://repo.huaweicloud.com/repository/maven/" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/maven/" },
   ],
   nuget: [
-    { name: "官方直连 (NuGet.org)", url: "https://api.nuget.org/v3/index.json" },
-    { name: "华为云 NuGet", url: "https://repo.huaweicloud.com/repository/nuget/v3/index.json" },
-    { name: "腾讯云 NuGet", url: "https://mirrors.cloud.tencent.com/nuget/" },
+    { name: "Official Direct (NuGet.org)", url: "https://api.nuget.org/v3/index.json" },
+    { name: "Huawei Cloud NuGet", url: "https://repo.huaweicloud.com/repository/nuget/v3/index.json" },
+    { name: "Tencent Cloud NuGet", url: "https://mirrors.cloud.tencent.com/nuget/" },
   ],
   docker: [
-    { name: "官方直连 (Docker Hub)", url: "https://registry-1.docker.io" },
-    { name: "阿里云 Docker 镜像", url: "https://registry.cn-hangzhou.aliyuncs.com" },
-    { name: "网易 Docker 镜像", url: "https://hub-mirror.c.163.com" },
-    { name: "百度 Docker 镜像", url: "https://mirror.baidubce.com" },
+    { name: "Official Direct (Docker Hub)", url: "https://registry-1.docker.io" },
+    { name: "Alibaba Cloud Docker Mirror", url: "https://registry.cn-hangzhou.aliyuncs.com" },
+    { name: "NetEase Docker Mirror", url: "https://hub-mirror.c.163.com" },
+    { name: "Baidu Docker Mirror", url: "https://mirror.baidubce.com" },
   ],
   dart: [
-    { name: "官方直连 (pub.dev)", url: "https://pub.dev" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub" },
-    { name: "上海交通大学 SJTUG", url: "https://mirrors.sjtug.sjtu.edu.cn/dart-pub" },
+    { name: "Official Direct (pub.dev)", url: "https://pub.dev" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub" },
+    { name: "SJTUG", url: "https://mirrors.sjtug.sjtu.edu.cn/dart-pub" },
   ],
   cocoapods: [
-    { name: "官方直连 (CocoaPods CDN)", url: "https://cdn.cocoapods.org" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/git/CocoaPods/Specs.git" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/CocoaPods-Specs.git" },
+    { name: "Official Direct (CocoaPods CDN)", url: "https://cdn.cocoapods.org" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/git/CocoaPods/Specs.git" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/CocoaPods-Specs.git" },
   ],
   conda: [
-    { name: "官方直连 (Anaconda)", url: "https://repo.anaconda.com/pkgs/main" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main" },
-    { name: "北京外国语大学 BFSU", url: "https://mirrors.bfsu.edu.cn/anaconda/pkgs/main" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/anaconda/pkgs/main" },
+    { name: "Official Direct (Anaconda)", url: "https://repo.anaconda.com/pkgs/main" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main" },
+    { name: "BFSU", url: "https://mirrors.bfsu.edu.cn/anaconda/pkgs/main" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/anaconda/pkgs/main" },
   ],
   homebrew: [
-    { name: "官方直连 (Homebrew Bottles)", url: "https://ghcr.io/v2/homebrew/core" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/homebrew-bottles" },
-    { name: "阿里云 Homebrew", url: "https://mirrors.aliyun.com/homebrew/homebrew-bottles" },
+    { name: "Official Direct (Homebrew Bottles)", url: "https://ghcr.io/v2/homebrew/core" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/homebrew-bottles" },
+    { name: "Alibaba Cloud Homebrew", url: "https://mirrors.aliyun.com/homebrew/homebrew-bottles" },
   ],
   cran: [
-    { name: "官方直连 (CRAN)", url: "https://cran.r-project.org" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/CRAN/" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/CRAN/" },
-    { name: "南方科技大学 SUSTech", url: "https://mirrors.sustech.edu.cn/CRAN/" },
-    { name: "阿里云 CRAN", url: "https://mirrors.aliyun.com/CRAN/" },
+    { name: "Official Direct (CRAN)", url: "https://cran.r-project.org" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/CRAN/" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/CRAN/" },
+    { name: "SUSTech", url: "https://mirrors.sustech.edu.cn/CRAN/" },
+    { name: "Alibaba Cloud CRAN", url: "https://mirrors.aliyun.com/CRAN/" },
   ],
   julia: [
-    { name: "官方直连 (Julia Pkg)", url: "https://pkg.julialang.org" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/julia" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/julia" },
-    { name: "北京外国语大学 BFSU", url: "https://mirrors.bfsu.edu.cn/julia" },
+    { name: "Official Direct (Julia Pkg)", url: "https://pkg.julialang.org" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/julia" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/julia" },
+    { name: "BFSU", url: "https://mirrors.bfsu.edu.cn/julia" },
   ],
   cpan: [
-    { name: "官方直连 (CPAN)", url: "https://www.cpan.org" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/CPAN/" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/CPAN/" },
-    { name: "阿里云 CPAN", url: "https://mirrors.aliyun.com/CPAN/" },
+    { name: "Official Direct (CPAN)", url: "https://www.cpan.org" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/CPAN/" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/CPAN/" },
+    { name: "Alibaba Cloud CPAN", url: "https://mirrors.aliyun.com/CPAN/" },
   ],
   hackage: [
-    { name: "官方直连 (Hackage)", url: "https://hackage.haskell.org" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/hackage" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/hackage" },
+    { name: "Official Direct (Hackage)", url: "https://hackage.haskell.org" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/hackage" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/hackage" },
   ],
   clojars: [
-    { name: "官方直连 (Clojars)", url: "https://repo.clojars.org" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/clojars" },
+    { name: "Official Direct (Clojars)", url: "https://repo.clojars.org" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/clojars" },
   ],
   ctan: [
-    { name: "官方直连 (CTAN)", url: "https://mirror.ctan.org/" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/CTAN/" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/CTAN/" },
+    { name: "Official Direct (CTAN)", url: "https://mirror.ctan.org/" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/CTAN/" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/CTAN/" },
   ],
   elpa: [
-    { name: "官方直连 (GNU ELPA)", url: "https://elpa.gnu.org/packages/" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/elpa/" },
-    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/elpa/" },
+    { name: "Official Direct (GNU ELPA)", url: "https://elpa.gnu.org/packages/" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/elpa/" },
+    { name: "Tsinghua University (TUNA)", url: "https://mirrors.tuna.tsinghua.edu.cn/elpa/" },
   ],
   stackage: [
-    { name: "官方直连 (Stackage)", url: "https://www.stackage.org" },
-    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/stackage" },
+    { name: "Official Direct (Stackage)", url: "https://www.stackage.org" },
+    { name: "USTC", url: "https://mirrors.ustc.edu.cn/stackage" },
   ],
 });
 
@@ -2728,8 +2795,10 @@ const networkStatus = ref<any>({
   active_profile_id: "official",
   active_profile: {
     id: "official",
-    name: "官方直连",
-    description: "全量使用官方源与官方二进制 CDN，不经任何代理或第三方镜像",
+    name: t("settings.profile_official_name") || "Official Direct",
+    description:
+      t("settings.profile_official_desc") ||
+      "Full official sources and official binary CDNs without proxies or third-party mirrors",
     builtin: true,
   },
   proxy: {
@@ -2763,14 +2832,18 @@ const networkStatus = ref<any>({
   profiles: {
     official: {
       id: "official",
-      name: "官方直连",
-      description: "全量使用官方源与官方二进制 CDN，不经任何代理或第三方镜像",
+      name: t("settings.profile_official_name") || "Official Direct",
+      description:
+        t("settings.profile_official_desc") ||
+        "Full official sources and official binary CDNs without proxies or third-party mirrors",
       builtin: true,
     },
     cn: {
       id: "cn",
-      name: "中国镜像加速",
-      description: "中国顶级高校与大厂公共镜像加速矩阵，保障编译前依赖极速拉取",
+      name: t("settings.profile_china_name") || "China Mirror Acceleration",
+      description:
+        t("settings.profile_china_desc") ||
+        "Public mirror matrix from top Chinese universities and cloud providers for rapid pre-build dependency downloads",
       builtin: true,
     },
   },
@@ -2931,7 +3004,7 @@ async function handleAddEcosystem() {
   isAddingEco.value = true;
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在添加生态...";
+  saveStatusText.value = t("settings.eco_adding") || "Adding...";
   try {
     const res = await fetch("/api/network/registry/add", {
       method: "POST",
@@ -2943,10 +3016,10 @@ async function handleAddEcosystem() {
       newEcoId.value = "";
       newEcoUrl.value = "";
       saveStatusType.value = "success";
-      saveStatusText.value = "已自动保存";
+      saveStatusText.value = t("settings.status_auto_saved") || "Auto saved";
       await loadNetworkStatus();
       await loadConfigData();
-      showToast(`已添加生态镜像源: ${eco}`, "success");
+      showToast(t("settings.toast_added_eco", { eco }) || `Added ecosystem mirror: ${eco}`, "success");
       setTimeout(() => {
         saveStatusType.value = "idle";
         saveStatusText.value = "";
@@ -2954,12 +3027,15 @@ async function handleAddEcosystem() {
     } else {
       const err = await res.json().catch(() => ({}));
       saveStatusType.value = "error";
-      saveStatusText.value = `添加失败: ${err.error || "未知错误"}`;
+      saveStatusText.value =
+        t("settings.status_save_failed", { error: err.error || "Unknown error" }) ||
+        `Failed to add: ${err.error || "Unknown error"}`;
     }
   } catch (err: any) {
     console.error(err);
     saveStatusType.value = "error";
-    saveStatusText.value = `网络错误: ${err.message}`;
+    saveStatusText.value =
+      t("settings.status_network_error", { error: err.message }) || `Network error: ${err.message}`;
   } finally {
     isAddingEco.value = false;
     isSaving.value = false;
@@ -2969,7 +3045,7 @@ async function handleAddEcosystem() {
 async function handleDeleteEcosystem(eco: string) {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在移除生态...";
+  saveStatusText.value = t("settings.status_removing_eco") || "Removing ecosystem...";
   try {
     const res = await fetch("/api/network/registry/delete", {
       method: "POST",
@@ -2978,10 +3054,10 @@ async function handleDeleteEcosystem(eco: string) {
     });
     if (res.ok) {
       saveStatusType.value = "success";
-      saveStatusText.value = "已移除生态";
+      saveStatusText.value = t("settings.status_removed_eco") || "Ecosystem removed";
       await loadNetworkStatus();
       await loadConfigData();
-      showToast(`已从矩阵中移除生态: ${eco}`, "success");
+      showToast(t("settings.toast_removed_eco", { eco }) || `Removed ecosystem from matrix: ${eco}`, "success");
       setTimeout(() => {
         saveStatusType.value = "idle";
         saveStatusText.value = "";
@@ -2989,12 +3065,15 @@ async function handleDeleteEcosystem(eco: string) {
     } else {
       const err = await res.json().catch(() => ({}));
       saveStatusType.value = "error";
-      saveStatusText.value = `移除失败: ${err.error || "未知错误"}`;
+      saveStatusText.value =
+        t("settings.status_save_failed", { error: err.error || "Unknown error" }) ||
+        `Save failed: ${err.error || "Unknown error"}`;
     }
   } catch (err: any) {
     console.error(err);
     saveStatusType.value = "error";
-    saveStatusText.value = `网络错误: ${err.message}`;
+    saveStatusText.value =
+      t("settings.status_network_error", { error: err.message }) || `Network error: ${err.message}`;
   } finally {
     isSaving.value = false;
   }
@@ -3017,20 +3096,20 @@ function cleanThemeLabel(rawName: string): string {
   if (/^seti/i.test(name)) {
     return "Seti UI";
   }
-  // 移除任何括号及其内容，如 (v13.0.0), (VS Code Default), (默认), [v1.0] 等
+  // Remove any parentheses and their contents, e.g. (v13.0.0), (VS Code Default), (default), [v1.0]
   name = name.replace(/\s*[\(\[\（\【][^\)\]\）\】]*[\)\]\）\】]\s*/g, " ");
-  // 移除裸版本号标识，如 v13.0.0, 1.2.3 等
+  // Remove bare version strings, e.g. v13.0.0, 1.2.3
   name = name.replace(/\b[vV]?\d+(\.\d+)+(-[a-zA-Z0-9.]+)?\b/g, "");
-  // 规范化空格
+  // Normalize whitespace
   name = name.trim().replace(/\s+/g, " ");
   return name || rawName;
 }
 
 const colorThemeOptions = computed(() => {
   const options: Array<{ value: string; label: string }> = [
-    { value: "default", label: "UniRTM 默认自适应" },
-    { value: "light", label: "UniRTM 官方浅色" },
-    { value: "dark", label: "UniRTM 官方深色" },
+    { value: "default", label: t("settings.appearance_unirtm_default") || "UniRTM Default Adaptive" },
+    { value: "light", label: t("settings.appearance_unirtm_light") || "UniRTM Official Light" },
+    { value: "dark", label: t("settings.appearance_unirtm_dark") || "UniRTM Official Dark" },
   ];
 
   for (const item of colorThemes.value) {
@@ -3173,12 +3252,8 @@ function isCategoryVisible(catId: string) {
       q.includes("theme") ||
       q.includes("cache") ||
       q.includes("browser") ||
-      q.includes("常规") ||
-      q.includes("常用") ||
-      q.includes("语言") ||
-      q.includes("主题") ||
-      q.includes("浏览器") ||
-      q.includes("缓存") ||
+      q.includes("general") ||
+      q.includes("common") ||
       q.includes("job") ||
       q.includes("concur") ||
       q.includes("task") ||
@@ -3186,10 +3261,9 @@ function isCategoryVisible(catId: string) {
       q.includes("auto") ||
       q.includes("exper") ||
       q.includes("age") ||
-      q.includes("并发") ||
-      q.includes("任务") ||
-      q.includes("超时") ||
-      q.includes("实验"))
+      q.includes(t("settings.tab_general").toLowerCase()) ||
+      q.includes(t("settings.language").toLowerCase()) ||
+      q.includes(t("settings.theme").toLowerCase()))
   )
     return true;
   if (
@@ -3198,9 +3272,7 @@ function isCategoryVisible(catId: string) {
       q.includes("key") ||
       q.includes("bind") ||
       q.includes("hotkey") ||
-      q.includes("快捷") ||
-      q.includes("按键") ||
-      q.includes("键盘") ||
+      q.includes(t("settings.cat_shortcuts").toLowerCase()) ||
       q.includes("ctrl") ||
       q.includes("cmd") ||
       q.includes("alt") ||
@@ -3213,12 +3285,7 @@ function isCategoryVisible(catId: string) {
       q.includes("git") ||
       q.includes("commit") ||
       q.includes("push") ||
-      q.includes("钩子") ||
-      q.includes("生命周期") ||
-      q.includes("自动化") ||
-      q.includes("脚本") ||
-      q.includes("提交") ||
-      q.includes("推送"))
+      q.includes(t("settings.cat_hooks").toLowerCase()))
   )
     return true;
   if (
@@ -3227,19 +3294,20 @@ function isCategoryVisible(catId: string) {
       q.includes("github") ||
       q.includes("mirror") ||
       q.includes("net") ||
-      q.includes("网络") ||
-      q.includes("代理") ||
-      q.includes("镜像"))
+      q.includes(t("settings.cat_network").toLowerCase()))
   )
     return true;
   if (
     catId === "plugins" &&
-    (q.includes("plugin") || q.includes("ext") || q.includes("docker") || q.includes("插件") || q.includes("扩展"))
+    (q.includes("plugin") ||
+      q.includes("ext") ||
+      q.includes("docker") ||
+      q.includes(t("settings.cat_plugins").toLowerCase()))
   )
     return true;
   if (
     catId === "aliases" &&
-    (q.includes("alias") || q.includes("version") || q.includes("别名") || q.includes("映射") || q.includes("版本"))
+    (q.includes("alias") || q.includes("version") || q.includes(t("settings.cat_aliases").toLowerCase()))
   )
     return true;
   if (
@@ -3249,10 +3317,7 @@ function isCategoryVisible(catId: string) {
       q.includes("ast") ||
       q.includes("namespace") ||
       q.includes("safe") ||
-      q.includes("安全") ||
-      q.includes("锁") ||
-      q.includes("命名空间") ||
-      q.includes("保留"))
+      q.includes(t("settings.cat_security").toLowerCase()))
   )
     return true;
   return false;
@@ -3458,7 +3523,7 @@ async function loadSystemStatus() {
 async function saveSetting(key: string, value: any) {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "保存中...";
+  saveStatusText.value = t("settings.status_saving") || "Saving...";
 
   try {
     const res = await fetch("/api/config", {
@@ -3475,7 +3540,7 @@ async function saveSetting(key: string, value: any) {
     if (res.ok) {
       isSaving.value = false;
       saveStatusType.value = "success";
-      saveStatusText.value = "已自动保存";
+      saveStatusText.value = t("settings.status_auto_saved") || "Auto saved";
       await loadConfigData();
       setTimeout(() => {
         saveStatusType.value = "idle";
@@ -3484,12 +3549,15 @@ async function saveSetting(key: string, value: any) {
     } else {
       isSaving.value = false;
       saveStatusType.value = "error";
-      saveStatusText.value = `保存失败: ${data.error || "未知错误"}`;
+      saveStatusText.value =
+        t("settings.status_save_failed", { error: data.error || "Unknown error" }) ||
+        `Save failed: ${data.error || "Unknown error"}`;
     }
   } catch (err: any) {
     isSaving.value = false;
     saveStatusType.value = "error";
-    saveStatusText.value = `网络错误: ${err.message}`;
+    saveStatusText.value =
+      t("settings.status_network_error", { error: err.message }) || `Network error: ${err.message}`;
   }
 }
 
@@ -3524,12 +3592,23 @@ async function onVsixFileSelected(e: Event) {
     const productItems = installed.filter((i) => i.type === "product");
 
     const parts: string[] = [];
-    if (colorItems.length > 0) parts.push(`${colorItems.length} 个颜色主题`);
-    if (iconItems.length > 0) parts.push(`${iconItems.length} 个文件图标`);
-    if (productItems.length > 0) parts.push(`${productItems.length} 个界面图标`);
+    if (colorItems.length > 0)
+      parts.push(
+        t("settings.theme_import_colors", { count: colorItems.length }) || `${colorItems.length} color theme(s)`
+      );
+    if (iconItems.length > 0)
+      parts.push(t("settings.theme_import_icons", { count: iconItems.length }) || `${iconItems.length} file icon(s)`);
+    if (productItems.length > 0)
+      parts.push(
+        t("settings.theme_import_products", { count: productItems.length }) || `${productItems.length} product icon(s)`
+      );
 
-    const typeSummary = parts.length > 0 ? parts.join("，") : `${installed.length} 项`;
-    themeInstallMsg.value = `✓ 成功导入 ${typeSummary}！`;
+    const typeSummary =
+      parts.length > 0
+        ? parts.join(", ")
+        : t("settings.theme_import_items", { count: installed.length }) || `${installed.length} items`;
+    themeInstallMsg.value =
+      t("settings.theme_import_success", { summary: typeSummary }) || `✓ Successfully imported ${typeSummary}!`;
 
     if (installed.length > 0) {
       const first = installed[0];
@@ -3543,11 +3622,19 @@ async function onVsixFileSelected(e: Event) {
     }
     await fetchThemes();
     await loadConfigData();
-    showToast(`成功导入 VS Code 扩展包，识别到: ${typeSummary}`, "success");
+    showToast(
+      t("settings.toast_theme_imported", { summary: typeSummary }) ||
+        `Successfully imported VS Code extension package, identified: ${typeSummary}`,
+      "success"
+    );
   } catch (err: any) {
     themeInstallError.value = true;
-    themeInstallMsg.value = `✕ 安装失败: ${err.message || err}`;
-    showToast(`导入失败: ${err.message || err}`, "error");
+    themeInstallMsg.value =
+      t("settings.theme_install_failed", { error: err.message || err }) || `✕ Failed to install: ${err.message || err}`;
+    showToast(
+      t("settings.toast_import_failed", { error: err.message || err }) || `Failed to import: ${err.message || err}`,
+      "error"
+    );
   } finally {
     isInstallingTheme.value = false;
     target.value = "";
@@ -3557,14 +3644,18 @@ async function onVsixFileSelected(e: Event) {
 async function onAppearanceChange(mode: "system" | "light" | "dark") {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在切换外观...";
+  saveStatusText.value = t("settings.status_changing_appearance") || "Changing appearance...";
   try {
     await setActiveTheme(undefined, undefined, mode);
     saveStatusType.value = "success";
-    saveStatusText.value = "已自动保存";
+    saveStatusText.value = t("settings.status_auto_saved") || "Auto saved";
     await loadConfigData();
     showToast(
-      mode === "system" ? "已设置为跟随系统外观" : mode === "light" ? "已切换为浅色模式" : "已切换为深色模式",
+      mode === "system"
+        ? t("settings.appearance_follow_system") || "Set to follow system appearance"
+        : mode === "light"
+          ? t("settings.appearance_switched_light") || "Switched to light mode"
+          : t("settings.appearance_switched_dark") || "Switched to dark mode",
       "info"
     );
     setTimeout(() => {
@@ -3573,7 +3664,8 @@ async function onAppearanceChange(mode: "system" | "light" | "dark") {
     }, 2000);
   } catch (err: any) {
     saveStatusType.value = "error";
-    saveStatusText.value = `外观设置失败: ${err.message || err}`;
+    saveStatusText.value =
+      t("settings.status_save_failed", { error: err.message || err }) || `Save failed: ${err.message || err}`;
   } finally {
     isSaving.value = false;
   }
@@ -3582,23 +3674,27 @@ async function onAppearanceChange(mode: "system" | "light" | "dark") {
 async function onColorThemeChange(val: string) {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在应用主题...";
+  saveStatusText.value = t("settings.status_applying_theme") || "Applying theme...";
   try {
     await setActiveTheme(val, undefined, undefined);
     appTheme.value = val;
     const themeObj = colorThemes.value.find((c) => c.id === val);
     const themeName = cleanThemeLabel(themeObj ? themeObj.name : val);
     saveStatusType.value = "success";
-    saveStatusText.value = "已自动保存";
+    saveStatusText.value = t("settings.status_auto_saved") || "Auto saved";
     await loadConfigData();
-    showToast(`已应用配色主题: ${themeName}`, "success");
+    showToast(
+      t("settings.toast_applied_color_theme", { name: themeName }) || `Applied color theme: ${themeName}`,
+      "success"
+    );
     setTimeout(() => {
       saveStatusType.value = "idle";
       saveStatusText.value = "";
     }, 2000);
   } catch (err: any) {
     saveStatusType.value = "error";
-    saveStatusText.value = `应用主题失败: ${err.message || err}`;
+    saveStatusText.value =
+      t("settings.status_save_failed", { error: err.message || err }) || `Save failed: ${err.message || err}`;
   } finally {
     isSaving.value = false;
   }
@@ -3607,22 +3703,26 @@ async function onColorThemeChange(val: string) {
 async function onIconThemeChange(val: string) {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在应用文件图标主题...";
+  saveStatusText.value = t("settings.status_applying_file_icons") || "Applying file icons...";
   try {
     await setActiveTheme(undefined, val, undefined);
     const iconObj = iconThemes.value.find((i) => i.id === val);
     const iconName = cleanThemeLabel(iconObj ? iconObj.name : val);
     saveStatusType.value = "success";
-    saveStatusText.value = "已自动保存";
+    saveStatusText.value = t("settings.status_auto_saved") || "Auto saved";
     await loadConfigData();
-    showToast(`已应用文件图标主题: ${iconName}`, "success");
+    showToast(
+      t("settings.toast_applied_icon_theme", { name: iconName }) || `Applied file icon theme: ${iconName}`,
+      "success"
+    );
     setTimeout(() => {
       saveStatusType.value = "idle";
       saveStatusText.value = "";
     }, 2000);
   } catch (err: any) {
     saveStatusType.value = "error";
-    saveStatusText.value = `应用文件图标失败: ${err.message || err}`;
+    saveStatusText.value =
+      t("settings.status_save_failed", { error: err.message || err }) || `Save failed: ${err.message || err}`;
   } finally {
     isSaving.value = false;
   }
@@ -3631,22 +3731,26 @@ async function onIconThemeChange(val: string) {
 async function onProductIconThemeChange(val: string) {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在应用界面图标主题...";
+  saveStatusText.value = t("settings.status_applying_product_icons") || "Applying product icons...";
   try {
     await setActiveTheme(undefined, undefined, undefined, val);
     const prodObj = productIconThemes.value.find((p) => p.id === val);
     const prodName = cleanThemeLabel(prodObj ? prodObj.name : val);
     saveStatusType.value = "success";
-    saveStatusText.value = "已自动保存";
+    saveStatusText.value = t("settings.status_auto_saved") || "Auto saved";
     await loadConfigData();
-    showToast(`已应用界面图标主题: ${prodName}`, "success");
+    showToast(
+      t("settings.toast_applied_product_theme", { name: prodName }) || `Applied product icon theme: ${prodName}`,
+      "success"
+    );
     setTimeout(() => {
       saveStatusType.value = "idle";
       saveStatusText.value = "";
     }, 2000);
   } catch (err: any) {
     saveStatusType.value = "error";
-    saveStatusText.value = `应用界面图标失败: ${err.message || err}`;
+    saveStatusText.value =
+      t("settings.status_save_failed", { error: err.message || err }) || `Save failed: ${err.message || err}`;
   } finally {
     isSaving.value = false;
   }
@@ -3764,7 +3868,7 @@ async function handleSaveToml() {
       showToast(data.error || t("settings.save_toml_failed") || "Failed to save configuration file", "error");
     }
   } catch (err: any) {
-    showToast(`保存失败: ${err.message}`, "error");
+    showToast(t("settings.status_save_failed", { error: err.message }) || `Save failed: ${err.message}`, "error");
   } finally {
     isTomlSaving.value = false;
   }
@@ -3811,7 +3915,7 @@ function handleOpenInExplorer(fileName: string) {
       },
     })
     .catch(() => {});
-  showToast(`已在代码编辑器中打开 ${fileName}`, "info");
+  showToast(t("settings.toast_opened_in_editor", { fileName }) || `Opened ${fileName} in code editor`, "info");
 }
 
 function copyRawToml() {
@@ -3842,7 +3946,7 @@ async function loadNetworkStatus() {
 async function handleUseProfile(id: string) {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在切换档案...";
+  saveStatusText.value = t("settings.status_switching_profile") || "Switching profile...";
   try {
     const res = await fetch("/api/network/profile/use", {
       method: "POST",
@@ -3852,22 +3956,29 @@ async function handleUseProfile(id: string) {
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
       saveStatusType.value = "success";
-      saveStatusText.value = "已应用档案";
+      saveStatusText.value = t("settings.status_applied_profile") || "Profile applied";
       await loadNetworkStatus();
       await loadConfigData();
-      showToast(`已切换网络档案为: ${id}`, "success");
+      showToast(t("settings.toast_switched_profile", { id }) || `Switched network profile to: ${id}`, "success");
       setTimeout(() => {
         saveStatusType.value = "idle";
         saveStatusText.value = "";
       }, 2000);
     } else {
       saveStatusType.value = "error";
-      saveStatusText.value = `切换档案失败: ${data.error || "未知错误"}`;
-      showToast(`切换档案失败: ${data.error || "未知错误"}`, "error");
+      saveStatusText.value =
+        t("settings.status_save_failed", { error: data.error || "Unknown error" }) ||
+        `Save failed: ${data.error || "Unknown error"}`;
+      showToast(
+        t("settings.status_save_failed", { error: data.error || "Unknown error" }) ||
+          `Save failed: ${data.error || "Unknown error"}`,
+        "error"
+      );
     }
   } catch (err: any) {
     saveStatusType.value = "error";
-    saveStatusText.value = `网络错误: ${err.message}`;
+    saveStatusText.value =
+      t("settings.status_network_error", { error: err.message }) || `Network error: ${err.message}`;
   } finally {
     isSaving.value = false;
   }
@@ -3879,7 +3990,7 @@ async function handleSaveAsProfile() {
   isSavingProfile.value = true;
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在创建档案...";
+  saveStatusText.value = t("settings.status_creating_profile") || "Creating profile...";
   try {
     const res = await fetch("/api/network/profile/save", {
       method: "POST",
@@ -3895,10 +4006,10 @@ async function handleSaveAsProfile() {
       newProfileId.value = "";
       newProfileName.value = "";
       saveStatusType.value = "success";
-      saveStatusText.value = "已创建并激活档案";
+      saveStatusText.value = t("settings.status_created_profile") || "Profile created and activated";
       await loadNetworkStatus();
       await loadConfigData();
-      showToast(`已创建并激活档案: ${pid}`, "success");
+      showToast(t("settings.toast_created_profile", { id: pid }) || `Created and activated profile: ${pid}`, "success");
       setTimeout(() => {
         saveStatusType.value = "idle";
         saveStatusText.value = "";
@@ -3906,14 +4017,17 @@ async function handleSaveAsProfile() {
     } else {
       const err = await res.json().catch(() => ({}));
       saveStatusType.value = "error";
-      saveStatusText.value = `创建档案失败: ${err.error || "未知错误"}`;
-      alert(err.error || "创建档案失败");
+      saveStatusText.value =
+        t("settings.status_save_failed", { error: err.error || "Unknown error" }) ||
+        `Save failed: ${err.error || "Unknown error"}`;
+      alert(err.error || t("settings.status_save_failed", { error: "Unknown error" }) || "Failed to create profile");
     }
   } catch (err: any) {
     console.error(err);
     saveStatusType.value = "error";
-    saveStatusText.value = `请求失败: ${err.message}`;
-    alert("请求失败: " + err.message);
+    saveStatusText.value =
+      t("settings.status_network_error", { error: err.message }) || `Request failed: ${err.message}`;
+    alert(t("settings.status_network_error", { error: err.message }) || "Request failed: " + err.message);
   } finally {
     isSavingProfile.value = false;
     isSaving.value = false;
@@ -3923,7 +4037,7 @@ async function handleSaveAsProfile() {
 async function handleResetBuiltinProfile(id: string) {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在重置档案...";
+  saveStatusText.value = t("settings.status_resetting_profile") || "Resetting profile...";
   try {
     const res = await fetch("/api/network/profile/reset", {
       method: "POST",
@@ -3932,10 +4046,10 @@ async function handleResetBuiltinProfile(id: string) {
     });
     if (res.ok) {
       saveStatusType.value = "success";
-      saveStatusText.value = "已恢复出厂默认值";
+      saveStatusText.value = t("settings.status_restored_defaults") || "Restored to factory defaults";
       await loadNetworkStatus();
       await loadConfigData();
-      showToast("已恢复出厂默认值", "success");
+      showToast(t("settings.status_restored_defaults") || "Restored to factory defaults", "success");
       setTimeout(() => {
         saveStatusType.value = "idle";
         saveStatusText.value = "";
@@ -3943,11 +4057,14 @@ async function handleResetBuiltinProfile(id: string) {
     } else {
       const err = await res.json().catch(() => ({}));
       saveStatusType.value = "error";
-      saveStatusText.value = `重置失败: ${err.error || "未知错误"}`;
+      saveStatusText.value =
+        t("settings.status_save_failed", { error: err.error || "Unknown error" }) ||
+        `Save failed: ${err.error || "Unknown error"}`;
     }
   } catch (err: any) {
     saveStatusType.value = "error";
-    saveStatusText.value = `网络错误: ${err.message}`;
+    saveStatusText.value =
+      t("settings.status_network_error", { error: err.message }) || `Network error: ${err.message}`;
   } finally {
     isSaving.value = false;
   }
@@ -3956,7 +4073,7 @@ async function handleResetBuiltinProfile(id: string) {
 async function handleResetAllEcosystems() {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在恢复默认生态...";
+  saveStatusText.value = t("settings.status_restoring_ecos") || "Restoring default ecosystems...";
   try {
     const res = await fetch("/api/network/registry/reset-all", {
       method: "POST",
@@ -3965,10 +4082,10 @@ async function handleResetAllEcosystems() {
     });
     if (res.ok) {
       saveStatusType.value = "success";
-      saveStatusText.value = "已恢复默认生态列表";
+      saveStatusText.value = t("settings.status_restored_ecos") || "Default ecosystem list restored";
       await loadNetworkStatus();
       await loadConfigData();
-      showToast("已恢复默认生态列表", "success");
+      showToast(t("settings.status_restored_ecos") || "Default ecosystem list restored", "success");
       setTimeout(() => {
         saveStatusType.value = "idle";
         saveStatusText.value = "";
@@ -3976,11 +4093,14 @@ async function handleResetAllEcosystems() {
     } else {
       const err = await res.json().catch(() => ({}));
       saveStatusType.value = "error";
-      saveStatusText.value = `恢复失败: ${err.error || "未知错误"}`;
+      saveStatusText.value =
+        t("settings.status_save_failed", { error: err.error || "Unknown error" }) ||
+        `Save failed: ${err.error || "Unknown error"}`;
     }
   } catch (err: any) {
     saveStatusType.value = "error";
-    saveStatusText.value = `网络错误: ${err.message}`;
+    saveStatusText.value =
+      t("settings.status_network_error", { error: err.message }) || `Network error: ${err.message}`;
   } finally {
     isSaving.value = false;
   }
@@ -3990,7 +4110,7 @@ async function handleOverrideRegistry(ecosystem: string, url: string) {
   if (!ecosystem || !url) return;
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在更新镜像源...";
+  saveStatusText.value = t("settings.status_updating_mirrors") || "Updating mirror sources...";
   try {
     const res = await fetch("/api/network/registry/override", {
       method: "POST",
@@ -3999,7 +4119,7 @@ async function handleOverrideRegistry(ecosystem: string, url: string) {
     });
     if (res.ok) {
       saveStatusType.value = "success";
-      saveStatusText.value = "已自动保存";
+      saveStatusText.value = t("settings.status_auto_saved") || "Auto saved";
       await loadNetworkStatus();
       await loadConfigData();
       setTimeout(() => {
@@ -4009,11 +4129,14 @@ async function handleOverrideRegistry(ecosystem: string, url: string) {
     } else {
       const err = await res.json().catch(() => ({}));
       saveStatusType.value = "error";
-      saveStatusText.value = `保存失败: ${err.error || "未知错误"}`;
+      saveStatusText.value =
+        t("settings.status_save_failed", { error: err.error || "Unknown error" }) ||
+        `Save failed: ${err.error || "Unknown error"}`;
     }
   } catch (err: any) {
     saveStatusType.value = "error";
-    saveStatusText.value = `网络错误: ${err.message}`;
+    saveStatusText.value =
+      t("settings.status_network_error", { error: err.message }) || `Network error: ${err.message}`;
   } finally {
     isSaving.value = false;
   }
@@ -4042,7 +4165,7 @@ function handleSelectMirrorPreset(ecosystem: string, url: string) {
 async function handleResetRegistry(ecosystem: string) {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在恢复预设...";
+  saveStatusText.value = t("settings.status_restoring_presets") || "Restoring presets...";
   try {
     const res = await fetch("/api/network/registry/reset", {
       method: "POST",
@@ -4051,7 +4174,7 @@ async function handleResetRegistry(ecosystem: string) {
     });
     if (res.ok) {
       saveStatusType.value = "success";
-      saveStatusText.value = "已恢复预设";
+      saveStatusText.value = t("settings.status_restored_presets") || "Presets restored";
       await loadNetworkStatus();
       await loadConfigData();
       setTimeout(() => {
@@ -4061,11 +4184,13 @@ async function handleResetRegistry(ecosystem: string) {
     } else {
       const err = await res.json().catch(() => ({}));
       saveStatusType.value = "error";
-      saveStatusText.value = `恢复失败: ${err.error || "未知错误"}`;
+      saveStatusText.value =
+        t("settings.status_save_failed", { error: err.error || "Unknown error" }) ||
+        `Save failed: ${err.error || "Unknown error"}`;
     }
   } catch (err) {
     saveStatusType.value = "error";
-    saveStatusText.value = "网络请求失败";
+    saveStatusText.value = t("settings.status_network_error", { error: "" }) || "Network request failed";
   } finally {
     isSaving.value = false;
   }
@@ -4075,7 +4200,7 @@ async function handleSaveProxy() {
   if (!networkStatus.value) return;
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "保存中...";
+  saveStatusText.value = t("settings.status_saving") || "Saving...";
   try {
     const res = await fetch("/api/network/proxy", {
       method: "POST",
@@ -4087,7 +4212,7 @@ async function handleSaveProxy() {
     });
     if (res.ok) {
       saveStatusType.value = "success";
-      saveStatusText.value = "已自动保存";
+      saveStatusText.value = t("settings.status_auto_saved") || "Auto saved";
       await loadNetworkStatus();
       await loadConfigData();
       setTimeout(() => {
@@ -4097,11 +4222,14 @@ async function handleSaveProxy() {
     } else {
       const err = await res.json().catch(() => ({}));
       saveStatusType.value = "error";
-      saveStatusText.value = `保存失败: ${err.error || "未知错误"}`;
+      saveStatusText.value =
+        t("settings.status_save_failed", { error: err.error || "Unknown error" }) ||
+        `Save failed: ${err.error || "Unknown error"}`;
     }
   } catch (err: any) {
     saveStatusType.value = "error";
-    saveStatusText.value = `网络错误: ${err.message}`;
+    saveStatusText.value =
+      t("settings.status_network_error", { error: err.message }) || `Network error: ${err.message}`;
   } finally {
     isSaving.value = false;
   }
@@ -4145,7 +4273,7 @@ async function handleTestProxy() {
   if (!http && !https && !socks5) {
     proxyTestResult.value = {
       success: false,
-      error: "未填写任何代理服务器地址 (HTTP 或 SOCKS5)",
+      error: t("settings.proxy_err_no_address") || "No proxy server address provided (HTTP or SOCKS5)",
     };
     return;
   }
@@ -4165,13 +4293,16 @@ async function handleTestProxy() {
     } else {
       proxyTestResult.value = {
         success: false,
-        error: `代理测试接口请求失败 (HTTP ${res.status})`,
+        error:
+          t("settings.proxy_err_status", { status: res.status }) || `Proxy test request failed (HTTP ${res.status})`,
       };
     }
   } catch (err: any) {
     proxyTestResult.value = {
       success: false,
-      error: `测试请求发生异常: ${err.message}`,
+      error:
+        t("settings.proxy_err_exception", { error: err.message }) ||
+        `Proxy test request encountered an exception: ${err.message}`,
     };
   } finally {
     isTestingProxy.value = false;
@@ -4187,11 +4318,13 @@ function getEcoPingClass(eco: string) {
 
 function getEcoPingTitle(eco: string) {
   const p = ecoPingStatus.value[eco];
-  if (!p) return "点击测试此镜像延迟";
-  if (p.loading) return "正在测速...";
-  if (p.status === "timeout") return "连接超时";
-  if (p.status === "error") return p.error || "连接失败";
-  return `延迟: ${p.rtt_ms}ms (${p.status})`;
+  if (!p) return t("settings.ping_click_hint") || "Click to test mirror latency";
+  if (p.loading) return t("settings.ping_in_progress") || "Testing speed...";
+  if (p.status === "timeout") return t("settings.ping_connection_timeout") || "Connection timed out";
+  if (p.status === "error") return p.error || t("settings.ping_connection_failed") || "Connection failed";
+  return (
+    t("settings.ping_result_format", { ms: p.rtt_ms ?? 0, status: p.status }) || `Latency: ${p.rtt_ms}ms (${p.status})`
+  );
 }
 
 async function handlePingSingle(eco: string) {
@@ -4222,10 +4355,18 @@ async function handlePingSingle(eco: string) {
         };
       }
     } else {
-      ecoPingStatus.value[eco] = { status: "error", loading: false, error: "请求失败" };
+      ecoPingStatus.value[eco] = {
+        status: "error",
+        loading: false,
+        error: t("settings.ping_failed") || "Request failed",
+      };
     }
   } catch (err: any) {
-    ecoPingStatus.value[eco] = { status: "error", loading: false, error: err?.message || "网络异常" };
+    ecoPingStatus.value[eco] = {
+      status: "error",
+      loading: false,
+      error: err?.message || t("settings.network_anomaly") || "Network exception",
+    };
   }
 }
 
