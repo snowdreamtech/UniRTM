@@ -6,10 +6,10 @@
       <div class="detail-nav-bar glass-card">
         <button class="btn-back-market" @click="goBackToList">
           <span class="back-arrow">←</span>
-          <span>返回市场列表</span>
+          <span>{{ t("marketplace.back_to_list") || "Back to Marketplace" }}</span>
         </button>
         <div class="breadcrumb-trail">
-          <span class="crumb-link" @click="goBackToList">扩展与主题市场</span>
+          <span class="crumb-link" @click="goBackToList">{{ t("marketplace.title") || "Extension Marketplace" }}</span>
           <span class="crumb-sep">/</span>
           <span class="crumb-ns font-mono">{{ route.params.namespace }}</span>
           <span class="crumb-sep">/</span>
@@ -26,7 +26,9 @@
       <!-- Loading State -->
       <div v-if="isLoadingDetail" class="detail-loading-box glass-card">
         <div class="spinner-small"></div>
-        <span>正在实时获取扩展详细信息、README 与主题清单...</span>
+        <span>{{
+          t("marketplace.loading_detail") || "Fetching extension details, README and theme manifests..."
+        }}</span>
       </div>
 
       <!-- Error State -->
@@ -34,11 +36,19 @@
         <span class="error-icon">
           <TechIcon id="workbench:warning" :size="32" />
         </span>
-        <h3>未找到该扩展主题信息</h3>
-        <p>{{ mpError || "网络请求失败或该扩展不存在于 Open VSX 仓库。" }}</p>
+        <h3>{{ t("marketplace.not_found_title") || "Extension Information Not Found" }}</h3>
+        <p>
+          {{
+            mpError ||
+            t("marketplace.not_found_desc") ||
+            "Network request failed or extension does not exist in Open VSX repository."
+          }}
+        </p>
         <div class="detail-error-actions">
-          <button class="btn-action-primary" @click="loadCurrentDetail">重新尝试</button>
-          <button class="btn-action-secondary" @click="goBackToList">返回市场</button>
+          <button class="btn-action-primary" @click="loadCurrentDetail">{{ t("marketplace.retry") || "Retry" }}</button>
+          <button class="btn-action-secondary" @click="goBackToList">
+            {{ t("marketplace.back_to_list") || "Back to Marketplace" }}
+          </button>
         </div>
       </div>
 
@@ -63,25 +73,33 @@
               <div class="hero-title-row">
                 <h1 class="hero-title">{{ activeDetail.displayName || activeDetail.name }}</h1>
                 <span class="hero-version font-mono">v{{ activeDetail.version }}</span>
-                <span v-if="isDetailActive" class="badge-active-pill">● 当前生效使用中</span>
+                <span v-if="isDetailActive" class="badge-active-pill">{{
+                  t("marketplace.detail_in_use") || "● Currently Active"
+                }}</span>
                 <span v-else-if="activeDetail.is_installed" class="badge-installed"
                   >✓ {{ t("settings.installed") || "Installed" }}</span
                 >
               </div>
               <div class="hero-meta-row">
                 <span class="hero-author font-mono">
-                  发布者: <strong>{{ activeDetail.namespace }}</strong>
+                  {{ t("marketplace.publisher") || "Publisher" }}: <strong>{{ activeDetail.namespace }}</strong>
                 </span>
                 <span class="meta-dot">•</span>
-                <span class="hero-stat">⬇️ {{ formatDownloads(activeDetail.downloadCount) }} 次下载</span>
+                <span class="hero-stat"
+                  >⬇️ {{ formatDownloads(activeDetail.downloadCount) }}
+                  {{ t("marketplace.downloads_suffix") || "downloads" }}</span
+                >
                 <span v-if="activeDetail.averageRating" class="meta-dot">•</span>
                 <span v-if="activeDetail.averageRating" class="hero-stat">
-                  ⭐ {{ activeDetail.averageRating.toFixed(1) }} ({{ activeDetail.reviewCount || 1 }} 评价)
+                  ⭐ {{ activeDetail.averageRating.toFixed(1) }} ({{ activeDetail.reviewCount || 1 }}
+                  {{ t("marketplace.reviews_suffix") || "reviews" }})
                 </span>
                 <span v-if="activeDetail.license" class="meta-dot">•</span>
                 <span v-if="activeDetail.license" class="hero-license font-mono">{{ activeDetail.license }}</span>
               </div>
-              <p class="hero-desc">{{ activeDetail.description || "无详细描述" }}</p>
+              <p class="hero-desc">
+                {{ activeDetail.description || t("marketplace.no_desc") || "No detailed description" }}
+              </p>
             </div>
           </div>
 
@@ -102,13 +120,17 @@
             <div v-else class="installed-action-buttons">
               <span v-if="isDetailActive" class="badge-hero-applied">
                 <span class="active-dot"></span>
-                <span>当前主题已生效</span>
+                <span>{{ t("marketplace.theme_already_active") || "Theme is active" }}</span>
               </span>
               <button v-else class="btn-apply-detail-primary" @click="onApplyDetailTheme(activeDetail)">
-                应用此主题
+                {{ t("marketplace.apply_this_theme") || "Apply Theme" }}
               </button>
               <button class="btn-uninstall-danger" :disabled="isUninstalling" @click="onUninstallDetail(activeDetail)">
-                {{ isUninstalling ? "卸载中..." : "卸载" }}
+                {{
+                  isUninstalling
+                    ? t("marketplace.uninstalling") || "Uninstalling..."
+                    : t("common.uninstall") || "Uninstall"
+                }}
               </button>
             </div>
             <a
@@ -116,9 +138,9 @@
               target="_blank"
               rel="noopener noreferrer"
               class="btn-external-link"
-              title="在 Open VSX 官方页面打开"
+              :title="t('marketplace.open_in_openvsx') || 'Open on Open VSX'"
             >
-              <span>在 Open VSX 查看</span>
+              <span>{{ t("marketplace.view_on_openvsx") || "View on Open VSX" }}</span>
               <span>↗</span>
             </a>
           </div>
@@ -134,14 +156,14 @@
                 :class="{ active: activeDetailTab === 'readme' }"
                 @click="activeDetailTab = 'readme'"
               >
-                📖 详情说明 (README)
+                📖 {{ t("marketplace.tab_readme") || "Details (README)" }}
               </button>
               <button
                 class="subtab-btn"
                 :class="{ active: activeDetailTab === 'contributes' }"
                 @click="activeDetailTab = 'contributes'"
               >
-                🎨 包含主题与图标
+                🎨 {{ t("marketplace.tab_themes_icons") || "Included Themes & Icons" }}
                 <span v-if="contributedThemesCount > 0" class="tab-badge">{{ contributedThemesCount }}</span>
               </button>
               <button
@@ -150,7 +172,7 @@
                 :class="{ active: activeDetailTab === 'changelog' }"
                 @click="activeDetailTab = 'changelog'"
               >
-                📝 更新日志
+                📝 {{ t("marketplace.tab_changelog") || "Changelog" }}
               </button>
             </div>
 
@@ -161,7 +183,7 @@
                 <span class="empty-icon">
                   <TechIcon id="workbench:about" :size="32" />
                 </span>
-                <p>该扩展未提供 README 文档说明</p>
+                <p>{{ t("marketplace.no_readme") || "No README documentation provided" }}</p>
               </div>
             </div>
 
@@ -172,7 +194,7 @@
                 v-if="activeDetail.contributes?.themes && activeDetail.contributes.themes.length > 0"
                 class="contribute-group"
               >
-                <h3 class="group-title">颜色主题 (Color Themes)</h3>
+                <h3 class="group-title">{{ t("marketplace.color_themes_group") || "Color Themes" }}</h3>
                 <div class="contribute-list">
                   <div v-for="sub in activeDetail.contributes.themes" :key="sub.label" class="contribute-item">
                     <div class="sub-info">
@@ -205,7 +227,7 @@
                 v-if="activeDetail.contributes?.iconThemes && activeDetail.contributes.iconThemes.length > 0"
                 class="contribute-group"
               >
-                <h3 class="group-title">文件图标 (Icon Themes)</h3>
+                <h3 class="group-title">{{ t("marketplace.icon_themes_group") || "File Icons (Icon Themes)" }}</h3>
                 <div class="contribute-list">
                   <div v-for="sub in activeDetail.contributes.iconThemes" :key="sub.label" class="contribute-item">
                     <div class="sub-info">
@@ -238,7 +260,7 @@
                 "
                 class="contribute-group"
               >
-                <h3 class="group-title">界面图标 (Product Icon Themes)</h3>
+                <h3 class="group-title">{{ t("marketplace.product_icon_themes_group") || "Product Icon Themes" }}</h3>
                 <div class="contribute-list">
                   <div
                     v-for="sub in activeDetail.contributes.productIconThemes"
@@ -279,7 +301,7 @@
                 "
                 class="readme-empty-hint"
               >
-                <p>该扩展清单中未发现显式声明的主题子集</p>
+                <p>{{ t("marketplace.no_subthemes") || "No explicit themes declared in extension manifest" }}</p>
               </div>
             </div>
 
@@ -287,7 +309,7 @@
             <div v-show="activeDetailTab === 'changelog'" class="tab-content tab-changelog">
               <div v-if="changelogContent" class="markdown-body" v-html="renderedChangelog"></div>
               <div v-else class="readme-empty-hint">
-                <p>正在读取或该扩展未提供独立更新日志</p>
+                <p>{{ t("marketplace.no_changelog") || "Loading or no separate changelog provided" }}</p>
               </div>
             </div>
           </div>
@@ -296,7 +318,7 @@
           <div class="detail-sidebar glass-card">
             <!-- Resources -->
             <div class="sidebar-section">
-              <h4 class="sidebar-heading">资源与链接</h4>
+              <h4 class="sidebar-heading">{{ t("marketplace.resources_and_links") || "Resources & Links" }}</h4>
               <div class="sidebar-links">
                 <a
                   v-if="activeDetail.repository"
@@ -308,7 +330,7 @@
                   <span class="link-icon">
                     <TechIcon id="workbench:github" :size="14" />
                   </span>
-                  <span>项目仓库 (Repository)</span>
+                  <span>{{ t("marketplace.link_repo") || "Repository" }}</span>
                 </a>
                 <a
                   v-if="activeDetail.bugs"
@@ -320,7 +342,7 @@
                   <span class="link-icon">
                     <TechIcon id="workbench:doctor" :size="14" />
                   </span>
-                  <span>问题反馈 (Issues)</span>
+                  <span>{{ t("marketplace.link_issues") || "Issues" }}</span>
                 </a>
                 <a
                   v-if="activeDetail.homepage"
@@ -332,7 +354,7 @@
                   <span class="link-icon">
                     <TechIcon id="workbench:dashboard" :size="14" />
                   </span>
-                  <span>主页 (Homepage)</span>
+                  <span>{{ t("marketplace.link_homepage") || "Homepage" }}</span>
                 </a>
                 <a
                   v-if="activeDetail.files && activeDetail.files.download"
@@ -343,41 +365,43 @@
                   <span class="link-icon">
                     <TechIcon id="workbench:package" :size="14" />
                   </span>
-                  <span>下载 .vsix 离线安装包</span>
+                  <span>{{ t("marketplace.link_download_vsix") || "Download .vsix Package" }}</span>
                 </a>
               </div>
             </div>
 
             <!-- Properties -->
             <div class="sidebar-section">
-              <h4 class="sidebar-heading">元数据属性</h4>
+              <h4 class="sidebar-heading">{{ t("marketplace.metadata_props") || "Metadata Properties" }}</h4>
               <div class="prop-list">
                 <div class="prop-item">
-                  <span class="prop-key">命名空间</span>
+                  <span class="prop-key">{{ t("marketplace.namespace") || "Namespace" }}</span>
                   <span class="prop-val font-mono">{{ activeDetail.namespace }}</span>
                 </div>
                 <div class="prop-item">
-                  <span class="prop-key">扩展标识</span>
+                  <span class="prop-key">{{ t("marketplace.extension_id") || "Extension ID" }}</span>
                   <span class="prop-val font-mono">{{ activeDetail.namespace }}.{{ activeDetail.name }}</span>
                 </div>
                 <div class="prop-item">
-                  <span class="prop-key">最新版本</span>
+                  <span class="prop-key">{{ t("marketplace.latest_version") || "Latest Version" }}</span>
                   <span class="prop-val font-mono">v{{ activeDetail.version }}</span>
                 </div>
                 <div class="prop-item">
-                  <span class="prop-key">发布日期</span>
+                  <span class="prop-key">{{ t("marketplace.release_date") || "Release Date" }}</span>
                   <span class="prop-val">{{ formatDate(activeDetail.timestamp) }}</span>
                 </div>
                 <div class="prop-item">
-                  <span class="prop-key">许可证</span>
-                  <span class="prop-val">{{ activeDetail.license || "开源协议" }}</span>
+                  <span class="prop-key">{{ t("marketplace.license") || "License" }}</span>
+                  <span class="prop-val">{{
+                    activeDetail.license || t("marketplace.open_source") || "Open Source"
+                  }}</span>
                 </div>
               </div>
             </div>
 
             <!-- Tags -->
             <div v-if="activeDetail.tags && activeDetail.tags.length > 0" class="sidebar-section">
-              <h4 class="sidebar-heading">标签分类</h4>
+              <h4 class="sidebar-heading">{{ t("marketplace.categories") || "Categories" }}</h4>
               <div class="sidebar-tags">
                 <span v-for="tag in activeDetail.tags" :key="tag" class="tag-chip">
                   {{ tag }}
@@ -395,7 +419,12 @@
       <div class="view-header-row">
         <div>
           <h2 class="view-title">{{ t("nav.marketplace") || "Marketplace" }}</h2>
-          <p class="view-desc">探索与安装 VS Code 兼容的主题与图标集，以及扩展 UniRTM 原生能力的开发者功能套件。</p>
+          <p class="view-desc">
+            {{
+              t("marketplace.subtitle") ||
+              "Explore and install VS Code compatible themes, icon sets, and UniRTM developer tool suites."
+            }}
+          </p>
         </div>
 
         <!-- Channel Switcher Tabs -->
@@ -411,7 +440,7 @@
           >
             <TechIcon id="workbench:tools" :size="16" />
             <span>{{ t("settings.cat_plugins") || "Extensions" }}</span>
-            <span class="channel-soon-tag">开发中</span>
+            <span class="channel-soon-tag">{{ t("marketplace.in_development") || "In Development" }}</span>
           </button>
         </div>
       </div>
@@ -478,7 +507,14 @@
               :placeholder="searchPlaceholder"
               @keydown.enter="onSearchThemes(mpSearchQuery)"
             />
-            <button v-if="mpSearchQuery" class="btn-clear-search" title="清空" @click="onClearSearch">✕</button>
+            <button
+              v-if="mpSearchQuery"
+              class="btn-clear-search"
+              :title="t('marketplace.clear') || 'Clear'"
+              @click="onClearSearch"
+            >
+              ✕
+            </button>
           </div>
           <button class="btn-search-action" :disabled="mpIsSearching" @click="onSearchThemes(mpSearchQuery)">
             <span v-if="mpIsSearching" class="spinner-small"></span>
@@ -513,7 +549,7 @@
           <div class="chips-left">
             <span class="chips-label">{{
               activeThemeTypeTab === "installed"
-                ? "类型过滤:"
+                ? t("marketplace.type_filter") || "Type Filter:"
                 : (t("marketplace.recommended_categories") || "Recommended Categories") + ":"
             }}</span>
             <button
@@ -532,15 +568,17 @@
           <span v-if="activeThemeTypeTab === 'installed'" class="results-count-label">
             {{
               t("marketplace.installed_count", { count: displayedExtensions.length }) ||
-              `已安装 ${displayedExtensions.length} 款主题与图标包`
+              `${displayedExtensions.length} installed themes & icon packs`
             }}
           </span>
           <span v-else class="results-count-label">
             {{
               activeThemeTypeTab !== "all"
-                ? `筛选后呈现 ${displayedExtensions.length} 款`
+                ? t("marketplace.filtered_count", { count: displayedExtensions.length }) ||
+                  `Showing ${displayedExtensions.length} items after filtering`
                 : mpTotalSize > 0
-                  ? t("marketplace.total_count", { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包`
+                  ? t("marketplace.total_count", { count: mpTotalSize }) ||
+                    `${mpTotalSize} themes & icon packs in total`
                   : ""
             }}
           </span>
@@ -928,12 +966,12 @@
         <div v-if="activeThemeTypeTab !== 'installed' && mpTotalPages > 1" class="market-pagination-bar glass-card">
           <div class="pagination-summary">
             <span>{{
-              t("marketplace.total_count", { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包`
+              t("marketplace.total_count", { count: mpTotalSize }) || `${mpTotalSize} themes & icon packs in total`
             }}</span>
             <span class="pagination-divider">•</span>
             <span>{{
               t("marketplace.page_info", { current: mpCurrentPage, total: mpTotalPages }) ||
-              `第 ${mpCurrentPage} / ${mpTotalPages} 页`
+              `Page ${mpCurrentPage} of ${mpTotalPages}`
             }}</span>
           </div>
 
@@ -995,9 +1033,7 @@
                 min="1"
                 :max="mpTotalPages"
                 class="jump-input"
-                :placeholder="
-                  t('marketplace.page_info', { current: '', total: '' }).replace(/[^0-9a-zA-Z]/g, '') || '页码'
-                "
+                :placeholder="t('marketplace.page_label') || 'Page'"
                 @keydown.enter="onJumpPage"
               />
               <button class="btn-jump-submit" :disabled="mpIsSearching" @click="onJumpPage">
@@ -1029,15 +1065,24 @@
           <div class="hero-content">
             <div class="hero-badge-pill">
               <span class="pulse-indicator"></span>
-              <span class="badge-text font-mono">ARCHITECTURAL DESIGN · 架构设计中</span>
+              <span class="badge-text font-mono">{{
+                t("marketplace.plugins.badge") || "ARCHITECTURAL DESIGN · In Design"
+              }}</span>
             </div>
-            <h3 class="hero-main-title">UniRTM 原生功能扩展体系</h3>
+            <h3 class="hero-main-title">
+              {{ t("marketplace.plugins.hero_title") || "UniRTM Native Extension Architecture" }}
+            </h3>
             <p class="hero-subtitle">
-              探索中，敬请期待！我们正在规划兼顾高隔离安全性、极简调度与生态兼容的原生插件架构。
+              {{
+                t("marketplace.plugins.hero_subtitle") ||
+                "Exploring, stay tuned! We are designing a native plugin architecture balancing high isolation security, minimal scheduling, and ecosystem compatibility."
+              }}
             </p>
             <p class="hero-detail-text">
-              为了确保 UniRTM 核心运行时的极致性能与稳定性，真正的功能插件将通过轻量级进程隔离、标准协议（LSP /
-              MCP）与强作用域命名空间与工作台通讯，避免因第三方插件而引入内存泄漏或宿主崩溃。
+              {{
+                t("marketplace.plugins.hero_p1") ||
+                "To ensure extreme performance and stability of the UniRTM core runtime, functional plugins will communicate with the workbench via lightweight process isolation, standard protocols (LSP / MCP), and strongly scoped namespaces, avoiding memory leaks or host crashes introduced by third-party plugins."
+              }}
             </p>
             <div class="hero-actions-row">
               <a
@@ -1047,11 +1092,11 @@
                 class="btn-hero-primary"
               >
                 <TechIcon id="workbench:github" :size="16" />
-                <span>参与架构讨论与建议 (Discussions)</span>
+                <span>{{ t("marketplace.plugins.discuss_btn") || "Participate in Architecture Discussions" }}</span>
               </a>
               <button class="btn-hero-secondary" @click="switchChannel('themes')">
                 <TechIcon id="workbench:marketplace" :size="16" />
-                <span>浏览主题与图标市场</span>
+                <span>{{ t("marketplace.plugins.browse_themes_btn") || "Browse Themes & Icons Marketplace" }}</span>
               </button>
             </div>
           </div>
@@ -1063,9 +1108,14 @@
             <div class="pillar-icon-box">
               <TechIcon id="workbench:lock" :size="24" :colored="true" />
             </div>
-            <h4 class="pillar-title">外部进程沙箱隔离</h4>
+            <h4 class="pillar-title">
+              {{ t("marketplace.plugins.pillar1_title") || "External Process Sandbox Isolation" }}
+            </h4>
             <p class="pillar-desc">
-              功能扩展运行在独立外部子进程中，严格限制宿主系统权限。插件生命周期异常自动隔离退出，绝不阻塞核心终端与工作台响应。
+              {{
+                t("marketplace.plugins.pillar1_desc") ||
+                "Functional extensions execute in dedicated external child processes, strictly limiting host system permissions. Faulty plugin lifecycles terminate gracefully in isolation without blocking core terminal or workbench responsiveness."
+              }}
             </p>
             <div class="pillar-tag font-mono">Process-Level Sandbox</div>
           </div>
@@ -1074,10 +1124,14 @@
             <div class="pillar-icon-box">
               <TechIcon id="workbench:layers" :size="24" :colored="true" />
             </div>
-            <h4 class="pillar-title">统一 Provider 规范</h4>
+            <h4 class="pillar-title">
+              {{ t("marketplace.plugins.pillar2_title") || "Unified Provider Specifications" }}
+            </h4>
             <p class="pillar-desc">
-              采用极简能力暴露标准（Runtime Provider、Linter Provider、Tool Provider），通过标准化 JSON-RPC / MCP
-              接口接入工作区统一调度。
+              {{
+                t("marketplace.plugins.pillar2_desc") ||
+                "Adopts clean capability exposure standards (Runtime Provider, Linter Provider, Tool Provider) communicating with workspace scheduling via standard JSON-RPC / MCP interfaces."
+              }}
             </p>
             <div class="pillar-tag font-mono">Provider Contracts</div>
           </div>
@@ -1086,10 +1140,14 @@
             <div class="pillar-icon-box">
               <TechIcon id="workbench:shield" :size="24" :colored="true" />
             </div>
-            <h4 class="pillar-title">命名空间存储约束</h4>
+            <h4 class="pillar-title">
+              {{ t("marketplace.plugins.pillar3_title") || "Namespaced Storage Constraints" }}
+            </h4>
             <p class="pillar-desc">
-              所有插件配置与持久化存储严格限制在
-              <code>plugins.&lt;plugin-id&gt;.*</code> 作用域，配置清晰透明、杜绝隐蔽写盘，卸载零残留。
+              {{
+                t("marketplace.plugins.pillar3_desc") ||
+                "All plugin configurations and persisted data are strictly scoped under plugins.[plugin-id].*, keeping settings transparent and eliminating unmonitored disk writes with zero remnants on uninstallation."
+              }}
             </p>
             <div class="pillar-tag font-mono">Scoped Persistence</div>
           </div>
@@ -1101,9 +1159,12 @@
             <div class="roadmap-title-col">
               <h4 class="roadmap-title">
                 <TechIcon id="workbench:tools" :size="18" />
-                <span>插件系统演进路线图 (Roadmap)</span>
+                <span>{{ t("marketplace.plugins.roadmap_title") || "Plugin System Evolution Roadmap" }}</span>
               </h4>
-              <span class="roadmap-desc">当前阶段尚未定型，欢迎开发者提出宝贵的架构构想与场景需求</span>
+              <span class="roadmap-desc">{{
+                t("marketplace.plugins.roadmap_desc") ||
+                "Currently in active design. We welcome your architectural feedback and scenario requirements."
+              }}</span>
             </div>
             <span class="roadmap-status-badge">Phase 1 in progress</span>
           </div>
@@ -1113,10 +1174,19 @@
               <div class="step-marker font-mono">01</div>
               <div class="step-info">
                 <div class="step-name-row">
-                  <span class="step-name">架构设计与 RFC 需求梳理</span>
-                  <span class="step-state-tag current">当前阶段</span>
+                  <span class="step-name">{{
+                    t("marketplace.plugins.step1_name") || "Architecture Design & RFC Requirements"
+                  }}</span>
+                  <span class="step-state-tag current">{{
+                    t("marketplace.plugins.stage_current") || "Current Stage"
+                  }}</span>
                 </div>
-                <p class="step-desc">明确插件通信边界、清单元数据 Manifest 规范与安全沙箱模型。</p>
+                <p class="step-desc">
+                  {{
+                    t("marketplace.plugins.step1_desc") ||
+                    "Define plugin communication boundaries, Manifest metadata schema, and safety sandbox models."
+                  }}
+                </p>
               </div>
             </div>
 
@@ -1124,10 +1194,17 @@
               <div class="step-marker font-mono">02</div>
               <div class="step-info">
                 <div class="step-name-row">
-                  <span class="step-name">插件进程宿主与 IPC 原型</span>
-                  <span class="step-state-tag pending">待启动</span>
+                  <span class="step-name">{{
+                    t("marketplace.plugins.step2_name") || "Plugin Process Host & IPC Prototype"
+                  }}</span>
+                  <span class="step-state-tag pending">{{ t("marketplace.plugins.stage_pending") || "Pending" }}</span>
                 </div>
-                <p class="step-desc">实现独立子进程生命周期守护、心跳探测与轻量级 RPC 通讯信道。</p>
+                <p class="step-desc">
+                  {{
+                    t("marketplace.plugins.step2_desc") ||
+                    "Implement independent child process lifecycle daemon, heartbeat detection, and lightweight RPC communication channels."
+                  }}
+                </p>
               </div>
             </div>
 
@@ -1135,10 +1212,17 @@
               <div class="step-marker font-mono">03</div>
               <div class="step-info">
                 <div class="step-name-row">
-                  <span class="step-name">开发者 SDK 与本地单步调试</span>
-                  <span class="step-state-tag pending">待启动</span>
+                  <span class="step-name">{{
+                    t("marketplace.plugins.step3_name") || "Developer SDK & Local Step Debugging"
+                  }}</span>
+                  <span class="step-state-tag pending">{{ t("marketplace.plugins.stage_pending") || "Pending" }}</span>
                 </div>
-                <p class="step-desc">提供 TypeScript / Go 官方 SDK 脚手架，支持本地一键开发、热加载与自测。</p>
+                <p class="step-desc">
+                  {{
+                    t("marketplace.plugins.step3_desc") ||
+                    "Provide TypeScript / Go official SDK scaffolding with one-click local authoring, hot reload, and automated tests."
+                  }}
+                </p>
               </div>
             </div>
 
@@ -1146,10 +1230,17 @@
               <div class="step-marker font-mono">04</div>
               <div class="step-info">
                 <div class="step-name-row">
-                  <span class="step-name">插件市场中心与社区生态</span>
-                  <span class="step-state-tag pending">待启动</span>
+                  <span class="step-name">{{
+                    t("marketplace.plugins.step4_name") || "Plugin Marketplace Hub & Ecosystem"
+                  }}</span>
+                  <span class="step-state-tag pending">{{ t("marketplace.plugins.stage_pending") || "Pending" }}</span>
                 </div>
-                <p class="step-desc">支持安全签名审计、版本兼容性校验、图形化一键发现与热拔插管理。</p>
+                <p class="step-desc">
+                  {{
+                    t("marketplace.plugins.step4_desc") ||
+                    "Support security signature audits, version compatibility validation, graphical discovery, and hot-plugging management."
+                  }}
+                </p>
               </div>
             </div>
           </div>
@@ -1160,8 +1251,15 @@
           <div class="callout-left">
             <span class="callout-icon">💡</span>
             <div class="callout-text">
-              <strong>您对 UniRTM 扩展系统有哪些期待？</strong>
-              <p>无论是 AI 智能 Agent、跨环境部署工具还是特定语言工具链，欢迎提交您的建议！</p>
+              <strong>{{
+                t("marketplace.plugins.feedback_title") || "What expectations do you have for UniRTM extensions?"
+              }}</strong>
+              <p>
+                {{
+                  t("marketplace.plugins.feedback_desc") ||
+                  "Whether AI agents, deployment tools, or language-specific toolchains, submit your thoughts!"
+                }}
+              </p>
             </div>
           </div>
           <a
@@ -1170,7 +1268,7 @@
             rel="noopener noreferrer"
             class="btn-submit-rfc"
           >
-            <span>提交需求建议 / Issue</span>
+            <span>{{ t("marketplace.plugins.submit_issue_btn") || "Submit Feedback / Issue" }}</span>
             <span>↗</span>
           </a>
         </div>
@@ -1369,9 +1467,9 @@ const contextualChips = computed<ThemeChipItem[]>(() => {
   // "all"
   return [
     { id: "all", labelKey: "marketplace.filter_all", query: "" },
-    { id: "fluent", name: "Fluent Icons (界面)", query: "fluent-icons" },
-    { id: "material", name: "Material (文件)", query: "Material Icon" },
-    { id: "dracula", name: "Dracula (颜色)", query: "Dracula" },
+    { id: "fluent", name: t("marketplace.category_fluent") || "Fluent Icons (UI)", query: "fluent-icons" },
+    { id: "material", name: t("marketplace.category_material") || "Material (Files)", query: "Material Icon" },
+    { id: "dracula", name: t("marketplace.category_dracula") || "Dracula (Colors)", query: "Dracula" },
     { id: "one-dark", name: "One Dark", query: "One Dark" },
     { id: "catppuccin", name: "Catppuccin", query: "Catppuccin" },
     { id: "tokyo-night", name: "Tokyo Night", query: "Tokyo Night" },
@@ -1381,16 +1479,23 @@ const contextualChips = computed<ThemeChipItem[]>(() => {
 
 const searchPlaceholder = computed(() => {
   if (activeThemeTypeTab.value === "installed") {
-    return "搜索已安装的颜色主题、文件图标或界面图标...";
+    return t("marketplace.search_installed_ph") || "Search installed color themes, file icons, or product icons...";
   }
   if (activeThemeTypeTab.value === "color") {
-    return "在 Open VSX 搜索颜色主题 (如 Dracula, One Dark, Catppuccin)...";
+    return (
+      t("marketplace.search_themes_ph") || "Search color themes on Open VSX (e.g. Dracula, One Dark, Catppuccin)..."
+    );
   }
   if (activeThemeTypeTab.value === "icon") {
-    return "在 Open VSX 搜索文件图标主题 (如 Material Icon, VSCode Icons)...";
+    return (
+      t("marketplace.search_icons_ph") || "Search file icon themes on Open VSX (e.g. Material Icon, VSCode Icons)..."
+    );
   }
   if (activeThemeTypeTab.value === "product_icon") {
-    return "在 Open VSX 搜索界面图标主题 (如 Fluent Icons, Codicons)...";
+    return (
+      t("marketplace.search_product_icons_ph") ||
+      "Search product icon themes on Open VSX (e.g. Fluent Icons, Codicons)..."
+    );
   }
   return (
     t("settings.marketplace_search_placeholder") || "Search themes or icon sets (e.g. Dracula, Material, Catppuccin)..."
@@ -1402,13 +1507,13 @@ const emptyStateMessage = computed(() => {
     return t("marketplace.empty_installed") || "No third-party themes or icon packs installed yet";
   }
   if (activeThemeTypeTab.value === "color") {
-    return "未找到符合条件的颜色主题";
+    return t("marketplace.empty_color_themes") || "No matching color themes found";
   }
   if (activeThemeTypeTab.value === "icon") {
-    return "未找到符合条件的文件图标主题";
+    return t("marketplace.empty_file_icons") || "No matching file icon themes found";
   }
   if (activeThemeTypeTab.value === "product_icon") {
-    return "未找到符合条件的界面图标主题";
+    return t("marketplace.empty_product_icons") || "No matching product icon themes found";
   }
   return t("marketplace.empty_results") || "No matching themes or icon packs found";
 });
@@ -1427,9 +1532,11 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
     {
       namespace: "vscode",
       name: "theme-defaults",
-      displayName: "UniRTM (默认) 配色主题",
+      displayName: t("marketplace.unirtm_theme_name") || "UniRTM (Default) Color Theme",
       version: "1.0.0",
-      description: "UniRTM 系统内置配色主题 (兼容 VS Code 标准色彩规范，支持浅色与深色模式)",
+      description:
+        t("marketplace.unirtm_theme_desc") ||
+        "UniRTM system built-in color theme (VS Code color specification compliant, supports light and dark modes)",
       downloadCount: 0,
       averageRating: 5.0,
       is_installed: true,
@@ -1443,9 +1550,9 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
     {
       namespace: "vscode",
       name: "theme-seti",
-      displayName: "Seti UI 文件图标",
+      displayName: t("marketplace.seti_theme_name") || "Seti UI File Icons",
       version: "1.0.0",
-      description: "Visual Studio Code 官方内置默认文件图标主题",
+      description: t("marketplace.seti_theme_desc") || "Visual Studio Code official built-in default file icon theme",
       downloadCount: 0,
       averageRating: 5.0,
       is_installed: true,
@@ -1459,9 +1566,10 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
     {
       namespace: "vscode",
       name: "theme-codicons",
-      displayName: "Codicons 界面图标",
+      displayName: t("marketplace.codicons_theme_name") || "Codicons Product Icons",
       version: "1.0.0",
-      description: "Visual Studio Code 官方内置默认界面产品图标主题",
+      description:
+        t("marketplace.codicons_theme_desc") || "Visual Studio Code official built-in default product icon theme",
       downloadCount: 0,
       averageRating: 5.0,
       is_installed: true,
@@ -1520,13 +1628,16 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
   };
 
   for (const c of colorThemes.value) {
-    processThemeItem(c, "已安装的本地 VS Code 颜色主题扩展包");
+    processThemeItem(c, t("marketplace.installed_color_desc") || "Installed local VS Code color theme extension");
   }
   for (const i of iconThemes.value) {
-    processThemeItem(i, "已安装的本地 VS Code 文件图标主题扩展包");
+    processThemeItem(i, t("marketplace.installed_icon_desc") || "Installed local VS Code file icon theme extension");
   }
   for (const p of productIconThemes.value) {
-    processThemeItem(p, "已安装的本地 VS Code 界面图标主题扩展包");
+    processThemeItem(
+      p,
+      t("marketplace.installed_product_icon_desc") || "Installed local VS Code product icon theme extension"
+    );
   }
 
   return list;
@@ -2242,7 +2353,8 @@ function goBackToList() {
 
 async function onUninstallThemeCard(item: MarketplaceExtension) {
   const name = item.displayName || item.name;
-  const confirmMsg = t("marketplace.uninstall_confirm", { name }) || `确定要卸载主题包 "${name}" 吗？`;
+  const confirmMsg =
+    t("marketplace.uninstall_confirm", { name }) || `Are you sure you want to uninstall theme package "${name}"?`;
   if (!confirm(confirmMsg)) {
     return;
   }
@@ -2257,10 +2369,12 @@ async function onUninstallThemeCard(item: MarketplaceExtension) {
     const found = mpSearchResults.value.find((s) => s.name === item.name || (s.package_id && s.package_id === pkgId));
     if (found) found.is_installed = false;
     await fetchThemes();
-    feedbackMsg.value = t("marketplace.uninstalled_success", { name }) || `✓ 已卸载 ${name}`;
+    feedbackMsg.value = t("marketplace.uninstalled_success", { name }) || `✓ Uninstalled ${name}`;
     feedbackIsError.value = false;
   } catch (err: any) {
-    feedbackMsg.value = `✕ 卸载失败: ${err.message || err}`;
+    feedbackMsg.value =
+      t("marketplace.uninstall_failed", { error: err.message || err }) ||
+      `✕ Failed to uninstall: ${err.message || err}`;
     feedbackIsError.value = true;
   }
 }
@@ -2270,7 +2384,8 @@ async function onInstallTheme(item: MarketplaceExtension) {
     feedbackMsg.value = "";
     feedbackIsError.value = false;
     const installed = await mpInstallThemeOnline(item);
-    feedbackMsg.value = `✓ 成功安装 ${item.displayName || item.name}！`;
+    const name = item.displayName || item.name;
+    feedbackMsg.value = t("marketplace.installed_success", { name }) || `✓ Successfully installed ${name}!`;
     if (installed && installed.length > 0) {
       const first = installed[0];
       if (first.type === "color") {
@@ -2283,7 +2398,8 @@ async function onInstallTheme(item: MarketplaceExtension) {
     }
   } catch (err: any) {
     feedbackIsError.value = true;
-    feedbackMsg.value = `✕ 安装失败: ${err.message || err}`;
+    feedbackMsg.value =
+      t("marketplace.install_failed", { error: err.message || err }) || `✕ Failed to install: ${err.message || err}`;
   }
 }
 
@@ -2308,6 +2424,7 @@ async function onInstallDetail(detail: MarketplaceExtensionDetail) {
 
 async function onUninstallDetail(detail: MarketplaceExtensionDetail) {
   const pkgId = detail.package_id || detail.name;
+  const name = detail.displayName || detail.name;
   isUninstalling.value = true;
   feedbackMsg.value = "";
   feedbackIsError.value = false;
@@ -2318,9 +2435,11 @@ async function onUninstallDetail(detail: MarketplaceExtensionDetail) {
     detail.is_installed = false;
     const found = mpSearchResults.value.find((s) => s.namespace === detail.namespace && s.name === detail.name);
     if (found) found.is_installed = false;
-    feedbackMsg.value = `✓ 已卸载 ${detail.displayName || detail.name}`;
+    feedbackMsg.value = t("marketplace.uninstalled_success", { name }) || `✓ Uninstalled ${name}`;
   } catch (err: any) {
-    feedbackMsg.value = `✕ 卸载失败: ${err.message || err}`;
+    feedbackMsg.value =
+      t("marketplace.uninstall_failed", { error: err.message || err }) ||
+      `✕ Failed to uninstall: ${err.message || err}`;
     feedbackIsError.value = true;
   } finally {
     isUninstalling.value = false;
@@ -2334,13 +2453,19 @@ async function onApplySubColorTheme(label: string) {
   if (match) {
     await setActiveTheme(match.id, undefined);
     await fetchThemes();
-    feedbackMsg.value = `✓ 已应用颜色主题: ${match.name}`;
+    feedbackMsg.value =
+      t("marketplace.applied_color_theme", { name: match.name }) || `✓ Applied color theme: ${match.name}`;
     feedbackIsError.value = false;
-    showToast(`已应用颜色主题: ${match.name}`, "success");
+    showToast(
+      t("marketplace.applied_color_theme", { name: match.name }) || `Applied color theme: ${match.name}`,
+      "success"
+    );
   } else {
-    feedbackMsg.value = `已激活主题包，可在设置中选择应用 ${label}`;
+    feedbackMsg.value =
+      t("marketplace.activated_color_theme", { name: label }) ||
+      `Theme package activated. You can select and apply ${label} in Settings`;
     feedbackIsError.value = false;
-    showToast(`已激活主题包: ${label}`, "info");
+    showToast(t("marketplace.activated_color_theme", { name: label }) || `Activated theme package: ${label}`, "info");
   }
 }
 
@@ -2351,13 +2476,22 @@ async function onApplySubIconTheme(label: string) {
   if (match) {
     await setActiveTheme(undefined, match.id);
     await fetchThemes();
-    feedbackMsg.value = `✓ 已应用文件图标主题: ${match.name}`;
+    feedbackMsg.value =
+      t("marketplace.applied_file_icons", { name: match.name }) || `✓ Applied file icon theme: ${match.name}`;
     feedbackIsError.value = false;
-    showToast(`已应用文件图标主题: ${match.name}`, "success");
+    showToast(
+      t("marketplace.applied_file_icons", { name: match.name }) || `Applied file icon theme: ${match.name}`,
+      "success"
+    );
   } else {
-    feedbackMsg.value = `已激活文件图标包，可在设置中选择应用 ${label}`;
+    feedbackMsg.value =
+      t("marketplace.activated_file_icons", { name: label }) ||
+      `File icon theme activated. You can select and apply ${label} in Settings`;
     feedbackIsError.value = false;
-    showToast(`已激活文件图标包: ${label}`, "info");
+    showToast(
+      t("marketplace.activated_file_icons", { name: label }) || `Activated file icon package: ${label}`,
+      "info"
+    );
   }
 }
 
@@ -2368,13 +2502,22 @@ async function onApplySubProductIconTheme(labelOrId: string) {
   if (match) {
     await setActiveTheme(undefined, undefined, undefined, match.id);
     await fetchThemes();
-    feedbackMsg.value = `✓ 已应用界面图标主题: ${match.name}`;
+    feedbackMsg.value =
+      t("marketplace.applied_product_icons", { name: match.name }) || `✓ Applied product icon theme: ${match.name}`;
     feedbackIsError.value = false;
-    showToast(`已应用界面图标主题: ${match.name}`, "success");
+    showToast(
+      t("marketplace.applied_product_icons", { name: match.name }) || `Applied product icon theme: ${match.name}`,
+      "success"
+    );
   } else {
-    feedbackMsg.value = `已激活界面图标包，可在设置中选择应用 ${labelOrId}`;
+    feedbackMsg.value =
+      t("marketplace.activated_product_icons", { name: labelOrId }) ||
+      `Product icon theme activated. You can select and apply ${labelOrId} in Settings`;
     feedbackIsError.value = false;
-    showToast(`已激活界面图标包: ${labelOrId}`, "info");
+    showToast(
+      t("marketplace.activated_product_icons", { name: labelOrId }) || `Activated product icon package: ${labelOrId}`,
+      "info"
+    );
   }
 }
 
@@ -2396,9 +2539,12 @@ async function onApplyTheme(item: MarketplaceExtension) {
       }
       await fetchThemes();
       const targetName = item.displayName || item.name;
-      feedbackMsg.value = `已启用主题: ${targetName}`;
+      feedbackMsg.value = t("marketplace.enabled_theme", { name: targetName }) || `Enabled theme: ${targetName}`;
       feedbackIsError.value = false;
-      showToast(`已启用并应用主题: ${targetName}`, "success");
+      showToast(
+        t("marketplace.enabled_and_applied", { name: targetName }) || `Enabled and applied theme: ${targetName}`,
+        "success"
+      );
       return;
     }
 
@@ -2463,13 +2609,22 @@ async function onApplyTheme(item: MarketplaceExtension) {
     await fetchThemes();
 
     const targetName = item.displayName || item.name;
-    feedbackMsg.value = `已启用主题: ${targetName}`;
+    feedbackMsg.value = t("marketplace.enabled_theme", { name: targetName }) || `Enabled theme: ${targetName}`;
     feedbackIsError.value = false;
-    showToast(`已启用并应用主题: ${targetName}`, "success");
+    showToast(
+      t("marketplace.enabled_and_applied", { name: targetName }) || `Enabled and applied theme: ${targetName}`,
+      "success"
+    );
   } catch (err: any) {
-    feedbackMsg.value = `激活主题失败: ${err.message || err}`;
+    feedbackMsg.value =
+      t("marketplace.activate_failed", { error: err.message || err }) ||
+      `Failed to activate theme: ${err.message || err}`;
     feedbackIsError.value = true;
-    showToast(`激活主题失败: ${err.message || err}`, "error");
+    showToast(
+      t("marketplace.activate_failed", { error: err.message || err }) ||
+        `Failed to activate theme: ${err.message || err}`,
+      "error"
+    );
   }
 }
 
@@ -2481,13 +2636,13 @@ function formatDownloads(count: number): string {
 }
 
 function formatUITheme(uiTheme?: string): string {
-  if (uiTheme === "vs") return "浅色 (Light)";
-  if (uiTheme === "hc-black" || uiTheme === "hc-light") return "高对比度";
-  return "深色 (Dark)";
+  if (uiTheme === "vs") return t("marketplace.theme_light") || "Light";
+  if (uiTheme === "hc-black" || uiTheme === "hc-light") return t("marketplace.theme_high_contrast") || "High Contrast";
+  return t("marketplace.theme_dark") || "Dark";
 }
 
 function formatDate(dateStr?: string): string {
-  if (!dateStr) return "近期更新";
+  if (!dateStr) return t("marketplace.recent_update") || "Recent Update";
   try {
     const d = new Date(dateStr);
     return d.toLocaleDateString();
