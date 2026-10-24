@@ -10,11 +10,11 @@
         <!-- New File / New Folder (if directory, create inside; if file, create in parent directory) -->
         <div class="menu-item" @click="handleNewFile">
           <span class="menu-icon codicon codicon-new-file"></span>
-          <span class="menu-label">新建文件</span>
+          <span class="menu-label">{{ t("file_menu.new_file") || "New File" }}</span>
         </div>
         <div class="menu-item" @click="handleNewFolder">
           <span class="menu-icon codicon codicon-new-folder"></span>
-          <span class="menu-label">新建文件夹</span>
+          <span class="menu-label">{{ t("file_menu.new_folder") || "New Folder" }}</span>
         </div>
 
         <div class="menu-separator"></div>
@@ -22,19 +22,19 @@
         <!-- Copy Path -->
         <div class="menu-item" @click="handleCopyPath">
           <span class="menu-icon codicon codicon-copy"></span>
-          <span class="menu-label">复制路径</span>
+          <span class="menu-label">{{ t("file_menu.copy_path") || "Copy Path" }}</span>
         </div>
 
         <!-- Copy Relative Path -->
         <div class="menu-item" @click="handleCopyRelativePath">
           <span class="menu-icon codicon codicon-copy"></span>
-          <span class="menu-label">复制相对路径</span>
+          <span class="menu-label">{{ t("file_menu.copy_rel_path") || "Copy Relative Path" }}</span>
         </div>
 
         <!-- Copy Name -->
         <div class="menu-item" @click="handleCopyName">
           <span class="menu-icon codicon codicon-files"></span>
-          <span class="menu-label">复制名称</span>
+          <span class="menu-label">{{ t("file_menu.copy_name") || "Copy Name" }}</span>
         </div>
 
         <div class="menu-separator"></div>
@@ -42,14 +42,14 @@
         <!-- Rename -->
         <div class="menu-item" @click="handleRename">
           <span class="menu-icon codicon codicon-edit"></span>
-          <span class="menu-label">重命名</span>
+          <span class="menu-label">{{ t("file_menu.rename") || "Rename" }}</span>
           <span class="menu-shortcut">F2</span>
         </div>
 
         <!-- Delete -->
         <div class="menu-item danger" @click="handleDelete">
           <span class="menu-icon codicon codicon-trash"></span>
-          <span class="menu-label">删除</span>
+          <span class="menu-label">{{ t("file_menu.delete") || "Delete" }}</span>
           <span class="menu-shortcut">Del</span>
         </div>
 
@@ -83,13 +83,13 @@
         <!-- Git SCM & Git Graph Actions -->
         <div class="menu-item" @click="handleViewGitHistory">
           <span class="menu-icon codicon codicon-git-commit"></span>
-          <span class="menu-label">在 Git Graph 中查看提交历史</span>
+          <span class="menu-label">{{ t("file_menu.view_git_graph") || "View Commit History in Git Graph" }}</span>
         </div>
 
         <!-- Local History Action -->
         <div v-if="!contextMenu.node?.is_dir" class="menu-item" @click="handleOpenLocalHistory">
           <span class="menu-icon codicon codicon-history"></span>
-          <span class="menu-label">本地历史记录 (Local History)</span>
+          <span class="menu-label">{{ t("file_menu.local_history") || "Local History" }}</span>
         </div>
 
         <!-- Git Changes Group -->
@@ -98,22 +98,22 @@
 
           <div class="menu-item" @click="handleOpenDiff">
             <span class="menu-icon codicon codicon-diff"></span>
-            <span class="menu-label">打开差异比对 (Diff)</span>
+            <span class="menu-label">{{ t("file_menu.open_diff") || "Open Diff" }}</span>
           </div>
 
           <div v-if="gitStateInfo.isStaged" class="menu-item" @click="handleUnstageFile">
             <span class="menu-icon codicon codicon-remove"></span>
-            <span class="menu-label">取消暂存更改 (Unstage)</span>
+            <span class="menu-label">{{ t("file_menu.unstage_changes") || "Unstage Changes" }}</span>
           </div>
 
           <div v-if="gitStateInfo.isUnstaged" class="menu-item" @click="handleStageFile">
             <span class="menu-icon codicon codicon-add"></span>
-            <span class="menu-label">暂存更改 (Stage)</span>
+            <span class="menu-label">{{ t("file_menu.stage_changes") || "Stage Changes" }}</span>
           </div>
 
           <div v-if="gitStateInfo.isUnstaged" class="menu-item danger" @click="handleDiscardFile">
             <span class="menu-icon codicon codicon-discard"></span>
-            <span class="menu-label">放弃更改 (Discard)</span>
+            <span class="menu-label">{{ t("file_menu.discard_changes") || "Discard Changes" }}</span>
           </div>
         </template>
       </div>
@@ -218,7 +218,12 @@ async function handleDiscardFile() {
   const node = contextMenu.value.node;
   closeContextMenu();
   if (!node) return;
-  if (confirm(`确定要放弃对 "${node.name}" 的所有未暂存更改吗？`)) {
+  if (
+    confirm(
+      t("file_menu.discard_confirm", { name: node.name }) ||
+        `Are you sure you want to discard all unstaged changes to "${node.name}"?`
+    )
+  ) {
     await discard([node.path]);
     notifyGitStatusChanged();
   }
@@ -278,7 +283,8 @@ async function handleRemoveFromWorkspace() {
   closeContextMenu();
   if (!node) return;
   const ok = window.confirm(
-    `确定要将文件夹 [${node.name}] 从工作区中删除吗？\n此操作仅将其从工作区视图中移出，绝对不会删除磁盘上的任何文件。`
+    t("file_menu.remove_workspace_confirm", { name: node.name }) ||
+      `Are you sure you want to remove folder [${node.name}] from workspace?\nThis only removes it from the workspace view and does not delete any files on disk.`
   );
   if (ok) {
     await removeFolderFromWorkspace(node.path);

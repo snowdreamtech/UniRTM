@@ -5,25 +5,25 @@
   <Teleport to="body">
     <div v-if="visible && env" class="context-menu-backdrop" @click="handleClose" @contextmenu.prevent="handleClose">
       <div ref="menuRef" class="env-context-menu" :style="adjustedStyle" @click.stop>
-        <!-- 1. 编辑 (Edit) -->
+        <!-- 1. Edit -->
         <div class="menu-item" @click="handleAction('edit')">
           <span class="menu-icon codicon codicon-edit"></span>
           <span class="menu-label">{{ t("common.edit") || "Edit" }}</span>
         </div>
 
-        <!-- 2. 复制变量值 (Copy Value) -->
+        <!-- 2. Copy Value -->
         <div class="menu-item" @click="handleAction('copy-value')">
           <span class="menu-icon codicon codicon-copy"></span>
           <span class="menu-label">{{ t("environments.copy_val") || "Copy Value" }}</span>
         </div>
 
-        <!-- 3. 复制变量名 (Copy Name) -->
+        <!-- 3. Copy Name -->
         <div class="menu-item" @click="handleAction('copy-name')">
           <span class="menu-icon codicon codicon-symbol-variable"></span>
           <span class="menu-label">{{ t("environments.copy_name") || "Copy Variable Name" }}</span>
         </div>
 
-        <!-- 4. 恢复基准值 (Restore Base Value) - 特有/覆盖项 -->
+        <!-- 4. Restore Base Value -->
         <div v-if="env.isOverride || env.is_override" class="menu-item" @click="handleAction('restore-base')">
           <span class="menu-icon codicon codicon-history"></span>
           <span class="menu-label">{{ t("environments.restore_base") || "Restore Base" }}</span>
@@ -31,7 +31,7 @@
 
         <div class="menu-separator"></div>
 
-        <!-- 5. 删除 (Delete) -->
+        <!-- 5. Delete -->
         <div class="menu-item danger" @click="handleAction('delete')">
           <span class="menu-icon codicon codicon-trash"></span>
           <span class="menu-label">{{ t("common.delete") || "Delete" }}</span>

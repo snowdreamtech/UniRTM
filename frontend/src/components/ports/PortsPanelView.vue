@@ -39,9 +39,12 @@
       <div class="banner-left">
         <span class="codicon codicon-shield banner-icon"></span>
         <span class="banner-text">
-          当前有
-          <strong>{{ publicPortsCount }}</strong>
-          个端口处于<strong>公开访问</strong>状态（局域网与外部网络可直接建立连接）
+          <span>{{ t("ports.banner_text_prefix") || "Currently " }}</span
+          ><strong>{{ publicPortsCount }}</strong
+          ><span>{{
+            t("ports.banner_text_suffix") ||
+            " ports in Public state (Accessible directly from LAN and external networks)"
+          }}</span>
         </span>
       </div>
       <div class="banner-right">
@@ -105,7 +108,10 @@
                 <span
                   v-if="item.localPort && item.localPort !== item.port"
                   class="port-mapping-pill font-mono"
-                  :title="`远程端口 ${item.port} 映射到本地 ${item.localPort}`"
+                  :title="
+                    t('ports.remote_map_title', { port: item.port, localPort: item.localPort }) ||
+                    `Remote port ${item.port} forwarded to local ${item.localPort}`
+                  "
                 >
                   &rarr; {{ item.localPort }}
                 </span>
@@ -114,7 +120,7 @@
                 <span
                   v-if="item.probe?.isHttps || item.protocol === 'https'"
                   class="protocol-badge https"
-                  title="TLS/HTTPS 加密协议"
+                  :title="t('ports.tls_title') || 'TLS/HTTPS Encrypted Protocol'"
                 >
                   <span class="codicon codicon-lock"></span>
                   <span>HTTPS</span>
@@ -125,7 +131,12 @@
                   v-if="item.workspaceHint"
                   class="origin-pill"
                   :class="item.workspaceHint.serviceType"
-                  :title="`工作区语义: ${item.workspaceHint.sourceFile} (${item.workspaceHint.framework || ''})`"
+                  :title="
+                    t('ports.semantic_hint', {
+                      file: item.workspaceHint.sourceFile,
+                      framework: item.workspaceHint.framework || '',
+                    }) || `Workspace Semantic: ${item.workspaceHint.sourceFile} (${item.workspaceHint.framework || ''})`
+                  "
                 >
                   {{ item.workspaceHint.sourceFile.includes("compose") ? "compose" : "workspace" }}
                 </span>
@@ -230,7 +241,12 @@
                 <div
                   v-if="item.probe?.detectedService"
                   class="probe-banner"
-                  :title="`探针探测服务: ${item.probe.detectedService} (耗时 ${item.probe.probeDurationMs || 0}ms)`"
+                  :title="
+                    t('ports.probe_detected', {
+                      service: item.probe.detectedService,
+                      latency: item.probe.probeDurationMs || 0,
+                    }) || `Probe detected service: ${item.probe.detectedService} (${item.probe.probeDurationMs || 0}ms)`
+                  "
                 >
                   <span class="codicon codicon-pulse"></span>
                   <span class="probe-text">{{ item.probe.detectedService }}</span>
@@ -286,7 +302,7 @@
                   v-model.number="newPortNumber"
                   type="number"
                   class="inline-port-input font-mono"
-                  placeholder="端口 (如 3000)"
+                  :placeholder="t('ports.port_input_placeholder') || 'Port (e.g. 3000)'"
                   min="1"
                   max="65535"
                   @keydown.enter="submitInlineAdd"
@@ -296,7 +312,7 @@
                   v-model="newPortLabel"
                   type="text"
                   class="inline-label-input"
-                  placeholder="标签 (选填)"
+                  :placeholder="t('ports.label_input_placeholder') || 'Label (optional)'"
                   @keydown.enter="submitInlineAdd"
                   @keydown.esc="cancelInlineAdd"
                 />
@@ -466,15 +482,23 @@
               <span class="browser-title font-mono">{{ previewModalTitle }}</span>
             </div>
             <div class="simple-browser-address-bar">
-              <button class="browser-btn" @click="reloadPreviewFrame" title="重新加载">
+              <button class="browser-btn" @click="reloadPreviewFrame" :title="t('ports.reload_preview') || 'Reload'">
                 <span class="codicon codicon-refresh"></span>
               </button>
               <input type="text" class="browser-url-input font-mono" :value="previewModalUrl" readonly />
-              <button class="browser-btn" @click="openExternalFromPreview" title="在外部浏览器中打开">
+              <button
+                class="browser-btn"
+                @click="openExternalFromPreview"
+                :title="t('ports.open_external_preview') || 'Open in External Browser'"
+              >
                 <span class="codicon codicon-link-external"></span>
               </button>
             </div>
-            <button class="browser-close-btn" @click="isPreviewModalOpen = false" title="关闭预览">
+            <button
+              class="browser-close-btn"
+              @click="isPreviewModalOpen = false"
+              :title="t('ports.close_preview') || 'Close Preview'"
+            >
               <span class="codicon codicon-close"></span>
             </button>
           </div>
@@ -506,7 +530,10 @@
           </div>
           <div class="change-port-body">
             <p class="change-port-desc">
-              为端口 <strong>{{ targetLocalPortItem?.port }}</strong> 指定新的本地映射端口号 (1 - 65535)：
+              {{
+                t("ports.change_port_prompt", { port: targetLocalPortItem?.port ?? "" }) ||
+                `Specify new local port for port ${targetLocalPortItem?.port} (1 - 65535):`
+              }}
             </p>
             <input
               ref="changeLocalPortInputRef"
@@ -520,8 +547,12 @@
             />
           </div>
           <div class="change-port-footer">
-            <button class="dialog-btn secondary" @click="isChangeLocalPortModalOpen = false">取消</button>
-            <button class="dialog-btn primary" @click="submitChangeLocalPort">确认</button>
+            <button class="dialog-btn secondary" @click="isChangeLocalPortModalOpen = false">
+              {{ t("common.cancel") || "Cancel" }}
+            </button>
+            <button class="dialog-btn primary" @click="submitChangeLocalPort">
+              {{ t("common.confirm") || "Confirm" }}
+            </button>
           </div>
         </div>
       </div>
@@ -542,12 +573,26 @@
           </div>
           <div class="security-modal-body">
             <p class="security-modal-desc">
-              您正在将端口
-              <strong>{{ pendingVisibilityPort?.port }} ({{ pendingVisibilityPort?.label }})</strong> 设为公开：
+              {{
+                t("ports.make_public_confirm", {
+                  port: pendingVisibilityPort?.port ?? "",
+                  label: pendingVisibilityPort?.label ?? "",
+                }) || `You are setting port ${pendingVisibilityPort?.port} (${pendingVisibilityPort?.label}) to Public:`
+              }}
             </p>
             <div class="security-info-box">
-              <p>• 处于公开状态后，同局域网设备或拥有访问链接的人员均可直接向该 Web 服务发送请求。</p>
-              <p>• 如服务包含未鉴权的敏感数据，建议在联调完毕后及时重置为私有。</p>
+              <p>
+                {{
+                  t("ports.make_public_warn1") ||
+                  "• Once set to public, devices on the same LAN or anyone with the link can make requests to this web service."
+                }}
+              </p>
+              <p>
+                {{
+                  t("ports.make_public_warn2") ||
+                  "• If service contains unauthenticated sensitive data, reset to private when debugging completes."
+                }}
+              </p>
             </div>
             <label class="security-checkbox-label">
               <input type="checkbox" v-model="dontAskAgainWeb" />
@@ -587,7 +632,10 @@
               <div class="alert-title-row">
                 <span class="codicon codicon-shield alert-shield"></span>
                 <strong
-                  >检测到敏感基础设施服务：{{ pendingRiskAssessment?.serviceCategory }} (端口
+                  >{{
+                    t("ports.sensitive_infra", { category: pendingRiskAssessment?.serviceCategory ?? "" }) ||
+                    `Sensitive infrastructure service detected: ${pendingRiskAssessment?.serviceCategory} (Port`
+                  }}
                   {{ pendingVisibilityPort?.port }})</strong
                 >
               </div>

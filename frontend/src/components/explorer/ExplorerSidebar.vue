@@ -13,32 +13,48 @@
 
       <!-- Action Toolbar (New File, New Folder, Refresh, Collapse All) -->
       <div class="explorer-toolbar">
-        <button class="toolbar-btn" title="新建文件" @click.stop="handleToolbarNewFile">
+        <button
+          class="toolbar-btn"
+          :title="t('explorer.toolbar_new_file') || 'New File'"
+          @click.stop="handleToolbarNewFile"
+        >
           <span class="codicon codicon-new-file"></span>
         </button>
-        <button class="toolbar-btn" title="新建文件夹" @click.stop="handleToolbarNewFolder">
+        <button
+          class="toolbar-btn"
+          :title="t('explorer.toolbar_new_folder') || 'New Folder'"
+          @click.stop="handleToolbarNewFolder"
+        >
           <span class="codicon codicon-new-folder"></span>
         </button>
         <button
           class="toolbar-btn"
           :class="{ 'is-active': isGitFilterActive }"
-          :title="isGitFilterActive ? '显示全部文件 (退出 Git 聚焦)' : '仅显示 Git 变更 (Git 聚焦模式)'"
+          :title="
+            isGitFilterActive
+              ? t('explorer.git_filter_exit') || 'Show All Files (Exit Git Focus)'
+              : t('explorer.git_filter_enter') || 'Show Only Git Changes (Git Focus Mode)'
+          "
           @click.stop="toggleGitFilter"
         >
           <span class="codicon codicon-source-control"></span>
         </button>
         <button
           class="toolbar-btn"
-          title="刷新资源管理器"
+          :title="t('explorer.refresh_explorer') || 'Refresh Explorer'"
           :class="{ 'is-loading': isLoading }"
           @click.stop="handleRefresh"
         >
           <span class="codicon codicon-refresh"></span>
         </button>
-        <button class="toolbar-btn" title="将文件夹添加到工作区..." @click.stop="openAddFolderModal('', '')">
+        <button
+          class="toolbar-btn"
+          :title="t('explorer.add_folder_to_workspace') || 'Add Folder to Workspace...'"
+          @click.stop="openAddFolderModal('', '')"
+        >
           <span class="codicon codicon-folder-library"></span>
         </button>
-        <button class="toolbar-btn" title="全部折叠" @click.stop="collapseAll">
+        <button class="toolbar-btn" :title="t('explorer.collapse_all') || 'Collapse All'" @click.stop="collapseAll">
           <span class="codicon codicon-collapse-all"></span>
         </button>
       </div>
@@ -49,14 +65,14 @@
       <!-- Loading State -->
       <div v-if="isLoading && !filteredTree" class="tree-status-state">
         <span class="codicon codicon-loading codicon-modifier-spin"></span>
-        <span class="status-text">加载目录树中...</span>
+        <span class="status-text">{{ t("explorer.loading_tree") || "Loading directory tree..." }}</span>
       </div>
 
       <!-- Error State -->
       <div v-else-if="error" class="tree-status-state is-error">
         <span class="codicon codicon-error"></span>
         <span class="status-text">{{ error }}</span>
-        <button class="retry-btn" @click.stop="fetchTree">重试</button>
+        <button class="retry-btn" @click.stop="fetchTree">{{ t("explorer.retry") || "Retry" }}</button>
       </div>
 
       <!-- Tree Nodes -->
@@ -78,7 +94,11 @@
               v-model="createRootInputValue"
               type="text"
               class="tree-inline-input"
-              :placeholder="inlineAction?.type === 'new-folder' ? '文件夹名称' : '文件名'"
+              :placeholder="
+                inlineAction?.type === 'new-folder'
+                  ? t('tree.folder_name_placeholder') || 'Folder name'
+                  : t('tree.file_name_placeholder') || 'File name'
+              "
               @keydown.enter.stop="commitRootCreate"
               @keydown.esc.stop="cancelInlineAction"
               @blur="commitRootCreate"
@@ -93,8 +113,8 @@
         </template>
 
         <div v-else-if="!isInlineCreatingRoot" class="tree-empty-state">
-          <span v-if="isGitFilterActive">无 Git 变更项 (工作区干净)</span>
-          <span v-else>暂无文件</span>
+          <span v-if="isGitFilterActive">{{ t("explorer.no_git_changes") || "No Git changes (Workspace clean)" }}</span>
+          <span v-else>{{ t("explorer.no_files") || "No files" }}</span>
         </div>
       </div>
     </div>
@@ -156,7 +176,8 @@ const workspaceName = computed(() => {
   if (isMultiRoot.value) {
     return (
       t("explorer.workspace_multi_title", { count: workspaceRoots.value.length }) ||
-      `工作区 (${workspaceRoots.value.length} 个文件夹)`
+      t("explorer.workspace_folders_count", { count: workspaceRoots.value.length }) ||
+      `Workspace (${workspaceRoots.value.length} folders)`
     );
   }
   return (tree.value?.name || "UNIRTM").toUpperCase();

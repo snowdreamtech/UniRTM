@@ -13,7 +13,7 @@
       @click="handleClick"
       @dblclick="handleDblClick"
       @contextmenu="handleContextMenu"
-      :title="(node.path || node.name) + (node.is_ignored ? ' (已由 .gitignore 排除)' : '')"
+      :title="(node.path || node.name) + (node.is_ignored ? t('tree.ignored_tag') || ' (excluded by .gitignore)' : '')"
     >
       <!-- Indent guide lines for deep nesting -->
       <div v-for="i in depth" :key="i" class="tree-indent-guide" :style="{ left: `${(i - 1) * 14 + 12}px` }"></div>
@@ -66,17 +66,28 @@
         <span
           v-else-if="dirGitCount > 0 && !isExpanded"
           class="git-dir-badge"
-          :title="`包含 ${dirGitCount} 个待提交的变动文件`"
+          :title="
+            t('tree.dir_changes_count', { count: dirGitCount }) || `Contains ${dirGitCount} uncommitted changed files`
+          "
           >+{{ dirGitCount }}</span
         >
       </div>
 
       <!-- Actions on Hover (Rename, Delete) -->
       <div class="tree-row-actions">
-        <button v-if="!node.is_dir" class="tree-action-btn" title="重命名 (F2)" @click.stop="startInlineRename(node)">
+        <button
+          v-if="!node.is_dir"
+          class="tree-action-btn"
+          :title="t('tree.rename_f2') || 'Rename (F2)'"
+          @click.stop="startInlineRename(node)"
+        >
           <span class="codicon codicon-edit"></span>
         </button>
-        <button class="tree-action-btn danger" title="删除" @click.stop="promptDelete(node)">
+        <button
+          class="tree-action-btn danger"
+          :title="t('tree.delete_tip') || 'Delete'"
+          @click.stop="promptDelete(node)"
+        >
           <span class="codicon codicon-trash"></span>
         </button>
       </div>
@@ -105,7 +116,11 @@
           v-model="createInputValue"
           type="text"
           class="tree-inline-input"
-          :placeholder="inlineAction?.type === 'new-folder' ? '文件夹名称' : '文件名'"
+          :placeholder="
+            inlineAction?.type === 'new-folder'
+              ? t('tree.folder_name_placeholder') || 'Folder name'
+              : t('tree.file_name_placeholder') || 'File name'
+          "
           @keydown.enter.stop="commitCreate"
           @keydown.esc.stop="cancelInlineAction"
           @blur="commitCreate"
@@ -127,6 +142,7 @@ import type { FSNode } from "../../composables/useFileTree";
 import { useFileTree } from "../../composables/useFileTree";
 import { useGit } from "../../composables/useGit";
 import TechIcon from "../common/TechIcon.vue";
+import { t } from "../../i18n";
 
 const props = defineProps<{
   node: FSNode;

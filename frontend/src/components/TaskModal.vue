@@ -35,7 +35,7 @@
               v-model="form.name"
               type="text"
               class="form-input font-mono"
-              placeholder="例如: build:prod"
+              :placeholder="t('task_modal.name_placeholder') || 'e.g.: build:prod'"
               required
               :disabled="saving"
             />
@@ -52,7 +52,7 @@
             <textarea
               v-model="form.command"
               class="form-textarea font-mono"
-              placeholder="例如: npm run build&#10;或: go test -v ./..."
+              :placeholder="t('task_modal.run_placeholder') || 'e.g.: npm run build\nor: go test -v ./...'"
               rows="4"
               required
               :disabled="saving"
@@ -69,7 +69,9 @@
               v-model="form.description"
               type="text"
               class="form-input"
-              placeholder="例如: 编译前端代码并输出到 dist 目录"
+              :placeholder="
+                t('task_modal.desc_placeholder') || 'e.g.: Compile frontend code and output to dist directory'
+              "
               :disabled="saving"
             />
           </div>
@@ -101,7 +103,7 @@
                   v-model="customDepInput"
                   type="text"
                   class="form-input font-mono small-input"
-                  placeholder="手动输入依赖任务名并按回车..."
+                  :placeholder="t('task_modal.dep_placeholder') || 'Enter dependency task name and press Enter...'"
                   @keydown.enter.prevent="addCustomDependency"
                   :disabled="saving"
                 />

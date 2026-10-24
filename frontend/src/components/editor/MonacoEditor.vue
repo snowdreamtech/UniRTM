@@ -2,12 +2,12 @@
   <div class="monaco-wrapper">
     <div v-if="isLoading" class="monaco-loading-overlay">
       <span class="codicon codicon-loading codicon-modifier-spin"></span>
-      <span>加载编辑器中...</span>
+      <span>{{ t("editor.loading") || "Loading editor..." }}</span>
     </div>
     <div v-else-if="mountError" class="monaco-error-overlay">
       <span class="codicon codicon-error error-icon"></span>
       <div class="error-msg">
-        <p class="error-title">编辑器加载异常</p>
+        <p class="error-title">{{ t("editor.error") || "Failed to load editor" }}</p>
         <p class="error-detail">{{ mountError }}</p>
       </div>
     </div>
@@ -22,18 +22,29 @@
       <div class="peek-header">
         <span class="peek-title">
           <span class="codicon codicon-history"></span>
-          原版本代码 (第 {{ activeDiffPeek.diff.startLineNumber }} 行)
+          {{
+            t("editor.original_code_line", { line: activeDiffPeek.diff.startLineNumber }) ||
+            `Original code (Line ${activeDiffPeek.diff.startLineNumber})`
+          }}
         </span>
         <div class="peek-actions">
-          <button class="peek-btn stage" title="暂存此代码块改动" @click="stageActiveDiffRange">
+          <button
+            class="peek-btn stage"
+            :title="t('editor.stage_range_tip') || 'Stage this diff range'"
+            @click="stageActiveDiffRange"
+          >
             <span class="codicon codicon-add"></span>
-            暂存此块
+            {{ t("editor.stage_range") || "Stage Range" }}
           </button>
-          <button class="peek-btn revert" title="回滚该代码块至原版 (Ctrl+Z 可撤销)" @click="revertActiveDiffRange">
+          <button
+            class="peek-btn revert"
+            :title="t('editor.revert_range_tip') || 'Revert this range to original (Ctrl+Z to undo)'"
+            @click="revertActiveDiffRange"
+          >
             <span class="codicon codicon-discard"></span>
-            还原此块
+            {{ t("editor.revert_range") || "Revert Range" }}
           </button>
-          <button class="peek-btn close" title="关闭" @click="closeDiffPeek">
+          <button class="peek-btn close" :title="t('common.close') || 'Close'" @click="closeDiffPeek">
             <span class="codicon codicon-close"></span>
           </button>
         </div>
@@ -42,7 +53,9 @@
         <pre v-if="activeDiffPeek.diff.originalText" class="peek-pre deleted-code">{{
           activeDiffPeek.diff.originalText
         }}</pre>
-        <span v-else class="peek-empty-tip">(新增代码，原版本无此内容)</span>
+        <span v-else class="peek-empty-tip">{{
+          t("editor.diff_peek_empty") || "(New code, does not exist in original)"
+        }}</span>
       </div>
     </div>
     <!-- Merge Conflict Banner Widget -->
@@ -50,33 +63,53 @@
       <div class="conflict-banner-info">
         <span class="codicon codicon-warning conflict-icon"></span>
         <span class="conflict-text">
-          代码合并冲突 (第 {{ activeConflictIdx + 1 }}/{{ detectedConflicts.length }} 处 · 第
-          {{ activeConflict.startLine }} 行)
+          {{
+            t("editor.conflict_header", {
+              idx: activeConflictIdx + 1,
+              total: detectedConflicts.length,
+              line: activeConflict.startLine,
+            }) ||
+            `Merge Conflict (${activeConflictIdx + 1}/${detectedConflicts.length} · Line ${activeConflict.startLine})`
+          }}
         </span>
       </div>
       <div class="conflict-actions">
         <button
           class="conflict-action-btn current"
-          title="采用当前分支的修改"
+          :title="t('editor.accept_current_tip') || 'Accept current branch changes'"
           @click="resolveActiveConflict('current')"
         >
-          采用当前更改 ({{ activeConflict.currentLabel }})
+          {{
+            t("editor.accept_current", { label: activeConflict.currentLabel }) ||
+            `Accept Current (${activeConflict.currentLabel})`
+          }}
         </button>
         <button
           class="conflict-action-btn incoming"
-          title="采用传入分支的修改"
+          :title="t('editor.accept_incoming_tip') || 'Accept incoming branch changes'"
           @click="resolveActiveConflict('incoming')"
         >
-          采用传入更改 ({{ activeConflict.incomingLabel }})
+          {{
+            t("editor.accept_incoming", { label: activeConflict.incomingLabel }) ||
+            `Accept Incoming (${activeConflict.incomingLabel})`
+          }}
         </button>
-        <button class="conflict-action-btn both" title="同时保留双方更改" @click="resolveActiveConflict('both')">
-          保留两者
+        <button
+          class="conflict-action-btn both"
+          :title="t('editor.accept_both_tip') || 'Keep changes from both branches'"
+          @click="resolveActiveConflict('both')"
+        >
+          {{ t("editor.accept_both") || "Accept Both" }}
         </button>
         <div class="conflict-nav" v-if="detectedConflicts.length > 1">
-          <button class="conflict-nav-btn" title="上一处冲突" @click="prevConflict">
+          <button
+            class="conflict-nav-btn"
+            :title="t('editor.prev_conflict') || 'Previous Conflict'"
+            @click="prevConflict"
+          >
             <span class="codicon codicon-arrow-up"></span>
           </button>
-          <button class="conflict-nav-btn" title="下一处冲突" @click="nextConflict">
+          <button class="conflict-nav-btn" :title="t('editor.next_conflict') || 'Next Conflict'" @click="nextConflict">
             <span class="codicon codicon-arrow-down"></span>
           </button>
         </div>
@@ -100,6 +133,7 @@ import {
   type ConflictResolution,
 } from "../../utils/mergeConflict";
 import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
+import { t } from "../../i18n";
 
 const props = defineProps<{
   tab: EditorTab;
@@ -312,7 +346,7 @@ function scheduleGutterDiffUpdate(): void {
 import { localizeEditorActions, setupEditorContextMenuLocalization } from "../../services/editor/monacoLocalization";
 
 function initMonacoThemes(m: typeof MonacoType): void {
-  // 浅色编辑器 -> 统一白底浅色右键菜单
+  // Light editor context menu
   m.editor.defineTheme("unirtm-light", {
     base: "vs",
     inherit: true,
@@ -338,7 +372,7 @@ function initMonacoThemes(m: typeof MonacoType): void {
     },
   });
 
-  // 深色编辑器 -> 统一深色高雅质感右键菜单
+  // Dark editor context menu
   m.editor.defineTheme("unirtm-dark", {
     base: "vs-dark",
     inherit: true,
@@ -422,7 +456,7 @@ onMounted(async () => {
     // Register Send to Terminal Action & Shortcut (Shift+Enter)
     editorInstance.addAction({
       id: "unirtm.sendSelectionToTerminal",
-      label: "在活动终端中运行 (Run in Active Terminal)",
+      label: t("editor.run_in_terminal") || "Run in Active Terminal",
       keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
       contextMenuGroupId: "navigation",
       contextMenuOrder: 1.5,

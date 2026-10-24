@@ -5,18 +5,22 @@
       <div class="diff-subbar-left">
         <span class="codicon codicon-diff"></span>
         <span class="diff-title-text">{{ tab.name }}</span>
-        <span v-if="tab.diffMeta?.isStaged" class="diff-badge staged">已暂存</span>
-        <span v-else class="diff-badge unstaged">工作区更改</span>
+        <span v-if="tab.diffMeta?.isStaged" class="diff-badge staged">{{ t("diff.staged_badge") || "Staged" }}</span>
+        <span v-else class="diff-badge unstaged">{{ t("diff.workspace_badge") || "Workspace Changes" }}</span>
       </div>
       <div class="diff-subbar-right">
         <button
           type="button"
           class="diff-mode-btn"
-          :title="isInline ? '切换为并排对比模式' : '切换为行内对比模式'"
+          :title="
+            isInline
+              ? t('diff.toggle_side_by_side') || 'Switch to side-by-side mode'
+              : t('diff.toggle_inline') || 'Switch to inline mode'
+          "
           @click="toggleInlineMode"
         >
           <span class="codicon" :class="isInline ? 'codicon-split-horizontal' : 'codicon-list-flat'"></span>
-          <span>{{ isInline ? "并排对比" : "行内对比" }}</span>
+          <span>{{ isInline ? t("diff.side_by_side") || "Side by Side" : t("diff.inline") || "Inline" }}</span>
         </button>
       </div>
     </div>
@@ -24,14 +28,14 @@
     <!-- Loading Overlay -->
     <div v-if="isLoading" class="monaco-loading-overlay">
       <span class="codicon codicon-loading codicon-modifier-spin"></span>
-      <span>加载差异对比中...</span>
+      <span>{{ t("diff.loading") || "Loading diff comparison..." }}</span>
     </div>
 
     <!-- Error Overlay -->
     <div v-else-if="mountError" class="monaco-error-overlay">
       <span class="codicon codicon-error error-icon"></span>
       <div class="error-msg">
-        <p class="error-title">差异对比加载失败</p>
+        <p class="error-title">{{ t("diff.failed") || "Failed to load diff comparison" }}</p>
         <p class="error-detail">{{ mountError }}</p>
       </div>
     </div>
@@ -48,6 +52,7 @@ import "monaco-editor/min/vs/editor/editor.main.css";
 import { loadMonaco, getLanguageForFile } from "../../services/editor/monacoLoader";
 import { setupEditorContextMenuLocalization } from "../../services/editor/monacoLocalization";
 import type { EditorTab } from "../../composables/useEditorTabs";
+import { t } from "../../i18n";
 
 const props = defineProps<{
   tab: EditorTab;

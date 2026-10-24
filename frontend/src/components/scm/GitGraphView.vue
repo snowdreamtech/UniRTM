@@ -61,7 +61,11 @@
       <div class="toolbar-item type-selector-item">
         <div class="type-select-wrapper" :class="{ 'has-filter': selectedCommitType !== 'all' }">
           <span class="codicon codicon-tag type-select-icon"></span>
-          <select v-model="selectedCommitType" class="graph-type-select" title="按提交类型过滤 (Conventional Commits)">
+          <select
+            v-model="selectedCommitType"
+            class="graph-type-select"
+            :title="t('gitgraph.filter_type_title') || 'Filter by Commit Type (Conventional Commits)'"
+          >
             <option v-for="tItem in commitTypeFilterOptions" :key="tItem.value" :value="tItem.value">
               {{ tItem.label }}
             </option>
@@ -71,7 +75,7 @@
         <button
           v-if="selectedCommitType !== 'all'"
           class="clear-type-filter-btn"
-          title="清除类型过滤"
+          :title="t('gitgraph.clear_filter_title') || 'Clear type filter'"
           @click="selectedCommitType = 'all'"
         >
           <span class="codicon codicon-close"></span>
@@ -975,7 +979,7 @@
         </template>
       </div>
 
-      <!-- Ref Badge Context Menu (Aligned with 图 1 & 图 2) -->
+      <!-- Ref Badge Context Menu (Aligned with Spec 1 & 2) -->
       <div
         v-if="refContextMenuVisible"
         class="graph-context-menu"
@@ -984,7 +988,7 @@
       >
         <!-- Branch Context Menu -->
         <template v-if="selectedRef?.type === 'branch' || selectedRef?.type === 'head'">
-          <!-- 图 1: Current Branch Context Menu -->
+          <!-- Spec 1: Current Branch Context Menu -->
           <template v-if="isRefCurrent">
             <div class="menu-item" @click="handleRefAction('rename-branch')">
               {{ t("scm.branch.rename") }}
@@ -1005,7 +1009,7 @@
             </div>
           </template>
 
-          <!-- 图 2: Inactive Branch Context Menu -->
+          <!-- Spec 2: Inactive Branch Context Menu -->
           <template v-else>
             <div class="menu-item" @click="handleRefAction('checkout-branch')">
               {{ t("scm.branch.checkout") }}
@@ -1197,20 +1201,68 @@ const showStashes = ref(true);
 const searchQuery = ref("");
 const selectedCommitType = ref<string>("all");
 
-const commitTypeFilterOptions = [
-  { label: "全部类型", value: "all", title: "显示全部提交" },
-  { label: "feat (新功能)", value: "feat", title: "仅看新功能 (Features)" },
-  { label: "fix (缺陷修复)", value: "fix", title: "仅看缺陷修复 (Bug Fixes)" },
-  { label: "docs (文档更新)", value: "docs", title: "仅看文档更新 (Docs)" },
-  { label: "style (代码风格)", value: "style", title: "仅看代码风格 (Style)" },
-  { label: "refactor (代码重构)", value: "refactor", title: "仅看代码重构 (Refactor)" },
-  { label: "perf (性能优化)", value: "perf", title: "仅看性能优化 (Performance)" },
-  { label: "test (测试用例)", value: "test", title: "仅看测试用例 (Test)" },
-  { label: "build (构建依赖)", value: "build", title: "仅看构建依赖 (Build)" },
-  { label: "ci (持续集成)", value: "ci", title: "仅看持续集成 (CI/CD)" },
-  { label: "chore (日常维护)", value: "chore", title: "仅看日常维护 (Chore)" },
-  { label: "revert (代码回滚)", value: "revert", title: "仅看代码回滚 (Revert)" },
-];
+const commitTypeFilterOptions = computed(() => [
+  {
+    label: t("gitgraph.type_all") || "All Types",
+    value: "all",
+    title: t("gitgraph.type_all_tip") || "Show all commits",
+  },
+  {
+    label: t("gitgraph.type_feat") || "feat (Features)",
+    value: "feat",
+    title: t("gitgraph.type_feat_tip") || "Features only",
+  },
+  {
+    label: t("gitgraph.type_fix") || "fix (Bug Fixes)",
+    value: "fix",
+    title: t("gitgraph.type_fix_tip") || "Bug Fixes only",
+  },
+  {
+    label: t("gitgraph.type_docs") || "docs (Documentation)",
+    value: "docs",
+    title: t("gitgraph.type_docs_tip") || "Documentation only",
+  },
+  {
+    label: t("gitgraph.type_style") || "style (Styles)",
+    value: "style",
+    title: t("gitgraph.type_style_tip") || "Styles only",
+  },
+  {
+    label: t("gitgraph.type_refactor") || "refactor (Refactoring)",
+    value: "refactor",
+    title: t("gitgraph.type_refactor_tip") || "Refactoring only",
+  },
+  {
+    label: t("gitgraph.type_perf") || "perf (Performance)",
+    value: "perf",
+    title: t("gitgraph.type_perf_tip") || "Performance only",
+  },
+  {
+    label: t("gitgraph.type_test") || "test (Tests)",
+    value: "test",
+    title: t("gitgraph.type_test_tip") || "Tests only",
+  },
+  {
+    label: t("gitgraph.type_build") || "build (Build)",
+    value: "build",
+    title: t("gitgraph.type_build_tip") || "Build only",
+  },
+  {
+    label: t("gitgraph.type_ci") || "ci (CI/CD)",
+    value: "ci",
+    title: t("gitgraph.type_ci_tip") || "CI/CD only",
+  },
+  {
+    label: t("gitgraph.type_chore") || "chore (Maintenance)",
+    value: "chore",
+    title: t("gitgraph.type_chore_tip") || "Maintenance only",
+  },
+  {
+    label: t("gitgraph.type_revert") || "revert (Reverts)",
+    value: "revert",
+    title: t("gitgraph.type_revert_tip") || "Reverts only",
+  },
+]);
 const tableWrapperRef = ref<HTMLElement | null>(null);
 const isInitialLoading = ref<boolean>(graphCommits.value.length === 0);
 const isGraphLoading = computed(() => isInitialLoading.value || isLoadingGraph.value);

@@ -5,19 +5,19 @@
   <Teleport to="body">
     <div v-if="visible && tool" class="context-menu-backdrop" @click="handleClose" @contextmenu.prevent="handleClose">
       <div ref="menuRef" class="tool-context-menu" :style="adjustedStyle" @click.stop>
-        <!-- 1. 切换 (Switch) -->
+        <!-- 1. Switch -->
         <div class="menu-item" @click="handleAction('switch')">
           <span class="menu-icon codicon codicon-arrow-swap"></span>
           <span class="menu-label">{{ t("runtimes.action_switch") || "Switch" }}</span>
         </div>
 
-        <!-- 2. 安装 (Install) -->
+        <!-- 2. Install -->
         <div class="menu-item" @click="handleAction('install')">
           <span class="menu-icon codicon codicon-cloud-download"></span>
           <span class="menu-label">{{ t("runtimes.action_install") || "Install" }}</span>
         </div>
 
-        <!-- 3. 锁定 / 解锁 (Lock / Unlock) -->
+        <!-- 3. Lock / Unlock -->
         <div class="menu-item" @click="handleAction('toggle-pin')">
           <span class="menu-icon codicon" :class="isPinned ? 'codicon-unlock' : 'codicon-lock'"></span>
           <span class="menu-label">
@@ -27,7 +27,7 @@
 
         <div class="menu-separator"></div>
 
-        <!-- 4. 删除 (Delete) -->
+        <!-- 4. Delete -->
         <div class="menu-item danger" @click="handleAction('delete')">
           <span class="menu-icon codicon codicon-trash"></span>
           <span class="menu-label">{{ t("runtimes.action_delete") || "Delete" }}</span>

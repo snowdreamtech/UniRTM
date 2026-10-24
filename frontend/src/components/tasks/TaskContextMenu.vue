@@ -5,13 +5,13 @@
   <Teleport to="body">
     <div v-if="visible && task" class="context-menu-backdrop" @click="handleClose" @contextmenu.prevent="handleClose">
       <div ref="menuRef" class="task-context-menu" :style="adjustedStyle" @click.stop>
-        <!-- 1. 运行 (Run) -->
+        <!-- 1. Run -->
         <div class="menu-item" @click="handleAction('run')">
           <span class="menu-icon codicon codicon-play"></span>
           <span class="menu-label">{{ t("tasks.run") || "Run" }}</span>
         </div>
 
-        <!-- 2. 编辑 (Edit) -->
+        <!-- 2. Edit -->
         <div class="menu-item" @click="handleAction('edit')">
           <span class="menu-icon codicon codicon-edit"></span>
           <span class="menu-label">{{ t("common.edit") || "Edit" }}</span>
@@ -19,7 +19,7 @@
 
         <div class="menu-separator"></div>
 
-        <!-- 3. 删除 (Delete) -->
+        <!-- 3. Delete -->
         <div class="menu-item danger" @click="handleAction('delete')">
           <span class="menu-icon codicon codicon-trash"></span>
           <span class="menu-label">{{ t("common.delete") || "Delete" }}</span>

@@ -14,6 +14,7 @@ import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 import { useTerminalPersistence } from "../../composables/useTerminalPersistence";
 import { useTerminalProcessWatcher } from "../../composables/useTerminalProcessWatcher";
 import { useTerminalNotifier } from "../../composables/useTerminalNotifier";
+import { t } from "../../i18n";
 
 const { registerDetectedPort } = usePorts();
 const detectedPorts = new Set<number>();
@@ -467,8 +468,12 @@ onBeforeUnmount(() => {
     <div v-if="!isConnected && !isConnecting" class="xterm-overlay">
       <div class="xterm-overlay-card">
         <span class="overlay-icon">⚠️</span>
-        <span class="overlay-text">{{ connectionError || "终端会话已断开" }}</span>
-        <button class="overlay-reconnect-btn" @click.stop="reconnect">重新连接</button>
+        <span class="overlay-text">{{
+          connectionError || t("terminal.disconnected") || "Terminal session disconnected"
+        }}</span>
+        <button class="overlay-reconnect-btn" @click.stop="reconnect">
+          {{ t("terminal.reconnect") || "Reconnect" }}
+        </button>
       </div>
     </div>
   </div>
