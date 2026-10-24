@@ -8,7 +8,7 @@
       <div>
         <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
           <TechIcon id="workbench:doctor" :size="20" />
-          <span>{{ t("doctor.title") || "UniRTM Doctor Diagnostics" }}</span>
+          <span>{{ t("doctor.title") || "System Health & Diagnostics" }}</span>
         </h2>
         <p class="view-desc">
           {{

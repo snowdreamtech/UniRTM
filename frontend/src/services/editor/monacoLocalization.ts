@@ -7,6 +7,7 @@ import { t, currentLocale, type TranslationDict } from "../../i18n";
  * Maps standard Monaco Editor context menu labels to i18n translation keys.
  */
 const MONACO_LABEL_TO_KEY: Record<string, keyof TranslationDict> = {
+  "Run in Active Terminal": "editor.run_in_terminal",
   "Change All Occurrences": "editor.action.change_all",
   Cut: "editor.action.cut",
   Copy: "editor.action.copy",
@@ -95,6 +96,7 @@ export function localizeEditorActions(editor: any): void {
  * Action icon mapping to Codicon symbols (100% aligned with FileContextMenu system).
  */
 const ACTION_KEY_ICON_MAP: Record<string, string> = {
+  "editor.run_in_terminal": "codicon-terminal",
   "editor.action.change_all": "codicon-edit",
   "editor.action.cut": "codicon-scissors",
   "editor.action.copy": "codicon-copy",

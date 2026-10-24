@@ -1324,7 +1324,7 @@ export const enUs: TranslationDict = {
   "tools.title": "Project Tools",
   "tools.reshim": "Reshim",
 
-  "doctor.title": "UniRTM Doctor Diagnostics",
+  "doctor.title": "System Health & Diagnostics",
   "doctor.healthy": "Environment Fully Healthy",
 
   "dashboard.kpi_tools": "Active Tools",
