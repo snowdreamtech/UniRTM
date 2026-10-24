@@ -580,7 +580,7 @@ export default defineConfig({
               suggestions.push({
                 id: "shims-missing",
                 severity: "warning",
-                message: "UniRTM shims 目录未添加到系统 PATH 环境变量中",
+                message: "UniRTM shims directory is not added to the system PATH environment variable",
                 command: "unirtm enable --shims",
                 actionable: true,
               });
@@ -591,7 +591,7 @@ export default defineConfig({
               suggestions.push({
                 id: "not-activated",
                 severity: "warning",
-                message: "当前 shell 环境未激活 UniRTM 自动代理路由",
+                message: "Current shell environment has not activated UniRTM automatic proxy routing",
                 command: "unirtm enable --shims",
                 actionable: true,
               });
@@ -2185,7 +2185,7 @@ export default defineConfig({
                     if (inb.type === "mixed" || inb.type === "http" || inb.type === "socks") {
                       port = inb.listen_port || 8889;
                       detected = true;
-                      desc = `检测到本机正在运行的 sing-box 混合代理服务 (端口 ${port})`;
+                      desc = `Detected running sing-box mixed proxy service on localhost (port ${port})`;
                       break;
                     }
                   }
@@ -2232,7 +2232,7 @@ export default defineConfig({
                 const httpProxy = proxyCfg.http || proxyCfg.https;
                 if (!httpProxy && !proxyCfg.socks5) {
                   res.setHeader("Content-Type", "application/json");
-                  res.end(JSON.stringify({ success: false, error: "未填写任何代理服务器地址" }));
+                  res.end(JSON.stringify({ success: false, error: "No proxy server address provided" }));
                   return;
                 }
                 const testURL = httpProxy || proxyCfg.socks5;
@@ -2250,7 +2250,7 @@ export default defineConfig({
                     JSON.stringify({
                       success: true,
                       rtt_ms: rtt,
-                      message: "代理服务器连通正常",
+                      message: "Proxy server connection succeeded",
                     })
                   );
                 });
@@ -2259,7 +2259,7 @@ export default defineConfig({
                   res.end(
                     JSON.stringify({
                       success: false,
-                      error: `代理服务器端口无法连通 (${testHost}:${testPort}): ${err.message}`,
+                      error: `Proxy server port cannot be connected (${testHost}:${testPort}): ${err.message}`,
                     })
                   );
                 });
@@ -2269,7 +2269,7 @@ export default defineConfig({
                   res.end(
                     JSON.stringify({
                       success: false,
-                      error: `连接代理服务器端口超时 (${testHost}:${testPort})`,
+                      error: `Connection to proxy server port timed out (${testHost}:${testPort})`,
                     })
                   );
                 });
@@ -2310,27 +2310,27 @@ export default defineConfig({
                   targets = [
                     { ecosystem: "npm", name: "npmmirror", url: "https://registry.npmmirror.com" },
                     { ecosystem: "go", name: "goproxy.cn", url: "https://goproxy.cn" },
-                    { ecosystem: "python", name: "清华大学 TUNA", url: "https://pypi.tuna.tsinghua.edu.cn/simple" },
+                    { ecosystem: "python", name: "Tsinghua TUNA", url: "https://pypi.tuna.tsinghua.edu.cn/simple" },
                     { ecosystem: "rust", name: "rsproxy.cn", url: "https://rsproxy.cn/crates.io-index" },
-                    { ecosystem: "ruby", name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" },
-                    { ecosystem: "composer", name: "阿里云 Composer", url: "https://mirrors.aliyun.com/composer/" },
-                    { ecosystem: "maven", name: "阿里云 Maven", url: "https://maven.aliyun.com/repository/public" },
+                    { ecosystem: "ruby", name: "Tsinghua TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" },
+                    { ecosystem: "composer", name: "Aliyun Composer", url: "https://mirrors.aliyun.com/composer/" },
+                    { ecosystem: "maven", name: "Aliyun Maven", url: "https://maven.aliyun.com/repository/public" },
                     {
                       ecosystem: "nuget",
-                      name: "华为云 NuGet",
+                      name: "Huawei Cloud NuGet",
                       url: "https://repo.huaweicloud.com/repository/nuget/v3/index.json",
                     },
-                    { ecosystem: "docker", name: "阿里云 Docker", url: "https://registry.cn-hangzhou.aliyuncs.com" },
-                    { ecosystem: "dart", name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub" },
+                    { ecosystem: "docker", name: "Aliyun Docker", url: "https://registry.cn-hangzhou.aliyuncs.com" },
+                    { ecosystem: "dart", name: "Tsinghua TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub" },
                     { ecosystem: "cocoapods", name: "CocoaPods CDN", url: "https://cdn.cocoapods.org" },
                     {
                       ecosystem: "conda",
-                      name: "清华大学 Conda",
+                      name: "Tsinghua Conda",
                       url: "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main",
                     },
                     {
                       ecosystem: "homebrew",
-                      name: "清华大学 Homebrew",
+                      name: "Tsinghua Homebrew",
                       url: "https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles",
                     },
                     { ecosystem: "git", name: "GitHub", url: "https://github.com" },
@@ -4253,57 +4253,57 @@ print(json.dumps({
               const standardConfigs = [
                 {
                   name: ".unirtm.toml",
-                  title: "UniRTM 守卫总配置",
-                  description: "定义质量守卫运行模式、排除路径与工具槽位绑定",
+                  title: "UniRTM Guard Main Config",
+                  description: "Defines quality guard operating mode, excluded paths, and tool slot bindings",
                   category: "core",
                   phase: "all",
                 },
                 {
                   name: ".golangci.yml",
-                  title: "Go 静态检查门禁",
-                  description: "Go 语言代码质量规则集与静态分析配置",
+                  title: "Go Static Analysis Guard",
+                  description: "Go language code quality ruleset and static analysis configuration",
                   category: "lint",
                   phase: "Phase 3",
                 },
                 {
                   name: ".prettierrc",
-                  title: "Web 统一格式化",
-                  description: "JavaScript/TypeScript/Vue/JSON 视觉排版规范",
+                  title: "Web Code Formatter",
+                  description: "JavaScript/TypeScript/Vue/JSON visual layout specification",
                   category: "format",
                   phase: "Phase 2",
                 },
                 {
                   name: ".gitleaks.toml",
-                  title: "密钥泄露防护规则",
-                  description: "密码、私钥、API Key 与 Token 泄露拦截策略",
+                  title: "Secret Leak Prevention Rules",
+                  description: "Password, private key, API key, and token leak interception policy",
                   category: "secret",
                   phase: "Phase 3",
                 },
                 {
                   name: ".editorconfig",
-                  title: "跨编辑器基础规范",
-                  description: "统一文件编码、换行符及缩进风格",
+                  title: "Cross-Editor Base Specification",
+                  description: "Unified file encoding, newline characters, and indentation styles",
                   category: "hygiene",
                   phase: "Phase 1",
                 },
                 {
                   name: "eslint.config.mjs",
-                  title: "Web 前端代码质量",
-                  description: "TypeScript 与 Vue 语法规约与静态拦截",
+                  title: "Web Frontend Code Quality",
+                  description: "TypeScript and Vue syntax rules and static interception",
                   category: "lint",
                   phase: "Phase 3",
                 },
                 {
                   name: ".shellcheckrc",
-                  title: "Shell 脚本检查规范",
-                  description: "POSIX / Bash 陷阱与质量规范配置",
+                  title: "Shell Script Linter Spec",
+                  description: "POSIX / Bash pitfall and quality specification configuration",
                   category: "lint",
                   phase: "Phase 3",
                 },
                 {
                   name: "ruff.toml",
-                  title: "Python 快速检查排版",
-                  description: "Python 代码语法树排版与规范拦截配置",
+                  title: "Python Fast Linter & Formatter",
+                  description: "Python code AST formatting and style interception configuration",
                   category: "lint",
                   phase: "Phase 2/3",
                 },

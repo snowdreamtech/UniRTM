@@ -364,14 +364,14 @@ func handleGuardRules(w http.ResponseWriter, r *http.Request) {
 		Category string
 		Phase    string
 	}{
-		{".unirtm.toml", "UniRTM 守卫总配置", "定义质量守卫运行模式、排除路径与工具槽位绑定", "core", "all"},
-		{".golangci.yml", "Go 静态检查门禁", "Go 语言代码质量规则集与静态分析配置", "lint", "Phase 3"},
-		{".prettierrc", "Web 统一格式化", "JavaScript/TypeScript/Vue/JSON 视觉排版规范", "format", "Phase 2"},
-		{".gitleaks.toml", "密钥泄露防护规则", "密码、私钥、API Key 与 Token 泄露拦截策略", "secret", "Phase 3"},
-		{".editorconfig", "跨编辑器基础规范", "统一文件编码、换行符及缩进风格", "hygiene", "Phase 1"},
-		{"eslint.config.mjs", "Web 前端代码质量", "TypeScript 与 Vue 语法规约与静态拦截", "lint", "Phase 3"},
-		{".shellcheckrc", "Shell 脚本检查规范", "POSIX / Bash 陷阱与质量规范配置", "lint", "Phase 3"},
-		{"ruff.toml", "Python 快速检查排版", "Python 代码语法树排版与规范拦截配置", "lint", "Phase 2/3"},
+		{".unirtm.toml", "UniRTM Guard Main Config", "Defines quality guard operating mode, excluded paths, and tool slot bindings", "core", "all"},
+		{".golangci.yml", "Go Static Analysis Guard", "Go language code quality ruleset and static analysis configuration", "lint", "Phase 3"},
+		{".prettierrc", "Web Code Formatter", "JavaScript/TypeScript/Vue/JSON visual layout specification", "format", "Phase 2"},
+		{".gitleaks.toml", "Secret Leak Prevention Rules", "Password, private key, API key, and token leak interception policy", "secret", "Phase 3"},
+		{".editorconfig", "Cross-Editor Base Specification", "Unified file encoding, newline characters, and indentation styles", "hygiene", "Phase 1"},
+		{"eslint.config.mjs", "Web Frontend Code Quality", "TypeScript and Vue syntax rules and static interception", "lint", "Phase 3"},
+		{".shellcheckrc", "Shell Script Linter Spec", "POSIX / Bash pitfall and quality specification configuration", "lint", "Phase 3"},
+		{"ruff.toml", "Python Fast Linter & Formatter", "Python code AST formatting and style interception configuration", "lint", "Phase 2/3"},
 	}
 
 	var configMetas []ConfigFileMeta

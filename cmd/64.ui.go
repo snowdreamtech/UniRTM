@@ -1849,7 +1849,7 @@ func handleUpsertHook(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": "Git lifecycle hooks are only permitted in workspace scope as they bind to local repository .git/hooks.",
-			"hint":  "Please configure hooks in Workspace (工作区) scope instead.",
+			"hint":  "Please configure hooks in Workspace scope instead.",
 		})
 		return
 	}
@@ -2556,7 +2556,7 @@ func handlePostConfig(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": fmt.Sprintf("%s configuration is only permitted in global config to ensure project portability across team machines.", cleanKey),
-			"hint":  fmt.Sprintf("Please configure settings.%s in User (全局) scope instead.", cleanKey),
+			"hint":  fmt.Sprintf("Please configure settings.%s in User (global) scope instead.", cleanKey),
 		})
 		return
 	}
@@ -2566,7 +2566,7 @@ func handlePostConfig(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": "min_version configuration is only permitted in workspace config to ensure project compatibility.",
-			"hint":  "Please configure min_version in Workspace (工作区) scope instead.",
+			"hint":  "Please configure min_version in Workspace scope instead.",
 		})
 		return
 	}

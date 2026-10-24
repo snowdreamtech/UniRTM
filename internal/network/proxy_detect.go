@@ -159,16 +159,16 @@ func detectSingBox() DetectedProxy {
 				dp.HTTP = fmt.Sprintf("http://%s:%d", listenHost, in.ListenPort)
 				dp.HTTPS = fmt.Sprintf("http://%s:%d", listenHost, in.ListenPort)
 				dp.SOCKS5 = fmt.Sprintf("socks5://%s:%d", listenHost, in.ListenPort)
-				dp.Description = fmt.Sprintf("检测到本机正在运行的 sing-box 混合代理服务 (端口 %d)", in.ListenPort)
+				dp.Description = fmt.Sprintf("Detected running sing-box mixed proxy service on localhost (port %d)", in.ListenPort)
 				return dp
 			case "http":
 				dp.HTTP = fmt.Sprintf("http://%s:%d", listenHost, in.ListenPort)
 				dp.HTTPS = fmt.Sprintf("http://%s:%d", listenHost, in.ListenPort)
-				dp.Description = fmt.Sprintf("检测到本机正在运行的 sing-box HTTP 代理 (端口 %d)", in.ListenPort)
+				dp.Description = fmt.Sprintf("Detected running sing-box HTTP proxy on localhost (port %d)", in.ListenPort)
 			case "socks":
 				dp.SOCKS5 = fmt.Sprintf("socks5://%s:%d", listenHost, in.ListenPort)
 				if dp.Description == "" {
-					dp.Description = fmt.Sprintf("检测到本机正在运行的 sing-box SOCKS5 代理 (端口 %d)", in.ListenPort)
+					dp.Description = fmt.Sprintf("Detected running sing-box SOCKS5 proxy on localhost (port %d)", in.ListenPort)
 				}
 			}
 		}
@@ -224,7 +224,7 @@ func detectClash() DetectedProxy {
 				HTTPS:       fmt.Sprintf("http://127.0.0.1:%d", mixedPort),
 				SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", mixedPort),
 				Port:        mixedPort,
-				Description: fmt.Sprintf("检测到本机正在运行的 Clash/Mihomo 混合代理 (端口 %d)", mixedPort),
+				Description: fmt.Sprintf("Detected running Clash/Mihomo mixed proxy on localhost (port %d)", mixedPort),
 			}
 		}
 
@@ -235,7 +235,7 @@ func detectClash() DetectedProxy {
 				HTTP:        fmt.Sprintf("http://127.0.0.1:%d", httpPort),
 				HTTPS:       fmt.Sprintf("http://127.0.0.1:%d", httpPort),
 				Port:        httpPort,
-				Description: fmt.Sprintf("检测到本机正在运行的 Clash/Mihomo HTTP 代理 (端口 %d)", httpPort),
+				Description: fmt.Sprintf("Detected running Clash/Mihomo HTTP proxy on localhost (port %d)", httpPort),
 			}
 			if socksPort > 0 && isPortOpen("127.0.0.1", socksPort, 150*time.Millisecond) {
 				dp.SOCKS5 = fmt.Sprintf("socks5://127.0.0.1:%d", socksPort)
@@ -304,7 +304,7 @@ func detectV2Ray() DetectedProxy {
 		}
 
 		if dp.Detected {
-			dp.Description = fmt.Sprintf("检测到本机正在运行的 V2Ray/Xray 代理服务 (端口 %d)", dp.Port)
+			dp.Description = fmt.Sprintf("Detected running V2Ray/Xray proxy service on localhost (port %d)", dp.Port)
 			return dp
 		}
 	}
@@ -354,7 +354,7 @@ func detectTrojan() DetectedProxy {
 				Type:        "trojan",
 				SOCKS5:      fmt.Sprintf("socks5://%s:%d", addr, cfg.LocalPort),
 				Port:        cfg.LocalPort,
-				Description: fmt.Sprintf("检测到本机正在运行的 Trojan/Trojan-Go 客户端代理 (端口 %d)", cfg.LocalPort),
+				Description: fmt.Sprintf("Detected running Trojan/Trojan-Go client proxy on localhost (port %d)", cfg.LocalPort),
 			}
 		}
 	}
@@ -405,7 +405,7 @@ func detectHysteria() DetectedProxy {
 								Detected:    true,
 								Type:        "hysteria",
 								Port:        port,
-								Description: fmt.Sprintf("检测到本机正在运行的 Hysteria 客户端代理 (端口 %d)", port),
+								Description: fmt.Sprintf("Detected running Hysteria client proxy on localhost (port %d)", port),
 							}
 							if isHTTP {
 								dp.HTTP = fmt.Sprintf("http://%s:%d", host, port)
@@ -462,7 +462,7 @@ func detectNaiveProxy() DetectedProxy {
 					Detected:    true,
 					Type:        "naiveproxy",
 					Port:        port,
-					Description: fmt.Sprintf("检测到本机正在运行的 NaiveProxy 客户端 (端口 %d)", port),
+					Description: fmt.Sprintf("Detected running NaiveProxy client on localhost (port %d)", port),
 				}
 				if u.Scheme == "http" || u.Scheme == "https" {
 					dp.HTTP = fmt.Sprintf("http://%s:%d", host, port)
@@ -514,7 +514,7 @@ func detectShadowsocks() DetectedProxy {
 				Type:        "shadowsocks",
 				SOCKS5:      fmt.Sprintf("socks5://%s:%d", addr, cfg.LocalPort),
 				Port:        cfg.LocalPort,
-				Description: fmt.Sprintf("检测到本机正在运行的 Shadowsocks 客户端代理 (端口 %d)", cfg.LocalPort),
+				Description: fmt.Sprintf("Detected running Shadowsocks client proxy on localhost (port %d)", cfg.LocalPort),
 			}
 		}
 	}
@@ -558,7 +558,7 @@ func detectTUIC() DetectedProxy {
 					Type:        "tuic",
 					SOCKS5:      fmt.Sprintf("socks5://%s:%d", host, port),
 					Port:        port,
-					Description: fmt.Sprintf("检测到本机正在运行的 TUIC 客户端代理 (端口 %d)", port),
+					Description: fmt.Sprintf("Detected running TUIC client proxy on localhost (port %d)", port),
 				}
 			}
 		}
@@ -591,7 +591,7 @@ func detectProcessTable() DetectedProxy {
 					HTTPS:       "http://127.0.0.1:8889",
 					SOCKS5:      "socks5://127.0.0.1:8889",
 					Port:        8889,
-					Description: "检测到运行中的 sing-box 进程 (端口 8889)",
+					Description: "Detected running sing-box process (port 8889)",
 				}
 			}
 		case "clash", "clash-meta", "mihomo", "clash-verge", "clash-verge-rev", "nyanpasu", "cfw", "openclash":
@@ -604,7 +604,7 @@ func detectProcessTable() DetectedProxy {
 						HTTPS:       fmt.Sprintf("http://127.0.0.1:%d", port),
 						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
 						Port:        port,
-						Description: fmt.Sprintf("检测到运行中的 %s 进程 (端口 %d)", comm, port),
+						Description: fmt.Sprintf("Detected running %s process (port %d)", comm, port),
 					}
 				}
 			}
@@ -615,7 +615,7 @@ func detectProcessTable() DetectedProxy {
 						Detected:    true,
 						Type:        "v2ray",
 						Port:        port,
-						Description: fmt.Sprintf("检测到运行中的 %s 代理进程 (端口 %d)", comm, port),
+						Description: fmt.Sprintf("Detected running %s proxy process (port %d)", comm, port),
 					}
 					if port == 10808 || port == 1081 || port == 1082 {
 						dp.SOCKS5 = fmt.Sprintf("socks5://127.0.0.1:%d", port)
@@ -634,7 +634,7 @@ func detectProcessTable() DetectedProxy {
 						Type:        "shadowsocks",
 						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
 						Port:        port,
-						Description: fmt.Sprintf("检测到运行中的 Shadowsocks 客户端进程 (%s, 端口 %d)", comm, port),
+						Description: fmt.Sprintf("Detected running Shadowsocks client process (%s, port %d)", comm, port),
 					}
 				}
 			}
@@ -646,7 +646,7 @@ func detectProcessTable() DetectedProxy {
 						Type:        "trojan",
 						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
 						Port:        port,
-						Description: fmt.Sprintf("检测到运行中的 Trojan 进程 (%s, 端口 %d)", comm, port),
+						Description: fmt.Sprintf("Detected running Trojan process (%s, port %d)", comm, port),
 					}
 				}
 			}
@@ -658,7 +658,7 @@ func detectProcessTable() DetectedProxy {
 						Type:        "hysteria",
 						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
 						Port:        port,
-						Description: fmt.Sprintf("检测到运行中的 Hysteria 进程 (%s, 端口 %d)", comm, port),
+						Description: fmt.Sprintf("Detected running Hysteria process (%s, port %d)", comm, port),
 					}
 				}
 			}
@@ -670,7 +670,7 @@ func detectProcessTable() DetectedProxy {
 						Type:        "tuic",
 						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
 						Port:        port,
-						Description: fmt.Sprintf("检测到运行中的 TUIC 客户端进程 (%s, 端口 %d)", comm, port),
+						Description: fmt.Sprintf("Detected running TUIC client process (%s, port %d)", comm, port),
 					}
 				}
 			}
@@ -684,7 +684,7 @@ func detectProcessTable() DetectedProxy {
 						HTTPS:       fmt.Sprintf("http://127.0.0.1:%d", port),
 						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
 						Port:        port,
-						Description: fmt.Sprintf("检测到运行中的 GOST 代理隧道进程 (端口 %d)", port),
+						Description: fmt.Sprintf("Detected running GOST proxy tunnel process (port %d)", port),
 					}
 				}
 			}
@@ -696,7 +696,7 @@ func detectProcessTable() DetectedProxy {
 						Type:        "brook",
 						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
 						Port:        port,
-						Description: fmt.Sprintf("检测到运行中的 Brook 代理客户端 (端口 %d)", port),
+						Description: fmt.Sprintf("Detected running Brook proxy client (port %d)", port),
 					}
 				}
 			}
@@ -708,7 +708,7 @@ func detectProcessTable() DetectedProxy {
 					HTTP:        "http://127.0.0.1:8123",
 					HTTPS:       "http://127.0.0.1:8123",
 					Port:        8123,
-					Description: "检测到运行中的 Polipo HTTP 代理 (端口 8123)",
+					Description: "Detected running Polipo HTTP proxy (port 8123)",
 				}
 			}
 		case "tinyproxy":
@@ -719,7 +719,7 @@ func detectProcessTable() DetectedProxy {
 					HTTP:        "http://127.0.0.1:8888",
 					HTTPS:       "http://127.0.0.1:8888",
 					Port:        8888,
-					Description: "检测到运行中的 Tinyproxy 进程 (端口 8888)",
+					Description: "Detected running Tinyproxy process (port 8888)",
 				}
 			}
 		case "privoxy":
@@ -730,7 +730,7 @@ func detectProcessTable() DetectedProxy {
 					HTTP:        "http://127.0.0.1:8118",
 					HTTPS:       "http://127.0.0.1:8118",
 					Port:        8118,
-					Description: "检测到运行中的 Privoxy 进程 (端口 8118)",
+					Description: "Detected running Privoxy process (port 8118)",
 				}
 			}
 		}
@@ -757,7 +757,7 @@ func detectOSProxy() DetectedProxy {
 						HTTP:        fmt.Sprintf("http://%s:%d", host, port),
 						HTTPS:       fmt.Sprintf("http://%s:%d", host, port),
 						Port:        port,
-						Description: fmt.Sprintf("检测到系统桌面环境设置的 HTTP 代理 (%s:%d)", host, port),
+						Description: fmt.Sprintf("Detected HTTP proxy configured in system desktop environment (%s:%d)", host, port),
 					}
 					sOut, _ := exec.Command("gsettings", "get", "org.gnome.system.proxy.socks", "host").Output()
 					spOut, _ := exec.Command("gsettings", "get", "org.gnome.system.proxy.socks", "port").Output()
@@ -803,7 +803,7 @@ func detectOSProxy() DetectedProxy {
 				dp := DetectedProxy{
 					Detected:    true,
 					Type:        "os",
-					Description: "检测到 macOS 系统偏好设置中配置的网络代理",
+					Description: "Detected network proxy configured in macOS System Preferences",
 				}
 				if httpEnable && httpHost != "" && httpPort > 0 {
 					dp.HTTP = fmt.Sprintf("http://%s:%d", httpHost, httpPort)
@@ -844,7 +844,7 @@ func detectEnvProxy() DetectedProxy {
 	dp := DetectedProxy{
 		Detected:    true,
 		Type:        "env",
-		Description: "检测到系统环境变量中配置的网络代理",
+		Description: "Detected network proxy configured in system environment variables",
 	}
 
 	if rawHTTP != "" {
@@ -892,7 +892,7 @@ func probeCommonPorts() DetectedProxy {
 			HTTP:        "http://127.0.0.1:7890",
 			HTTPS:       "http://127.0.0.1:7890",
 			Port:        7890,
-			Description: "检测到本机正在运行的 Clash/Mihomo 代理 (端口 7890)",
+			Description: "Detected running Clash/Mihomo proxy on localhost (port 7890)",
 		}
 		if isPortOpen("127.0.0.1", 7891, 50*time.Millisecond) {
 			dp.SOCKS5 = "socks5://127.0.0.1:7891"
@@ -910,7 +910,7 @@ func probeCommonPorts() DetectedProxy {
 			Detected:    true,
 			Type:        "v2ray",
 			Port:        10808,
-			Description: "检测到本机正在运行的 V2Ray/Xray 代理服务",
+			Description: "Detected running V2Ray/Xray proxy service on localhost",
 		}
 		if socks10808 {
 			dp.SOCKS5 = "socks5://127.0.0.1:10808"
@@ -931,7 +931,7 @@ func probeCommonPorts() DetectedProxy {
 			Detected:    true,
 			Type:        "v2raya",
 			Port:        20171,
-			Description: "检测到本机正在运行的 v2rayA 代理服务",
+			Description: "Detected running v2rayA proxy service on localhost",
 		}
 		if socks20171 {
 			dp.SOCKS5 = "socks5://127.0.0.1:20171"
@@ -952,7 +952,7 @@ func probeCommonPorts() DetectedProxy {
 			Detected:    true,
 			Type:        "surge",
 			Port:        6152,
-			Description: "检测到本机正在运行的 Surge 代理服务",
+			Description: "Detected running Surge proxy service on localhost",
 		}
 		if http6152 {
 			dp.HTTP = "http://127.0.0.1:6152"
@@ -975,7 +975,7 @@ func probeCommonPorts() DetectedProxy {
 				Type:        "shadowsocks",
 				SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
 				Port:        port,
-				Description: fmt.Sprintf("检测到本机正在运行的 SOCKS5 代理服务 (端口 %d)", port),
+				Description: fmt.Sprintf("Detected running SOCKS5 proxy service on localhost (port %d)", port),
 			}
 		}
 	}
@@ -988,7 +988,7 @@ func probeCommonPorts() DetectedProxy {
 			HTTP:        "http://127.0.0.1:8118",
 			HTTPS:       "http://127.0.0.1:8118",
 			Port:        8118,
-			Description: "检测到本机正在运行的 Privoxy HTTP 代理服务 (端口 8118)",
+			Description: "Detected running Privoxy HTTP proxy service on localhost (port 8118)",
 		}
 	}
 
@@ -1000,7 +1000,7 @@ func probeCommonPorts() DetectedProxy {
 			HTTP:        "http://127.0.0.1:8888",
 			HTTPS:       "http://127.0.0.1:8888",
 			Port:        8888,
-			Description: "检测到本机正在运行的 HTTP 代理服务 (端口 8888)",
+			Description: "Detected running HTTP proxy service on localhost (port 8888)",
 		}
 	}
 
@@ -1012,7 +1012,7 @@ func probeCommonPorts() DetectedProxy {
 			HTTP:        "http://127.0.0.1:3128",
 			HTTPS:       "http://127.0.0.1:3128",
 			Port:        3128,
-			Description: "检测到本机正在运行的 Squid 代理服务 (端口 3128)",
+			Description: "Detected running Squid proxy service on localhost (port 3128)",
 		}
 	}
 
@@ -1024,7 +1024,7 @@ func probeCommonPorts() DetectedProxy {
 			HTTP:        "http://127.0.0.1:8123",
 			HTTPS:       "http://127.0.0.1:8123",
 			Port:        8123,
-			Description: "检测到本机正在运行的 Polipo HTTP 代理服务 (端口 8123)",
+			Description: "Detected running Polipo HTTP proxy service on localhost (port 8123)",
 		}
 	}
 
@@ -1036,7 +1036,7 @@ func probeCommonPorts() DetectedProxy {
 				Type:        "router-proxy",
 				SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
 				Port:        port,
-				Description: fmt.Sprintf("检测到本机正在运行的本地/旁路由代理服务 (端口 %d)", port),
+				Description: fmt.Sprintf("Detected running local/gateway proxy service on localhost (port %d)", port),
 			}
 		}
 	}

@@ -8,7 +8,7 @@
 extra_instructions = """
 # 🚨 CRITICAL SYSTEM INSTRUCTION 🚨
 Please follow the unified rules from `.agent/rules/`:
-1. Use Simplified Chinese (简体中文) for all communication/reviews.
+1. Use Simplified Chinese for all communication/reviews.
 2. Code and code comments MUST be in English.
 3. Check for cross-platform compatibility (Linux, macOS, Windows).
 4. Enforce DRY, KISS, YAGNI principles.

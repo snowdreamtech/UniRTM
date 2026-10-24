@@ -527,7 +527,7 @@ func collectDoctorReport(ctx context.Context) (*DoctorDiagnosticReport, error) {
 		suggestions = append(suggestions, DoctorSuggestion{
 			ID:         "shims-missing",
 			Severity:   "warning",
-			Message:    "UniRTM shims 目录未添加到系统 PATH 环境变量中",
+			Message:    "UniRTM shims directory is not added to the system PATH environment variable",
 			Command:    "unirtm enable --shims",
 			Actionable: true,
 		})
@@ -538,7 +538,7 @@ func collectDoctorReport(ctx context.Context) (*DoctorDiagnosticReport, error) {
 		suggestions = append(suggestions, DoctorSuggestion{
 			ID:         "not-activated",
 			Severity:   "warning",
-			Message:    "当前 shell 环境未激活 UniRTM 自动代理路由",
+			Message:    "Current shell environment has not activated UniRTM automatic proxy routing",
 			Command:    "unirtm enable --shims",
 			Actionable: true,
 		})
@@ -549,7 +549,7 @@ func collectDoctorReport(ctx context.Context) (*DoctorDiagnosticReport, error) {
 		suggestions = append(suggestions, DoctorSuggestion{
 			ID:         "missing-tools",
 			Severity:   "warning",
-			Message:    fmt.Sprintf("检测到当前配置有 %d 个工具未安装", missingToolsCount),
+			Message:    fmt.Sprintf("Detected that %d configured tools are not installed", missingToolsCount),
 			Command:    "unirtm install",
 			Actionable: true,
 		})
@@ -560,7 +560,7 @@ func collectDoctorReport(ctx context.Context) (*DoctorDiagnosticReport, error) {
 		suggestions = append(suggestions, DoctorSuggestion{
 			ID:         "database-unhealthy",
 			Severity:   "error",
-			Message:    fmt.Sprintf("UniRTM 本地 SQLite 状态数据库访问异常: %s", dbErr),
+			Message:    fmt.Sprintf("UniRTM local SQLite state database access error: %s", dbErr),
 			Actionable: false,
 		})
 		score -= 25

@@ -590,10 +590,10 @@ func TestBuiltinRules_CommitMsg(t *testing.T) {
 		t.Errorf("Expected commit header exceeding 120 chars to fail, reason: %s", reasonLong)
 	}
 
-	// Chinese characters are allowed (no-chinese restriction not applied)
-	okChinese, _ := guard.ValidateCommitMessage("feat(ui): 支持中文描述信息")
-	if !okChinese {
-		t.Errorf("Expected Chinese commit message to be allowed")
+	// Unicode characters are allowed (UTF-8 multi-byte support verification)
+	okUnicode, _ := guard.ValidateCommitMessage("feat(ui): add résumé & café support with international characters")
+	if !okUnicode {
+		t.Errorf("Expected commit message with Unicode characters to be allowed")
 	}
 
 	// Long body and URLs (no line length limit) must pass

@@ -38,7 +38,7 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 
 	if cfg.HTTP == "" && cfg.HTTPS == "" && cfg.SOCKS5 == "" {
 		res.Success = false
-		res.Error = "未配置任何代理地址（HTTP/HTTPS 与 SOCKS5 均为空）"
+		res.Error = "No proxy address configured (both HTTP/HTTPS and SOCKS5 are empty)"
 		res.Message = res.Error
 		return res
 	}
@@ -58,7 +58,7 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 		pURL, err := url.Parse(httpURLStr)
 		if err != nil || pURL.Host == "" {
 			res.HTTPStatus = "error"
-			res.Error = fmt.Sprintf("HTTP 代理地址格式无效: %s", httpURLStr)
+			res.Error = fmt.Sprintf("Invalid HTTP proxy address format: %s", httpURLStr)
 			res.Message = res.Error
 			return res
 		}
@@ -67,7 +67,7 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 		conn, err := net.DialTimeout("tcp", pURL.Host, 1500*time.Millisecond)
 		if err != nil {
 			res.HTTPStatus = "error"
-			res.Error = fmt.Sprintf("无法连接到代理服务器端口 %s: %v", pURL.Host, err)
+			res.Error = fmt.Sprintf("Cannot connect to proxy server port %s: %v", pURL.Host, err)
 			res.Message = res.Error
 			return res
 		}
@@ -89,7 +89,7 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, testTarget, nil)
 		if err != nil {
 			res.HTTPStatus = "error"
-			res.Error = fmt.Sprintf("创建代理测试请求失败: %v", err)
+			res.Error = fmt.Sprintf("Failed to create proxy test request: %v", err)
 			res.Message = res.Error
 			return res
 		}
@@ -99,7 +99,7 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 		rtt := time.Since(start).Milliseconds()
 		if err != nil {
 			res.HTTPStatus = "error"
-			res.Error = fmt.Sprintf("通过 HTTP 代理访问外网失败: %v", err)
+			res.Error = fmt.Sprintf("Failed to connect to external network via HTTP proxy: %v", err)
 			res.Message = res.Error
 			return res
 		}
@@ -116,7 +116,7 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 		if err != nil || sURL.Host == "" {
 			res.SOCKS5Status = "error"
 			if res.Error == "" {
-				res.Error = fmt.Sprintf("SOCKS5 代理地址格式无效: %s", cfg.SOCKS5)
+				res.Error = fmt.Sprintf("Invalid SOCKS5 proxy address format: %s", cfg.SOCKS5)
 				res.Message = res.Error
 			}
 			return res
@@ -127,7 +127,7 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 		if err != nil {
 			res.SOCKS5Status = "error"
 			if res.Error == "" {
-				res.Error = fmt.Sprintf("无法连接到 SOCKS5 代理服务器端口 %s: %v", sURL.Host, err)
+				res.Error = fmt.Sprintf("Cannot connect to SOCKS5 proxy server port %s: %v", sURL.Host, err)
 				res.Message = res.Error
 			}
 			return res
@@ -139,7 +139,7 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 		if err != nil {
 			res.SOCKS5Status = "error"
 			if res.Error == "" {
-				res.Error = fmt.Sprintf("创建 SOCKS5 代理拨号器失败: %v", err)
+				res.Error = fmt.Sprintf("Failed to create SOCKS5 proxy dialer: %v", err)
 				res.Message = res.Error
 			}
 			return res
@@ -155,7 +155,7 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 		if err != nil {
 			res.SOCKS5Status = "error"
 			if res.Error == "" {
-				res.Error = fmt.Sprintf("通过 SOCKS5 代理隧道连接外网失败: %v", err)
+				res.Error = fmt.Sprintf("Failed to connect to external network via SOCKS5 proxy tunnel: %v", err)
 				res.Message = res.Error
 			}
 			return res
@@ -174,13 +174,13 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 		}
 		res.Success = true
 		res.RTTMs = avgRTT
-		res.Message = "代理服务器连通正常"
+		res.Message = "Proxy server connection succeeded"
 		return res
 	}
 
 	res.Success = false
 	if res.Error == "" {
-		res.Error = "代理连通性检测未通过"
+		res.Error = "Proxy connectivity test failed"
 	}
 	res.Message = res.Error
 	return res
