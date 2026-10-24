@@ -102,4 +102,74 @@ describe("i18n module", () => {
 
     expect(missing, `Found unregistered i18n keys: ${JSON.stringify(missing)}`).toEqual([]);
   });
+
+  it("strictly forbids hardcoded Chinese characters in frontend source files outside zh locales", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const chineseRegex = /[\u4e00-\u9fa5]/;
+
+    const scanDir = (dir: string, fileList: string[] = []): string[] => {
+      const files = fs.readdirSync(dir);
+      for (const f of files) {
+        const fullPath = path.join(dir, f);
+        const stat = fs.statSync(fullPath);
+        if (stat.isDirectory()) {
+          if (f !== "node_modules" && f !== "dist") {
+            scanDir(fullPath, fileList);
+          }
+        } else if (f.endsWith(".vue") || (f.endsWith(".ts") && !f.endsWith(".test.ts"))) {
+          if (!fullPath.includes("locales/zh-CN") && !fullPath.includes("locales/zh-TW")) {
+            fileList.push(fullPath);
+          }
+        }
+      }
+      return fileList;
+    };
+
+    const srcDir = path.resolve(__dirname, "..");
+    const files = scanDir(srcDir);
+    const violations: { file: string; line: number; text: string }[] = [];
+
+    for (const file of files) {
+      // Exclude Japanese locale (which legitimately uses shared CJK Kanji)
+      if (file.includes("locales/ja-JP")) continue;
+      const content = fs.readFileSync(file, "utf-8");
+      const lines = content.split("\n");
+      lines.forEach((line, idx) => {
+        if (chineseRegex.test(line)) {
+          violations.push({ file: path.relative(srcDir, file), line: idx + 1, text: line.trim() });
+        }
+      });
+    }
+
+    expect(
+      violations,
+      `Hardcoded Chinese characters detected in source files:\n${violations.map((v) => `${v.file}:${v.line} -> ${v.text}`).join("\n")}`
+    ).toEqual([]);
+  });
+
+  it("ensures all non-English locales maintain high translation purity (<25 identical keys to en-US)", async () => {
+    const enModule = await import("./locales/en-US");
+    const enDict = enModule.enUs;
+
+    for (const lang of SUPPORTED_LANGUAGES) {
+      if (lang.code === "en-US") continue;
+      const mod = await import(`./locales/${lang.code}.ts`);
+      const exportKey = Object.keys(mod).find((k) => k !== "default") || Object.keys(mod)[0];
+      const dict = mod[exportKey];
+
+      let identicalCount = 0;
+      for (const [k, v] of Object.entries(enDict)) {
+        if (dict[k] === v) {
+          identicalCount++;
+        }
+      }
+
+      // Maximum allowable identical technical acronyms / brand / symbols is 25 keys
+      expect(
+        identicalCount,
+        `Locale ${lang.code} has too many identical keys to en-US (${identicalCount} > 25), indicating untranslated fallback leakage.`
+      ).toBeLessThanOrEqual(25);
+    }
+  });
 });
