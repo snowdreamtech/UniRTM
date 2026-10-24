@@ -11,36 +11,43 @@
           <span>{{ t("doctor.title") || "UniRTM Doctor Diagnostics" }}</span>
         </h2>
         <p class="view-desc">
-          基于 UniRTM Doctor 系统诊断引擎，全景探测核心运行时、Shims 路由、磁盘足迹、云端 API 配额及安全配置。
+          {{
+            t("doctor.subtitle") ||
+            "UniRTM Doctor diagnostic engine deeply inspects core runtimes, shims routing, disk footprints, cloud API quotas, and security posture."
+          }}
         </p>
       </div>
       <div class="view-actions">
-        <!-- 查看原始控制台输出 -->
-        <button class="doctor-action-btn secondary" @click="openConsoleLogs" title="在下方控制台抽屉中查看详细体检日志">
+        <!-- Console output button -->
+        <button
+          class="doctor-action-btn secondary"
+          @click="openConsoleLogs"
+          :title="t('doctor.console_logs_tooltip') || 'View detailed diagnostic logs in bottom console drawer'"
+        >
           <TechIcon id="workbench:terminal" :size="14" />
-          <span>控制台输出</span>
+          <span>{{ t("doctor.console_logs") || "Console Logs" }}</span>
         </button>
 
-        <!-- 导出诊断报告 -->
+        <!-- Export diagnostic report -->
         <button
           class="doctor-action-btn secondary"
           :disabled="isLoading || !report"
           @click="copyDiagnosticReport"
-          title="复制完整的环境诊断报告 Markdown 到剪贴板"
+          :title="t('doctor.export_report_tooltip') || 'Copy full markdown diagnostic report to clipboard'"
         >
           <TechIcon id="workbench:copy" :size="14" />
-          <span>导出报告</span>
+          <span>{{ t("doctor.export_report") || "Export Report" }}</span>
         </button>
 
-        <!-- 全面体检主按钮 -->
+        <!-- Doctor run button -->
         <button
           class="doctor-action-btn primary"
           :disabled="isLoading"
           @click="fetchDoctorReport"
-          title="执行系统健康全面体检"
+          :title="t('doctor.run_doctor_tooltip') || 'Run comprehensive system health check'"
         >
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': isLoading }" />
-          <span>{{ isLoading ? "正在体检..." : "全面体检" }}</span>
+          <span>{{ isLoading ? t("doctor.running") || "Diagnosing..." : t("doctor.run_doctor") || "Run Doctor" }}</span>
         </button>
       </div>
     </div>
@@ -61,29 +68,54 @@
           <h3 class="score-title">
             {{
               isLoading
-                ? "正在执行 UniRTM 全景环境健康检查..."
+                ? t("doctor.running_desc") || "Running comprehensive UniRTM environment health diagnosis..."
                 : report?.score === 100
                   ? t("doctor.healthy") || "Environment Fully Healthy"
                   : report && report.score >= 80
-                    ? "环境基本就绪，存在优化建议"
-                    : "检测到环境配置隐患，建议核查修复"
+                    ? t("doctor.warning_title") || "Environment Ready with Optimization Suggestions"
+                    : t("doctor.warning_desc") || "Configuration issues detected; review suggestions below to resolve."
             }}
           </h3>
           <p class="score-sub">
             <template v-if="report">
-              核心版本: {{ report.core.version }} • 运行时代理:
-              {{ report.core.shims_on_path ? "已注入 PATH" : "未注入 PATH" }} • 数据库:
-              {{ report.health.database_ok ? "正常" : "异常" }} • 网络代理:
-              {{ report.health.proxy_configured ? "已配置代理" : "系统直连" }} • 全球互联:
-              {{ report.health.google_connected ? "Google 畅通" : "直连模式" }} • GitHub API:
-              {{ report.health.github_connected ? `连接正常 (HTTP ${report.health.github_status_code})` : "未连接" }}
+              {{ t("doctor.core_version") || "Core Version" }}: {{ report.core.version }} •
+              {{ t("doctor.shims_status") || "Runtime Shims" }}:
+              {{
+                report.core.shims_on_path
+                  ? t("doctor.shims_ready") || "Injected into PATH"
+                  : t("doctor.shims_not_ready") || "Not in PATH"
+              }}
+              • {{ t("doctor.database") || "Database" }}:
+              {{
+                report.health.database_ok ? t("doctor.status_ok") || "Normal" : t("doctor.status_error") || "Abnormal"
+              }}
+              • {{ t("doctor.proxy_status") || "Network Proxy" }}:
+              {{
+                report.health.proxy_configured
+                  ? t("doctor.proxy_configured") || "Proxy Configured"
+                  : t("doctor.proxy_direct") || "Direct Connection"
+              }}
+              • {{ t("doctor.google_status") || "Global Uplink" }}:
+              {{
+                report.health.google_connected
+                  ? t("doctor.google_connected") || "Google Reachable"
+                  : t("doctor.direct_mode") || "Direct Mode"
+              }}
+              • {{ t("doctor.github_status") || "GitHub API" }}:
+              {{
+                report.health.github_connected
+                  ? `${t("doctor.connected") || "Connected"} (HTTP ${report.health.github_status_code})`
+                  : t("doctor.not_connected") || "Disconnected"
+              }}
             </template>
-            <template v-else> 正在解析本地运行时与环境状态... </template>
+            <template v-else>
+              {{ t("doctor.parsing_env") || "Parsing local runtime and environment state..." }}
+            </template>
           </p>
         </div>
       </div>
       <div v-if="report && lastCheckedTime" class="score-right-meta">
-        <span class="meta-label">最后体检时间</span>
+        <span class="meta-label">{{ t("doctor.last_check") || "Last Check Time" }}</span>
         <span class="meta-value font-mono">{{ lastCheckedTime }}</span>
       </div>
     </div>
@@ -103,13 +135,21 @@
           </div>
         </div>
         <div v-if="sug.command" class="sug-actions">
-          <button class="sug-action-btn secondary" @click="copyCommand(sug.command)" title="复制修复命令">
+          <button
+            class="sug-action-btn secondary"
+            @click="copyCommand(sug.command)"
+            :title="t('doctor.copy_cmd_tooltip') || 'Copy fix command'"
+          >
             <TechIcon id="workbench:copy" :size="13" />
-            <span>复制命令</span>
+            <span>{{ t("doctor.copy_cmd") || "Copy Command" }}</span>
           </button>
-          <button class="sug-action-btn primary" @click="runFixCommand(sug.command)" title="发送命令到终端直接运行">
+          <button
+            class="sug-action-btn primary"
+            @click="runFixCommand(sug.command)"
+            :title="t('doctor.run_in_terminal_tooltip') || 'Send command to terminal and run'"
+          >
             <TechIcon id="workbench:terminal" :size="13" />
-            <span>在终端运行</span>
+            <span>{{ t("doctor.run_in_terminal") || "Run in Terminal" }}</span>
           </button>
         </div>
       </div>
@@ -125,28 +165,32 @@
             <span class="card-title">{{ t("doctor.dim_core") || "Core & Shell" }}</span>
           </div>
           <span class="badge-status" :class="report.core.shims_on_path ? 'pass' : 'warn'">
-            {{ report.core.shims_on_path ? "Shims 已就绪" : "Shims 需配置" }}
+            {{
+              report.core.shims_on_path
+                ? t("doctor.shims_badge_ready") || "Shims Ready"
+                : t("doctor.shims_badge_not_ready") || "Shims Need Config"
+            }}
           </span>
         </div>
         <div class="card-kv-list">
           <div class="kv-row">
-            <span class="kv-key">UniRTM 版本</span>
+            <span class="kv-key">{{ t("doctor.unirtm_version") || "UniRTM Version" }}</span>
             <span class="kv-val font-mono">{{ report.core.version }} ({{ report.core.commit }})</span>
           </div>
           <div class="kv-row">
-            <span class="kv-key">目标架构</span>
+            <span class="kv-key">{{ t("doctor.target_arch") || "Target Arch" }}</span>
             <span class="kv-val font-mono">{{ report.build.target }} ({{ report.build.go_version }})</span>
           </div>
           <div class="kv-row">
-            <span class="kv-key">当前 Shell</span>
+            <span class="kv-key">{{ t("doctor.current_shell") || "Current Shell" }}</span>
             <span class="kv-val font-mono">{{ report.context.shell }} {{ report.context.shell_version }}</span>
           </div>
           <div class="kv-row">
-            <span class="kv-key">默认编辑器</span>
+            <span class="kv-key">{{ t("doctor.default_editor") || "Default Editor" }}</span>
             <span class="kv-val font-mono">{{ report.context.editor }} ({{ report.context.editor_source }})</span>
           </div>
           <div class="kv-row">
-            <span class="kv-key">生效环境</span>
+            <span class="kv-key">{{ t("doctor.active_env") || "Active Profile" }}</span>
             <span class="kv-val font-mono highlight">{{ report.context.active_env }}</span>
           </div>
         </div>
@@ -171,24 +215,28 @@
           >
             {{
               report.health.github_connected && report.health.google_connected
-                ? "全球互联正常"
+                ? t("doctor.network_global_ready") || "Global Connectivity Optimal"
                 : report.health.github_connected
-                  ? "直连访问就绪"
-                  : "网络连接异常"
+                  ? t("doctor.network_direct_ready") || "Direct Access Ready"
+                  : t("doctor.network_error") || "Network Connection Issue"
             }}
           </span>
         </div>
         <div class="card-kv-list">
-          <!-- 1. 网络代理环境 -->
+          <!-- 1. Network Proxy Environment -->
           <div class="kv-row">
-            <span class="kv-key">网络代理环境</span>
+            <span class="kv-key">{{ t("doctor.proxy_env") || "Network Proxy Environment" }}</span>
             <span class="kv-val font-mono" :class="{ highlight: !!report.health.proxy_configured }">
-              {{ report.health.proxy_configured || "系统直连 (未检测到代理)" }}
+              {{
+                report.health.proxy_configured ||
+                t("doctor.proxy_not_detected") ||
+                "Direct Connection (No proxy detected)"
+              }}
             </span>
           </div>
-          <!-- 2. Google 外网联通 -->
+          <!-- 2. Google Connectivity -->
           <div class="kv-row">
-            <span class="kv-key">Google 外网联通</span>
+            <span class="kv-key">{{ t("doctor.google_connectivity") || "Google Connectivity" }}</span>
             <span
               class="kv-val font-mono"
               :style="{ color: report.health.google_connected ? '#10b981' : 'var(--text-muted)' }"
@@ -196,22 +244,27 @@
               ●
               {{
                 report.health.google_connected
-                  ? `HTTP ${report.health.google_status_code || 204} (已连通 · ${report.health.google_latency_ms || "<100"}ms)`
-                  : "未连通 (需配置外网代理)"
+                  ? `HTTP ${report.health.google_status_code || 204} (${t("doctor.connected") || "Connected"} · ${report.health.google_latency_ms || "<100"}ms)`
+                  : t("doctor.google_not_connected") || "Unreachable (Proxy required)"
               }}
             </span>
           </div>
-          <!-- 3. GitHub 联通状态 -->
+          <!-- 3. GitHub Connectivity -->
           <div class="kv-row">
-            <span class="kv-key">GitHub 联通状态</span>
+            <span class="kv-key">{{ t("doctor.github_connectivity") || "GitHub Connectivity" }}</span>
             <span class="kv-val font-mono" :style="{ color: report.health.github_connected ? '#10b981' : '#ef4444' }">
-              ● {{ report.health.github_connected ? `HTTP ${report.health.github_status_code} (已连通)` : "未连接" }}
+              ●
+              {{
+                report.health.github_connected
+                  ? `HTTP ${report.health.github_status_code} (${t("doctor.connected") || "Connected"})`
+                  : t("doctor.not_connected") || "Disconnected"
+              }}
             </span>
           </div>
-          <!-- 4. GitHub API 剩余配额配置 -->
+          <!-- 4. GitHub API Quota -->
           <div v-if="report.health.github_rate_limit > 0" class="rate-limit-section">
             <div class="rate-limit-header font-mono">
-              <span>GitHub API 剩余配额</span>
+              <span>{{ t("doctor.github_quota") || "GitHub API Remaining Quota" }}</span>
               <span
                 >{{ report.health.github_rate_remaining.toLocaleString() }} /
                 {{ report.health.github_rate_limit.toLocaleString() }}</span
@@ -227,12 +280,15 @@
               ></div>
             </div>
             <div v-if="report.health.github_rate_reset_text" class="rate-reset-hint">
-              配额将在约 {{ report.health.github_rate_reset_text }} 后重置
+              {{
+                t("doctor.github_quota_reset", { time: report.health.github_rate_reset_text }) ||
+                `Quota resets in approx ${report.health.github_rate_reset_text}`
+              }}
             </div>
           </div>
           <div v-else class="kv-row">
-            <span class="kv-key">GitHub API 配额配置</span>
-            <span class="kv-val font-mono">匿名/未返回配额</span>
+            <span class="kv-key">{{ t("doctor.github_quota_config") || "GitHub API Quota Configuration" }}</span>
+            <span class="kv-val font-mono">{{ t("doctor.anonymous_quota") || "Anonymous / Quota not returned" }}</span>
           </div>
         </div>
       </div>
@@ -249,7 +305,9 @@
           <div v-for="dir in report.directories" :key="dir.type" class="dir-item font-mono">
             <div class="dir-type-side">
               <span class="dir-badge">{{ dir.type }}</span>
-              <span class="dir-size" :title="`占用大小: ${dir.size}`">{{ dir.size }}</span>
+              <span class="dir-size" :title="t('doctor.dir_size_title', { size: dir.size }) || `Size: ${dir.size}`">{{
+                dir.size
+              }}</span>
             </div>
             <div class="dir-path" :title="dir.path">{{ dir.path }}</div>
           </div>
@@ -264,18 +322,23 @@
             <span class="card-title">{{ t("doctor.dim_database") || "Database & Config" }}</span>
           </div>
           <span class="badge-status" :class="report.health.database_ok ? 'pass' : 'fail'">
-            {{ report.health.database_ok ? "SQLite OK" : "DB 异常" }}
+            {{ report.health.database_ok ? "SQLite OK" : t("doctor.status_error") || "Error" }}
           </span>
         </div>
         <div class="card-kv-list">
           <div class="kv-row">
-            <span class="kv-key">SQLite 数据库</span>
+            <span class="kv-key">{{ t("doctor.sqlite_db") || "SQLite Database" }}</span>
             <span class="kv-val font-mono" :title="report.health.database_path">
-              {{ report.health.database_ok ? `已连接 (${report.health.database_size})` : report.health.database_error }}
+              {{
+                report.health.database_ok
+                  ? t("doctor.connected_size", { size: report.health.database_size }) ||
+                    `Connected (${report.health.database_size})`
+                  : report.health.database_error
+              }}
             </span>
           </div>
           <div class="kv-config-section">
-            <span class="kv-key">已生效配置文件</span>
+            <span class="kv-key">{{ t("doctor.active_configs") || "Active Config Files" }}</span>
             <div class="config-files-box font-mono">
               <template v-if="report.configs && report.configs.length > 0">
                 <div v-for="c in report.configs" :key="c.path" class="config-file-row">
@@ -284,7 +347,7 @@
                 </div>
               </template>
               <div v-else style="color: var(--text-muted); font-size: 0.78rem">
-                默认配置 (未检测到生效的 toml 配置文件)
+                {{ t("doctor.default_config_hint") || "Default config (No active TOML file detected)" }}
               </div>
             </div>
           </div>
@@ -397,7 +460,7 @@ const report = ref<DoctorReport | null>(null);
 const isLoading = ref(false);
 const lastCheckedTime = ref<string>("");
 
-// 计算健康分横幅的视觉色阶
+// Compute visual score banner level
 const bannerStatusClass = computed(() => {
   if (!report.value) return "";
   if (report.value.score === 100) return "status-perfect";
@@ -414,7 +477,7 @@ const circleScoreClass = computed(() => {
   return "score-critical";
 });
 
-// 计算 GitHub API 剩余配额百分比
+// Compute GitHub API remaining quota percentage
 const rateLimitPercent = computed(() => {
   if (!report.value || report.value.health.github_rate_limit <= 0) return 0;
   const pct = (report.value.health.github_rate_remaining / report.value.health.github_rate_limit) * 100;
@@ -429,7 +492,7 @@ const rateLimitColor = computed(() => {
 
 async function fetchDoctorReport() {
   isLoading.value = true;
-  emit("log-event", "INFO", "正在触发 UniRTM Doctor 系统诊断...", undefined, "doctor");
+  emit("log-event", "INFO", "[Doctor] Triggering UniRTM Doctor diagnostics...", undefined, "doctor");
   try {
     const res = await fetch("/api/doctor");
     const contentType = res.headers.get("content-type") || "";
@@ -442,17 +505,17 @@ async function fetchDoctorReport() {
       emit(
         "log-event",
         data.status === "healthy" ? "SUCCESS" : "WARN",
-        `[Doctor] 体检完成: 评分 ${data.score}/100, 发现 ${data.suggestions?.length || 0} 项修复建议`,
+        `[Doctor] Diagnosis complete: Score ${data.score}/100, ${data.suggestions?.length || 0} suggestion(s)`,
         undefined,
         "doctor"
       );
     } else {
-      showToast("诊断接口未就绪或未返回 JSON", "error");
-      emit("log-event", "ERROR", `[Doctor] 诊断接口请求失败 (HTTP ${res.status})`, undefined, "doctor");
+      showToast("Diagnostic API not ready or invalid JSON response", "error");
+      emit("log-event", "ERROR", `[Doctor] Request failed (HTTP ${res.status})`, undefined, "doctor");
     }
   } catch (err: any) {
-    showToast(`诊断异常: ${err.message}`, "error");
-    emit("log-event", "ERROR", `[Doctor] 异常: ${err.message}`, undefined, "doctor");
+    showToast(err.message, "error");
+    emit("log-event", "ERROR", `[Doctor] Error: ${err.message}`, undefined, "doctor");
   } finally {
     isLoading.value = false;
   }
@@ -467,10 +530,10 @@ function copyCommand(cmd: string) {
     navigator.clipboard
       .writeText(cmd)
       .then(() => {
-        showToast(`已复制修复命令: ${cmd}`, "success");
+        showToast(t("doctor.copied_command") || "Copied fix command to clipboard", "success");
       })
       .catch(() => {
-        showToast("复制失败", "error");
+        showToast(t("doctor.copy_failed") || "Failed to copy, please try again", "error");
       });
   }
 }
@@ -478,7 +541,7 @@ function copyCommand(cmd: string) {
 function runFixCommand(cmd: string) {
   emit("open-drawer", "output");
   sendToTerminal({ text: cmd, addNewline: true });
-  showToast(`已向集成终端派发命令: ${cmd}`, "success");
+  showToast(t("doctor.fix_sent") || "Command sent to terminal for execution", "success");
 }
 
 function copyDiagnosticReport() {
@@ -506,7 +569,7 @@ function copyDiagnosticReport() {
   const markdown = lines.join("\n");
   if (navigator?.clipboard?.writeText) {
     navigator.clipboard.writeText(markdown).then(() => {
-      showToast("已复制诊断报告 Markdown 到剪贴板", "success");
+      showToast(t("doctor.copied_report") || "Copied full markdown diagnostic report to clipboard", "success");
     });
   }
 }
@@ -567,7 +630,7 @@ onMounted(() => {
   border: 1px solid transparent;
 }
 
-/* 深色模式主按钮 (全面体检) */
+/* Dark mode primary button (Run Doctor) */
 .doctor-action-btn.primary {
   background: linear-gradient(135deg, #00f0ff 0%, #38bdf8 100%);
   color: #050e1d;
@@ -584,7 +647,7 @@ onMounted(() => {
   box-shadow: 0 4px 16px rgba(0, 229, 255, 0.45);
 }
 
-/* 浅色模式主按钮 (全面体检) */
+/* Light mode primary button (Run Doctor) */
 :root[data-theme="light"] .doctor-action-btn.primary,
 [data-theme="light"] .doctor-action-btn.primary {
   background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
@@ -603,7 +666,7 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
 }
 
-/* 深色模式次要按钮 */
+/* Dark mode secondary button */
 .doctor-action-btn.secondary {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--card-border);
@@ -618,7 +681,7 @@ onMounted(() => {
   color: var(--text-main);
 }
 
-/* 浅色模式次要按钮 */
+/* Light mode secondary button */
 :root[data-theme="light"] .doctor-action-btn.secondary,
 [data-theme="light"] .doctor-action-btn.secondary {
   background: #ffffff;

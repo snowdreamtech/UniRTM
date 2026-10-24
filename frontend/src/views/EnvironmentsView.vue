@@ -119,7 +119,11 @@
           :class="{ active: showOnlyOverrides }"
           @click="showOnlyOverrides = !showOnlyOverrides"
         >
-          <span>{{ showOnlyOverrides ? "● 仅看特有与覆盖项" : "全部生效变量" }}</span>
+          <span>{{
+            showOnlyOverrides
+              ? t("environments.only_overrides") || "● Overrides Only"
+              : t("environments.all_active") || "All Active Variables"
+          }}</span>
         </button>
       </div>
     </div>
@@ -205,7 +209,8 @@
         <div class="empty-title">
           {{
             searchKey
-              ? t("environments.empty_search", { query: searchKey }) || `未找到匹配 "${searchKey}" 的环境变量`
+              ? t("environments.empty_search", { query: searchKey }) ||
+                `No environment variables matching "${searchKey}"`
               : t("environments.empty_title") || "No environment variables defined"
           }}
         </div>
@@ -259,7 +264,11 @@
                 }}</span>
               </span>
               <!-- Profile Override Badges -->
-              <span v-if="item.is_override" class="sec-tag override" :title="'基准默认值: ' + item.base_value">
+              <span
+                v-if="item.is_override"
+                class="sec-tag override"
+                :title="(t('environments.base_value_title') || 'Base value: ') + item.base_value"
+              >
                 <span>🔄 {{ t("environments.badge_override") || "Overridden" }}</span>
               </span>
               <span v-else-if="item.is_profile_only" class="sec-tag profile-only">
@@ -387,7 +396,11 @@
                     <span>{{ t("environments.sensitive_badge") || "Sensitive" }}</span>
                   </span>
                   <!-- Profile Override Badges in Table View -->
-                  <span v-if="item.is_override" class="sec-tag override mini" :title="'基准默认值: ' + item.base_value">
+                  <span
+                    v-if="item.is_override"
+                    class="sec-tag override mini"
+                    :title="(t('environments.base_value_title') || 'Base value: ') + item.base_value"
+                  >
                     <span>🔄 {{ t("environments.badge_override") || "Overridden" }}</span>
                   </span>
                   <span v-else-if="item.is_profile_only" class="sec-tag profile-only mini">
@@ -564,15 +577,14 @@
         </div>
         <p class="confirm-desc">
           {{
-            t("environments.delete_warning", {
+            t("environments.delete_confirm_msg", {
               key: deleteConfirmKey,
               scope:
                 activeScope === "user"
-                  ? t("environments.scope_user") ||
-                    "Are you sure you want to permanently delete {key} from {scope}? This action cannot be undone."
-                  : t("environments.scope_workspace") || "Workspace",
+                  ? t("runtimes.scope_user") || "User Global"
+                  : t("runtimes.scope_workspace") || "Workspace",
             }) ||
-            `确定要从 ${activeScope === "user" ? "用户全局配置" : "当前工作区配置"} 中彻底删除环境变量 ${deleteConfirmKey} 吗？删除后将不可恢复。`
+            `Are you sure you want to permanently delete environment variable ${deleteConfirmKey}? This cannot be undone.`
           }}
         </p>
         <div class="confirm-actions">
@@ -688,10 +700,13 @@ async function executeCreateProfile() {
       await fetchEnvVars();
     } else {
       const err = await res.json();
-      showToast("创建环境失败: " + (err.error || "未知错误"));
+      showToast(
+        t("environments.create_profile_failed", { error: err.error || "Unknown error" }) ||
+          `Failed to create environment profile: ${err.error || "Unknown error"}`
+      );
     }
   } catch (err: any) {
-    showToast("创建错误: " + err.message);
+    showToast(err.message);
   }
 }
 
@@ -706,17 +721,22 @@ async function executeDeleteProfile(p: string) {
     });
     if (res.ok) {
       deleteProfileConfirm.value = "";
-      showToast(`✓ 已成功删除环境 Profile: ${p}`);
+      showToast(
+        t("environments.delete_profile_success", { profile: p }) || `Successfully deleted environment profile: ${p}`
+      );
       if (activeProfile.value === p) {
         activeProfile.value = "";
       }
       await fetchEnvVars();
     } else {
       const err = await res.json();
-      showToast("删除环境失败: " + (err.error || "未知错误"));
+      showToast(
+        t("environments.delete_profile_failed", { error: err.error || "Unknown error" }) ||
+          `Failed to delete environment profile: ${err.error || "Unknown error"}`
+      );
     }
   } catch (err: any) {
-    showToast("删除错误: " + err.message);
+    showToast(err.message);
   }
 }
 
@@ -730,15 +750,18 @@ async function restoreBaseValue(key: string) {
       }
     );
     if (res.ok) {
-      showToast(`✓ 已恢复 ${key} 为默认基准值`);
+      showToast(t("environments.revert_success", { key }) || `Restored ${key} to base default value`);
       await fetchEnvVars();
       notifyEnvsChanged();
     } else {
       const err = await res.json();
-      showToast("恢复基准失败: " + (err.error || "未知错误"));
+      showToast(
+        t("environments.revert_failed", { error: err.error || "Unknown error" }) ||
+          `Failed to restore base value: ${err.error || "Unknown error"}`
+      );
     }
   } catch (err: any) {
-    showToast("操作失败: " + err.message);
+    showToast(err.message);
   }
 }
 
@@ -805,7 +828,7 @@ async function fetchEnvVars() {
       }
     }
   } catch (err: any) {
-    showToast("读取环境变量失败: " + err.message);
+    showToast(err.message);
   } finally {
     loading.value = false;
   }
@@ -842,16 +865,14 @@ async function copyValue(item: EnvItem) {
       document.body.removeChild(input);
     }
     copiedKey.value = item.name;
-    showToast(
-      `✓ ${t("environments.copied_to_clipboard", { key: item.name }) || "Copied value of {key} to clipboard" + item.name + " 真实值到剪贴板"}`
-    );
+    showToast(t("environments.copied_to_clipboard", { key: item.name }) || `Copied value of ${item.name} to clipboard`);
     setTimeout(() => {
       if (copiedKey.value === item.name) {
         copiedKey.value = "";
       }
     }, 2000);
   } catch {
-    showToast("复制失败，请手动选择复制");
+    showToast(t("environments.copy_manual") || "Copy failed, please select and copy manually");
   }
 }
 
@@ -867,9 +888,9 @@ function copyKeyName(name: string) {
       document.execCommand("copy");
       document.body.removeChild(input);
     }
-    showToast(`✓ ${t("environments.copied_key_to_clipboard", { key: name }) || "Copied variable name {key}" + name}`);
+    showToast(t("environments.copied_key_to_clipboard", { key: name }) || `Copied variable name ${name}`);
   } catch {
-    showToast("复制失败");
+    showToast(t("environments.copy_failed") || "Failed to copy to clipboard");
   }
 }
 
@@ -906,17 +927,22 @@ async function handleSaveEnv(payload: {
       isModalOpen.value = false;
       showToast(
         modalMode.value === "create"
-          ? `✓ ${t("environments.create_success", { key: payload.key }) || "Successfully created environment variable {key}" + payload.key}`
-          : `✓ ${t("environments.update_success", { key: payload.key }) || "Successfully updated environment variable {key}" + payload.key}`
+          ? t("environments.create_success", { key: payload.key }) ||
+              `Successfully created environment variable ${payload.key}`
+          : t("environments.update_success", { key: payload.key }) ||
+              `Successfully updated environment variable ${payload.key}`
       );
       await fetchEnvVars();
       notifyEnvsChanged();
     } else {
       const err = await res.json();
-      showToast("保存失败: " + (err.error || "未知错误"));
+      showToast(
+        t("environments.save_failed", { error: err.error || "Unknown error" }) ||
+          `Failed to save: ${err.error || "Unknown error"}`
+      );
     }
   } catch (err: any) {
-    showToast("网络保存错误: " + err.message);
+    showToast(err.message);
   }
 }
 
@@ -936,17 +962,18 @@ async function executeDelete(name: string) {
     });
     if (res.ok) {
       deleteConfirmKey.value = "";
-      showToast(
-        `✓ ${t("environments.delete_success", { key: name }) || "Successfully deleted environment variable {key}" + name}`
-      );
+      showToast(t("environments.delete_success", { key: name }) || `Successfully deleted environment variable ${name}`);
       await fetchEnvVars();
       notifyEnvsChanged();
     } else {
       const err = await res.json();
-      showToast("删除失败: " + (err.error || "未知错误"));
+      showToast(
+        t("environments.save_failed", { error: err.error || "Unknown error" }) ||
+          `Failed to delete: ${err.error || "Unknown error"}`
+      );
     }
   } catch (err: any) {
-    showToast("网络删除错误: " + err.message);
+    showToast(err.message);
   } finally {
     isDeleting.value = false;
   }
