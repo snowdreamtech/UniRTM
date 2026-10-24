@@ -40,7 +40,9 @@
       <span v-if="activeScope === 'user'" class="scope-dot"></span>
     </button>
 
-    <span class="scope-shortcut-hint" title="快捷键: Alt+S 快速切换作用域">Alt+S</span>
+    <span class="scope-shortcut-hint" :title="t('scope.shortcut_hint') || 'Shortcut: Alt+S to switch scope'"
+      >Alt+S</span
+    >
   </div>
 </template>
 
@@ -57,10 +59,16 @@ const { activeScope, setScope, toggleScope } = useAppScope();
 const workspaceLabel = computed(() => t("settings.scope_workspace") || "Workspace");
 const userLabel = computed(() => t("settings.scope_user") || "User");
 
-const workspaceTooltip = computed(() => "工作区环境：配置当前项目专属环境 (.unirtm.toml)");
-const userTooltip = computed(() => "用户全局环境：配置当前用户所有项目共用的默认兜底环境 (~/.unirtm)");
+const workspaceTooltip = computed(
+  () => t("scope.workspace_tip") || "Workspace Scope: Configure project-specific environment (.unirtm.toml)"
+);
+const userTooltip = computed(
+  () => t("scope.user_tip") || "User Scope: Configure user-wide fallback environment (~/.unirtm)"
+);
 const shortcutTitle = computed(
-  () => `当前作用域: ${activeScope.value === "user" ? userLabel.value : workspaceLabel.value} (按 Alt+S 快速切换)`
+  () =>
+    t("scope.current_scope_tip", { scope: activeScope.value === "user" ? userLabel.value : workspaceLabel.value }) ||
+    `Current Scope: ${activeScope.value === "user" ? userLabel.value : workspaceLabel.value} (Press Alt+S to toggle)`
 );
 
 function handleSelectScope(scope: AppScope) {

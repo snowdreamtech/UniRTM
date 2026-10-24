@@ -4,10 +4,10 @@
       <div class="modal-header">
         <div class="header-title">
           <span class="codicon codicon-history header-icon"></span>
-          <span>本地历史快照 (Local History)</span>
+          <span>{{ t("explorer.history_title") || "Local History Snapshots" }}</span>
           <span class="file-badge">{{ fileName }}</span>
         </div>
-        <button class="close-btn" title="关闭" @click="closeModal">
+        <button class="close-btn" :title="t('common.close') || 'Close'" @click="closeModal">
           <span class="codicon codicon-close"></span>
         </button>
       </div>
@@ -15,8 +15,11 @@
       <div class="modal-body">
         <div v-if="snapshots.length === 0" class="empty-state">
           <span class="codicon codicon-history empty-icon"></span>
-          <p>暂无本地历史快照</p>
-          <span class="empty-sub">每次手动或自动保存该文件时，系统将自动记录带时间戳的安全快照（最多保留 20 份）</span>
+          <p>{{ t("explorer.history_empty") || "No local history snapshots yet" }}</p>
+          <span class="empty-sub">{{
+            t("explorer.history_empty_sub") ||
+            "A secure timestamped snapshot is automatically saved each time this file is modified (up to 20 snapshots kept)."
+          }}</span>
         </div>
 
         <div v-else class="snapshot-list">
@@ -26,7 +29,9 @@
                 <span class="snapshot-index">#{{ snapshots.length - index }}</span>
                 <span class="snapshot-time">{{ formatTime(item.timestamp) }}</span>
                 <span class="snapshot-relative">({{ formatRelativeTime(item.timestamp) }})</span>
-                <span v-if="index === 0" class="latest-tag">最新快照</span>
+                <span v-if="index === 0" class="latest-tag">{{
+                  t("explorer.history_latest") || "Latest Snapshot"
+                }}</span>
               </div>
               <div class="snapshot-meta-row">
                 <span class="snapshot-size">{{ formatSize(item.size) }}</span>
@@ -35,17 +40,21 @@
             </div>
 
             <div class="snapshot-actions">
-              <button class="action-btn diff-btn" title="在主编辑器中与当前版本差异比对" @click="handleCompare(item)">
+              <button
+                class="action-btn diff-btn"
+                :title="t('explorer.history_compare_tip') || 'Compare diff with current version in main editor'"
+                @click="handleCompare(item)"
+              >
                 <span class="codicon codicon-diff"></span>
-                对比差异
+                {{ t("explorer.history_compare") || "Compare Diff" }}
               </button>
               <button
                 class="action-btn restore-btn"
-                title="将当前工作区文件内容还原到此快照版本"
+                :title="t('explorer.history_restore_tip') || 'Restore workspace file content to this snapshot'"
                 @click="handleRestore(item)"
               >
                 <span class="codicon codicon-discard"></span>
-                还原到此版
+                {{ t("explorer.history_restore") || "Restore Version" }}
               </button>
             </div>
           </div>
@@ -53,8 +62,10 @@
       </div>
 
       <div class="modal-footer">
-        <span class="footer-tip">💡 本地历史独立于 Git 仓库，可挽救任何未提交的草稿改动</span>
-        <button class="footer-btn" @click="closeModal">关闭</button>
+        <span class="footer-tip">{{
+          t("explorer.history_footer_tip") || "💡 Local History is independent of Git and rescues uncommitted drafts."
+        }}</span>
+        <button class="footer-btn" @click="closeModal">{{ t("common.close") || "Close" }}</button>
       </div>
     </div>
   </div>
@@ -62,6 +73,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { t } from "../../i18n";
 import { useLocalHistory, type HistorySnapshot } from "../../composables/useLocalHistory";
 import { useFileTree } from "../../composables/useFileTree";
 import { useToast } from "../../composables/useToast";
@@ -86,14 +98,18 @@ function handleCompare(snapshot: HistorySnapshot): void {
 async function handleRestore(snapshot: HistorySnapshot): Promise<void> {
   const ok = await saveFile(snapshot.path, snapshot.content);
   if (ok) {
-    showToast(`已成功还原至 ${formatTime(snapshot.timestamp)} 快照`, "success");
+    showToast(
+      t("explorer.history_restored", { time: formatTime(snapshot.timestamp) }) ||
+        `Successfully restored to snapshot at ${formatTime(snapshot.timestamp)}`,
+      "success"
+    );
     closeModal();
   }
 }
 
 function formatTime(timestamp: number): string {
   const d = new Date(timestamp);
-  return d.toLocaleString("zh-CN", {
+  return d.toLocaleString(undefined, {
     hour12: false,
     month: "2-digit",
     day: "2-digit",
@@ -105,13 +121,14 @@ function formatTime(timestamp: number): string {
 
 function formatRelativeTime(timestamp: number): string {
   const diffSec = Math.floor((Date.now() - timestamp) / 1000);
-  if (diffSec < 10) return "刚刚";
-  if (diffSec < 60) return `${diffSec}秒前`;
+  if (diffSec < 10) return t("explorer.time_just_now") || "just now";
+  if (diffSec < 60) return t("explorer.time_seconds_ago", { sec: diffSec }) || `${diffSec}s ago`;
   const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}分钟前`;
+  if (diffMin < 60) return t("explorer.time_minutes_ago", { min: diffMin }) || `${diffMin}m ago`;
   const diffHour = Math.floor(diffMin / 60);
-  if (diffHour < 24) return `${diffHour}小时前`;
-  return `${Math.floor(diffHour / 24)}天前`;
+  if (diffHour < 24) return t("explorer.time_hours_ago", { hour: diffHour }) || `${diffHour}h ago`;
+  const diffDay = Math.floor(diffHour / 24);
+  return t("explorer.time_days_ago", { day: diffDay }) || `${diffDay}d ago`;
 }
 
 function formatSize(bytes: number): string {

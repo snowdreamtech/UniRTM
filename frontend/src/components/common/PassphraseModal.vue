@@ -19,7 +19,7 @@
             ></span>
             <h3 class="modal-title">{{ modalTitle }}</h3>
           </div>
-          <button class="modal-close-btn" title="取消 (Esc)" @click="handleCancel">
+          <button class="modal-close-btn" :title="t('common.cancel_esc') || 'Cancel (Esc)'" @click="handleCancel">
             <span class="codicon codicon-close"></span>
           </button>
         </div>

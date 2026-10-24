@@ -24,7 +24,11 @@
           }}: <strong>{{ route.query.file || activeTab?.name }}</strong>
         </span>
       </div>
-      <button class="return-guard-dismiss" @click="handleDismissGuardBanner" title="关闭横幅">
+      <button
+        class="return-guard-dismiss"
+        @click="handleDismissGuardBanner"
+        :title="t('explorer.close_banner') || 'Dismiss Banner'"
+      >
         <span class="codicon codicon-close"></span>
       </button>
     </div>
@@ -45,7 +49,11 @@
           @click="handleSelectTab(tab.id)"
           @auxclick.middle.stop="closeTab(tab.id)"
           @contextmenu.prevent.stop="openTabContextMenu($event, tab)"
-          :title="tab.path + (tab.isPinned ? ' (已固定)' : '') + (tab.gitStatus ? ` [${tab.gitStatus}]` : '')"
+          :title="
+            tab.path +
+            (tab.isPinned ? t('explorer.pinned_tag') || ' (Pinned)' : '') +
+            (tab.gitStatus ? ` [${tab.gitStatus}]` : '')
+          "
         >
           <span v-if="tab.isDiff" class="codicon codicon-diff tab-icon diff-icon"></span>
           <TechIcon v-else :id="tab.name" :size="16" class="tab-icon" />
@@ -56,11 +64,23 @@
             {{ tab.name }}
           </span>
           <span v-if="tab.gitStatus" class="tab-git-badge" :class="'badge-' + tab.gitStatus">{{ tab.gitStatus }}</span>
-          <span v-if="tab.isDirty" class="dirty-dot" title="未保存更改">●</span>
-          <button v-if="tab.isPinned" class="tab-pin-btn" title="取消固定" @click.stop="togglePinTab(tab.id)">
+          <span v-if="tab.isDirty" class="dirty-dot" :title="t('explorer.unsaved_changes') || 'Unsaved Changes'"
+            >●</span
+          >
+          <button
+            v-if="tab.isPinned"
+            class="tab-pin-btn"
+            :title="t('explorer.unpin_tab') || 'Unpin Tab'"
+            @click.stop="togglePinTab(tab.id)"
+          >
             <span class="codicon codicon-pinned"></span>
           </button>
-          <button v-else class="tab-close-btn" title="关闭 (中键亦可关闭)" @click.stop="closeTab(tab.id)">
+          <button
+            v-else
+            class="tab-close-btn"
+            :title="t('explorer.close_tab_tip') || 'Close (Middle-click also closes)'"
+            @click.stop="closeTab(tab.id)"
+          >
             <span class="codicon codicon-close"></span>
           </button>
         </div>
@@ -112,7 +132,7 @@
     <!-- 2. Active Tab Workspace (Code Editor or Image Preview) -->
     <div v-if="activeTab" class="editor-workspace">
       <!-- File Breadcrumbs Navigation Bar (VS Code aligned) -->
-      <nav class="editor-breadcrumb" aria-label="文件导航路径">
+      <nav class="editor-breadcrumb" :aria-label="t('explorer.breadcrumb_nav') || 'Breadcrumbs'">
         <div class="bc-items-scroll">
           <template v-for="(item, index) in breadcrumbs" :key="item.id">
             <span v-if="index > 0" class="codicon codicon-chevron-right bc-separator" aria-hidden="true"></span>
@@ -125,7 +145,11 @@
                 'is-root': item.isRoot,
                 'is-active': index === breadcrumbs.length - 1,
               }"
-              :title="item.path ? `${item.path} (单击在资源管理器中定位)` : item.name"
+              :title="
+                item.path
+                  ? t('explorer.breadcrumb_locate', { path: item.path }) || `${item.path} (Click to locate in Explorer)`
+                  : item.name
+              "
               @click="handleBreadcrumbClick(item)"
             >
               <span class="bc-icon-wrapper">
@@ -312,7 +336,7 @@
         <div class="footer-left">
           <span
             class="footer-item branch-item clickable"
-            title="当前 Git 分支 (点击进入源代码管理)"
+            :title="t('explorer.current_branch_tip') || 'Current Git branch (Click to open Source Control)'"
             @click="navigateToScmForActiveFile"
           >
             <span class="codicon codicon-git-branch"></span>
@@ -322,7 +346,10 @@
             v-if="activeTabGitStatus"
             class="footer-item git-status-tag clickable"
             :class="'git-' + activeTabGitStatus.type"
-            :title="`文件状态: ${activeTabGitStatus.label} (点击在源代码管理中查看)`"
+            :title="
+              t('explorer.file_status_tip', { status: activeTabGitStatus.label }) ||
+              `File status: ${activeTabGitStatus.label} (Click to view in Source Control)`
+            "
             @click="navigateToScmForActiveFile"
           >
             <span class="codicon codicon-source-control"></span>
@@ -782,13 +809,14 @@ const activeTabGitStatus = computed(() => {
   const p = activeTab.value.path;
   const stagedItem = gitStatusData.value?.staged?.find((item) => item.path === p);
   if (stagedItem) {
-    return { type: "staged", label: "已暂存 (Staged)" };
+    return { type: "staged", label: t("explorer.git_staged") || "Staged" };
   }
   const unstagedItem = gitStatusData.value?.unstaged?.find((item) => item.path === p);
   if (unstagedItem) {
-    if (unstagedItem.status === "M") return { type: "modified", label: "已修改 (Modified)" };
-    if (unstagedItem.status === "U" || unstagedItem.status === "?") return { type: "未跟踪 (Untracked)" };
-    if (unstagedItem.status === "D") return { type: "deleted", label: "已删除 (Deleted)" };
+    if (unstagedItem.status === "M") return { type: "modified", label: t("explorer.git_modified") || "Modified" };
+    if (unstagedItem.status === "U" || unstagedItem.status === "?")
+      return { type: "untracked", label: t("explorer.git_untracked") || "Untracked" };
+    if (unstagedItem.status === "D") return { type: "deleted", label: t("explorer.git_deleted") || "Deleted" };
     return { type: "modified", label: unstagedItem.status };
   }
   return null;
@@ -993,10 +1021,10 @@ function handleCopyAbsolutePath() {
   navigator.clipboard
     ?.writeText(fullPath)
     .then(() => {
-      showToast(t("explorer.copied_full_path") || `已复制完整路径: ${fullPath}`, "success");
+      showToast(t("explorer.copied_full_path") || `Copied full path: ${fullPath}`, "success");
     })
     .catch(() => {
-      showToast("复制路径失败", "error");
+      showToast(t("explorer.copy_path_failed") || "Failed to copy path", "error");
     });
   closeContextMenu();
 }
@@ -1007,10 +1035,10 @@ function handleCopyRelativePath() {
   navigator.clipboard
     ?.writeText(rel)
     .then(() => {
-      showToast(t("explorer.copied_path") || `已复制相对路径: ${rel}`, "success");
+      showToast(t("explorer.copied_path") || `Copied relative path: ${rel}`, "success");
     })
     .catch(() => {
-      showToast("复制相对路径失败", "error");
+      showToast(t("explorer.copy_rel_path_failed") || "Failed to copy relative path", "error");
     });
   closeContextMenu();
 }

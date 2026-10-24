@@ -57,7 +57,9 @@
         <button v-else-if="upgradeHint" class="about-action-btn update" @click="copyUpgradeCommand">
           <span style="display: inline-flex; align-items: center; gap: 6px">
             <TechIcon id="workbench:config" :size="14" />
-            <span>{{ copiedUpgrade ? t("about.copied") || "Copied" : "复制更新命令" }}</span>
+            <span>{{
+              copiedUpgrade ? t("about.copied") || "Copied" : t("about.copy_upgrade_cmd") || "Copy Upgrade Command"
+            }}</span>
           </span>
         </button>
 
@@ -79,7 +81,7 @@
           <div class="banner-title-area">
             <span class="banner-badge">NEW</span>
             <span class="banner-headline">
-              {{ t("about.newVersionNotice", { tag: latestTag }) || `发现新版本 ${latestTag}` }}
+              {{ t("about.newVersionNotice", { tag: latestTag }) || `New version ${latestTag} found` }}
             </span>
             <span v-if="installMethod && installMethod !== 'script'" class="install-method-badge font-mono">
               {{ installMethod }}
@@ -88,19 +90,33 @@
 
           <div class="banner-action-area">
             <button v-if="releaseNotes" class="banner-sub-btn" @click="toggleReleaseNotes">
-              <span>{{ showReleaseNotes ? "收起更新说明" : "查看更新说明 (Release Notes)" }}</span>
+              <span>{{
+                showReleaseNotes
+                  ? t("about.collapse_release_notes") || "Collapse Release Notes"
+                  : t("about.view_release_notes") || "View Release Notes"
+              }}</span>
             </button>
             <button v-if="upgradeHint" class="banner-copy-btn" @click="copyUpgradeCommand">
-              <span>{{ copiedUpgrade ? "已复制命令" : `复制命令: ${upgradeHint}` }}</span>
+              <span>{{
+                copiedUpgrade
+                  ? t("about.copied_cmd") || "Copied Command"
+                  : t("about.copy_cmd_fmt", { cmd: upgradeHint }) || `Copy: ${upgradeHint}`
+              }}</span>
             </button>
           </div>
         </div>
 
         <p v-if="upgradeHint" class="package-manager-warning">
-          ⚠️ UniRTM 是通过 {{ installMethod }} 包管理器安装的。为避免文件冲突，请在终端运行上方命令进行升级。
+          {{
+            t("about.pkg_manager_warning", { method: installMethod }) ||
+            `⚠️ UniRTM was installed via ${installMethod} package manager. To prevent file conflicts, run the command above to upgrade.`
+          }}
         </p>
         <p v-else-if="isUnsupported" class="package-manager-warning">
-          ⚠️ 当前安装源非官方渠道，自更新可能存在安全风险，建议前往官方仓库获取最新版本。
+          {{
+            t("about.unofficial_warning") ||
+            "⚠️ Current installation source is unofficial. Self-update may pose security risks. It is recommended to get the latest version from official repo."
+          }}
         </p>
 
         <!-- Collapsible Release Notes Box -->
@@ -191,8 +207,13 @@
           <TechIcon id="workbench:tools" :size="24" />
         </div>
         <div class="highlight-body">
-          <h3>多运行时声明式管控</h3>
-          <p>无缝管理 Node.js、Go、Python、Rust、Java 等多语言版本，支持工具链锁定与跨平台环境对齐。</p>
+          <h3>{{ t("about.feature1_title") || "Multi-Runtime Declarative Control" }}</h3>
+          <p>
+            {{
+              t("about.feature1_desc") ||
+              "Seamlessly manage Node.js, Go, Python, Rust, Java versions with locked toolchains and aligned cross-platform environments."
+            }}
+          </p>
         </div>
       </div>
 
@@ -201,8 +222,13 @@
           <TechIcon id="workbench:lock" :size="24" />
         </div>
         <div class="highlight-body">
-          <h3>三层命名空间与排他锁</h3>
-          <p>严格隔离核心系统设置与第三方插件参数，写入自动持有文件锁并完整保留原有 TOML 注释排版。</p>
+          <h3>{{ t("about.feature2_title") || "Three-Tier Namespace & Exclusive Locks" }}</h3>
+          <p>
+            {{
+              t("about.feature2_desc") ||
+              "Strictly isolate core system settings and third-party plugin configs, acquiring file locks on write and preserving original TOML comments."
+            }}
+          </p>
         </div>
       </div>
 
@@ -211,8 +237,13 @@
           <TechIcon id="workbench:speed" :size="24" />
         </div>
         <div class="highlight-body">
-          <h3>极速无感即时自动保存</h3>
-          <p>遵循现代专业 IDE 哲学，界面选项修改即时生效落盘，杜绝手动冗余保存按钮与配置丢失风险。</p>
+          <h3>{{ t("about.feature3_title") || "Blazing Instant Auto-Save" }}</h3>
+          <p>
+            {{
+              t("about.feature3_desc") ||
+              "Adhering to modern IDE philosophy, option changes take effect on disk immediately, eliminating manual save buttons and data loss risks."
+            }}
+          </p>
         </div>
       </div>
     </div>
@@ -246,7 +277,7 @@
               target="_blank"
               rel="noopener noreferrer"
               class="credit-license-badge"
-              title="查看 CC-BY-4.0 商业可用授权"
+              :title="t('about.view_cc_license') || 'View CC-BY-4.0 Commercial License'"
             >
               CC-BY-4.0 ↗
             </a>
@@ -268,14 +299,14 @@
               rel="noopener noreferrer"
               class="credit-link"
             >
-              Seti UI 图标集 (@vscode/seti-ui) ↗
+              {{ t("about.seti_icons") || "Seti UI Icon Theme (@vscode/seti-ui) ↗" }}
             </a>
             <a
               href="https://github.com/jesseweed/seti-ui/blob/master/LICENSE.md"
               target="_blank"
               rel="noopener noreferrer"
               class="credit-license-badge"
-              title="查看 MIT 授权协议"
+              :title="t('about.view_mit_license') || 'View MIT License'"
             >
               MIT License ↗
             </a>
@@ -292,14 +323,14 @@
           <div class="credit-item-title">
             <span class="codicon codicon-extensions"></span>
             <a href="https://open-vsx.org" target="_blank" rel="noopener noreferrer" class="credit-link">
-              VS Code 主题扩展规范与 Open VSX ↗
+              {{ t("about.openvsx_spec") || "VS Code Theme Extension Spec & Open VSX ↗" }}
             </a>
             <a
               href="https://open-vsx.org"
               target="_blank"
               rel="noopener noreferrer"
               class="credit-license-badge"
-              title="访问 Open VSX 开放扩展市场"
+              :title="t('about.view_openvsx') || 'Visit Open VSX Extension Registry'"
             >
               Open VSX ↗
             </a>
@@ -316,7 +347,7 @@
               target="_blank"
               rel="noopener noreferrer"
               class="sub-link"
-              >颜色主题规范 ↗</a
+              >{{ t("about.color_theme_spec") || "Color Theme Spec ↗" }}</a
             >
             <span style="color: var(--text-muted); opacity: 0.5">•</span>
             <a
@@ -324,7 +355,7 @@
               target="_blank"
               rel="noopener noreferrer"
               class="sub-link"
-              >文件图标规范 ↗</a
+              >{{ t("about.file_icon_spec") || "File Icon Spec ↗" }}</a
             >
             <span style="color: var(--text-muted); opacity: 0.5">•</span>
             <a
@@ -332,7 +363,7 @@
               target="_blank"
               rel="noopener noreferrer"
               class="sub-link"
-              >界面图标规范 ↗</a
+              >{{ t("about.product_icon_spec") || "Product Icon Spec ↗" }}</a
             >
           </div>
         </div>
@@ -534,14 +565,15 @@ const handleCheckUpdate = async () => {
           hasUpdateAvailable.value = true;
           isLatestChecked.value = false;
           showToast(
-            t("about.newVersionNotice", { tag: data.latest_version }) || `🚀 发现新版本 ${data.latest_version}！`,
+            t("about.newVersionNotice", { tag: data.latest_version }) || `🚀 New version ${data.latest_version} found!`,
             "info"
           );
         } else {
           hasUpdateAvailable.value = false;
           isLatestChecked.value = true;
           showToast(
-            t("about.isLatest", { version: displayVersion.value }) || `当前已是最新版本 (${displayVersion.value})`,
+            t("about.isLatest", { version: displayVersion.value }) ||
+              `Already the latest version (${displayVersion.value})`,
             "success"
           );
           if (isLatestTimer) clearTimeout(isLatestTimer);

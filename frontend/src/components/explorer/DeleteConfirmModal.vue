@@ -3,22 +3,29 @@
     <div class="modal-dialog" @click.stop>
       <div class="modal-header">
         <span class="modal-icon codicon codicon-warning"></span>
-        <h3 class="modal-title">确认删除</h3>
+        <h3 class="modal-title">{{ t("explorer.delete_title") || "Confirm Delete" }}</h3>
       </div>
       <div class="modal-body">
         <p class="modal-message">
-          确定要彻底删除
+          {{ t("explorer.delete_confirm_prefix") || "Are you sure you want to permanently delete " }}
           <strong class="target-name">{{ deleteConfirmModal.node?.name }}</strong>
-          吗？
+          {{ t("explorer.delete_confirm_suffix") || "?" }}
         </p>
         <p v-if="deleteConfirmModal.node?.is_dir" class="modal-subtext">
-          该文件夹内的所有子文件和目录也将被一并永久删除，此操作不可逆。
+          {{
+            t("explorer.delete_dir_warning") ||
+            "All files and subdirectories inside this folder will also be permanently deleted. This action cannot be undone."
+          }}
         </p>
-        <p v-else class="modal-subtext">此文件将被永久删除，此操作不可逆。</p>
+        <p v-else class="modal-subtext">
+          {{
+            t("explorer.delete_file_warning") || "This file will be permanently deleted. This action cannot be undone."
+          }}
+        </p>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="handleCancel">取消</button>
-        <button class="btn btn-danger" @click="handleConfirm">删除</button>
+        <button class="btn btn-secondary" @click="handleCancel">{{ t("common.cancel") || "Cancel" }}</button>
+        <button class="btn btn-danger" @click="handleConfirm">{{ t("common.delete") || "Delete" }}</button>
       </div>
     </div>
   </div>
@@ -26,6 +33,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
+import { t } from "../../i18n";
 import { useFileTree } from "../../composables/useFileTree";
 
 const { deleteConfirmModal, deleteItem } = useFileTree();

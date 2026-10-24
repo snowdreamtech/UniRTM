@@ -73,9 +73,13 @@
         </button>
 
         <!-- Reveal File in Explorer -->
-        <button class="diff-btn" title="在资源管理器中揭示" @click="handleRevealFileInExplorer(activeDiffFile)">
+        <button
+          class="diff-btn"
+          :title="t('scm.reveal_in_explorer') || 'Reveal in Explorer'"
+          @click="handleRevealFileInExplorer(activeDiffFile)"
+        >
           <span class="codicon codicon-folder-opened"></span>
-          <span>定位</span>
+          <span>{{ t("scm.locate") || "Locate" }}</span>
         </button>
 
         <!-- Close Diff / Back to Overview or Graph -->
@@ -329,7 +333,7 @@
                   <div class="item-hover-actions" @click.stop>
                     <button
                       class="file-action-icon-btn"
-                      title="在资源管理器中揭示"
+                      :title="t('scm.reveal_in_explorer') || 'Reveal in Explorer'"
                       @click="handleRevealFileInExplorer(item.path)"
                     >
                       <span class="codicon codicon-folder-opened"></span>
@@ -398,7 +402,7 @@
                   <div class="item-hover-actions" @click.stop>
                     <button
                       class="file-action-icon-btn"
-                      title="在资源管理器中揭示"
+                      :title="t('scm.reveal_in_explorer') || 'Reveal in Explorer'"
                       @click="handleRevealFileInExplorer(item.path)"
                     >
                       <span class="codicon codicon-folder-opened"></span>
@@ -632,11 +636,11 @@ async function handleSelectBranch(branchName: string) {
   isSwitchingBranch.value = true;
   try {
     await checkout(branchName);
-    showToast(t("scm.branch.switched", { branch: branchName }) || `已切换至分支: ${branchName}`, "success");
+    showToast(t("scm.branch.switched", { branch: branchName }) || `Switched to branch: ${branchName}`, "success");
     isBranchMenuOpen.value = false;
     await Promise.all([fetchStatus(), fetchBranches(), fetchLog()]);
   } catch (err: any) {
-    showToast(err.message || "切换分支失败", "error");
+    showToast(err.message || t("scm.branch_switch_failed") || "Failed to switch branch", "error");
   } finally {
     isSwitchingBranch.value = false;
   }
@@ -669,9 +673,17 @@ function navigateToGuard() {
 
 const guardCardValue = computed(() => {
   if (isGuardLoading.value) return "...";
-  if (guardStatus.value.errors_count > 0) return `${guardStatus.value.errors_count} 阻断`;
-  if (guardStatus.value.fixable_count > 0) return `${guardStatus.value.fixable_count} 可修复`;
-  return "已就绪";
+  if (guardStatus.value.errors_count > 0)
+    return (
+      t("scm.guard_status_blockers", { count: guardStatus.value.errors_count }) ||
+      `${guardStatus.value.errors_count} Blockers`
+    );
+  if (guardStatus.value.fixable_count > 0)
+    return (
+      t("scm.guard_status_fixable", { count: guardStatus.value.fixable_count }) ||
+      `${guardStatus.value.fixable_count} Fixable`
+    );
+  return t("scm.guard_status_ready") || "Ready";
 });
 
 const guardCardIcon = computed(() => {
@@ -689,12 +701,18 @@ const guardCardIconColor = computed(() => {
 
 const guardTooltip = computed(() => {
   if (guardStatus.value.errors_count > 0) {
-    return `质量守卫检测到 ${guardStatus.value.errors_count} 处阻断违规，点击进入质量守卫中心`;
+    return (
+      t("scm.guard_tip_blockers", { count: guardStatus.value.errors_count }) ||
+      `Quality Guard detected ${guardStatus.value.errors_count} blocker violation(s). Click to open Quality Guard Hub.`
+    );
   }
   if (guardStatus.value.fixable_count > 0) {
-    return `质量守卫发现 ${guardStatus.value.fixable_count} 处可修复问题，点击进入质量守卫中心`;
+    return (
+      t("scm.guard_tip_fixable", { count: guardStatus.value.fixable_count }) ||
+      `Quality Guard detected ${guardStatus.value.fixable_count} fixable issue(s). Click to open Quality Guard Hub.`
+    );
   }
-  return "质量守卫检测已就绪，点击进入质量守卫中心";
+  return t("scm.guard_tip_ready") || "Quality Guard is ready. Click to open Quality Guard Hub.";
 });
 
 async function handleRunGuardFix() {
