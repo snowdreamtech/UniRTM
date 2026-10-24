@@ -4,6 +4,7 @@
 import { ref, computed } from "vue";
 import { useEditorTabs } from "./useEditorTabs";
 import { isMac } from "../utils/platform";
+import { t, type TranslationDict } from "../i18n";
 
 export type DrawerTab = "terminal" | "output" | "tasks" | "doctor" | "ports";
 
@@ -12,10 +13,12 @@ export interface ShortcutItem {
   category: "general" | "view" | "panel" | "editor" | "navigation";
   keys: string;
   macKeys?: string;
-  titleZh: string;
   titleEn: string;
-  descZh: string;
   descEn: string;
+  title?: string;
+  desc?: string;
+  titleZh?: string;
+  descZh?: string;
   when?: string;
 }
 
@@ -27,28 +30,39 @@ export interface CustomKeybinding {
 
 export interface KeymapPreset {
   id: "vscode" | "jetbrains" | "vim" | "sublime";
-  nameZh: string;
   nameEn: string;
-  descZh: string;
   descEn: string;
+  nameZh?: string;
+  descZh?: string;
   keybindings: CustomKeybinding[];
+}
+
+export function getShortcutTitle(item: { id: string; titleEn?: string; title?: string }): string {
+  return t(`shortcuts.${item.id}.title` as keyof TranslationDict) || item.titleEn || item.title || item.id;
+}
+
+export function getShortcutDesc(item: { id: string; descEn?: string; desc?: string }): string {
+  return t(`shortcuts.${item.id}.desc` as keyof TranslationDict) || item.descEn || item.desc || "";
+}
+
+export function getPresetName(preset: { id: string; nameEn?: string; name?: string }): string {
+  return t(`shortcuts.preset_${preset.id}_name` as keyof TranslationDict) || preset.nameEn || preset.name || preset.id;
+}
+
+export function getPresetDesc(preset: { id: string; descEn?: string; desc?: string }): string {
+  return t(`shortcuts.preset_${preset.id}_desc` as keyof TranslationDict) || preset.descEn || preset.desc || "";
 }
 
 export const KEYMAP_PRESETS: KeymapPreset[] = [
   {
     id: "vscode",
-    nameZh: "VS Code (系统默认)",
     nameEn: "VS Code (Default)",
-    descZh: "VS Code 经典键位方案：Ctrl+Shift+P 调板、Ctrl+P 跳转、Ctrl+` 终端、Ctrl+B 侧边栏",
     descEn: "Classic VS Code keybindings: Ctrl+Shift+P, Ctrl+P, Ctrl+`, Ctrl+B",
     keybindings: [],
   },
   {
     id: "jetbrains",
-    nameZh: "JetBrains / IntelliJ IDEA",
     nameEn: "JetBrains / IntelliJ IDEA",
-    descZh:
-      "IntelliJ 习惯键位：Ctrl+Shift+A 查找操作、Ctrl+Shift+N 文件、Alt+F12 终端、Alt+1 项目窗口、Ctrl+Alt+S 设置",
     descEn: "JetBrains keybindings: Ctrl+Shift+A, Ctrl+Shift+N, Alt+F12, Alt+1, Ctrl+Alt+S",
     keybindings: [
       { command: "workbench.action.showCommands", key: "Ctrl+Shift+A" },
@@ -66,9 +80,7 @@ export const KEYMAP_PRESETS: KeymapPreset[] = [
   },
   {
     id: "vim",
-    nameZh: "Vim 风格",
     nameEn: "Vim Style",
-    descZh: "Vim 导航键位：Space Space 调板、Ctrl+P 搜索、Ctrl+W V 分栏、Ctrl+W T 终端、G Q 格式化",
     descEn: "Vim style navigation: Space Space, Ctrl+P, Ctrl+W V, Ctrl+W T, G Q",
     keybindings: [
       { command: "workbench.action.showCommands", key: "Space Space" },
@@ -84,9 +96,7 @@ export const KEYMAP_PRESETS: KeymapPreset[] = [
   },
   {
     id: "sublime",
-    nameZh: "Sublime Text",
     nameEn: "Sublime Text",
-    descZh: "Sublime Text 键位：Ctrl+Shift+P 动作、Ctrl+P 打开、Ctrl+K Ctrl+B 侧边栏、Ctrl+B 运行任务",
     descEn: "Sublime Text keybindings: Ctrl+Shift+P, Ctrl+P, Ctrl+K Ctrl+B, Ctrl+B",
     keybindings: [
       { command: "workbench.action.showCommands", key: "Ctrl+Shift+P" },
@@ -114,9 +124,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "general",
     keys: "Ctrl+Shift+P / F1",
     macKeys: "Cmd+Shift+P / F1",
-    titleZh: "显示所有命令 (命令面板)",
     titleEn: "Show All Commands (Command Palette)",
-    descZh: "打开全局命令面板搜索任意功能、页面或执行快捷指令",
     descEn: "Open Command Palette to search features, pages, or execute commands",
   },
   {
@@ -124,9 +132,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "general",
     keys: "Ctrl+P",
     macKeys: "Cmd+P",
-    titleZh: "快速打开 / 页面跳转",
     titleEn: "Quick Open / Navigate",
-    descZh: "快速搜索并跳转至页面、功能或执行任务",
     descEn: "Quickly navigate to files, views, or execute actions",
   },
   {
@@ -134,9 +140,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "general",
     keys: "Ctrl+,",
     macKeys: "Cmd+,",
-    titleZh: "打开系统设置",
     titleEn: "Open Settings",
-    descZh: "打开系统配置偏好面板 (外观、网络、代理与环境)",
     descEn: "Open preferences and system settings modal",
   },
   {
@@ -144,9 +148,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "general",
     keys: "Ctrl+K Ctrl+S",
     macKeys: "Cmd+K Cmd+S",
-    titleZh: "打开键盘快捷键参考",
     titleEn: "Open Keyboard Shortcuts",
-    descZh: "查看与自定义 UniRTM 键盘快捷键 (对齐 VS Code keybindings.json)",
     descEn: "View and customize keyboard shortcuts (aligned with VS Code keybindings.json)",
   },
   {
@@ -154,9 +156,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "general",
     keys: "Escape",
     macKeys: "Escape",
-    titleZh: "关闭当前弹窗 / 浮层 / 底部控制台",
     titleEn: "Close Current Modal / Flyout / Bottom Drawer",
-    descZh: "退出搜索栏、设置窗口、快捷键面板或折叠底部控制台",
     descEn: "Dismiss search palette, active modals, or bottom drawer",
   },
 
@@ -166,9 +166,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "panel",
     keys: "Ctrl+B",
     macKeys: "Cmd+B",
-    titleZh: "显示 / 隐藏主侧边栏",
     titleEn: "Toggle Primary Side Bar",
-    descZh: "折叠或展开左侧主导航与子模块侧边栏",
     descEn: "Toggle primary collapsible side bar navigation",
   },
   {
@@ -176,9 +174,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "panel",
     keys: "Ctrl+J",
     macKeys: "Cmd+J",
-    titleZh: "显示 / 隐藏底部控制台面板",
     titleEn: "Toggle Bottom Panel",
-    descZh: "展开或收起底部抽屉 (集成终端 / 任务输出 / 运行日志)",
     descEn: "Toggle bottom drawer for terminal, tasks, and output",
   },
   {
@@ -186,9 +182,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "panel",
     keys: "Ctrl+`",
     macKeys: "Cmd+`",
-    titleZh: "切换集成终端",
     titleEn: "Toggle Integrated Terminal",
-    descZh: "快速呼出或隐藏底部集成终端会话",
     descEn: "Focus or toggle active integrated terminal",
   },
   {
@@ -196,9 +190,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "panel",
     keys: "Ctrl+Shift+`",
     macKeys: "Cmd+Shift+`",
-    titleZh: "新建终端会话",
     titleEn: "Create New Terminal Session",
-    descZh: "在底部终端抽屉中创建并激活一个新的 Shell 会话",
     descEn: "Spawn a new shell tab in integrated terminal",
   },
   {
@@ -206,9 +198,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "panel",
     keys: "Ctrl+Shift+U",
     macKeys: "Cmd+Shift+U",
-    titleZh: "显示输出通道与系统日志",
     titleEn: "Show Output Channel & Logs",
-    descZh: "切换至底部抽屉的日志输出控制台",
     descEn: "Switch bottom drawer to runtime output and system logs",
   },
   {
@@ -216,9 +206,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "panel",
     keys: "Ctrl+Shift+M",
     macKeys: "Cmd+Shift+M",
-    titleZh: "打开系统诊断与环境体检 (Doctor)",
     titleEn: "Show System Health & Doctor",
-    descZh: "直接跳转至系统全面体检与依赖诊断视图",
     descEn: "Jump to Doctor health diagnostics view",
   },
 
@@ -228,9 +216,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "view",
     keys: "Ctrl+Shift+E",
     macKeys: "Cmd+Shift+E",
-    titleZh: "显示资源管理器 (Explorer)",
     titleEn: "Show Explorer",
-    descZh: "切换至工作区文件目录树与代码编辑区",
     descEn: "Switch to workspace file explorer and editor",
   },
   {
@@ -238,9 +224,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "view",
     keys: "Ctrl+Shift+G",
     macKeys: "Cmd+Shift+G",
-    titleZh: "显示源代码管理 (SCM / Git)",
     titleEn: "Show Source Control (SCM)",
-    descZh: "切换至 Git 变更、暂存、提交历史与图谱视图",
     descEn: "Switch to Git status, staging and commit graph view",
   },
   {
@@ -248,9 +232,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "view",
     keys: "Ctrl+Shift+D",
     macKeys: "Cmd+Shift+D",
-    titleZh: "显示环境诊断与运行状态 (Doctor)",
     titleEn: "Show Diagnosis (Doctor)",
-    descZh: "探测 Shims 路由、磁盘足迹、云服务联通性",
     descEn: "Inspect shims, runtime health, and connectivity",
   },
   {
@@ -258,9 +240,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "view",
     keys: "Ctrl+Shift+X",
     macKeys: "Cmd+Shift+X",
-    titleZh: "显示扩展与主题市场 (Marketplace)",
     titleEn: "Show Extensions & Marketplace",
-    descZh: "浏览并安装外观主题、IDE 扩展及后端插件",
     descEn: "Explore themes, extensions, and plugins",
   },
   {
@@ -268,9 +248,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "view",
     keys: "Alt+S",
     macKeys: "Option+S",
-    titleZh: "切换配置作用域 (工作区 / 用户全局)",
     titleEn: "Toggle Scope (Workspace / User Global)",
-    descZh: "在本地 .unirtm.toml 与全局 ~/.unirtm 之间切换",
     descEn: "Toggle active configuration scope",
   },
   {
@@ -278,9 +256,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "navigation",
     keys: "Alt+1 ~ Alt+9",
     macKeys: "Option+1 ~ Option+9",
-    titleZh: "直达活动栏面板 (1~9)",
     titleEn: "Direct Jump to Activity Bar (1-9)",
-    descZh: "1: 仪表盘, 2: 资源管理器, 3: Git, 4: 质量守护, 5: 工具链, 6: 任务, 7: 环境变量, 8: 扩展市场, 9: 诊断",
     descEn: "1: Dashboard, 2: Explorer, 3: SCM, 4: Guard, 5: Tools, 6: Tasks, 7: Env, 8: Marketplace, 9: Doctor",
   },
 
@@ -290,9 +266,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "editor",
     keys: "Ctrl+S",
     macKeys: "Cmd+S",
-    titleZh: "保存当前文件",
     titleEn: "Save Active File",
-    descZh: "将编辑器中当前文件的修改写入磁盘",
     descEn: "Save active modified file to disk",
   },
   {
@@ -300,9 +274,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "editor",
     keys: "Ctrl+Shift+S",
     macKeys: "Cmd+Shift+S",
-    titleZh: "保存所有已修改文件",
     titleEn: "Save All Files",
-    descZh: "一键保存所有标签页中处于脏状态的代码文件",
     descEn: "Save all dirty tabs across the workbench",
   },
   {
@@ -310,9 +282,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "editor",
     keys: "Ctrl+W / Ctrl+F4",
     macKeys: "Cmd+W",
-    titleZh: "关闭当前编辑器标签页",
     titleEn: "Close Active Editor Tab",
-    descZh: "关闭当前聚焦的文件编辑或差异对比标签页",
     descEn: "Close active editor tab in workspace",
   },
   {
@@ -320,9 +290,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "editor",
     keys: "Ctrl+K Ctrl+W",
     macKeys: "Cmd+K Cmd+W",
-    titleZh: "关闭所有编辑器标签页",
     titleEn: "Close All Editor Tabs",
-    descZh: "一键关闭工作区中打开的所有文件和 Diff 标签页",
     descEn: "Close all opened editor tabs",
   },
   {
@@ -330,9 +298,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "editor",
     keys: "Ctrl+PageDown",
     macKeys: "Cmd+Alt+Right",
-    titleZh: "切换到下一个标签页",
     titleEn: "Next Editor Tab",
-    descZh: "在已打开的编辑器标签页之间向前切换",
     descEn: "Cycle forward through open editor tabs",
   },
   {
@@ -340,9 +306,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "editor",
     keys: "Ctrl+PageUp",
     macKeys: "Cmd+Alt+Left",
-    titleZh: "切换到上一个标签页",
     titleEn: "Previous Editor Tab",
-    descZh: "在已打开的编辑器标签页之间向后切换",
     descEn: "Cycle backward through open editor tabs",
   },
   {
@@ -350,9 +314,7 @@ export const SHORTCUT_DEFINITIONS: ShortcutItem[] = [
     category: "general",
     keys: "Ctrl+K Ctrl+T",
     macKeys: "Cmd+K Cmd+T",
-    titleZh: "偏好设置: 外观颜色主题",
     titleEn: "Preferences: Color Theme",
-    descZh: "打开扩展市场的颜色主题分类进行浏览与配置",
     descEn: "Browse and select color themes in marketplace",
   },
 ];
@@ -957,6 +919,10 @@ export function useKeyboardShortcuts() {
     saveRawKeybindings,
     applyPreset,
     keymapPresets: KEYMAP_PRESETS,
+    getShortcutTitle,
+    getShortcutDesc,
+    getPresetName,
+    getPresetDesc,
     createKeydownHandler,
     nextEditorTab,
     prevEditorTab,

@@ -84,7 +84,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
-import { selectedLangSetting } from "../../i18n";
+import { t } from "../../i18n";
 import TechIcon from "./TechIcon.vue";
 import type { DrawerTab } from "../layout/BottomDrawer.vue";
 import { isMac, formatShortcut } from "../../utils/platform";
@@ -119,29 +119,25 @@ const query = ref("");
 const selectedIndex = ref(0);
 const inputRef = ref<HTMLInputElement | null>(null);
 
-const isZh = computed(() => {
-  const lang = selectedLangSetting.value || "zh-CN";
-  return lang.startsWith("zh") || lang === "auto";
-});
-
 const placeholderText = computed(() => {
   const shortcutHint = isMac ? "⌘K" : "Ctrl+K";
-  return isZh.value
-    ? `搜索功能、页面导航或执行快捷命令 (${shortcutHint})...`
-    : `Search features, navigate views, or execute quick commands (${shortcutHint})...`;
+  return (
+    t("cmdpalette.placeholder", { shortcut: shortcutHint }) ||
+    `Search features, navigate views, or execute quick commands (${shortcutHint})...`
+  );
 });
 
 const emptyText = computed(() => {
-  return isZh.value ? "未找到匹配的功能或命令" : "No matching features or commands found";
+  return t("cmdpalette.empty") || "No matching features or commands found";
 });
 
-const navTipText = computed(() => (isZh.value ? "导航" : "Navigate"));
-const execTipText = computed(() => (isZh.value ? "执行" : "Execute"));
-const closeTipText = computed(() => (isZh.value ? "关闭" : "Close"));
+const navTipText = computed(() => t("cmdpalette.nav_tip") || "Navigate");
+const execTipText = computed(() => t("cmdpalette.exec_tip") || "Execute");
+const closeTipText = computed(() => t("cmdpalette.close_tip") || "Close");
 
 const countText = computed(() => {
   const n = filteredCommands.value.length;
-  return isZh.value ? `${n} 个可用命令` : `${n} commands available`;
+  return t("cmdpalette.available_commands", { n }) || `${n} commands available`;
 });
 
 function close() {
@@ -168,19 +164,18 @@ watch(
 );
 
 const allCommands = computed<CommandItem[]>(() => {
-  const zh = isZh.value;
-  const catView = zh ? "视图" : "View";
+  const catView = t("cmdpalette.cat_view") || "View";
   const catGit = "Git";
-  const catDiag = zh ? "诊断" : "Diagnosis";
-  const catTool = zh ? "工具" : "Tools";
-  const catSys = zh ? "系统" : "System";
+  const catDiag = t("cmdpalette.cat_diagnosis") || "Diagnosis";
+  const catTool = t("cmdpalette.cat_tools") || "Tools";
+  const catSys = t("cmdpalette.cat_system") || "System";
 
   return [
     // 1. Navigation views (VS Code aligned)
     {
       id: "nav-explorer",
-      title: zh ? "文件资源管理器 (Explorer)" : "File Explorer (Explorer)",
-      desc: zh ? "浏览当前工作区文件目录树与查看编辑代码" : "Browse workspace directories and view editor files",
+      title: t("cmdpalette.cmd_explorer_title") || "File Explorer (Explorer)",
+      desc: t("cmdpalette.cmd_explorer_desc") || "Browse workspace directories and view editor files",
       category: catView,
       shortcut: "Ctrl+Shift+E",
       techIcon: "workbench:folder",
@@ -191,10 +186,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "nav-scm",
-      title: zh ? "源码管理与版本控制 (SCM)" : "Source Control (SCM / Git)",
-      desc: zh
-        ? "查看变更清单、暂存修改、分支切换及提交图谱"
-        : "Manage changes, staged files, branch switching and git graphs",
+      title: t("cmdpalette.cmd_scm_title") || "Source Control (SCM / Git)",
+      desc: t("cmdpalette.cmd_scm_desc") || "View changes, stage files, switch branches, and view git commit graphs",
       category: catGit,
       shortcut: "Ctrl+Shift+G",
       techIcon: "workbench:git",
@@ -205,10 +198,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "nav-doctor",
-      title: zh ? "系统与环境全面体检 (Doctor)" : "System Health Diagnosis (Doctor)",
-      desc: zh
-        ? "全景探测运行时核心、Shims 路由、磁盘足迹与 API 配额"
-        : "Diagnose core runtime, shims routing, disk footprint and cloud quotas",
+      title: t("cmdpalette.cmd_doctor_title") || "System Health Diagnosis (Doctor)",
+      desc: t("cmdpalette.cmd_doctor_desc") || "Probe core runtimes, shims routing, disk footprints, and API quotas",
       category: catDiag,
       shortcut: "Ctrl+Shift+D",
       techIcon: "workbench:doctor",
@@ -219,10 +210,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "nav-marketplace",
-      title: zh ? "扩展市场与外观主题 (Marketplace)" : "Extension Marketplace (Marketplace)",
-      desc: zh
-        ? "发现并安装主题风格、功能插件及后端生态扩展"
-        : "Discover themes, plugins, and backend ecosystem extensions",
+      title: t("cmdpalette.cmd_marketplace_title") || "Extension Marketplace (Marketplace)",
+      desc: t("cmdpalette.cmd_marketplace_desc") || "Discover and install themes, plugins, and ecosystem extensions",
       category: catView,
       shortcut: "Ctrl+Shift+X",
       techIcon: "workbench:marketplace",
@@ -233,10 +222,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "nav-dashboard",
-      title: zh ? "项目全景看板 (Dashboard)" : "Project Overview Dashboard (Dashboard)",
-      desc: zh
-        ? "UniRTM 项目状态总览、运行指标与快速入口"
-        : "UniRTM project status overview, core metrics and quick guide",
+      title: t("cmdpalette.cmd_dashboard_title") || "Project Overview Dashboard (Dashboard)",
+      desc: t("cmdpalette.cmd_dashboard_desc") || "UniRTM project status overview, runtime metrics, and quick actions",
       category: catView,
       shortcut: "Alt+1",
       techIcon: "workbench:dashboard",
@@ -247,13 +234,11 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "nav-guard",
-      title: zh ? "代码质量守护 (Quality Guard)" : "Quality Guard Harness (Guard)",
-      desc: zh
-        ? "预提交安全扫描、密钥防泄露拦截与格式合规性检查"
-        : "Pre-commit protection, secret leak detection, and format harness",
+      title: t("cmdpalette.cmd_guard_title") || "Quality Guard Harness (Guard)",
+      desc: t("cmdpalette.cmd_guard_desc") || "Pre-commit security scanning, leak interception, and format compliance",
       category: catDiag,
-      shortcut: "Alt+4",
-      codicon: "codicon-shield",
+      shortcut: "Ctrl+Shift+Q",
+      techIcon: "workbench:guard",
       action: () => {
         emit("select-tab", "guard");
         router.push("/guard");
@@ -261,12 +246,10 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "nav-tools",
-      title: zh ? "开发环境与多版本工具链 (Tools)" : "Toolchains & Runtimes (Tools)",
-      desc: zh
-        ? "快速管理 Node.js, Python, Go, Rust 等多版本运行时"
-        : "Manage multi-version runtimes including Node.js, Python, Go, Rust",
+      title: t("cmdpalette.cmd_tools_title") || "Toolchains & Runtimes (Tools)",
+      desc: t("cmdpalette.cmd_tools_desc") || "Quickly manage Node.js, Python, Go, Rust and runtime versions",
       category: catTool,
-      shortcut: "Alt+5",
+      shortcut: "Alt+2",
       techIcon: "workbench:tools",
       action: () => {
         emit("select-tab", "tools");
@@ -275,12 +258,10 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "nav-tasks",
-      title: zh ? "工程任务与自动化脚本 (Tasks)" : "Project Automation Tasks (Tasks)",
-      desc: zh
-        ? "一键运行构建、测试、代码格式化与流水线任务"
-        : "Execute build, test, lint, and custom automation scripts",
-      category: catView,
-      shortcut: "Alt+6",
+      title: t("cmdpalette.cmd_tasks_title") || "Project Automation Tasks (Tasks)",
+      desc: t("cmdpalette.cmd_tasks_desc") || "One-click build, test, lint, and workflow pipeline tasks",
+      category: catTool,
+      shortcut: "Alt+3",
       techIcon: "workbench:tasks",
       action: () => {
         emit("select-tab", "tasks");
@@ -289,12 +270,11 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "nav-environments",
-      title: zh ? "环境变量配置管理 (Environments)" : "Environment Variables (Environments)",
-      desc: zh
-        ? "配置与管理当前工作区和用户全局环境变量"
-        : "Inspect and configure workspace and global user environment variables",
-      category: catView,
-      shortcut: "Alt+7",
+      title: t("cmdpalette.cmd_environments_title") || "Environment Variables (Environments)",
+      desc:
+        t("cmdpalette.cmd_environments_desc") || "Configure and manage workspace and user global environment variables",
+      category: catTool,
+      shortcut: "Alt+4",
       techIcon: "workbench:environments",
       action: () => {
         emit("select-tab", "environments");
@@ -303,10 +283,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "nav-settings",
-      title: zh ? "系统偏好设置 (Settings)" : "Preferences & Settings (Settings)",
-      desc: zh
-        ? "配置外观、网络代理、更新机制与安全密钥"
-        : "Configure themes, network proxies, auto-update, and security keys",
+      title: t("cmdpalette.cmd_settings_title") || "Preferences & Settings (Settings)",
+      desc: t("cmdpalette.cmd_settings_desc") || "Configure themes, network proxies, auto-update, and security keys",
       category: catSys,
       shortcut: "Ctrl+,",
       techIcon: "workbench:settings",
@@ -317,10 +295,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "nav-about",
-      title: zh ? "关于 UniRTM (About)" : "About UniRTM (About)",
-      desc: zh
-        ? "查看版本构建信息、许可证协议与变更历史"
-        : "View version build info, license information, and changelog",
+      title: t("cmdpalette.cmd_about_title") || "About UniRTM (About)",
+      desc: t("cmdpalette.cmd_about_desc") || "View version build info, license information, and changelog",
       category: catSys,
       techIcon: "workbench:about",
       action: () => {
@@ -332,10 +308,8 @@ const allCommands = computed<CommandItem[]>(() => {
     // 2. Global Actions & Helpers
     {
       id: "act-shortcuts",
-      title: zh ? "键盘快捷键速查手册 (VS Code 对齐)" : "Keyboard Shortcuts Reference (VS Code Aligned)",
-      desc: zh
-        ? "查看 UniRTM 与 VS Code 深度对齐的所有键盘快捷键及快速操作"
-        : "View full list of keyboard shortcuts aligned with VS Code",
+      title: t("cmdpalette.cmd_shortcuts_title") || "Keyboard Shortcuts Reference (VS Code Aligned)",
+      desc: t("cmdpalette.cmd_shortcuts_desc") || "View full list of keyboard shortcuts aligned with VS Code",
       category: catSys,
       shortcut: "Ctrl+K Ctrl+S",
       codicon: "codicon-keyboard",
@@ -345,10 +319,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "act-theme",
-      title: zh ? "切换浅色 / 深色外观模式" : "Toggle Light / Dark Appearance Mode",
-      desc: zh
-        ? "在现代深色高对比度与清爽明亮浅色模式间切换"
-        : "Toggle between high-contrast dark mode and clean light theme",
+      title: t("cmdpalette.cmd_theme_title") || "Toggle Light / Dark Appearance Mode",
+      desc: t("cmdpalette.cmd_theme_desc") || "Toggle between high-contrast dark mode and clean light theme",
       category: catSys,
       codicon: "codicon-color-mode",
       action: () => {
@@ -357,10 +329,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "act-scope",
-      title: zh ? "切换配置作用域 (工作区 / 用户全局)" : "Toggle Scope (Workspace / User Global)",
-      desc: zh
-        ? "切换 .unirtm.toml 本地工作区或 ~/.unirtm 用户全局配置"
-        : "Toggle active configuration between workspace and global ~/.unirtm",
+      title: t("cmdpalette.cmd_scope_title") || "Toggle Scope (Workspace / User Global)",
+      desc: t("cmdpalette.cmd_scope_desc") || "Toggle active configuration between workspace and global ~/.unirtm",
       category: catSys,
       shortcut: "Alt+S",
       codicon: "codicon-layers",
@@ -370,8 +340,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "act-terminal",
-      title: zh ? "切换集成终端 (Terminal)" : "Toggle Integrated Terminal (Terminal)",
-      desc: zh ? "呼出或收起底部抽屉终端并启动交互控制台" : "Reveal or toggle bottom drawer integrated shell session",
+      title: t("cmdpalette.cmd_terminal_title") || "Toggle Integrated Terminal (Terminal)",
+      desc: t("cmdpalette.cmd_terminal_desc") || "Reveal or toggle bottom drawer integrated shell session",
       category: catTool,
       shortcut: "Ctrl+`",
       codicon: "codicon-terminal",
@@ -381,10 +351,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "act-new-terminal",
-      title: zh ? "新建终端会话 (New Terminal)" : "Create New Terminal Session",
-      desc: zh
-        ? "在底部终端抽屉中新增一个独立的 Shell 终端实例"
-        : "Create a new terminal shell session in bottom drawer",
+      title: t("cmdpalette.cmd_new_terminal_title") || "Create New Terminal Session",
+      desc: t("cmdpalette.cmd_new_terminal_desc") || "Create a new terminal shell session in bottom drawer",
       category: catTool,
       shortcut: "Ctrl+Shift+`",
       codicon: "codicon-terminal",
@@ -394,10 +362,8 @@ const allCommands = computed<CommandItem[]>(() => {
     },
     {
       id: "act-output",
-      title: zh ? "查看运行日志与控制台输出" : "Show Runtime Output & Logs",
-      desc: zh
-        ? "检查实时事件分发、系统后台信息及构建流水线日志"
-        : "Inspect background events, system notifications and build outputs",
+      title: t("cmdpalette.cmd_output_title") || "Show Runtime Output & Logs",
+      desc: t("cmdpalette.cmd_output_desc") || "Inspect background events, system notifications and build outputs",
       category: catTool,
       shortcut: "Ctrl+Shift+U",
       codicon: "codicon-output",
@@ -447,7 +413,7 @@ function executeItem(item: CommandItem) {
 </script>
 
 <style scoped>
-/* 遮罩层 */
+/* Backdrop Overlay */
 .palette-overlay {
   position: fixed;
   inset: 0;
@@ -465,7 +431,7 @@ function executeItem(item: CommandItem) {
   background: rgba(15, 23, 42, 0.38);
 }
 
-/* 核心弹出框容器 */
+/* Modal Container */
 .palette-container {
   width: 660px;
   max-width: 92vw;
@@ -485,7 +451,7 @@ function executeItem(item: CommandItem) {
     box-shadow 0.2s ease;
 }
 
-/* 浅色模式容器 */
+/* Light Mode Container */
 :root[data-theme="light"] .palette-container,
 [data-theme="light"] .palette-container {
   background: #ffffff;
@@ -496,7 +462,7 @@ function executeItem(item: CommandItem) {
   color: #0f172a;
 }
 
-/* 顶部搜索输入栏 */
+/* Top Search Input Row */
 .palette-search-row {
   display: flex;
   align-items: center;
@@ -590,7 +556,7 @@ function executeItem(item: CommandItem) {
   color: #475569;
 }
 
-/* 列表包装器 */
+/* List Wrapper */
 .palette-list-wrapper {
   max-height: 400px;
   overflow-y: auto;
@@ -623,7 +589,7 @@ function executeItem(item: CommandItem) {
   gap: 3px;
 }
 
-/* 单项条目 */
+/* Item Entry */
 .palette-item {
   display: flex;
   align-items: center;
@@ -636,14 +602,14 @@ function executeItem(item: CommandItem) {
   border-left: 3px solid transparent;
 }
 
-/* 深色模式选中态 */
+/* Dark Mode Selected State */
 .palette-item:hover,
 .palette-item.selected {
   background: rgba(0, 229, 255, 0.12);
   border-left-color: #00e5ff;
 }
 
-/* 浅色模式选中态 */
+/* Light Mode Selected State */
 :root[data-theme="light"] .palette-item:hover,
 [data-theme="light"] .palette-item.selected {
   background: #f0f9ff;
@@ -780,7 +746,7 @@ function executeItem(item: CommandItem) {
   opacity: 1;
 }
 
-/* 底部状态提示条 */
+/* Footer Status Tips */
 .palette-footer {
   display: flex;
   align-items: center;
@@ -824,7 +790,7 @@ function executeItem(item: CommandItem) {
   font-weight: 500;
 }
 
-/* 动效 */
+/* Animations */
 .palette-fade-enter-active,
 .palette-fade-leave-active {
   transition:

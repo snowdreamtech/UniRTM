@@ -7,9 +7,9 @@
           <span class="codicon codicon-keyboard"></span>
         </span>
         <div>
-          <h2>{{ isZh ? "键盘快捷键 (Keyboard Shortcuts)" : "Keyboard Shortcuts" }}</h2>
+          <h2>{{ t("shortcuts.settings_title") || "Keyboard Shortcuts" }}</h2>
           <span class="section-sub font-mono">
-            {{ isZh ? "快捷键自定义与覆盖映射 • 持久化于 " : "Customize and override shortcuts • Persisted at " }}
+            {{ t("shortcuts.persisted_at") || "Customize and override shortcuts • Persisted at " }}
             <span class="file-path-badge">{{ keybindingsPath }}</span>
           </span>
         </div>
@@ -18,20 +18,20 @@
       <div class="header-actions">
         <button
           class="btn btn-secondary"
-          :title="isZh ? '打开 keybindings.json 原始文件' : 'Open keybindings.json'"
+          :title="t('shortcuts.open_json_tip') || 'Open keybindings.json'"
           @click="openRawJsonModal"
         >
           <span class="codicon codicon-json"></span>
-          <span class="btn-text">{{ isZh ? "打开 keybindings.json" : "Open JSON" }}</span>
+          <span class="btn-text">{{ t("shortcuts.open_json") || "Open JSON" }}</span>
         </button>
         <button
           v-if="hasCustomKeybindings"
           class="btn btn-outline-danger"
-          :title="isZh ? '重置当前范围所有自定义快捷键为系统默认' : 'Reset all shortcuts in current scope to defaults'"
+          :title="t('shortcuts.reset_all_tip') || 'Reset all shortcuts in current scope to defaults'"
           @click="handleResetAll"
         >
           <span class="codicon codicon-discard"></span>
-          <span class="btn-text">{{ isZh ? "恢复全部默认" : "Reset All" }}</span>
+          <span class="btn-text">{{ t("shortcuts.reset_all") || "Reset All" }}</span>
         </button>
       </div>
     </div>
@@ -45,12 +45,12 @@
           @click="handleScopeChange('workspace')"
         >
           <span class="codicon codicon-folder"></span>
-          <span class="scope-tab-title">{{ isZh ? "工作区快捷键 (当前项目)" : "Workspace Keybindings" }}</span>
+          <span class="scope-tab-title">{{ t("shortcuts.scope_workspace") || "Workspace Keybindings" }}</span>
           <span class="scope-tab-path font-mono">.unirtm/keybindings.json</span>
         </button>
         <button class="scope-tab" :class="{ active: currentScope === 'user' }" @click="handleScopeChange('user')">
           <span class="codicon codicon-account"></span>
-          <span class="scope-tab-title">{{ isZh ? "用户全局快捷键" : "User Global Keybindings" }}</span>
+          <span class="scope-tab-title">{{ t("shortcuts.scope_user") || "User Global Keybindings" }}</span>
           <span class="scope-tab-path font-mono">~/.config/unirtm/keybindings.json</span>
         </button>
       </div>
@@ -60,18 +60,18 @@
     <div class="presets-bar">
       <div class="presets-label">
         <span class="codicon codicon-layout"></span>
-        <span>{{ isZh ? "预设快捷键方案 (Keymap Presets):" : "Keymap Presets:" }}</span>
+        <span>{{ t("shortcuts.presets_label") || "Keymap Presets:" }}</span>
       </div>
       <div class="preset-buttons">
         <button
           v-for="preset in keymapPresets"
           :key="preset.id"
           class="preset-btn"
-          :title="isZh ? preset.descZh : preset.descEn"
+          :title="getPresetDesc(preset)"
           @click="handleApplyPreset(preset.id)"
         >
           <span class="codicon" :class="getPresetIcon(preset.id)"></span>
-          <span class="preset-name">{{ isZh ? preset.nameZh : preset.nameEn }}</span>
+          <span class="preset-name">{{ getPresetName(preset) }}</span>
         </button>
       </div>
     </div>
@@ -84,7 +84,7 @@
           v-model="searchQuery"
           type="text"
           class="filter-input"
-          :placeholder="isZh ? '按命令名称、命令 ID 或快捷键过滤...' : 'Filter by command name, ID or key...'"
+          :placeholder="t('shortcuts.filter_placeholder') || 'Filter by command name, ID or key...'"
         />
         <button v-if="searchQuery" class="clear-btn" @click="searchQuery = ''">
           <span class="codicon codicon-close"></span>
@@ -93,16 +93,15 @@
 
       <div class="source-filter-pills">
         <button class="filter-pill" :class="{ active: sourceFilter === 'all' }" @click="sourceFilter = 'all'">
-          {{ isZh ? "全部 (" + activeShortcuts.length + ")" : "All (" + activeShortcuts.length + ")" }}
+          {{ t("shortcuts.tab_all", { count: activeShortcuts.length }) || "All (" + activeShortcuts.length + ")" }}
         </button>
         <button class="filter-pill" :class="{ active: sourceFilter === 'user' }" @click="sourceFilter = 'user'">
-          {{ isZh ? "自定义 (" + customCount + ")" : "Custom (" + customCount + ")" }}
+          {{ t("shortcuts.tab_custom", { count: customCount }) || "Custom (" + customCount + ")" }}
         </button>
         <button class="filter-pill" :class="{ active: sourceFilter === 'default' }" @click="sourceFilter = 'default'">
           {{
-            isZh
-              ? "系统内置 (" + (activeShortcuts.length - customCount) + ")"
-              : "Default (" + (activeShortcuts.length - customCount) + ")"
+            t("shortcuts.tab_system", { count: activeShortcuts.length - customCount }) ||
+            "System (" + (activeShortcuts.length - customCount) + ")"
           }}
         </button>
       </div>
@@ -113,11 +112,11 @@
       <table class="shortcuts-table">
         <thead>
           <tr>
-            <th class="col-cmd">{{ isZh ? "命令与功能" : "Command" }}</th>
-            <th class="col-id">{{ isZh ? "命令标识符 (Command ID)" : "Command ID" }}</th>
-            <th class="col-key">{{ isZh ? "快捷键 (Keybinding)" : "Keybinding" }}</th>
-            <th class="col-source">{{ isZh ? "来源" : "Source" }}</th>
-            <th class="col-actions">{{ isZh ? "操作" : "Actions" }}</th>
+            <th class="col-cmd">{{ t("shortcuts.col_command") || "Command" }}</th>
+            <th class="col-id">{{ t("shortcuts.col_id") || "Command ID" }}</th>
+            <th class="col-key">{{ t("shortcuts.col_keybinding") || "Keybinding" }}</th>
+            <th class="col-source">{{ t("shortcuts.col_source") || "Source" }}</th>
+            <th class="col-actions">{{ t("shortcuts.col_actions") || "Actions" }}</th>
           </tr>
         </thead>
         <tbody>
@@ -131,8 +130,8 @@
             <!-- Command -->
             <td class="col-cmd">
               <div class="cmd-content">
-                <span class="cmd-title">{{ isZh ? item.titleZh : item.titleEn }}</span>
-                <span class="cmd-desc">{{ isZh ? item.descZh : item.descEn }}</span>
+                <span class="cmd-title">{{ getShortcutTitle(item) }}</span>
+                <span class="cmd-desc">{{ getShortcutDesc(item) }}</span>
               </div>
             </td>
 
@@ -155,17 +154,13 @@
             <td class="col-source">
               <span v-if="item.isCustom" class="badge-source badge-user font-mono">
                 {{
-                  isZh
-                    ? currentScope === "workspace"
-                      ? "Workspace (项目)"
-                      : "User (用户)"
-                    : currentScope === "workspace"
-                      ? "Workspace"
-                      : "User"
+                  currentScope === "workspace"
+                    ? t("shortcuts.source_workspace") || "Workspace"
+                    : t("shortcuts.source_user") || "User"
                 }}
               </span>
               <span v-else class="badge-source badge-default font-mono">
-                {{ isZh ? "System (内置)" : "System" }}
+                {{ t("shortcuts.source_system") || "System" }}
               </span>
             </td>
 
@@ -174,21 +169,21 @@
               <div class="action-buttons">
                 <button
                   class="action-btn edit-btn"
-                  :title="isZh ? '修改此快捷键' : 'Change Keybinding'"
+                  :title="t('shortcuts.edit_tip') || 'Change Keybinding'"
                   @click="openRecordModal(item)"
                 >
                   <span class="codicon codicon-edit"></span>
-                  <span class="btn-text">{{ isZh ? "编辑" : "Edit" }}</span>
+                  <span class="btn-text">{{ t("common.edit") || "Edit" }}</span>
                 </button>
 
                 <button
                   v-if="item.isCustom"
                   class="action-btn reset-btn"
-                  :title="isZh ? '恢复为此命令的默认快捷键' : 'Reset to default'"
+                  :title="t('shortcuts.reset_tip') || 'Reset to default'"
                   @click="handleResetOne(item.id)"
                 >
                   <span class="codicon codicon-discard"></span>
-                  <span class="btn-text">{{ isZh ? "重置" : "Reset" }}</span>
+                  <span class="btn-text">{{ t("common.reset") || "Reset" }}</span>
                 </button>
               </div>
             </td>
@@ -198,7 +193,7 @@
             <td colspan="5">
               <div class="empty-state">
                 <span class="codicon codicon-search empty-icon"></span>
-                <p>{{ isZh ? "未找到符合条件的快捷键" : "No matching keybindings found" }}</p>
+                <p>{{ t("shortcuts.no_settings_matches") || "No matching keybindings found" }}</p>
               </div>
             </td>
           </tr>
@@ -218,7 +213,7 @@
         <div class="recording-modal-card" role="dialog" aria-modal="true">
           <div class="modal-card-header">
             <span class="codicon codicon-keyboard modal-icon"></span>
-            <h3>{{ isZh ? "修改快捷键" : "Change Keybinding" }}</h3>
+            <h3>{{ t("shortcuts.edit_modal_title") || "Change Keybinding" }}</h3>
             <button class="modal-close-btn" @click="closeRecordModal">
               <span class="codicon codicon-close"></span>
             </button>
@@ -226,7 +221,7 @@
 
           <div class="modal-card-body">
             <div class="target-cmd-info">
-              <span class="target-title">{{ isZh ? recordingTarget?.titleZh : recordingTarget?.titleEn }}</span>
+              <span class="target-title">{{ recordingTarget ? getShortcutTitle(recordingTarget) : "" }}</span>
               <span class="target-id font-mono">{{ recordingTarget?.id }}</span>
             </div>
 
@@ -237,9 +232,7 @@
               <div v-else class="recording-prompt">
                 <span class="codicon codicon-record pulse-dot"></span>
                 <span>{{
-                  isZh
-                    ? "请按下所需的按键组合，然后按 Enter 保存..."
-                    : "Press desired key combination, then press Enter..."
+                  t("shortcuts.recording_hint") || "Press desired key combination, then press Enter to save..."
                 }}</span>
               </div>
             </div>
@@ -248,7 +241,7 @@
             <div class="modal-scope-hint font-mono">
               <span class="codicon codicon-info"></span>
               <span
-                >{{ isZh ? "将保存至: " : "Will save to: " }}<strong>{{ keybindingsPath }}</strong></span
+                >{{ t("shortcuts.will_save_to") || "Will save to: " }}<strong>{{ keybindingsPath }}</strong></span
               >
             </div>
 
@@ -256,27 +249,25 @@
             <div v-if="conflictCommand" class="conflict-warning">
               <span class="codicon codicon-warning"></span>
               <span>
-                {{ isZh ? "提示: 此快捷键已被用于 " : "Note: Key already bound to " }}
-                <strong>{{ isZh ? conflictCommand.titleZh : conflictCommand.titleEn }}</strong>
+                {{ t("shortcuts.conflict_hint") || "Note: Key already bound to " }}
+                <strong>{{ conflictCommand ? getShortcutTitle(conflictCommand) : "" }}</strong>
                 ({{ conflictCommand.id }})
               </span>
             </div>
 
             <div class="recording-tips">
               <span>{{
-                isZh
-                  ? "支持 Ctrl, Alt, Shift, Cmd 组合按键 • Esc 取消录制"
-                  : "Supports Ctrl, Alt, Shift, Cmd combinations • Esc to cancel"
+                t("shortcuts.recording_keys_hint") || "Supports Ctrl, Alt, Shift, Cmd modifier keys • Esc to cancel"
               }}</span>
             </div>
           </div>
 
           <div class="modal-card-footer">
             <button class="btn btn-secondary" @click="closeRecordModal">
-              {{ isZh ? "取消" : "Cancel" }}
+              {{ t("common.cancel") || "Cancel" }}
             </button>
             <button class="btn btn-primary" :disabled="!recordedCombo" @click="applyRecordedKey">
-              {{ isZh ? "保存生效 (Enter)" : "Save (Enter)" }}
+              {{ t("shortcuts.save_enter") || "Save (Enter)" }}
             </button>
           </div>
         </div>
@@ -315,14 +306,14 @@
 
           <div class="modal-card-footer">
             <button class="btn btn-secondary" @click="handleFormatJson">
-              {{ isZh ? "格式化 JSON" : "Format JSON" }}
+              {{ t("shortcuts.format_json") || "Format JSON" }}
             </button>
             <div style="flex: 1"></div>
             <button class="btn btn-secondary" @click="isJsonModalOpen = false">
-              {{ isZh ? "取消" : "Cancel" }}
+              {{ t("common.cancel") || "Cancel" }}
             </button>
             <button class="btn btn-primary" @click="handleSaveRawJson">
-              {{ isZh ? "保存并生效" : "Save Changes" }}
+              {{ t("shortcuts.save_changes") || "Save Changes" }}
             </button>
           </div>
         </div>
@@ -336,9 +327,13 @@ import { ref, computed, watch, onMounted } from "vue";
 import {
   useKeyboardShortcuts,
   normalizeKeyComboFromEvent,
+  getShortcutTitle,
+  getShortcutDesc,
+  getPresetName,
+  getPresetDesc,
   type ActiveShortcutItem,
 } from "../../composables/useKeyboardShortcuts";
-import { selectedLangSetting } from "../../i18n";
+import { t } from "../../i18n";
 import { useToast } from "../../composables/useToast";
 
 const props = withDefaults(
@@ -366,11 +361,6 @@ const {
 } = useKeyboardShortcuts();
 
 const { showToast } = useToast();
-
-const isZh = computed(() => {
-  const lang = selectedLangSetting.value || "zh-CN";
-  return lang.startsWith("zh") || lang === "auto";
-});
 
 const searchQuery = ref("");
 const sourceFilter = ref<"all" | "user" | "default">("all");
@@ -412,27 +402,33 @@ function getPresetIcon(id: string): string {
 async function handleScopeChange(scope: "workspace" | "user") {
   await switchScope(scope);
   showToast(
-    isZh.value
-      ? `已切换到 ${scope === "workspace" ? "工作区快捷键 (.unirtm/keybindings.json)" : "用户全局快捷键 (~/.config/unirtm/keybindings.json)"}`
-      : `Switched to ${scope === "workspace" ? "Workspace Keybindings" : "User Global Keybindings"}`,
+    t("shortcuts.switched_scope", {
+      scope:
+        currentScope.value === "workspace"
+          ? t("shortcuts.source_workspace") || "Workspace"
+          : t("shortcuts.source_user") || "User",
+    }) || "Switched to " + currentScope.value,
     "info"
   );
 }
 
 async function handleApplyPreset(presetId: "vscode" | "jetbrains" | "vim" | "sublime") {
   const preset = keymapPresets.find((p) => p.id === presetId);
-  const name = isZh.value ? preset?.nameZh : preset?.nameEn;
-  const msg = isZh.value
-    ? `确定要将当前范围 (${currentScope.value === "workspace" ? "工作区" : "全局用户"}) 快捷键切换为「${name}」预设方案吗？`
-    : `Apply "${name}" keymap preset to ${currentScope.value} scope?`;
+  const name = preset ? getPresetName(preset) : presetId;
+  const scopeName =
+    currentScope.value === "workspace"
+      ? t("shortcuts.source_workspace") || "Workspace"
+      : t("shortcuts.source_user") || "User";
+  const msg =
+    t("shortcuts.preset_confirm", { scope: scopeName, name }) || `Apply "${name}" keymap preset to ${scopeName}?`;
 
   if (!confirm(msg)) return;
 
   const ok = await applyPreset(presetId, currentScope.value);
   if (ok) {
-    showToast(isZh.value ? `已成功应用「${name}」方案！` : `Successfully applied "${name}" preset!`, "success");
+    showToast(t("shortcuts.preset_applied", { name }) || `Successfully applied "${name}" preset!`, "success");
   } else {
-    showToast(isZh.value ? "应用预设方案失败" : "Failed to apply preset", "error");
+    showToast(t("shortcuts.preset_failed") || "Failed to apply preset", "error");
   }
 }
 
@@ -450,12 +446,11 @@ const filteredList = computed(() => {
 
     if (!q) return true;
 
-    return (
-      item.titleZh.toLowerCase().includes(q) ||
-      item.titleEn.toLowerCase().includes(q) ||
-      item.id.toLowerCase().includes(q) ||
-      item.effectiveKey.toLowerCase().includes(q)
-    );
+    const title = getShortcutTitle(item).toLowerCase();
+    const desc = getShortcutDesc(item).toLowerCase();
+    const id = item.id.toLowerCase();
+    const keys = item.effectiveKey.toLowerCase();
+    return title.includes(q) || desc.includes(q) || id.includes(q) || keys.includes(q);
   });
 });
 
@@ -509,31 +504,27 @@ async function applyRecordedKey() {
 
   const ok = await saveKeybinding(cmdId, newKey);
   if (ok) {
-    showToast(isZh.value ? `已成功绑定 ${newKey}` : `Bound ${newKey} to ${cmdId}`, "success");
+    showToast(t("shortcuts.bound_success", { key: newKey }) || `Bound ${newKey} to ${cmdId}`, "success");
     closeRecordModal();
   } else {
-    showToast(isZh.value ? "保存快捷键失败" : "Failed to save keybinding", "error");
+    showToast(t("shortcuts.save_failed") || "Failed to save keybinding", "error");
   }
 }
 
 async function handleResetOne(cmdId: string) {
   const ok = await resetKeybinding(cmdId);
   if (ok) {
-    showToast(isZh.value ? "已恢复出厂默认按键" : "Reset keybinding to default", "info");
+    showToast(t("shortcuts.reset_to_default_toast") || "Reset keybinding to default", "info");
   }
 }
 
 async function handleResetAll() {
-  if (
-    !confirm(
-      isZh.value ? "确定要恢复当前范围的所有快捷键为默认设置吗？" : "Reset keybindings in this scope to defaults?"
-    )
-  ) {
+  if (!confirm(t("shortcuts.reset_all_confirm") || "Reset keybindings in this scope to defaults?")) {
     return;
   }
   const ok = await resetAllKeybindings();
   if (ok) {
-    showToast(isZh.value ? "当前范围快捷键已恢复为默认设置" : "Keybindings reset to defaults", "success");
+    showToast(t("shortcuts.reset_all_toast") || "Keybindings reset to defaults", "success");
   }
 }
 
@@ -557,12 +548,12 @@ async function handleSaveRawJson() {
   try {
     const parsed = JSON.parse(editingJsonText.value);
     if (!Array.isArray(parsed)) {
-      jsonError.value = "JSON 根节点必须为数组 (Root must be an array of keybinding objects)";
+      jsonError.value = t("shortcuts.json_root_array_err") || "Root must be an array of keybinding objects";
       return;
     }
     const ok = await saveRawKeybindings(editingJsonText.value);
     if (ok) {
-      showToast(isZh.value ? "keybindings.json 保存成功" : "keybindings.json saved successfully", "success");
+      showToast(t("shortcuts.json_saved_toast") || "keybindings.json saved successfully", "success");
       isJsonModalOpen.value = false;
     }
   } catch (err: any) {

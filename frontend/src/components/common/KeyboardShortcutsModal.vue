@@ -6,9 +6,9 @@
         <div class="modal-header">
           <div class="header-title">
             <span class="codicon codicon-keyboard header-icon"></span>
-            <h2>{{ isZh ? "键盘快捷键参考 (VS Code 对齐)" : "Keyboard Shortcuts (VS Code Aligned)" }}</h2>
+            <h2>{{ t("shortcuts.modal_title") || "Keyboard Shortcuts (VS Code Aligned)" }}</h2>
           </div>
-          <button class="close-btn" :title="isZh ? '关闭 (Esc)' : 'Close (Esc)'" @click="close">
+          <button class="close-btn" :title="t('common.close') || 'Close (Esc)'" @click="close">
             <span class="codicon codicon-close"></span>
           </button>
         </div>
@@ -22,13 +22,13 @@
               v-model="searchQuery"
               type="text"
               class="search-input"
-              :placeholder="isZh ? '搜索快捷键或功能名称...' : 'Search shortcuts or command names...'"
+              :placeholder="t('shortcuts.search_placeholder') || 'Search shortcuts or command names...'"
               @keydown.esc.stop="close"
             />
             <button
               v-if="searchQuery"
               class="clear-search-btn"
-              :title="isZh ? '清空搜索' : 'Clear search'"
+              :title="t('shortcuts.clear_search') || 'Clear search'"
               @click="searchQuery = ''"
             >
               <span class="codicon codicon-close"></span>
@@ -43,7 +43,7 @@
               :class="{ active: activeCategory === cat.key }"
               @click="activeCategory = cat.key"
             >
-              {{ isZh ? cat.labelZh : cat.labelEn }}
+              {{ cat.label }}
             </button>
           </div>
         </div>
@@ -53,17 +53,17 @@
           <table class="shortcuts-table">
             <thead>
               <tr>
-                <th class="col-command">{{ isZh ? "命令与功能" : "Command" }}</th>
-                <th class="col-category">{{ isZh ? "分类" : "Category" }}</th>
-                <th class="col-keys">{{ isZh ? "快捷键" : "Keybinding" }}</th>
+                <th class="col-command">{{ t("shortcuts.col_command") || "Command" }}</th>
+                <th class="col-category">{{ t("shortcuts.col_category") || "Category" }}</th>
+                <th class="col-keys">{{ t("shortcuts.col_keybinding") || "Keybinding" }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in filteredShortcuts" :key="item.id" class="shortcut-row">
                 <td class="col-command">
                   <div class="cmd-info">
-                    <div class="cmd-title">{{ isZh ? item.titleZh : item.titleEn }}</div>
-                    <div class="cmd-desc">{{ isZh ? item.descZh : item.descEn }}</div>
+                    <div class="cmd-title">{{ getShortcutTitle(item) }}</div>
+                    <div class="cmd-desc">{{ getShortcutDesc(item) }}</div>
                   </div>
                 </td>
                 <td class="col-category">
@@ -82,7 +82,7 @@
                 <td colspan="3">
                   <div class="empty-state">
                     <span class="codicon codicon-search empty-icon"></span>
-                    <p>{{ isZh ? "未找到匹配的快捷键" : "No matching shortcuts found" }}</p>
+                    <p>{{ t("shortcuts.no_matches") || "No matching shortcuts found" }}</p>
                   </div>
                 </td>
               </tr>
@@ -94,20 +94,25 @@
         <div class="modal-footer">
           <div class="footer-hint">
             <span class="hint-pill"
-              ><kbd>{{ isMac ? "⌘K ⌘S" : "Ctrl+K Ctrl+S" }}</kbd> {{ isZh ? "快捷键速查" : "Shortcuts" }}</span
+              ><kbd>{{ isMac ? "⌘K ⌘S" : "Ctrl+K Ctrl+S" }}</kbd>
+              {{ t("shortcuts.hint_shortcuts") || "Shortcuts" }}</span
             >
             <span class="hint-pill"
-              ><kbd>{{ isMac ? "⌘⇧P" : "Ctrl+Shift+P" }}</kbd> {{ isZh ? "命令面板" : "Command Palette" }}</span
+              ><kbd>{{ isMac ? "⌘⇧P" : "Ctrl+Shift+P" }}</kbd>
+              {{ t("shortcuts.hint_command_palette") || "Command Palette" }}</span
             >
-            <span class="hint-pill"><kbd>ESC</kbd> {{ isZh ? "关闭" : "Close" }}</span>
+            <span class="hint-pill"><kbd>ESC</kbd> {{ t("common.close") || "Close" }}</span>
           </div>
           <div class="footer-right">
             <button class="footer-settings-btn" @click="$emit('open-settings')">
               <span class="codicon codicon-settings-gear"></span>
-              <span>{{ isZh ? "在设置中自定义快捷键" : "Customize in Settings" }}</span>
+              <span>{{ t("shortcuts.customize_in_settings") || "Customize in Settings" }}</span>
             </button>
             <div class="footer-count">
-              {{ isZh ? `共 ${filteredShortcuts.length} 个快捷键` : `${filteredShortcuts.length} shortcuts` }}
+              {{
+                t("shortcuts.count_summary", { count: filteredShortcuts.length }) ||
+                filteredShortcuts.length + " shortcuts"
+              }}
             </div>
           </div>
         </div>
@@ -118,8 +123,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
-import { useKeyboardShortcuts } from "../../composables/useKeyboardShortcuts";
-import { selectedLangSetting } from "../../i18n";
+import { useKeyboardShortcuts, getShortcutTitle, getShortcutDesc } from "../../composables/useKeyboardShortcuts";
+import { t } from "../../i18n";
 import { isMac, formatShortcut } from "../../utils/platform";
 
 const props = defineProps<{
@@ -137,23 +142,17 @@ const searchQuery = ref("");
 const activeCategory = ref("all");
 const searchInputRef = ref<HTMLInputElement | null>(null);
 
-const isZh = computed(() => {
-  const lang = selectedLangSetting.value || "zh-CN";
-  return lang.startsWith("zh") || lang === "auto";
-});
-
-const categories = [
-  { key: "all", labelZh: "全部", labelEn: "All" },
-  { key: "general", labelZh: "常用", labelEn: "General" },
-  { key: "panel", labelZh: "控制台与终端", labelEn: "Panel & Terminal" },
-  { key: "view", labelZh: "视图与导航", labelEn: "Views" },
-  { key: "editor", labelZh: "编辑器与文件", labelEn: "Editor" },
-];
+const categories = computed(() => [
+  { key: "all", label: t("shortcuts.cat_all") || "All" },
+  { key: "general", label: t("shortcuts.cat_general") || "General" },
+  { key: "panel", label: t("shortcuts.cat_panel") || "Panel & Terminal" },
+  { key: "view", label: t("shortcuts.cat_view") || "Views" },
+  { key: "editor", label: t("shortcuts.cat_editor") || "Editor" },
+]);
 
 function getCategoryLabel(catKey: string): string {
-  const found = categories.find((c) => c.key === catKey);
-  if (!found) return catKey;
-  return isZh.value ? found.labelZh : found.labelEn;
+  const found = categories.value.find((c) => c.key === catKey);
+  return found ? found.label : catKey;
 }
 
 function splitKeys(keys: string): string[] {
@@ -170,13 +169,11 @@ const filteredShortcuts = computed(() => {
     }
     if (!q) return true;
 
-    return (
-      item.effectiveKey.toLowerCase().includes(q) ||
-      item.titleZh.toLowerCase().includes(q) ||
-      item.titleEn.toLowerCase().includes(q) ||
-      item.descZh.toLowerCase().includes(q) ||
-      item.descEn.toLowerCase().includes(q)
-    );
+    const title = getShortcutTitle(item).toLowerCase();
+    const desc = getShortcutDesc(item).toLowerCase();
+    const key = item.effectiveKey.toLowerCase();
+    const id = item.id.toLowerCase();
+    return key.includes(q) || title.includes(q) || desc.includes(q) || id.includes(q);
   });
 });
 
