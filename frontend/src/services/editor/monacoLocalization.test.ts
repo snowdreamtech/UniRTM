@@ -108,4 +108,40 @@ describe("monacoLocalization", () => {
     expect(getIconForLabel("Format Document")).toBe("codicon-code");
     expect(getIconForLabel("Command Palette")).toBe("codicon-terminal");
   });
+
+  it("translates Chinese context menu labels to Japanese when language is switched", async () => {
+    await setLanguage("ja-JP");
+    expect(translateMonacoLabel("在活动终端中运行")).toBe(jaJp["editor.run_in_terminal"]);
+    expect(translateMonacoLabel("更改所有匹配项")).toBe(jaJp["editor.action.change_all"]);
+    expect(translateMonacoLabel("剪切")).toBe(jaJp["editor.action.cut"]);
+    expect(translateMonacoLabel("复制")).toBe(jaJp["editor.action.copy"]);
+    expect(translateMonacoLabel("粘贴")).toBe(jaJp["editor.action.paste"]);
+    expect(translateMonacoLabel("命令面板")).toBe(jaJp["editor.action.command_palette"]);
+  });
+
+  it("translates Chinese labels to English when switched to en-US", async () => {
+    await setLanguage("en-US");
+    expect(translateMonacoLabel("在活动终端中运行")).toBe("Run in Active Terminal");
+    expect(translateMonacoLabel("剪切")).toBe("Cut");
+    expect(translateMonacoLabel("复制")).toBe("Copy");
+    expect(translateMonacoLabel("粘贴")).toBe("Paste");
+    expect(translateMonacoLabel("更改所有匹配项")).toBe("Change All Occurrences");
+    expect(translateMonacoLabel("命令面板")).toBe("Command Palette...");
+  });
+
+  it("updates custom terminal action in localizeEditorActions", async () => {
+    await setLanguage("ja-JP");
+    const fakeTermAct: any = {
+      id: "unirtm.sendSelectionToTerminal",
+      label: "在活动终端中运行",
+      _descriptor: { label: "在活动终端中运行" },
+    };
+    const fakeEditor = {
+      getAction: (id: string) => (id === "unirtm.sendSelectionToTerminal" ? fakeTermAct : null),
+      getSupportedActions: () => [],
+    };
+    localizeEditorActions(fakeEditor);
+    expect(fakeTermAct.label).toBe(jaJp["editor.run_in_terminal"]);
+    expect(fakeTermAct._descriptor.label).toBe(jaJp["editor.run_in_terminal"]);
+  });
 });

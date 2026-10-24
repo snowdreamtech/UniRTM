@@ -1,12 +1,16 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-import { t, currentLocale, type TranslationDict } from "../../i18n";
+import { watch } from "vue";
+import { t, currentLocale, loadedDictionaries, type TranslationDict } from "../../i18n";
+import { zhCn } from "../../i18n/locales/zh-CN";
+import { zhTw } from "../../i18n/locales/zh-TW";
+import { jaJp } from "../../i18n/locales/ja-JP";
 
 /**
  * Maps standard Monaco Editor context menu labels to i18n translation keys.
  */
-const MONACO_LABEL_TO_KEY: Record<string, keyof TranslationDict> = {
+export const MONACO_LABEL_TO_KEY: Record<string, keyof TranslationDict> = {
   "Run in Active Terminal": "editor.run_in_terminal",
   "Change All Occurrences": "editor.action.change_all",
   Cut: "editor.action.cut",
@@ -50,52 +54,98 @@ const MONACO_LABEL_TO_KEY: Record<string, keyof TranslationDict> = {
 };
 
 /**
- * Reverse mapping from known action translations back to English canonical label,
- * ensuring repeated context menu calls or DOM queries don't lose the original key.
+ * Global bidirectional registry mapping any known text (English, Simplified Chinese, Traditional Chinese, Japanese, etc.)
+ * back to its canonical TranslationDict key.
  */
-const REVERSE_LABEL_MAP: Record<string, string> = {};
-for (const canonicalLabel of Object.keys(MONACO_LABEL_TO_KEY)) {
-  REVERSE_LABEL_MAP[canonicalLabel] = canonicalLabel;
-  REVERSE_LABEL_MAP[canonicalLabel.toLowerCase()] = canonicalLabel;
+const LABEL_TO_KEY_CACHE = new Map<string, keyof TranslationDict>();
+
+function registerLabelKey(rawLabel: string, key: keyof TranslationDict) {
+  if (!rawLabel) return;
+  const trimmed = rawLabel.trim();
+  LABEL_TO_KEY_CACHE.set(trimmed, key);
+  LABEL_TO_KEY_CACHE.set(trimmed.toLowerCase(), key);
+
+  if (trimmed.endsWith("...")) {
+    const withoutDots = trimmed.slice(0, -3).trim();
+    LABEL_TO_KEY_CACHE.set(withoutDots, key);
+    LABEL_TO_KEY_CACHE.set(withoutDots.toLowerCase(), key);
+  } else {
+    LABEL_TO_KEY_CACHE.set(trimmed + "...", key);
+    LABEL_TO_KEY_CACHE.set((trimmed + "...").toLowerCase(), key);
+  }
 }
 
+// 1. Register canonical English labels
+for (const [englishLabel, key] of Object.entries(MONACO_LABEL_TO_KEY)) {
+  registerLabelKey(englishLabel, key);
+}
+
+// 2. Register Simplified Chinese labels from zhCn
+for (const [_, key] of Object.entries(MONACO_LABEL_TO_KEY)) {
+  const zhVal = zhCn[key];
+  if (zhVal) registerLabelKey(zhVal, key);
+}
+
+// 3. Register Traditional Chinese labels from zhTw
+for (const [_, key] of Object.entries(MONACO_LABEL_TO_KEY)) {
+  const twVal = zhTw[key];
+  if (twVal) registerLabelKey(twVal, key);
+}
+
+// 4. Register Japanese labels from jaJp
+for (const [_, key] of Object.entries(MONACO_LABEL_TO_KEY)) {
+  const jaVal = jaJp[key];
+  if (jaVal) registerLabelKey(jaVal, key);
+}
+
+// 5. Register common Monaco NLS aliases using unicode escapes
+registerLabelKey("\u67e5\u770b\u5b9a\u4e49", "editor.action.peek_definition");
+registerLabelKey("\u67e5\u770b\u5f15\u7528", "editor.action.peek_references");
+registerLabelKey("\u67e5\u770b\u5b9e\u73b0", "editor.action.peek_implementation");
+registerLabelKey("\u67e5\u770b\u7c7b\u578b\u5b9a\u4e49", "editor.action.peek_type_definition");
+
+/**
+ * Resolves an arbitrary context menu label (in ANY language) back to its TranslationDict key.
+ */
+export function getActionKeyForLabel(label: string): keyof TranslationDict | undefined {
+  if (!label) return undefined;
+  const trimmed = label.trim();
+  const direct = LABEL_TO_KEY_CACHE.get(trimmed) || LABEL_TO_KEY_CACHE.get(trimmed.toLowerCase());
+  if (direct) return direct;
+
+  // Search dynamically across all currently loaded language dictionaries
+  const dicts = Object.values(loadedDictionaries.value);
+  for (const dict of dicts) {
+    if (!dict) continue;
+    for (const [key, val] of Object.entries(dict)) {
+      if ((key.startsWith("editor.action.") || key === "editor.run_in_terminal") && typeof val === "string") {
+        if (val.trim() === trimmed || val.trim().toLowerCase() === trimmed.toLowerCase()) {
+          registerLabelKey(val, key as keyof TranslationDict);
+          return key as keyof TranslationDict;
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Translates an action label in ANY language into the currently selected locale.
+ */
 export function translateMonacoLabel(label: string): string {
   const trimmed = label.trim();
-  const canonical = REVERSE_LABEL_MAP[trimmed] || REVERSE_LABEL_MAP[trimmed.toLowerCase()] || trimmed;
-  const key = MONACO_LABEL_TO_KEY[canonical];
+  const key = getActionKeyForLabel(trimmed);
   if (key) {
-    return t(key) || canonical;
+    return t(key) || trimmed;
   }
   return trimmed;
 }
 
 /**
- * Localizes action label properties registered on the Monaco Standalone Editor instance.
- */
-export function localizeEditorActions(editor: any): void {
-  if (!editor || typeof editor.getSupportedActions !== "function") return;
-  try {
-    const actions = editor.getSupportedActions();
-    for (const act of actions) {
-      if (act && act.label) {
-        if (!act._origLabel) {
-          act._origLabel = act.label;
-        }
-        const translated = translateMonacoLabel(act._origLabel);
-        if (translated) {
-          act.label = translated;
-        }
-      }
-    }
-  } catch {
-    // ignore
-  }
-}
-
-/**
  * Action icon mapping to Codicon symbols (100% aligned with FileContextMenu system).
  */
-const ACTION_KEY_ICON_MAP: Record<string, string> = {
+export const ACTION_KEY_ICON_MAP: Record<string, string> = {
   "editor.run_in_terminal": "codicon-terminal",
   "editor.action.change_all": "codicon-edit",
   "editor.action.cut": "codicon-scissors",
@@ -139,8 +189,7 @@ const ACTION_KEY_ICON_MAP: Record<string, string> = {
 
 export function getIconForLabel(label: string): string {
   const trimmed = label.trim();
-  const canonical = REVERSE_LABEL_MAP[trimmed] || REVERSE_LABEL_MAP[trimmed.toLowerCase()] || trimmed;
-  const key = MONACO_LABEL_TO_KEY[canonical];
+  const key = getActionKeyForLabel(trimmed);
   if (key && ACTION_KEY_ICON_MAP[key]) {
     return ACTION_KEY_ICON_MAP[key];
   }
@@ -165,6 +214,45 @@ export function getIconForLabel(label: string): string {
 }
 
 /**
+ * Localizes action label properties registered on the Monaco Standalone Editor instance.
+ */
+export function localizeEditorActions(editor: any): void {
+  if (!editor) return;
+  try {
+    const termAct = typeof editor.getAction === "function" ? editor.getAction("unirtm.sendSelectionToTerminal") : null;
+    if (termAct) {
+      const termLabel = t("editor.run_in_terminal") || "Run in Active Terminal";
+      termAct.label = termLabel;
+      if (termAct._descriptor) {
+        termAct._descriptor.label = termLabel;
+      }
+    }
+
+    if (typeof editor.getSupportedActions === "function") {
+      const actions = editor.getSupportedActions();
+      for (const act of actions) {
+        if (act && act.label) {
+          if (!act._actionKey) {
+            act._actionKey = getActionKeyForLabel(act.label);
+          }
+          if (act._actionKey) {
+            const translated = t(act._actionKey);
+            if (translated && act.label !== translated) {
+              act.label = translated;
+              if (act._descriptor) {
+                act._descriptor.label = translated;
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+}
+
+/**
  * Translates all active Monaco context menu and submenu items in the DOM,
  * injecting unified Codicon menu icons aligned with the workspace design system.
  */
@@ -175,18 +263,27 @@ export function translateActiveMonacoMenus(root: ParentNode = document): void {
     );
     for (let i = 0; i < labels.length; i++) {
       const el = labels[i];
-      const orig = el.dataset.origLabel || el.textContent || "";
-      if (!el.dataset.origLabel && orig) {
-        el.dataset.origLabel = orig;
+      let actionKey = el.dataset.actionKey as keyof TranslationDict | undefined;
+      const currentText = (el.textContent || "").trim();
+
+      if (!actionKey && currentText) {
+        actionKey = getActionKeyForLabel(currentText);
+        if (actionKey) {
+          el.dataset.actionKey = actionKey;
+        }
       }
-      const translated = translateMonacoLabel(orig);
-      if (translated && el.textContent !== translated) {
-        el.textContent = translated;
+
+      if (actionKey) {
+        const translated = t(actionKey);
+        if (translated && el.textContent !== translated) {
+          el.textContent = translated;
+        }
       }
 
       const parent = el.parentElement;
       if (parent && (parent.classList.contains("action-menu-item") || parent.matches?.("a[role='menuitem']"))) {
-        const iconClass = getIconForLabel(orig);
+        const iconClass =
+          actionKey && ACTION_KEY_ICON_MAP[actionKey] ? ACTION_KEY_ICON_MAP[actionKey] : getIconForLabel(currentText);
         const existingIcon = parent.querySelector(":scope > .menu-icon");
         if (!existingIcon) {
           const iconSpan = document.createElement("span");
@@ -247,58 +344,17 @@ function ensureGlobalMenuObserver(): void {
     subtree: true,
     characterData: true,
   });
+
+  // Watch locale changes to automatically re-localize any open context menus
+  watch(currentLocale, () => {
+    translateActiveMonacoMenus();
+  });
 }
 
 /**
  * Initializes Monaco NLS module if available, and starts global context menu observer.
  */
 export async function setupMonacoLocalization(): Promise<void> {
-  try {
-    const lang = currentLocale.value || "en-US";
-    if (lang === "zh-TW" || lang === "zh-HK" || lang === "zh-Hant") {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/zh-tw.js");
-    } else if (lang.startsWith("zh")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/zh-cn.js");
-    } else if (lang.startsWith("ja")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/ja.js");
-    } else if (lang.startsWith("ko")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/ko.js");
-    } else if (lang.startsWith("de")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/de.js");
-    } else if (lang.startsWith("fr")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/fr.js");
-    } else if (lang.startsWith("es")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/es.js");
-    } else if (lang.startsWith("ru")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/ru.js");
-    } else if (lang.startsWith("it")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/it.js");
-    } else if (lang === "pt-BR") {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/pt-br.js");
-    } else if (lang.startsWith("tr")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/tr.js");
-    } else if (lang.startsWith("pl")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/pl.js");
-    } else if (lang.startsWith("cs")) {
-      // @ts-ignore
-      await import("monaco-editor/min/vs/nls/lang/cs.js");
-    }
-  } catch (err) {
-    console.warn("[monacoLocalization] Failed to load Monaco NLS messages:", err);
-  }
-
   ensureGlobalMenuObserver();
 }
 
@@ -316,8 +372,9 @@ export function setupEditorContextMenuLocalization(editor: any, container: HTMLE
       translateActiveMonacoMenus();
       setTimeout(translateActiveMonacoMenus, 10);
       setTimeout(translateActiveMonacoMenus, 30);
-      setTimeout(translateActiveMonacoMenus, 80);
-      setTimeout(translateActiveMonacoMenus, 150);
+      setTimeout(translateActiveMonacoMenus, 60);
+      setTimeout(translateActiveMonacoMenus, 120);
+      setTimeout(translateActiveMonacoMenus, 250);
     });
   };
 

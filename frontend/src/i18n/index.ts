@@ -69,7 +69,7 @@ const localeLoaders = import.meta.glob<Record<string, any>>([
 ]);
 
 // Reactive map of loaded locale dictionaries
-const loadedDictionaries = ref<Record<string, TranslationDict>>({
+export const loadedDictionaries = ref<Record<string, TranslationDict>>({
   "zh-CN": zhCn,
   "en-US": enUs,
 });

@@ -133,7 +133,7 @@ import {
   type ConflictResolution,
 } from "../../utils/mergeConflict";
 import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
-import { t } from "../../i18n";
+import { t, currentLocale } from "../../i18n";
 
 const props = defineProps<{
   tab: EditorTab;
@@ -343,7 +343,11 @@ function scheduleGutterDiffUpdate(): void {
   }, 100);
 }
 
-import { localizeEditorActions, setupEditorContextMenuLocalization } from "../../services/editor/monacoLocalization";
+import {
+  localizeEditorActions,
+  setupEditorContextMenuLocalization,
+  translateActiveMonacoMenus,
+} from "../../services/editor/monacoLocalization";
 
 function initMonacoThemes(m: typeof MonacoType): void {
   // Light editor context menu
@@ -651,6 +655,14 @@ if (typeof document !== "undefined") {
     attributeFilter: ["data-theme", "style"],
   });
 }
+
+// Watch locale changes to re-localize editor actions and menus
+watch(currentLocale, () => {
+  if (editorInstance) {
+    localizeEditorActions(editorInstance);
+  }
+  translateActiveMonacoMenus();
+});
 
 onBeforeUnmount(() => {
   themeObserver.disconnect();
