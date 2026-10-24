@@ -194,7 +194,14 @@ if (initLoc !== "zh-CN" && initLoc !== "en-US") {
 
 export function t(key: keyof TranslationDict, params?: Record<string, string | number>): string {
   const dict = loadedDictionaries.value[currentLocale.value] || loadedDictionaries.value[DEFAULT_LOCALE] || enUs;
-  let text = dict[key] || loadedDictionaries.value[DEFAULT_LOCALE]?.[key] || enUs[key] || key;
+  let text = dict[key] || loadedDictionaries.value[DEFAULT_LOCALE]?.[key] || enUs[key];
+
+  if (!text) {
+    if (import.meta.env.DEV) {
+      console.warn(`[i18n] Missing translation key: "${String(key)}"`);
+    }
+    return "";
+  }
 
   if (params) {
     Object.keys(params).forEach((pKey) => {

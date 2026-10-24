@@ -58,4 +58,47 @@ describe("i18n module", () => {
     expect(currentLocale.value).toBe("en-US");
     expect(t("common.close")).toBe("Close");
   });
+
+  it("ensures all t() usages across codebase match existing keys in en-US", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const enModule = await import("./locales/en-US");
+    const validKeys = new Set(Object.keys(enModule.enUs));
+
+    const scanDir = (dir: string, fileList: string[] = []): string[] => {
+      const files = fs.readdirSync(dir);
+      for (const f of files) {
+        const fullPath = path.join(dir, f);
+        const stat = fs.statSync(fullPath);
+        if (stat.isDirectory()) {
+          if (f !== "node_modules" && f !== "dist" && f !== "locales") {
+            scanDir(fullPath, fileList);
+          }
+        } else if (f.endsWith(".vue") || (f.endsWith(".ts") && !f.endsWith(".test.ts"))) {
+          fileList.push(fullPath);
+        }
+      }
+      return fileList;
+    };
+
+    const srcDir = path.resolve(__dirname, "..");
+    const files = scanDir(srcDir);
+    const missing: { file: string; key: string }[] = [];
+    const tCallRegex = /\bt\(\s*["']([^"']+)["']/g;
+
+    for (const file of files) {
+      const code = fs.readFileSync(file, "utf-8");
+      let match: RegExpExecArray | null;
+      while ((match = tCallRegex.exec(code)) !== null) {
+        const key = match[1].trim();
+        if (!key.includes(" ") && !key.includes("${")) {
+          if (!validKeys.has(key)) {
+            missing.push({ file: path.relative(srcDir, file), key });
+          }
+        }
+      }
+    }
+
+    expect(missing, `Found unregistered i18n keys: ${JSON.stringify(missing)}`).toEqual([]);
+  });
 });
