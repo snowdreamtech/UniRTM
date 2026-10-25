@@ -9,14 +9,14 @@ const lastError = ref<string | null>(null);
 // In-memory session keyring cache
 const sessionKeyring = ref<Map<string, string>>(new Map());
 
-const DEFAULT_ACTIVE_INTERVAL = 800;
-const DEFAULT_IDLE_INTERVAL = 5000;
+const LONG_POLL_TIMEOUT = "25s";
 const BOOST_DURATION_MS = 15000;
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
+let currentAbortController: AbortController | null = null;
 let isPollingActive = false;
+let isChecking = false;
 let boostUntil = 0;
-let configuredActiveInterval = DEFAULT_ACTIVE_INTERVAL;
 
 export function useCredentialBroker() {
   /**
@@ -114,11 +114,17 @@ export function useCredentialBroker() {
   }
 
   /**
-   * Poll backend for pending credential requests
+   * Check backend for pending credential requests via Long-Polling
    */
-  async function checkPendingRequest(): Promise<CredentialRequest | null> {
+  async function checkPendingRequest(
+    signal?: AbortSignal,
+    waitDuration: string = LONG_POLL_TIMEOUT
+  ): Promise<CredentialRequest | null> {
     try {
-      const res = await fetch("/api/git/credential-pending");
+      const url = waitDuration
+        ? `/api/git/credential-pending?wait=${encodeURIComponent(waitDuration)}`
+        : "/api/git/credential-pending";
+      const res = await fetch(url, { signal });
       if (!res.ok) return null;
       const data = await res.json();
       if (data && data.request && (!pendingRequest.value || pendingRequest.value.id !== data.request.id)) {
@@ -131,35 +137,48 @@ export function useCredentialBroker() {
     }
   }
 
-  let isChecking = false;
-
   async function runPollLoop() {
     if (!isPollingActive) return;
 
-    if (typeof document === "undefined" || !document.hidden) {
-      if (!isPromptOpen.value && !isChecking) {
-        isChecking = true;
-        try {
-          await checkPendingRequest();
-        } finally {
-          isChecking = false;
-        }
+    if (typeof document !== "undefined" && document.hidden) {
+      // Suspend long-poll while document is hidden to save connections
+      pollTimer = setTimeout(runPollLoop, 2000);
+      return;
+    }
+
+    if (isPromptOpen.value) {
+      // Pause while prompt is currently open
+      pollTimer = setTimeout(runPollLoop, 1000);
+      return;
+    }
+
+    if (!isChecking) {
+      isChecking = true;
+      currentAbortController = new AbortController();
+      try {
+        await checkPendingRequest(currentAbortController.signal, LONG_POLL_TIMEOUT);
+      } finally {
+        isChecking = false;
+        currentAbortController = null;
       }
     }
 
     if (!isPollingActive) return;
 
-    const isBoosted = Date.now() < boostUntil;
-    const nextDelay = isBoosted ? configuredActiveInterval : DEFAULT_IDLE_INTERVAL;
-    pollTimer = setTimeout(runPollLoop, nextDelay);
+    // Immediately schedule the next hanging long-poll on completion
+    pollTimer = setTimeout(runPollLoop, 50);
   }
 
   /**
-   * Boost polling to high-frequency active rate for durationMs
+   * Boost polling / interrupt hanging request to immediately catch incoming credentials
    */
   function boostPolling(durationMs: number = BOOST_DURATION_MS) {
     boostUntil = Math.max(boostUntil, Date.now() + durationMs);
     if (!isPollingActive) return;
+    if (currentAbortController) {
+      currentAbortController.abort();
+      currentAbortController = null;
+    }
     if (pollTimer) {
       clearTimeout(pollTimer);
       pollTimer = null;
@@ -170,20 +189,23 @@ export function useCredentialBroker() {
   }
 
   /**
-   * Start background adaptive polling
+   * Start background long-polling
    */
-  function startBrokerPolling(intervalMs: number = DEFAULT_ACTIVE_INTERVAL) {
+  function startBrokerPolling(_ignoredInterval?: number) {
     if (isPollingActive) return;
     isPollingActive = true;
-    configuredActiveInterval = intervalMs;
     runPollLoop();
   }
 
   /**
-   * Stop polling
+   * Stop polling and cancel any in-flight hanging requests
    */
   function stopBrokerPolling() {
     isPollingActive = false;
+    if (currentAbortController) {
+      currentAbortController.abort();
+      currentAbortController = null;
+    }
     if (pollTimer) {
       clearTimeout(pollTimer);
       pollTimer = null;

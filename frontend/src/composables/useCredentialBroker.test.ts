@@ -113,6 +113,7 @@ describe("useCredentialBroker composable", () => {
     broker.startBrokerPolling(30);
     await new Promise((r) => setTimeout(r, 15));
     expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("wait=25s"), expect.any(Object));
 
     // Boost polling
     broker.boostPolling(500);
