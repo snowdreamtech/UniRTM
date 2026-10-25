@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -21,6 +20,9 @@ import (
 )
 
 var (
+	defaultWriter      io.Writer = os.Stdout
+	defaultErrorWriter io.Writer = os.Stderr
+
 	urlCredRegex    = regexp.MustCompile(`(?i)(https?://[^:]+:)[^@]+(@)`)
 	authHeaderRegex = regexp.MustCompile(`(?i)(bearer|basic)\s+\S+`)
 	kvPairRegex     = regexp.MustCompile(`(?i)\b(password|passwd|pass|pwd|pin|code|secret|token|apikey|api_key|access_key|secret_key|private_key|key|auth|credential|credentials|session|cookie|sig|signature|gpg|ssh|rsa|dsa|ecdsa|ed25519)=[^&\s,;]+`)
@@ -253,10 +255,7 @@ func initErrorLogger(filepath string) io.Writer {
 	}
 
 	errorWriter := io.MultiWriter(errorlog, os.Stderr)
-
-	// gin.DefaultErrorWriter = io.MultiWriter(errorlog)
-	// Use the following code if you need to write the logs to file and console at the same time.
-	gin.DefaultErrorWriter = errorWriter
+	defaultErrorWriter = errorWriter
 
 	return errorWriter
 }
@@ -284,10 +283,7 @@ func initGinLogger(filepath string) io.Writer {
 	}
 
 	ginWriter := io.MultiWriter(ginlog, os.Stderr)
-
-	// gin.DefaultWriter = io.MultiWriter(accesslog)
-	// Use the following code if you need to write the logs to file and console at the same time.
-	gin.DefaultWriter = ginWriter
+	defaultWriter = ginWriter
 
 	return ginWriter
 }
@@ -307,9 +303,9 @@ func (h ErrorHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
 	if zerolog.GlobalLevel() != zerolog.Disabled && level >= zerolog.ErrorLevel && level <= zerolog.PanicLevel {
 		t := colorize(time.Now().Format(time.RFC3339), colorDarkGray, NoColor)
 		l := colorize(zerolog.FormattedLevels[level], zerolog.LevelColors[level], NoColor)
-		s := colorize(fmt.Sprintf("[GIN-debug] [ERROR] %s\n", msg), colorBold, NoColor)
+		s := colorize(fmt.Sprintf("[ERROR] %s\n", msg), colorBold, NoColor)
 
-		fmt.Fprintf(gin.DefaultErrorWriter, "%s %s %s\n", t, l, s)
+		fmt.Fprintf(defaultErrorWriter, "%s %s %s\n", t, l, s)
 	}
 }
 
@@ -472,13 +468,12 @@ func Logf(level zerolog.Level, format string, v ...interface{}) {
 		l := colorize(zerolog.FormattedLevels[level], zerolog.LevelColors[level], NoColor)
 		s := colorize(sanitizeString(fmt.Sprintf(format, v...)), colorBold, NoColor)
 
-		fmt.Fprintf(gin.DefaultWriter, "%s %s %s\n", t, l, s)
+		fmt.Fprintf(defaultWriter, "%s %s %s\n", t, l, s)
 	}
 }
 
 // Log logs a message at the specified log level.
 // The log message is formatted with the current time, log level, and the provided arguments.
-// The log output is written to the default writer of the gin framework.
 //
 // Parameters:
 //   - level: The log level as a string (e.g., "INF", "ERR").
@@ -500,7 +495,7 @@ func Log(level zerolog.Level, v ...interface{}) {
 		l := colorize(zerolog.FormattedLevels[level], zerolog.LevelColors[level], NoColor)
 		s := colorize(sanitizeString(fmt.Sprint(v...)), colorBold, NoColor)
 
-		fmt.Fprintf(gin.DefaultWriter, "%s %s %s\n", t, l, s)
+		fmt.Fprintf(defaultWriter, "%s %s %s\n", t, l, s)
 	}
 }
 
