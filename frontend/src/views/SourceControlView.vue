@@ -2158,11 +2158,20 @@ onBeforeUnmount(() => {
 .commits-list {
   display: flex;
   flex-direction: column;
-  min-height: 480px;
-  max-height: 640px;
+  height: 380px;
+  min-height: 380px;
+  max-height: 380px;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-gutter: stable;
+}
+
+.commits-list .empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .commits-list::-webkit-scrollbar {
@@ -2191,11 +2200,14 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   padding: 8px 14px;
+  height: 38px;
   min-height: 38px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--card-border);
   font-size: 12px;
   transition: background 0.15s ease;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .commit-item:hover {
