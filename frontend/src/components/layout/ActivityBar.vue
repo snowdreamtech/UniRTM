@@ -20,12 +20,7 @@
           'drop-indicator-bottom': dropTargetTabId === item.id && dropTargetPosition === 'after',
         }"
         draggable="true"
-        :title="
-          item.label +
-          ' (' +
-          (t('activity_bar.drag_reorder_tip') || 'Drag to reorder icons, right-click to manage views or reset') +
-          ')'
-        "
+        :title="item.label"
         @dragstart="handleDragStart($event, item.id as ActivityTabId)"
         @dragover="handleDragOver($event, item.id as ActivityTabId)"
         @dragleave="handleDragLeave($event, item.id as ActivityTabId)"
