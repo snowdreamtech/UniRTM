@@ -599,6 +599,6 @@ func CollectDoctorReport(ctx context.Context) (*DoctorDiagnosticReport, error) {
 
 // RegisterDoctorRoutes registers Doctor diagnostic HTTP endpoints.
 func RegisterDoctorRoutes(mux *http.ServeMux) {
-mux.HandleFunc("/api/doctor/diagnostic", HandleDoctorDiagnostic)
-mux.HandleFunc("/api/doctor", HandleDoctorDiagnostic)
+	mux.HandleFunc("/api/doctor/diagnostic", HandleDoctorDiagnostic)
+	mux.HandleFunc("/api/doctor", HandleDoctorDiagnostic)
 }

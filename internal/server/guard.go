@@ -525,9 +525,9 @@ func HandleGuardToml(w http.ResponseWriter, r *http.Request) {
 
 // RegisterGuardRoutes registers Quality Guard HTTP endpoints.
 func RegisterGuardRoutes(mux *http.ServeMux) {
-mux.HandleFunc("/api/guard/status", HandleGuardStatus)
-mux.HandleFunc("/api/guard/run", HandleGuardRun)
-mux.HandleFunc("/api/guard/rules", HandleGuardRules)
-mux.HandleFunc("/api/guard/slots", HandleGuardSlots)
-mux.HandleFunc("/api/guard/toml", HandleGuardToml)
+	mux.HandleFunc("/api/guard/status", HandleGuardStatus)
+	mux.HandleFunc("/api/guard/run", HandleGuardRun)
+	mux.HandleFunc("/api/guard/rules", HandleGuardRules)
+	mux.HandleFunc("/api/guard/slots", HandleGuardSlots)
+	mux.HandleFunc("/api/guard/toml", HandleGuardToml)
 }

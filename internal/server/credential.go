@@ -282,12 +282,12 @@ func HandleGitCredentialInternalAsk(w http.ResponseWriter, r *http.Request) {
 
 // RegisterCredentialRoutes registers Git credential broker endpoints.
 func RegisterCredentialRoutes(mux *http.ServeMux) {
-mux.HandleFunc("/api/credentials/pending", HandleGitCredentialPending)
-mux.HandleFunc("/api/credentials/respond", HandleGitCredentialRespond)
-mux.HandleFunc("/api/credentials/clear", HandleGitCredentialClearCache)
-mux.HandleFunc("/api/credentials/ask", HandleGitCredentialInternalAsk)
-mux.HandleFunc("/api/git/credential-pending", HandleGitCredentialPending)
-mux.HandleFunc("/api/git/credential-respond", HandleGitCredentialRespond)
-mux.HandleFunc("/api/git/credential-clear-cache", HandleGitCredentialClearCache)
-mux.HandleFunc("/api/git/credential-internal-ask", HandleGitCredentialInternalAsk)
+	mux.HandleFunc("/api/credentials/pending", HandleGitCredentialPending)
+	mux.HandleFunc("/api/credentials/respond", HandleGitCredentialRespond)
+	mux.HandleFunc("/api/credentials/clear", HandleGitCredentialClearCache)
+	mux.HandleFunc("/api/credentials/ask", HandleGitCredentialInternalAsk)
+	mux.HandleFunc("/api/git/credential-pending", HandleGitCredentialPending)
+	mux.HandleFunc("/api/git/credential-respond", HandleGitCredentialRespond)
+	mux.HandleFunc("/api/git/credential-clear-cache", HandleGitCredentialClearCache)
+	mux.HandleFunc("/api/git/credential-internal-ask", HandleGitCredentialInternalAsk)
 }
