@@ -2572,8 +2572,8 @@ export const slSi: TranslationDict = {
   "git_identity.audit_trail": "Varnost poverilnic in dnevniki nadzora klicev",
   "git_identity.no_audit_events": "Za trenutno sejo ni zapisa klica poverilnice.",
   "git_identity.switch_profile": "Preklop Git Identity Profile",
-  "git_identity.local_isolation_hint": "Pišite samo lokalno v .git/config, da preprečite globalno onesnaženje",
-  "git_identity.manage_profiles": "Upravljanje identitet Git in trezorja poverilnic ...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identiteta Git: privzeto (kliknite za preklop)",
 };
 

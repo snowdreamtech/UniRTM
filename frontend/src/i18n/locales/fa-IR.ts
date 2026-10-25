@@ -2547,8 +2547,8 @@ export const faIr: TranslationDict = {
   "git_identity.audit_trail": "امنیت اعتبار و گزارش های حسابرسی تماس",
   "git_identity.no_audit_events": "هیچ سابقه تماس اعتباری برای جلسه فعلی وجود ندارد.",
   "git_identity.switch_profile": "نمایه هویت Git را تغییر دهید",
-  "git_identity.local_isolation_hint": "برای جلوگیری از آلودگی جهانی فقط به صورت محلی در .git/config بنویسید",
-  "git_identity.manage_profiles": "مدیریت Git Identities و Credentials Vault...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "هویت Git: پیش‌فرض (برای جابه‌جایی کلیک کنید)",
 };
 

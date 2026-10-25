@@ -2533,8 +2533,8 @@ export const koKr: TranslationDict = {
   "git_identity.audit_trail": "자격 증명 보안 및 통화 감사 로그",
   "git_identity.no_audit_events": "현재 세션에 대한 자격 증명 통화 기록이 없습니다.",
   "git_identity.switch_profile": "Git ID 프로필 전환",
-  "git_identity.local_isolation_hint": "글로벌 오염을 방지하려면 .git/config에 로컬로만 작성하세요.",
-  "git_identity.manage_profiles": "Git ID 및 자격 증명 저장소 관리...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git ID: 기본값(전환하려면 클릭)",
 };
 

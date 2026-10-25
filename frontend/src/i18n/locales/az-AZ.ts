@@ -2596,9 +2596,8 @@ export const azAz: TranslationDict = {
   "git_identity.audit_trail": "Etibarnamə təhlükəsizliyi və zəng auditi qeydləri",
   "git_identity.no_audit_events": "Cari sessiya üçün etimadnamə zəng qeydi yoxdur.",
   "git_identity.switch_profile": "Git Identity Profilə keçin",
-  "git_identity.local_isolation_hint":
-    "Qlobal çirklənmənin qarşısını almaq üçün yalnız .git/config ünvanına yerli olaraq yazın",
-  "git_identity.manage_profiles": "Git Identities və Credentials Vault-nu idarə edin...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git identifikasiyası: Defolt (keçirmək üçün klikləyin)",
 };
 

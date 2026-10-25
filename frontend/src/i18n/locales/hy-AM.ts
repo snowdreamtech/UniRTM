@@ -2592,8 +2592,8 @@ export const hyAm: TranslationDict = {
   "git_identity.audit_trail": "Հավատարմագրերի անվտանգություն և զանգերի աուդիտի տեղեկամատյաններ",
   "git_identity.no_audit_events": "Ընթացիկ նստաշրջանի համար հավատարմագրային զանգերի գրանցում չկա:",
   "git_identity.switch_profile": "Փոխեք Git Identity պրոֆիլը",
-  "git_identity.local_isolation_hint": "Գրեք միայն լոկալ .git/config՝ գլոբալ աղտոտումը կանխելու համար",
-  "git_identity.manage_profiles": "Կառավարեք Git Identities-ը և հավատարմագրերի պահոցը...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git-ի ինքնությունը՝ լռելյայն (սեղմեք՝ անցնելու համար)",
 };
 

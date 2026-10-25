@@ -2580,9 +2580,8 @@ export const trTr: TranslationDict = {
   "git_identity.audit_trail": "Kimlik bilgisi güvenliği ve çağrı denetim günlükleri",
   "git_identity.no_audit_events": "Geçerli oturum için kimlik bilgisi arama kaydı yok.",
   "git_identity.switch_profile": "Git Kimlik Profilini Değiştir",
-  "git_identity.local_isolation_hint":
-    "Küresel kirliliği önlemek için yalnızca yerel olarak .git/config dosyasına yazın",
-  "git_identity.manage_profiles": "Git Kimliklerini ve Kimlik Bilgileri Kasasını Yönetin...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git kimliği: Varsayılan (geçiş yapmak için tıklayın)",
 };
 

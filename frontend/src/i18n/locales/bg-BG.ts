@@ -2614,8 +2614,8 @@ export const bgBg: TranslationDict = {
   "git_identity.audit_trail": "Сигурност на идентификационните данни и журнали за одит на обаждания",
   "git_identity.no_audit_events": "Няма запис на обаждане с идентификационни данни за текущата сесия.",
   "git_identity.switch_profile": "Превключване на профил за идентичност на Git",
-  "git_identity.local_isolation_hint": "Пишете само локално в .git/config, за да предотвратите глобално замърсяване",
-  "git_identity.manage_profiles": "Управление на Git идентичности и хранилище за идентификационни данни...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git самоличност: по подразбиране (щракнете за превключване)",
 };
 

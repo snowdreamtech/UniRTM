@@ -2568,8 +2568,8 @@ export const svSe: TranslationDict = {
   "git_identity.audit_trail": "Autentiseringssäkerhet och samtalsrevisionsloggar",
   "git_identity.no_audit_events": "Det finns ingen referenssamtalspost för den aktuella sessionen.",
   "git_identity.switch_profile": "Byt Git-identitetsprofil",
-  "git_identity.local_isolation_hint": "Skriv endast lokalt till .git/config för att förhindra global förorening",
-  "git_identity.manage_profiles": "Hantera Git Identities and Credentials Vault...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git-identitet: Standard (klicka för att byta)",
 };
 

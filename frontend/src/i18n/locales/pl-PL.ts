@@ -2590,8 +2590,8 @@ export const plPl: TranslationDict = {
   "git_identity.audit_trail": "Dzienniki kontroli zabezpieczeń i połączeń telefonicznych",
   "git_identity.no_audit_events": "Brak rekordu połączenia uwierzytelniającego dla bieżącej sesji.",
   "git_identity.switch_profile": "Zmień profil tożsamości Git",
-  "git_identity.local_isolation_hint": "Pisz tylko lokalnie do .git/config, aby zapobiec globalnemu zanieczyszczeniu",
-  "git_identity.manage_profiles": "Zarządzaj skarbcem tożsamości i danych uwierzytelniających Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Tożsamość Git: domyślna (kliknij, aby przełączyć)",
 };
 

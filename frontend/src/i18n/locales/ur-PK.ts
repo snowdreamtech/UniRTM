@@ -2554,8 +2554,8 @@ export const urPk: TranslationDict = {
   "git_identity.audit_trail": "اسناد کی حفاظت اور کال آڈٹ لاگز",
   "git_identity.no_audit_events": "موجودہ سیشن کے لیے کوئی سندی کال ریکارڈ نہیں ہے۔",
   "git_identity.switch_profile": "Git شناختی پروفائل سوئچ کریں۔",
-  "git_identity.local_isolation_hint": "عالمی آلودگی کو روکنے کے لیے صرف مقامی طور پر .git/config پر لکھیں۔",
-  "git_identity.manage_profiles": "Git Identities اور اسناد والٹ کا نظم کریں...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "گٹ شناخت: ڈیفالٹ (سوئچ کرنے کے لیے کلک کریں)",
 };
 

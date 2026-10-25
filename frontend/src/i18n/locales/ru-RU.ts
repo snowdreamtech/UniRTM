@@ -2588,9 +2588,8 @@ export const ruRu: TranslationDict = {
   "git_identity.audit_trail": "Безопасность учетных данных и журналы аудита вызовов",
   "git_identity.no_audit_events": "Для текущего сеанса нет записи о вызове с учетными данными.",
   "git_identity.switch_profile": "Переключение профиля идентификации Git",
-  "git_identity.local_isolation_hint":
-    "Пишите только локально в .git/config, чтобы предотвратить глобальное загрязнение.",
-  "git_identity.manage_profiles": "Управление хранилищем удостоверений и учетных данных Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Идентификатор Git: по умолчанию (нажмите, чтобы переключиться)",
 };
 

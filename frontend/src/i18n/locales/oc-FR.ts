@@ -2613,8 +2613,8 @@ export const ocFr: TranslationDict = {
   "git_identity.audit_trail": "Registres d'auditoria de seguretat de las credencialas e d'apèls",
   "git_identity.no_audit_events": "I a pas cap d'enregistrament d'apèl d'identificacion per la sesilha actuala.",
   "git_identity.switch_profile": "Cambiar lo perfil d'identitat Git",
-  "git_identity.local_isolation_hint": "Escrivètz pas que localament sus .git/config per prevenir la pollucion globala",
-  "git_identity.manage_profiles": "Gerir las Identitats e las Credencialas de Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identitat Git : per defaut (clicatz per bascular)",
 };
 

@@ -2591,8 +2591,8 @@ export const nlNl: TranslationDict = {
   "git_identity.audit_trail": "Referentiebeveiliging en oproepauditlogboeken",
   "git_identity.no_audit_events": "Er is geen referentiegespreksrecord voor de huidige sessie.",
   "git_identity.switch_profile": "Schakel over naar Git Identity-profiel",
-  "git_identity.local_isolation_hint": "Schrijf alleen lokaal naar .git/config om mondiale vervuiling te voorkomen",
-  "git_identity.manage_profiles": "Beheer Git-identiteiten en kluis voor inloggegevens...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git-identiteit: standaard (klik om te schakelen)",
 };
 

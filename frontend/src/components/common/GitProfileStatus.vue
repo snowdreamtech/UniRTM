@@ -12,9 +12,7 @@
     <div v-if="isOpen" class="git-profile-dropdown" id="git-profile-quickpick">
       <div class="dropdown-header">
         <span class="header-title">{{ t("git_identity.switch_profile") || "Switch Git Identity" }}</span>
-        <span class="header-hint">{{
-          t("git_identity.local_isolation_hint") || "Applied locally to .git/config"
-        }}</span>
+        <span class="header-hint">{{ t("git_identity.local_isolation_hint") || "Local repo only" }}</span>
       </div>
 
       <div class="profile-list">
@@ -43,7 +41,7 @@
       <div class="dropdown-footer">
         <button class="manage-btn" @click="openSettings">
           <span class="codicon codicon-settings"></span>
-          <span>{{ t("git_identity.manage_profiles") || "Manage Git Profiles & Vault..." }}</span>
+          <span>{{ t("git_identity.manage_profiles") || "Configure Profiles..." }}</span>
         </button>
       </div>
     </div>
@@ -52,8 +50,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import { useGitIdentity } from "../../composables/useGitIdentity";
 import { t } from "../../i18n";
+
+const router = useRouter();
 
 const emit = defineEmits<{
   (e: "open-settings", tab?: string): void;
@@ -92,6 +93,9 @@ const selectProfile = async (id: string) => {
 const openSettings = () => {
   isOpen.value = false;
   emit("open-settings", "git-identity");
+  if (router) {
+    router.push({ path: "/settings/security", query: { scope: "workspace" } });
+  }
 };
 
 const handleClickOutside = (e: MouseEvent) => {

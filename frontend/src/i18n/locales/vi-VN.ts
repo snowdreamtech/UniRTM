@@ -2582,8 +2582,8 @@ export const viVn: TranslationDict = {
   "git_identity.audit_trail": "Nhật ký kiểm tra cuộc gọi và bảo mật thông tin xác thực",
   "git_identity.no_audit_events": "Không có bản ghi cuộc gọi thông tin xác thực cho phiên hiện tại.",
   "git_identity.switch_profile": "Chuyển hồ sơ nhận dạng Git",
-  "git_identity.local_isolation_hint": "Chỉ ghi cục bộ vào .git/config để ngăn ngừa ô nhiễm toàn cầu",
-  "git_identity.manage_profiles": "Quản lý danh tính Git và kho thông tin xác thực...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Nhận dạng Git: Mặc định (bấm để chuyển đổi)",
 };
 

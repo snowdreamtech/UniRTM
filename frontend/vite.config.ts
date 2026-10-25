@@ -4688,6 +4688,350 @@ print(json.dumps({
               return;
             }
 
+            // GET /api/git/agent-status
+            if (reqPath === "/api/git/agent-status" && req.method === "GET") {
+              res.setHeader("Content-Type", "application/json");
+              let sshAgentActive = false;
+              let sshAgentSock = "";
+              let sshAgentKeys = 0;
+              const envSock = process.env.SSH_AUTH_SOCK;
+              if (envSock) {
+                sshAgentActive = true;
+                sshAgentSock = path.basename(envSock);
+                try {
+                  const out = execFileSync("ssh-add", ["-l"], { encoding: "utf-8", timeout: 2000 }).trim();
+                  const lines = out
+                    .split("\n")
+                    .filter((l) => l.trim().length > 0 && !l.includes("The agent has no identities."));
+                  sshAgentKeys = lines.length;
+                } catch (_) {}
+              }
+
+              let gpgAgentActive = false;
+              try {
+                execFileSync("gpg-connect-agent", ["/bye"], { encoding: "utf-8", timeout: 2000 });
+                gpgAgentActive = true;
+              } catch (_) {
+                try {
+                  const out = execFileSync("pgrep", ["-x", "gpg-agent"], { encoding: "utf-8", timeout: 1000 }).trim();
+                  if (out) gpgAgentActive = true;
+                } catch (_) {}
+              }
+
+              res.end(
+                JSON.stringify({
+                  sshAgentActive,
+                  sshAgentSock,
+                  sshAgentKeys,
+                  gpgAgentActive,
+                })
+              );
+              return;
+            }
+
+            // GET /api/git/system-keys
+            if (reqPath === "/api/git/system-keys" && req.method === "GET") {
+              res.setHeader("Content-Type", "application/json");
+              const sshKeys: Array<{ name: string; path: string; algorithm: string; comment: string }> = [];
+              const gpgKeys: Array<{ keyId: string; userId: string; algo?: string; created?: string }> = [];
+
+              try {
+                const sshDir = path.join(os.homedir(), ".ssh");
+                if (fs.existsSync(sshDir)) {
+                  const files = fs.readdirSync(sshDir);
+                  for (const f of files) {
+                    if (f.endsWith(".pub")) {
+                      const fullPath = path.join(sshDir, f);
+                      const keyPath = fullPath.replace(/\.pub$/, "");
+                      const content = fs.readFileSync(fullPath, "utf-8").trim();
+                      const parts = content.split(/\s+/);
+                      const algo = parts[0] || "ssh-key";
+                      const comment = parts.slice(2).join(" ") || "";
+                      sshKeys.push({
+                        name: f.replace(/\.pub$/, ""),
+                        path: keyPath,
+                        algorithm: algo,
+                        comment: comment,
+                      });
+                    }
+                  }
+                }
+              } catch (_) {}
+
+              try {
+                const gpgOut = execFileSync("gpg", ["--list-secret-keys", "--with-colons"], {
+                  encoding: "utf-8",
+                  timeout: 3000,
+                });
+                let currentKeyId = "";
+                let currentUserId = "";
+                let currentAlgo = "";
+                let currentCreated = "";
+
+                for (const line of gpgOut.split("\n")) {
+                  const fields = line.split(":");
+                  if (fields[0] === "sec") {
+                    if (currentKeyId) {
+                      gpgKeys.push({
+                        keyId: currentKeyId,
+                        userId: currentUserId || currentKeyId,
+                        algo: currentAlgo,
+                        created: currentCreated,
+                      });
+                    }
+                    currentKeyId = fields[4] || "";
+                    currentAlgo = fields[2] ? `RSA-${fields[2]}` : "RSA";
+                    currentCreated = fields[5] || "";
+                    currentUserId = "";
+                  } else if (fields[0] === "uid" && !currentUserId) {
+                    currentUserId = fields[9] || "";
+                  }
+                }
+                if (currentKeyId) {
+                  gpgKeys.push({
+                    keyId: currentKeyId,
+                    userId: currentUserId || currentKeyId,
+                    algo: currentAlgo,
+                    created: currentCreated,
+                  });
+                }
+              } catch (_) {}
+
+              res.end(JSON.stringify({ sshKeys, gpgKeys }));
+              return;
+            }
+
+            // GET /api/git/profiles
+            if (reqPath === "/api/git/profiles" && req.method === "GET") {
+              res.setHeader("Content-Type", "application/json");
+              const profilesFile = path.join(os.homedir(), ".config", "unirtm", "git_profiles.json");
+              let profiles: any[] = [];
+              let activeProfileId = "";
+              if (fs.existsSync(profilesFile)) {
+                try {
+                  const raw = JSON.parse(fs.readFileSync(profilesFile, "utf-8"));
+                  if (Array.isArray(raw)) {
+                    profiles = raw;
+                  } else if (raw && Array.isArray(raw.profiles)) {
+                    profiles = raw.profiles;
+                    activeProfileId = raw.activeProfileId || "";
+                  }
+                } catch (_) {}
+              }
+
+              let currentUserName = "";
+              let currentUserEmail = "";
+              let currentSigningKey = "";
+              let currentGpgSign = false;
+              try {
+                currentUserName = runGit(["config", "user.name"]);
+              } catch (_) {}
+              try {
+                currentUserEmail = runGit(["config", "user.email"]);
+              } catch (_) {}
+              try {
+                currentSigningKey = runGit(["config", "user.signingkey"]);
+              } catch (_) {}
+              try {
+                currentGpgSign = runGit(["config", "commit.gpgsign"]) === "true";
+              } catch (_) {}
+
+              if (profiles.length === 0) {
+                profiles = [
+                  {
+                    id: "default",
+                    name: "Default Profile",
+                    userName: currentUserName || "Default Developer",
+                    userEmail: currentUserEmail || "developer@example.com",
+                    signingKey: currentSigningKey,
+                    gpgSign: currentGpgSign,
+                    isDefault: true,
+                    updatedAt: Date.now(),
+                  },
+                ];
+                activeProfileId = "default";
+                try {
+                  fs.mkdirSync(path.dirname(profilesFile), { recursive: true });
+                  fs.writeFileSync(profilesFile, JSON.stringify({ profiles, activeProfileId }, null, 2), "utf-8");
+                } catch (_) {}
+              }
+
+              if (profiles.length === 1 && profiles[0].id === "default" && !profiles[0].userName && currentUserName) {
+                profiles[0].userName = currentUserName;
+                profiles[0].userEmail = currentUserEmail;
+                profiles[0].signingKey = currentSigningKey;
+                profiles[0].gpgSign = currentGpgSign;
+                try {
+                  fs.writeFileSync(
+                    profilesFile,
+                    JSON.stringify({ profiles, activeProfileId: "default" }, null, 2),
+                    "utf-8"
+                  );
+                } catch (_) {}
+              }
+
+              // If active profile isn't set, try matching current git config
+              if (!activeProfileId || !profiles.some((p) => p.id === activeProfileId)) {
+                activeProfileId = profiles[0]?.id || "";
+                for (const p of profiles) {
+                  if (p.userName === currentUserName && (!currentUserEmail || p.userEmail === currentUserEmail)) {
+                    activeProfileId = p.id;
+                    break;
+                  }
+                }
+              }
+
+              res.end(JSON.stringify({ profiles, activeProfileId }));
+              return;
+            }
+
+            // POST /api/git/profiles
+            if (reqPath === "/api/git/profiles" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const profile = JSON.parse(bodyStr || "{}");
+                  const profilesFile = path.join(os.homedir(), ".config", "unirtm", "git_profiles.json");
+                  let profiles: any[] = [];
+                  let activeProfileId = "";
+                  if (fs.existsSync(profilesFile)) {
+                    try {
+                      const raw = JSON.parse(fs.readFileSync(profilesFile, "utf-8"));
+                      if (Array.isArray(raw)) profiles = raw;
+                      else if (raw && Array.isArray(raw.profiles)) {
+                        profiles = raw.profiles;
+                        activeProfileId = raw.activeProfileId || "";
+                      }
+                    } catch (_) {}
+                  }
+                  if (!profile.id) {
+                    profile.id = "prof-" + Date.now();
+                  }
+                  profile.updatedAt = Date.now();
+                  const idx = profiles.findIndex((p: any) => p.id === profile.id);
+                  if (idx !== -1) {
+                    profiles[idx] = { ...profiles[idx], ...profile };
+                  } else {
+                    profiles.push(profile);
+                  }
+                  if (!activeProfileId) {
+                    activeProfileId = profile.id;
+                  }
+                  fs.mkdirSync(path.dirname(profilesFile), { recursive: true });
+                  fs.writeFileSync(profilesFile, JSON.stringify({ profiles, activeProfileId }, null, 2), "utf-8");
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, profile }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // DELETE /api/git/profiles
+            if (reqPath === "/api/git/profiles" && req.method === "DELETE") {
+              const u = new URL(reqUrl, "http://localhost");
+              const id = u.searchParams.get("id");
+              const profilesFile = path.join(os.homedir(), ".config", "unirtm", "git_profiles.json");
+              let profiles: any[] = [];
+              let activeProfileId = "";
+              if (fs.existsSync(profilesFile)) {
+                try {
+                  const raw = JSON.parse(fs.readFileSync(profilesFile, "utf-8"));
+                  if (Array.isArray(raw)) profiles = raw;
+                  else if (raw && Array.isArray(raw.profiles)) {
+                    profiles = raw.profiles;
+                    activeProfileId = raw.activeProfileId || "";
+                  }
+                } catch (_) {}
+              }
+              profiles = profiles.filter((p: any) => p.id !== id);
+              if (activeProfileId === id) {
+                activeProfileId = profiles[0]?.id || "";
+              }
+              try {
+                fs.writeFileSync(profilesFile, JSON.stringify({ profiles, activeProfileId }, null, 2), "utf-8");
+              } catch (_) {}
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ success: true }));
+              return;
+            }
+
+            // POST /api/git/profile/apply
+            if (reqPath === "/api/git/profile/apply" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  const profileId = body.profileId;
+                  const profilesFile = path.join(os.homedir(), ".config", "unirtm", "git_profiles.json");
+                  let profiles: any[] = [];
+                  let activeProfileId = "";
+                  if (fs.existsSync(profilesFile)) {
+                    try {
+                      const raw = JSON.parse(fs.readFileSync(profilesFile, "utf-8"));
+                      if (Array.isArray(raw)) profiles = raw;
+                      else if (raw && Array.isArray(raw.profiles)) {
+                        profiles = raw.profiles;
+                        activeProfileId = raw.activeProfileId || "";
+                      }
+                    } catch (_) {}
+                  }
+                  const target = profiles.find((p: any) => p.id === profileId);
+                  if (!target) {
+                    res.statusCode = 404;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Profile not found" }));
+                    return;
+                  }
+                  const targetDir = body.workspaceDir ? resolveRepoPath(body.workspaceDir) : activeRepoDir;
+                  if (target.userName) runGit(["config", "--local", "user.name", target.userName], targetDir);
+                  if (target.userEmail) runGit(["config", "--local", "user.email", target.userEmail], targetDir);
+                  if (target.signingKey) {
+                    runGit(["config", "--local", "user.signingkey", target.signingKey], targetDir);
+                  } else {
+                    try {
+                      runGit(["config", "--local", "--unset", "user.signingkey"], targetDir);
+                    } catch (_) {}
+                  }
+                  if (target.gpgSign) {
+                    runGit(["config", "--local", "commit.gpgsign", "true"], targetDir);
+                  } else {
+                    try {
+                      runGit(["config", "--local", "--unset", "commit.gpgsign"], targetDir);
+                    } catch (_) {}
+                  }
+                  activeProfileId = profileId;
+                  fs.writeFileSync(profilesFile, JSON.stringify({ profiles, activeProfileId }, null, 2), "utf-8");
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, profileId }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // GET /api/git/credential-audit
+            if (reqPath === "/api/git/credential-audit" && req.method === "GET") {
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ records: [] }));
+              return;
+            }
+
+            // POST /api/git/credential-clear-cache
+            if (reqPath === "/api/git/credential-clear-cache" && req.method === "POST") {
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ success: true }));
+              return;
+            }
+
             // GET /api/git/repositories
             if (reqPath === "/api/git/repositories" && req.method === "GET") {
               try {

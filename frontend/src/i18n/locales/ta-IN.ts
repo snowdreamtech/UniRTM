@@ -2605,8 +2605,8 @@ export const taIn: TranslationDict = {
   "git_identity.audit_trail": "நற்சான்றிதழ் பாதுகாப்பு மற்றும் அழைப்பு தணிக்கை பதிவுகள்",
   "git_identity.no_audit_events": "நடப்பு அமர்வுக்கான நற்சான்றிதழ் அழைப்பு பதிவு இல்லை.",
   "git_identity.switch_profile": "Git அடையாள சுயவிவரத்தை மாற்றவும்",
-  "git_identity.local_isolation_hint": "உலகளாவிய மாசுபாட்டைத் தடுக்க உள்நாட்டில் மட்டும் .git/config க்கு எழுதவும்",
-  "git_identity.manage_profiles": "Git அடையாளங்கள் மற்றும் நற்சான்றிதழ்கள் பெட்டகத்தை நிர்வகி...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git அடையாளம்: இயல்புநிலை (மாற்ற கிளிக் செய்யவும்)",
 };
 

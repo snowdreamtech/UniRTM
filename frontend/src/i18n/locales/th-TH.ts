@@ -2543,8 +2543,8 @@ export const thTh: TranslationDict = {
   "git_identity.audit_trail": "การรักษาความปลอดภัยข้อมูลรับรองและบันทึกการตรวจสอบการโทร",
   "git_identity.no_audit_events": "ไม่มีบันทึกการโทรข้อมูลรับรองสำหรับเซสชันปัจจุบัน",
   "git_identity.switch_profile": "สลับโปรไฟล์ Git Identity",
-  "git_identity.local_isolation_hint": "เขียนเฉพาะในเครื่องถึง .git/config เพื่อป้องกันมลภาวะทั่วโลก",
-  "git_identity.manage_profiles": "จัดการข้อมูลประจำตัว Git และห้องรับรองข้อมูลรับรอง...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "ข้อมูลประจำตัว Git: ค่าเริ่มต้น (คลิกเพื่อสลับ)",
 };
 

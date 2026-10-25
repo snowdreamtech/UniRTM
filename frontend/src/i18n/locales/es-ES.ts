@@ -2619,8 +2619,8 @@ export const esEs: TranslationDict = {
   "git_identity.audit_trail": "Seguridad de credenciales y registros de auditoría de llamadas",
   "git_identity.no_audit_events": "No hay ningún registro de llamada de credenciales para la sesión actual.",
   "git_identity.switch_profile": "Cambiar perfil de identidad de Git",
-  "git_identity.local_isolation_hint": "Escriba solo localmente en .git/config para evitar la contaminación global",
-  "git_identity.manage_profiles": "Administrar la bóveda de identidades y credenciales de Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identidad de Git: predeterminada (haga clic para cambiar)",
 };
 

@@ -2582,8 +2582,8 @@ export const ukUa: TranslationDict = {
   "git_identity.audit_trail": "Безпека облікових даних і журнали аудиту викликів",
   "git_identity.no_audit_events": "Для поточного сеансу немає облікових даних про виклик.",
   "git_identity.switch_profile": "Змінити профіль Git Identity",
-  "git_identity.local_isolation_hint": "Записуйте лише локально до .git/config, щоб запобігти глобальному забрудненню",
-  "git_identity.manage_profiles": "Керування ідентифікаторами Git і сховищем облікових даних...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git identity: за замовчуванням (клацніть, щоб переключити)",
 };
 

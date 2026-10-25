@@ -2564,8 +2564,8 @@ export const daDk: TranslationDict = {
   "git_identity.audit_trail": "Oplysningssikkerhed og opkaldsrevisionslogfiler",
   "git_identity.no_audit_events": "Der er ingen legitimationsopkaldspost for den aktuelle session.",
   "git_identity.switch_profile": "Skift Git-identitetsprofil",
-  "git_identity.local_isolation_hint": "Skriv kun lokalt til .git/config for at forhindre global forurening",
-  "git_identity.manage_profiles": "Administrer Git-identiteter og legitimationsoplysninger Vault...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git-identitet: Standard (klik for at skifte)",
 };
 

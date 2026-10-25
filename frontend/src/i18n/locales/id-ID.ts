@@ -2565,8 +2565,8 @@ export const idId: TranslationDict = {
   "git_identity.audit_trail": "Keamanan kredensial dan log audit panggilan",
   "git_identity.no_audit_events": "Tidak ada catatan panggilan kredensial untuk sesi saat ini.",
   "git_identity.switch_profile": "Ganti Profil Identitas Git",
-  "git_identity.local_isolation_hint": "Hanya tulis secara lokal ke .git/config untuk mencegah polusi global",
-  "git_identity.manage_profiles": "Kelola Gudang Identitas dan Kredensial Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identitas Git: Default (klik untuk beralih)",
 };
 

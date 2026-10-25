@@ -2609,8 +2609,8 @@ export const mlIn: TranslationDict = {
   "git_identity.audit_trail": "ക്രെഡൻഷ്യൽ സുരക്ഷയും കോൾ ഓഡിറ്റ് ലോഗുകളും",
   "git_identity.no_audit_events": "നിലവിലെ സെഷനിൽ ക്രെഡൻഷ്യൽ കോൾ റെക്കോർഡ് ഒന്നുമില്ല.",
   "git_identity.switch_profile": "Git ഐഡൻ്റിറ്റി പ്രൊഫൈൽ മാറുക",
-  "git_identity.local_isolation_hint": "ആഗോള മലിനീകരണം തടയാൻ .git/config-ലേക്ക് മാത്രം പ്രാദേശികമായി എഴുതുക",
-  "git_identity.manage_profiles": "Git ഐഡൻ്റിറ്റികളും ക്രെഡൻഷ്യൽ വോൾട്ടും നിയന്ത്രിക്കുക...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git ഐഡൻ്റിറ്റി: ഡിഫോൾട്ട് (സ്വിച്ചുചെയ്യാൻ ക്ലിക്ക് ചെയ്യുക)",
 };
 

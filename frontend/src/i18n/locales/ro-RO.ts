@@ -2599,8 +2599,8 @@ export const roRo: TranslationDict = {
   "git_identity.audit_trail": "Securitatea acreditărilor și jurnalele de auditare a apelurilor",
   "git_identity.no_audit_events": "Nu există nicio înregistrare a apelurilor de acreditări pentru sesiunea curentă.",
   "git_identity.switch_profile": "Comutați profilul de identitate Git",
-  "git_identity.local_isolation_hint": "Scrieți doar local în .git/config pentru a preveni poluarea globală",
-  "git_identity.manage_profiles": "Gestionați seiful de identități și acreditări Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identitate Git: implicit (dați clic pentru a comuta)",
 };
 

@@ -2589,8 +2589,8 @@ export const ltLt: TranslationDict = {
   "git_identity.audit_trail": "Kredencialų sauga ir skambučių audito žurnalai",
   "git_identity.no_audit_events": "Dabartinės sesijos kredencialų skambučio įrašo nėra.",
   "git_identity.switch_profile": "Perjunkite „Git“ tapatybės profilį",
-  "git_identity.local_isolation_hint": "Rašykite tik lokaliai į .git/config, kad išvengtumėte pasaulinės taršos",
-  "git_identity.manage_profiles": "Tvarkyti „Git“ tapatybes ir kredencialų saugyklą...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git tapatybė: numatytoji (spustelėkite, kad perjungtumėte)",
 };
 

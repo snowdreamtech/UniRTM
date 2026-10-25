@@ -2639,9 +2639,8 @@ export const deDe: TranslationDict = {
   "git_identity.no_audit_events":
     "Für die aktuelle Sitzung ist kein Anrufdatensatz mit Anmeldeinformationen vorhanden.",
   "git_identity.switch_profile": "Git-Identitätsprofil wechseln",
-  "git_identity.local_isolation_hint":
-    "Schreiben Sie nur lokal in .git/config, um eine globale Verschmutzung zu verhindern",
-  "git_identity.manage_profiles": "Git-Identitäten- und Anmeldeinformations-Tresor verwalten...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git-Identität: Standard (zum Wechseln klicken)",
 };
 

@@ -2611,8 +2611,8 @@ export const mkMk: TranslationDict = {
   "git_identity.audit_trail": "Заштита на акредитиви и дневници за ревизија на повици",
   "git_identity.no_audit_events": "Нема запис за повици за акредитиви за тековната сесија.",
   "git_identity.switch_profile": "Префрли го профилот за идентитет на Git",
-  "git_identity.local_isolation_hint": "Пишувајте само локално на .git/config за да спречите глобално загадување",
-  "git_identity.manage_profiles": "Управувајте со сефот со идентитети и акредитиви на Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Идентификација на Git: Стандардно (кликнете за да се префрлите)",
 };
 

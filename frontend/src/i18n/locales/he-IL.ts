@@ -2517,8 +2517,8 @@ export const heIl: TranslationDict = {
   "git_identity.audit_trail": "אבטחת אישורים ויומני ביקורת שיחות",
   "git_identity.no_audit_events": "אין רשומת שיחות אישור עבור ההפעלה הנוכחית.",
   "git_identity.switch_profile": "החלף פרופיל Git Identity",
-  "git_identity.local_isolation_hint": "כתוב רק באופן מקומי ל-.git/config כדי למנוע זיהום עולמי",
-  "git_identity.manage_profiles": "נהל כספת של זהויות ואישורים של Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "זהות Git: ברירת מחדל (לחץ כדי לעבור)",
 };
 

@@ -2491,8 +2491,8 @@ export const zhTw: TranslationDict = {
   "git_identity.audit_trail": "凭据安全与调用审计日志",
   "git_identity.no_audit_events": "当前会话暂无凭据调用记录。",
   "git_identity.switch_profile": "切换 Git 身份 Profile",
-  "git_identity.local_isolation_hint": "仅局部写入 .git/config，杜绝全局污染",
-  "git_identity.manage_profiles": "管理 Git 身份与凭据保管箱...",
+  "git_identity.local_isolation_hint": "當前倉庫局部生效",
+  "git_identity.manage_profiles": "配置身份...",
   "git_identity.click_to_switch": "Git 身份：默认（点击切换）",
 };
 

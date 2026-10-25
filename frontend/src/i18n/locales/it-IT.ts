@@ -2611,8 +2611,8 @@ export const itIt: TranslationDict = {
   "git_identity.audit_trail": "Sicurezza delle credenziali e registri di controllo delle chiamate",
   "git_identity.no_audit_events": "Non esiste alcun record di chiamate credenziali per la sessione corrente.",
   "git_identity.switch_profile": "Cambia il profilo di identità Git",
-  "git_identity.local_isolation_hint": "Scrivi solo localmente su .git/config per prevenire l'inquinamento globale",
-  "git_identity.manage_profiles": "Gestisci identità Git e credenziali Vault...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identità Git: predefinita (fai clic per cambiare)",
 };
 

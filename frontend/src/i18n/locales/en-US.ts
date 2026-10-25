@@ -2567,7 +2567,7 @@ export const enUs: TranslationDict = {
   "git_identity.audit_trail": "Security & Credential Audit Trail",
   "git_identity.no_audit_events": "No credential access events recorded yet in this session.",
   "git_identity.switch_profile": "Switch Git Identity",
-  "git_identity.local_isolation_hint": "Applied locally to .git/config",
-  "git_identity.manage_profiles": "Manage Git Profiles & Vault...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git Identity: Default (Click to switch)",
 };

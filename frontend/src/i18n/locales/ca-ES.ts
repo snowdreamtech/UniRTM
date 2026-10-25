@@ -2604,8 +2604,8 @@ export const caEs: TranslationDict = {
   "git_identity.audit_trail": "Seguretat de credencials i registres d'auditoria de trucades",
   "git_identity.no_audit_events": "No hi ha cap registre de trucada de credencials per a la sessió actual.",
   "git_identity.switch_profile": "Canvia el perfil d'identitat de Git",
-  "git_identity.local_isolation_hint": "Escriu només localment a .git/config per evitar la contaminació global",
-  "git_identity.manage_profiles": "Gestioneu les identitats i credencials de Git Vault...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identitat de Git: per defecte (fes clic per canviar)",
 };
 

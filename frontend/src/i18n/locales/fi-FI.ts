@@ -2571,9 +2571,8 @@ export const fiFi: TranslationDict = {
   "git_identity.audit_trail": "Tunnistetietojen suojaus ja puheluntarkastuslokit",
   "git_identity.no_audit_events": "Nykyiselle istunnolle ei ole valtuustietojen puhelutietuetta.",
   "git_identity.switch_profile": "Vaihda Git-identiteettiprofiilia",
-  "git_identity.local_isolation_hint":
-    "Kirjoita vain paikallisesti tiedostoon .git/config maailmanlaajuisen saastumisen estämiseksi",
-  "git_identity.manage_profiles": "Hallinnoi Git-identiteettejä ja valtuustietoholvia...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git-identiteetti: oletus (vaihda napsauttamalla)",
 };
 

@@ -2561,8 +2561,8 @@ export const nbNo: TranslationDict = {
   "git_identity.audit_trail": "Påloggingssikkerhet og anropsrevisjonslogger",
   "git_identity.no_audit_events": "Det er ingen påloggingsanropspost for gjeldende økt.",
   "git_identity.switch_profile": "Bytt Git-identitetsprofil",
-  "git_identity.local_isolation_hint": "Skriv kun lokalt til .git/config for å forhindre global forurensning",
-  "git_identity.manage_profiles": "Administrer Git-identiteter og legitimasjonshvelv...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git-identitet: Standard (klikk for å bytte)",
 };
 

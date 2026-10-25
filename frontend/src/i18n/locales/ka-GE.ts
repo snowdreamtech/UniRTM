@@ -2584,9 +2584,8 @@ export const kaGe: TranslationDict = {
   "git_identity.audit_trail": "სერთიფიკატების დაცვა და ზარის აუდიტის ჟურნალი",
   "git_identity.no_audit_events": "მიმდინარე სესიისთვის არ არსებობს რწმუნებათა სიგელის ზარის ჩანაწერი.",
   "git_identity.switch_profile": "გადართეთ Git Identity პროფილი",
-  "git_identity.local_isolation_hint":
-    "დაწერეთ მხოლოდ ადგილობრივად .git/config-ზე, რათა თავიდან აიცილოთ გლობალური დაბინძურება",
-  "git_identity.manage_profiles": "მართეთ Git Identities და რწმუნებათა სიგელები...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git ID: ნაგულისხმევი (დააწკაპუნეთ გადასართავად)",
 };
 

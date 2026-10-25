@@ -2569,8 +2569,8 @@ export const jaJp: TranslationDict = {
   "git_identity.audit_trail": "認証情報のセキュリティと通話監査ログ",
   "git_identity.no_audit_events": "現在のセッションには資格情報呼び出しレコードがありません。",
   "git_identity.switch_profile": "Git ID プロファイルの切り替え",
-  "git_identity.local_isolation_hint": "地球規模の汚染を防ぐため、.git/config にはローカルでのみ書き込みます。",
-  "git_identity.manage_profiles": "Git ID と資格情報ボールトの管理...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git ID: デフォルト (クリックして切り替え)",
 };
 

@@ -2628,9 +2628,8 @@ export const frFr: TranslationDict = {
   "git_identity.audit_trail": "Sécurité des informations d'identification et journaux d'audit des appels",
   "git_identity.no_audit_events": "Il n’existe aucun enregistrement d’appel d’identification pour la session en cours.",
   "git_identity.switch_profile": "Changer de profil d'identité Git",
-  "git_identity.local_isolation_hint":
-    "Écrivez uniquement localement sur .git/config pour éviter la pollution mondiale",
-  "git_identity.manage_profiles": "Gérer le coffre-fort des identités et des informations d'identification Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identité Git : par défaut (cliquez pour changer)",
 };
 

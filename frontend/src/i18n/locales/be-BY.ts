@@ -2582,9 +2582,8 @@ export const beBy: TranslationDict = {
   "git_identity.audit_trail": "Бяспека ўліковых дадзеных і часопісы аўдыту выклікаў",
   "git_identity.no_audit_events": "Для бягучага сеансу няма запісу ўліковых дадзеных аб выкліку.",
   "git_identity.switch_profile": "Пераключыць профіль Git Identity",
-  "git_identity.local_isolation_hint":
-    "Запісвайце толькі лакальна ў .git/config, каб прадухіліць глабальнае забруджванне",
-  "git_identity.manage_profiles": "Кіраванне Git Identities і Credential Vault...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git identity: па змаўчанні (націсніце для пераключэння)",
 };
 

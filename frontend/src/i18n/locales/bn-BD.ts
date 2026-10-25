@@ -2564,8 +2564,8 @@ export const bnBd: TranslationDict = {
   "git_identity.audit_trail": "শংসাপত্রের নিরাপত্তা এবং কল অডিট লগ",
   "git_identity.no_audit_events": "বর্তমান সেশনের জন্য কোনো প্রমাণপত্রের কল রেকর্ড নেই।",
   "git_identity.switch_profile": "গিট আইডেন্টিটি প্রোফাইল স্যুইচ করুন",
-  "git_identity.local_isolation_hint": "বিশ্বব্যাপী দূষণ রোধ করতে শুধুমাত্র স্থানীয়ভাবে .git/config লিখুন",
-  "git_identity.manage_profiles": "গিট আইডেন্টিটি এবং শংসাপত্র ভল্ট পরিচালনা করুন...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "গিট পরিচয়: ডিফল্ট (সুইচ করতে ক্লিক করুন)",
 };
 

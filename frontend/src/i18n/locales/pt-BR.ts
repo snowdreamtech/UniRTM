@@ -2593,8 +2593,8 @@ export const ptBr: TranslationDict = {
   "git_identity.audit_trail": "Segurança de credenciais e registros de auditoria de chamadas",
   "git_identity.no_audit_events": "Não há registro de chamada de credencial para a sessão atual.",
   "git_identity.switch_profile": "Alternar perfil de identidade do Git",
-  "git_identity.local_isolation_hint": "Escreva apenas localmente em .git/config para evitar poluição global",
-  "git_identity.manage_profiles": "Gerenciar o cofre de identidades e credenciais do Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identidade Git: Padrão (clique para alternar)",
 };
 

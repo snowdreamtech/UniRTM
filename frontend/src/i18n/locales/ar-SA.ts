@@ -2548,8 +2548,8 @@ export const arSa: TranslationDict = {
   "git_identity.audit_trail": "أمان بيانات الاعتماد وسجلات تدقيق المكالمات",
   "git_identity.no_audit_events": "لا يوجد سجل مكالمات اعتماد للجلسة الحالية.",
   "git_identity.switch_profile": "تبديل ملف تعريف هوية Git",
-  "git_identity.local_isolation_hint": "اكتب محليًا فقط إلى ‎.git/config لمنع التلوث العالمي",
-  "git_identity.manage_profiles": "إدارة مخزن هويات Git وبيانات الاعتماد...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "هوية Git: افتراضية (انقر للتبديل)",
 };
 

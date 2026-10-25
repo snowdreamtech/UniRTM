@@ -2574,8 +2574,8 @@ export const csCz: TranslationDict = {
   "git_identity.audit_trail": "Zabezpečení pověření a protokoly auditu hovorů",
   "git_identity.no_audit_events": "Pro aktuální relaci neexistuje žádný záznam volání pověření.",
   "git_identity.switch_profile": "Přepněte Git Identity Profile",
-  "git_identity.local_isolation_hint": "Zapisujte pouze lokálně do .git/config, abyste zabránili globálnímu znečištění",
-  "git_identity.manage_profiles": "Spravovat Git Identity and Credentials Vault...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identita Git: výchozí (kliknutím přepnete)",
 };
 

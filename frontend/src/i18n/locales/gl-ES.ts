@@ -2601,8 +2601,8 @@ export const glEs: TranslationDict = {
   "git_identity.audit_trail": "Seguridade de credenciais e rexistros de auditoría de chamadas",
   "git_identity.no_audit_events": "Non hai ningún rexistro de chamadas de credenciais para a sesión actual.",
   "git_identity.switch_profile": "Cambiar o perfil de identidade de Git",
-  "git_identity.local_isolation_hint": "Escribe só localmente en .git/config para evitar a contaminación global",
-  "git_identity.manage_profiles": "Xestionar credenciais e identidades de Git Vault...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identidade Git: predeterminada (faga clic para cambiar)",
 };
 

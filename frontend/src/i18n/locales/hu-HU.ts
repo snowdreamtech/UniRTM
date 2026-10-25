@@ -2603,9 +2603,8 @@ export const huHu: TranslationDict = {
   "git_identity.audit_trail": "Hitelesítési adatok biztonsága és hívásnaplók",
   "git_identity.no_audit_events": "Az aktuális munkamenethez nincs hitelesítő hívásrekord.",
   "git_identity.switch_profile": "Váltson Git identitásprofilt",
-  "git_identity.local_isolation_hint":
-    "Csak lokálisan írjon a .git/config fájlba a globális szennyezés elkerülése érdekében",
-  "git_identity.manage_profiles": "Git Identities és Credentials Vault kezelése...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git-identitás: Alapértelmezett (kattintással válthat)",
 };
 

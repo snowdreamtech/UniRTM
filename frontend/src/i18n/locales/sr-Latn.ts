@@ -2575,8 +2575,8 @@ export const srLatn: TranslationDict = {
   "git_identity.audit_trail": "Сигурност акредитива и евиденција ревизије позива",
   "git_identity.no_audit_events": "Не постоји евиденција позива са акредитивима за тренутну сесију.",
   "git_identity.switch_profile": "Промени профил Гит идентитета",
-  "git_identity.local_isolation_hint": "Пишите само локално у .гит/цонфиг да бисте спречили глобално загађење",
-  "git_identity.manage_profiles": "Управљајте Гит идентитетима и трезором акредитива...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Гит идентитет: подразумевано (кликните за пребацивање)",
 };
 

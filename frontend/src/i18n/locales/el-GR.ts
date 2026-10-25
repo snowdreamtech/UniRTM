@@ -2611,8 +2611,8 @@ export const elGr: TranslationDict = {
   "git_identity.audit_trail": "Ασφάλεια διαπιστευτηρίων και αρχεία καταγραφής ελέγχου κλήσεων",
   "git_identity.no_audit_events": "Δεν υπάρχει εγγραφή κλήσης διαπιστευτηρίων για την τρέχουσα περίοδο σύνδεσης.",
   "git_identity.switch_profile": "Αλλαγή προφίλ ταυτότητας Git",
-  "git_identity.local_isolation_hint": "Γράψτε μόνο τοπικά στο .git/config για να αποτρέψετε την παγκόσμια ρύπανση",
-  "git_identity.manage_profiles": "Διαχείριση θησαυροφυλάκιο ταυτοτήτων και διαπιστευτηρίων Git...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Ταυτότητα Git: Προεπιλογή (κάντε κλικ για εναλλαγή)",
 };
 

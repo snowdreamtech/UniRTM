@@ -92,6 +92,7 @@
       :currentLang="selectedLangSetting"
       @select-tab="handleDirectSelectTab"
       @open-network-settings="openSettings"
+      @open-settings="handleOpenSettings"
       @toggle-drawer="toggleDrawer"
       @open-shortcuts="openShortcutsModal"
     />
@@ -348,6 +349,17 @@ function openSettings(scope?: "user" | "workspace") {
       .catch(() => {});
   } else {
     router.push({ name: "settings", query: { ...route.query, scope: targetScope } }).catch(() => {});
+  }
+}
+
+function handleOpenSettings(tab?: string) {
+  isSidebarOpen.value = true;
+  const targetScope = activeScope.value || "workspace";
+  if (tab === "git-identity" || tab === "security") {
+    activeSubItem.value = "security";
+    router.push({ path: "/settings/security", query: { scope: targetScope } }).catch(() => {});
+  } else {
+    router.push({ name: "settings", query: { scope: targetScope } }).catch(() => {});
   }
 }
 

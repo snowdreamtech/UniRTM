@@ -2570,8 +2570,8 @@ export const etEe: TranslationDict = {
   "git_identity.audit_trail": "Mandaadi turvalisus ja kõnede auditi logid",
   "git_identity.no_audit_events": "Praeguse seansi jaoks pole mandaadi kõnekirjet.",
   "git_identity.switch_profile": "Giti identiteediprofiili vahetamine",
-  "git_identity.local_isolation_hint": "Globaalse saaste vältimiseks kirjutage ainult lokaalselt faili .git/config",
-  "git_identity.manage_profiles": "Giti identiteetide ja mandaatide hoidla haldamine...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Giti identiteet: vaikimisi (lülitamiseks klõpsake)",
 };
 

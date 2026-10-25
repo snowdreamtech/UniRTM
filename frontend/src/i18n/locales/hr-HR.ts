@@ -2578,8 +2578,8 @@ export const hrHr: TranslationDict = {
   "git_identity.audit_trail": "Sigurnost vjerodajnica i zapisnici revizije poziva",
   "git_identity.no_audit_events": "Ne postoji evidencija poziva s vjerodajnicama za trenutnu sesiju.",
   "git_identity.switch_profile": "Promijeni Git profil identiteta",
-  "git_identity.local_isolation_hint": "Pišite samo lokalno u .git/config kako biste spriječili globalno zagađenje",
-  "git_identity.manage_profiles": "Upravljanje Git identitetima i trezorom vjerodajnica...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git identitet: Zadano (kliknite za promjenu)",
 };
 

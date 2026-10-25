@@ -2585,9 +2585,8 @@ export const skSk: TranslationDict = {
   "git_identity.audit_trail": "Zabezpečenie poverení a protokoly auditu hovorov",
   "git_identity.no_audit_events": "Pre aktuálnu reláciu neexistuje žiadny záznam hovoru o poverení.",
   "git_identity.switch_profile": "Prepnite Git Identity Profile",
-  "git_identity.local_isolation_hint":
-    "Ak chcete zabrániť globálnemu znečisteniu, píšte iba lokálne do súboru .git/config",
-  "git_identity.manage_profiles": "Spravovať Git Identity and Credentials Vault...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Identita Git: Predvolená (kliknutím prepnete)",
 };
 

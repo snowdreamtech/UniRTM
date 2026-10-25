@@ -2564,8 +2564,8 @@ export const hiIn: TranslationDict = {
   "git_identity.audit_trail": "क्रेडेंशियल सुरक्षा और कॉल ऑडिट लॉग",
   "git_identity.no_audit_events": "वर्तमान सत्र के लिए कोई क्रेडेंशियल कॉल रिकॉर्ड नहीं है.",
   "git_identity.switch_profile": "Git पहचान प्रोफ़ाइल स्विच करें",
-  "git_identity.local_isolation_hint": "वैश्विक प्रदूषण को रोकने के लिए केवल .git/config पर स्थानीय रूप से लिखें",
-  "git_identity.manage_profiles": "Git पहचान और क्रेडेंशियल वॉल्ट प्रबंधित करें...",
+  "git_identity.local_isolation_hint": "Local repo only",
+  "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "गिट पहचान: डिफ़ॉल्ट (स्विच करने के लिए क्लिक करें)",
 };
 
