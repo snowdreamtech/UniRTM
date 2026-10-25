@@ -3,12 +3,6 @@
 
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 import DashboardView from "../views/DashboardView.vue";
-import ToolsView from "../views/ToolsView.vue";
-import TasksView from "../views/TasksView.vue";
-import MarketplaceView from "../views/MarketplaceView.vue";
-import DoctorView from "../views/DoctorView.vue";
-import SettingsView from "../views/SettingsView.vue";
-import AboutView from "../views/AboutView.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -38,12 +32,12 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/tools",
     name: "tools",
-    component: ToolsView,
+    component: () => import("../views/ToolsView.vue"),
   },
   {
     path: "/tasks",
     name: "tasks",
-    component: TasksView,
+    component: () => import("../views/TasksView.vue"),
   },
   {
     path: "/environments",
@@ -53,22 +47,22 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/marketplace/:namespace?/:name?",
     name: "marketplace",
-    component: MarketplaceView,
+    component: () => import("../views/MarketplaceView.vue"),
   },
   {
     path: "/doctor",
     name: "doctor",
-    component: DoctorView,
+    component: () => import("../views/DoctorView.vue"),
   },
   {
     path: "/settings/:category?",
     name: "settings",
-    component: SettingsView,
+    component: () => import("../views/SettingsView.vue"),
   },
   {
     path: "/about",
     name: "about",
-    component: AboutView,
+    component: () => import("../views/AboutView.vue"),
   },
   {
     path: "/:pathMatch(.*)*",
