@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package cmd
+package server
 
 import (
 	"encoding/json"
@@ -24,10 +24,10 @@ type TerminalControlMessage struct {
 	Rows uint16 `json:"rows,omitempty"` // terminal rows
 }
 
-// buildTerminalEnv prepares a complete, enriched environment for the PTY session.
+// BuildTerminalEnv prepares a complete, enriched environment for the PTY session.
 // It ensures that UniRTM's shims and binary directories take precedence in PATH,
 // and instructs tools to output rich 256/truecolor ANSI sequences.
-func buildTerminalEnv() []string {
+func BuildTerminalEnv() []string {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		home = os.Getenv("HOME")
@@ -62,8 +62,8 @@ func buildTerminalEnv() []string {
 	return envList
 }
 
-// handleTerminalWebSocket manages the full-duplex PTY streaming connection.
-func handleTerminalWebSocket(ws *websocket.Conn) {
+// HandleTerminalWebSocket manages the full-duplex PTY streaming connection.
+func HandleTerminalWebSocket(ws *websocket.Conn) {
 	defer ws.Close()
 
 	query := ws.Request().URL.Query()
@@ -82,7 +82,7 @@ func handleTerminalWebSocket(ws *websocket.Conn) {
 	currentCols := cols
 	currentRows := rows
 
-	session, err := startPTYSession(shellPath, cwd, cols, rows)
+	session, err := StartPTYSession(shellPath, cwd, cols, rows)
 	if err != nil {
 		pterm.Error.Printf("Failed to spawn PTY session: %v\n", err)
 		errMsg, _ := json.Marshal(TerminalControlMessage{

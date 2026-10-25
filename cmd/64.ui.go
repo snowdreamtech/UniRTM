@@ -35,6 +35,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/hook"
 	"github.com/snowdreamtech/unirtm/internal/network"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/server"
 	"github.com/snowdreamtech/unirtm/internal/theme"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/websocket"
@@ -966,7 +967,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/system/self-update", handleSystemSelfUpdate)
 	mux.HandleFunc("/api/terminals", handleGetTerminals)
 	mux.HandleFunc("/api/terminal/exec", handleTerminalExec)
-	mux.Handle("/api/terminal/ws", websocket.Handler(handleTerminalWebSocket))
+	mux.Handle("/api/terminal/ws", websocket.Handler(server.HandleTerminalWebSocket))
 
 	// ─── Network & Mirror API Endpoints ──────────────────────────────────────
 	mux.HandleFunc("/api/network/status", handleGetNetworkStatus)

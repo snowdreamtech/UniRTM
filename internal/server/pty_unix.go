@@ -3,7 +3,7 @@
 
 //go:build !windows
 
-package cmd
+package server
 
 import (
 	"fmt"
@@ -47,8 +47,8 @@ func (s *unixPTYSession) Resize(cols, rows uint16) {
 	}
 }
 
-// startPTYSession creates a native POSIX pseudo-terminal and launches the interactive shell.
-func startPTYSession(shellPath, cwd string, cols, rows uint16) (PTYSession, error) {
+// StartPTYSession creates a native POSIX pseudo-terminal and launches the interactive shell.
+func StartPTYSession(shellPath, cwd string, cols, rows uint16) (PTYSession, error) {
 	if shellPath == "" {
 		if bashPath, err := exec.LookPath("bash"); err == nil {
 			shellPath = bashPath
@@ -61,7 +61,7 @@ func startPTYSession(shellPath, cwd string, cols, rows uint16) (PTYSession, erro
 
 	// Launch as interactive login shell to load prompt and environment
 	cmd := exec.Command(shellPath, "-l")
-	cmd.Env = buildTerminalEnv()
+	cmd.Env = BuildTerminalEnv()
 
 	if cwd != "" {
 		if fi, err := os.Stat(cwd); err == nil && fi.IsDir() {
@@ -88,7 +88,7 @@ func startPTYSession(shellPath, cwd string, cols, rows uint16) (PTYSession, erro
 	if err != nil {
 		// Fallback without -l if login flag fails on certain constrained environments
 		cmd = exec.Command(shellPath)
-		cmd.Env = buildTerminalEnv()
+		cmd.Env = BuildTerminalEnv()
 		cmd.Dir = cwd
 		ptmx, err = pty.StartWithSize(cmd, &pty.Winsize{
 			Rows: rows,

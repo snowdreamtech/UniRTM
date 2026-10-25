@@ -3,7 +3,7 @@
 
 //go:build windows
 
-package cmd
+package server
 
 import (
 	"fmt"
@@ -44,8 +44,8 @@ func (s *windowsPipeSession) Resize(cols, rows uint16) {
 	// Fallback stub on Windows when ConPTY is not used
 }
 
-// startPTYSession creates a streaming pipe session on Windows.
-func startPTYSession(shellPath, cwd string, cols, rows uint16) (PTYSession, error) {
+// StartPTYSession creates a streaming pipe session on Windows.
+func StartPTYSession(shellPath, cwd string, cols, rows uint16) (PTYSession, error) {
 	if shellPath == "" {
 		if pwsh, err := exec.LookPath("powershell.exe"); err == nil {
 			shellPath = pwsh
@@ -57,7 +57,7 @@ func startPTYSession(shellPath, cwd string, cols, rows uint16) (PTYSession, erro
 	}
 
 	cmd := exec.Command(shellPath)
-	cmd.Env = buildTerminalEnv()
+	cmd.Env = BuildTerminalEnv()
 
 	if cwd != "" {
 		if fi, err := os.Stat(cwd); err == nil && fi.IsDir() {

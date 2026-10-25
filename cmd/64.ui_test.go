@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/frontend"
+	"github.com/snowdreamtech/unirtm/internal/server"
 )
 
 func TestUICmdFlagsAndAliases(t *testing.T) {
@@ -265,7 +266,7 @@ func TestUIDetectTerminals(t *testing.T) {
 	}
 
 	// 3. Test PTY Session Spawning and environment injection
-	ptySess, err := startPTYSession("", "", 80, 24)
+	ptySess, err := server.StartPTYSession("", "", 80, 24)
 	if err != nil {
 		t.Logf("Notice: startPTYSession error (might be running in non-tty environment): %v", err)
 	} else {
