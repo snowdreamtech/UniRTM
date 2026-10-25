@@ -67,16 +67,18 @@ func (s *sessionKeyringCache) Clear() {
 
 // credentialCoordinator manages blocking waiting channels between CLI/subprocesses and Web UI.
 type credentialCoordinator struct {
-	mu         sync.Mutex
-	activeChan map[string]chan GitCredentialResponse
-	pendingReq *GitCredentialRequest
-	notifyCh   chan struct{}
+	mu          sync.Mutex
+	activeChan  map[string]chan GitCredentialResponse
+	pendingReq  *GitCredentialRequest
+	notifyCh    chan struct{}
+	subscribers map[chan *GitCredentialRequest]struct{}
 }
 
 func newCredentialCoordinator() *credentialCoordinator {
 	return &credentialCoordinator{
-		activeChan: make(map[string]chan GitCredentialResponse),
-		notifyCh:   make(chan struct{}),
+		activeChan:  make(map[string]chan GitCredentialResponse),
+		notifyCh:    make(chan struct{}),
+		subscribers: make(map[chan *GitCredentialRequest]struct{}),
 	}
 }
 
@@ -115,6 +117,12 @@ func (c *credentialCoordinator) RequestGitCredential(reqType, prompt, targetKey 
 	if c.notifyCh != nil {
 		close(c.notifyCh)
 		c.notifyCh = make(chan struct{})
+	}
+	for sub := range c.subscribers {
+		select {
+		case sub <- c.pendingReq:
+		default:
+		}
 	}
 	c.mu.Unlock()
 
@@ -194,6 +202,69 @@ func (c *credentialCoordinator) WaitForPendingRequest(ctx context.Context, timeo
 		return req
 	case <-ctx.Done():
 		return nil
+	}
+}
+
+// Subscribe registers a live event listener for incoming Git credential requests.
+func (c *credentialCoordinator) Subscribe() (chan *GitCredentialRequest, func()) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.subscribers == nil {
+		c.subscribers = make(map[chan *GitCredentialRequest]struct{})
+	}
+	ch := make(chan *GitCredentialRequest, 10)
+	c.subscribers[ch] = struct{}{}
+	unsubscribe := func() {
+		c.mu.Lock()
+		delete(c.subscribers, ch)
+		c.mu.Unlock()
+	}
+	return ch, unsubscribe
+}
+
+// HTTP API: GET /api/git/credential-stream (Server-Sent Events)
+func HandleGitCredentialStream(w http.ResponseWriter, r *http.Request) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+
+	subCh, unsubscribe := globalCredentialCoordinator.Subscribe()
+	defer unsubscribe()
+
+	// If there is already a pending credential request, push it immediately upon connect
+	if initialReq := globalCredentialCoordinator.GetPendingRequest(); initialReq != nil {
+		data, _ := json.Marshal(initialReq)
+		fmt.Fprintf(w, "event: credential\ndata: %s\n\n", data)
+		flusher.Flush()
+	}
+
+	keepAliveTicker := time.NewTicker(15 * time.Second)
+	defer keepAliveTicker.Stop()
+
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case req, open := <-subCh:
+			if !open {
+				return
+			}
+			if req != nil {
+				data, _ := json.Marshal(req)
+				fmt.Fprintf(w, "event: credential\ndata: %s\n\n", data)
+				flusher.Flush()
+			}
+		case <-keepAliveTicker.C:
+			fmt.Fprintf(w, ": keep-alive\n\n")
+			flusher.Flush()
+		}
 	}
 }
 
@@ -342,10 +413,12 @@ func HandleGitCredentialInternalAsk(w http.ResponseWriter, r *http.Request) {
 
 // RegisterCredentialRoutes registers Git credential broker endpoints.
 func RegisterCredentialRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/credentials/stream", HandleGitCredentialStream)
 	mux.HandleFunc("/api/credentials/pending", HandleGitCredentialPending)
 	mux.HandleFunc("/api/credentials/respond", HandleGitCredentialRespond)
 	mux.HandleFunc("/api/credentials/clear", HandleGitCredentialClearCache)
 	mux.HandleFunc("/api/credentials/ask", HandleGitCredentialInternalAsk)
+	mux.HandleFunc("/api/git/credential-stream", HandleGitCredentialStream)
 	mux.HandleFunc("/api/git/credential-pending", HandleGitCredentialPending)
 	mux.HandleFunc("/api/git/credential-respond", HandleGitCredentialRespond)
 	mux.HandleFunc("/api/git/credential-clear-cache", HandleGitCredentialClearCache)

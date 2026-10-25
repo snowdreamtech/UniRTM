@@ -5,6 +5,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -210,4 +211,35 @@ func TestCredentialLongPolling(t *testing.T) {
 	globalCredentialCoordinator.pendingReq = nil
 	globalCredentialCoordinator.mu.Unlock()
 }
+
+func TestCredentialStream(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/git/credential-stream", nil).WithContext(ctx)
+	rec := httptest.NewRecorder()
+
+	done := make(chan struct{})
+	go func() {
+		HandleGitCredentialStream(rec, req)
+		close(done)
+	}()
+
+	// Wait for handler to subscribe
+	time.Sleep(30 * time.Millisecond)
+
+	// Simulate credential prompt arrival
+	go func() {
+		_, _ = globalCredentialCoordinator.RequestGitCredential("gpg", "Enter GPG Passphrase:", "0x5678", 500*time.Millisecond)
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+	cancel() // cancel stream connection
+	<-done
+
+	body := rec.Body.String()
+	assert.Contains(t, body, "event: credential")
+	assert.Contains(t, body, "0x5678")
+}
+
 
