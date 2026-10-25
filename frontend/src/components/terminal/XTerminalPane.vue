@@ -441,8 +441,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="xterm-pane-wrapper" @click="emit('focus')" @contextmenu.prevent="handleContextMenu">
-    <div ref="terminalContainer" class="xterm-container"></div>
+  <div class="xterm-pane-wrapper" dir="ltr" @click="emit('focus')" @contextmenu.prevent="handleContextMenu">
+    <div ref="terminalContainer" class="xterm-container" dir="ltr"></div>
 
     <!-- Floating Search Widget -->
     <TerminalSearchWidget :visible="isSearchVisible" :search-addon="searchAddonInstance" @close="closeSearch" />
@@ -488,6 +488,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
 }
 
 [data-theme="dark"] .xterm-pane-wrapper {
@@ -502,6 +505,9 @@ onBeforeUnmount(() => {
   overflow: hidden;
   box-sizing: border-box;
   background-color: transparent;
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
 }
 
 :deep(.xterm) {

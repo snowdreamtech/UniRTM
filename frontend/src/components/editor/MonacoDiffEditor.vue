@@ -1,5 +1,5 @@
 <template>
-  <div class="monaco-diff-wrapper">
+  <div class="monaco-diff-wrapper" dir="ltr">
     <!-- Top Diff View Toolbar -->
     <div class="diff-view-subbar">
       <div class="diff-subbar-left">
@@ -41,18 +41,18 @@
     </div>
 
     <!-- Monaco Diff Host -->
-    <div ref="containerRef" class="monaco-diff-host"></div>
+    <div ref="containerRef" class="monaco-diff-host" dir="ltr"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
 import type * as MonacoType from "monaco-editor";
 import "monaco-editor/min/vs/editor/editor.main.css";
 import { loadMonaco, getLanguageForFile } from "../../services/editor/monacoLoader";
 import { setupEditorContextMenuLocalization } from "../../services/editor/monacoLocalization";
 import type { EditorTab } from "../../composables/useEditorTabs";
-import { t } from "../../i18n";
+import { t, currentLocale } from "../../i18n";
 
 const props = defineProps<{
   tab: EditorTab;
@@ -154,6 +154,15 @@ watch(
   }
 );
 
+watch(currentLocale, () => {
+  nextTick(() => {
+    diffEditorInstance?.layout();
+    setTimeout(() => {
+      diffEditorInstance?.layout();
+    }, 50);
+  });
+});
+
 onBeforeUnmount(() => {
   resizeObserver?.disconnect();
   if (originalModel) {
@@ -180,6 +189,9 @@ onBeforeUnmount(() => {
   flex-direction: column;
   overflow: hidden;
   background-color: var(--color-bg-primary, #1e1e1e);
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
 }
 
 .diff-view-subbar {
@@ -249,6 +261,22 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
+}
+
+:deep(.monaco-diff-editor),
+:deep(.monaco-editor),
+:deep(.monaco-editor .overflow-guard),
+:deep(.monaco-editor .monaco-scrollable-element),
+:deep(.monaco-editor .lines-content),
+:deep(.monaco-editor .view-lines),
+:deep(.monaco-editor .margin),
+:deep(.monaco-editor .minimap) {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
 }
 
 .monaco-loading-overlay,

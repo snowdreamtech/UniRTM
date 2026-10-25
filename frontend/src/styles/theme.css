@@ -173,12 +173,6 @@ select:focus::placeholder {
   color: rgba(100, 116, 139, 0.22) !important;
 }
 
-/* Purge Browser Default Autofill Background & Red Spellcheck Squiggles */
-input,
-textarea {
-  spellcheck: false;
-}
-
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -231,7 +225,6 @@ img,
 a,
 svg {
   -webkit-user-drag: none;
-  user-drag: none;
 }
 
 /* Clean focus outline for mouse clicks while keeping keyboard accessibility */
@@ -454,6 +447,43 @@ html[dir="rtl"] .opt-check {
 
 [dir="rtl"] .custom-select-container .dropdown-item {
   text-align: right;
+}
+
+/* Code editors, diff editors, and terminal consoles MUST strictly remain LTR across all locales */
+html[dir="rtl"] .monaco-wrapper,
+html[dir="rtl"] .monaco-host-container,
+html[dir="rtl"] .monaco-editor,
+html[dir="rtl"] .monaco-diff-wrapper,
+html[dir="rtl"] .monaco-diff-host,
+html[dir="rtl"] .monaco-diff-editor,
+html[dir="rtl"] .editor-content-area,
+html[dir="rtl"] .xterm-pane-wrapper,
+html[dir="rtl"] .xterm-container,
+html[dir="rtl"] .xterm,
+[dir="rtl"] .monaco-wrapper,
+[dir="rtl"] .monaco-host-container,
+[dir="rtl"] .monaco-editor,
+[dir="rtl"] .monaco-diff-wrapper,
+[dir="rtl"] .monaco-diff-host,
+[dir="rtl"] .monaco-diff-editor,
+[dir="rtl"] .editor-content-area,
+[dir="rtl"] .xterm-pane-wrapper,
+[dir="rtl"] .xterm-container,
+[dir="rtl"] .xterm {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
+}
+
+[dir="rtl"] .monaco-editor .overflow-guard,
+[dir="rtl"] .monaco-editor .monaco-scrollable-element,
+[dir="rtl"] .monaco-editor .lines-content,
+[dir="rtl"] .monaco-editor .view-lines,
+[dir="rtl"] .monaco-editor .margin,
+[dir="rtl"] .monaco-editor .minimap {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
 }
 
 /* Native Window Focus / Blur State Visual Adaptation */

@@ -170,7 +170,7 @@
       </nav>
 
       <!-- Editor Content Area -->
-      <div class="editor-content-area">
+      <div class="editor-content-area" dir="ltr">
         <!-- Dual Pane Split View Layout -->
         <div
           v-if="splitState.active && splitState.tab"
@@ -1771,6 +1771,9 @@ function handleOpenKeyboardShortcuts() {
   height: 100%;
   min-height: 0;
   min-width: 0;
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
 }
 
 .image-preview-container {
