@@ -5,6 +5,7 @@ import type { CredentialRequest } from "../types/credential";
 describe("useCredentialBroker composable", () => {
   beforeEach(() => {
     const broker = useCredentialBroker();
+    broker.stopBrokerPolling();
     broker.isPromptOpen.value = false;
     broker.pendingRequest.value = null;
     broker.clearSessionKeyring();
@@ -95,5 +96,33 @@ describe("useCredentialBroker composable", () => {
     await broker.cancelCredential();
     expect(broker.isPromptOpen.value).toBe(false);
     expect(broker.pendingRequest.value).toBeNull();
+  });
+
+  it("supports startBrokerPolling, boostPolling, and stopBrokerPolling cleanly", async () => {
+    const broker = useCredentialBroker();
+
+    let fetchCount = 0;
+    global.fetch = vi.fn().mockImplementation(async () => {
+      fetchCount++;
+      return {
+        ok: true,
+        json: async () => ({ success: true, request: null }),
+      };
+    });
+
+    broker.startBrokerPolling(30);
+    await new Promise((r) => setTimeout(r, 15));
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    // Boost polling
+    broker.boostPolling(500);
+    await new Promise((r) => setTimeout(r, 60));
+    expect(fetchCount).toBeGreaterThanOrEqual(2);
+
+    // Stop polling
+    broker.stopBrokerPolling();
+    const countAfterStop = fetchCount;
+    await new Promise((r) => setTimeout(r, 80));
+    expect(fetchCount).toBe(countAfterStop);
   });
 });

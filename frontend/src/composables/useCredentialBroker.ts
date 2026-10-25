@@ -9,7 +9,14 @@ const lastError = ref<string | null>(null);
 // In-memory session keyring cache
 const sessionKeyring = ref<Map<string, string>>(new Map());
 
-let pollTimer: ReturnType<typeof setInterval> | null = null;
+const DEFAULT_ACTIVE_INTERVAL = 800;
+const DEFAULT_IDLE_INTERVAL = 5000;
+const BOOST_DURATION_MS = 15000;
+
+let pollTimer: ReturnType<typeof setTimeout> | null = null;
+let isPollingActive = false;
+let boostUntil = 0;
+let configuredActiveInterval = DEFAULT_ACTIVE_INTERVAL;
 
 export function useCredentialBroker() {
   /**
@@ -124,23 +131,61 @@ export function useCredentialBroker() {
     }
   }
 
+  let isChecking = false;
+
+  async function runPollLoop() {
+    if (!isPollingActive) return;
+
+    if (typeof document === "undefined" || !document.hidden) {
+      if (!isPromptOpen.value && !isChecking) {
+        isChecking = true;
+        try {
+          await checkPendingRequest();
+        } finally {
+          isChecking = false;
+        }
+      }
+    }
+
+    if (!isPollingActive) return;
+
+    const isBoosted = Date.now() < boostUntil;
+    const nextDelay = isBoosted ? configuredActiveInterval : DEFAULT_IDLE_INTERVAL;
+    pollTimer = setTimeout(runPollLoop, nextDelay);
+  }
+
   /**
-   * Start background polling
+   * Boost polling to high-frequency active rate for durationMs
    */
-  function startBrokerPolling(intervalMs: number = 800) {
-    if (pollTimer) return;
-    pollTimer = setInterval(() => {
-      if (typeof document !== "undefined" && document.hidden) return;
-      checkPendingRequest();
-    }, intervalMs);
+  function boostPolling(durationMs: number = BOOST_DURATION_MS) {
+    boostUntil = Math.max(boostUntil, Date.now() + durationMs);
+    if (!isPollingActive) return;
+    if (pollTimer) {
+      clearTimeout(pollTimer);
+      pollTimer = null;
+    }
+    if (!isChecking) {
+      runPollLoop();
+    }
+  }
+
+  /**
+   * Start background adaptive polling
+   */
+  function startBrokerPolling(intervalMs: number = DEFAULT_ACTIVE_INTERVAL) {
+    if (isPollingActive) return;
+    isPollingActive = true;
+    configuredActiveInterval = intervalMs;
+    runPollLoop();
   }
 
   /**
    * Stop polling
    */
   function stopBrokerPolling() {
+    isPollingActive = false;
     if (pollTimer) {
-      clearInterval(pollTimer);
+      clearTimeout(pollTimer);
       pollTimer = null;
     }
   }
@@ -164,6 +209,7 @@ export function useCredentialBroker() {
     checkPendingRequest,
     startBrokerPolling,
     stopBrokerPolling,
+    boostPolling,
     clearSessionKeyring,
   };
 }

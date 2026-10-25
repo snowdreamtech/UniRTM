@@ -6,6 +6,7 @@ import { useToast } from "./useToast";
 import { t } from "../i18n";
 import { useWorkspaceBus } from "./useWorkspaceBus";
 import { useEditorTabs } from "./useEditorTabs";
+import { useCredentialBroker } from "./useCredentialBroker";
 
 export interface GitChangeItem {
   path: string;
@@ -423,6 +424,7 @@ export function useGit() {
       showToast(t("scm.toast.enter_commit_msg") || "Please enter a commit message", "warning");
       return false;
     }
+    useCredentialBroker().boostPolling();
     isCommitting.value = true;
     try {
       const payload: { message: string; amend: boolean; sign?: boolean } = { message, amend };
@@ -458,6 +460,7 @@ export function useGit() {
    */
   async function checkout(branch: string, create: boolean = false): Promise<boolean> {
     if (!branch) return false;
+    useCredentialBroker().boostPolling();
     isLoading.value = true;
     try {
       const res = await gitFetch("/api/git/checkout", {
@@ -535,6 +538,7 @@ export function useGit() {
    * Sync with remote (pull then push).
    */
   async function sync(): Promise<boolean> {
+    useCredentialBroker().boostPolling();
     isSyncing.value = true;
     try {
       const res = await gitFetch("/api/git/sync", { method: "POST" });
