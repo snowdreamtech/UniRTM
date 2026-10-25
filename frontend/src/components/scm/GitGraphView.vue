@@ -167,7 +167,7 @@
             />
 
             <!-- 2. Commit Nodes (Dots) -->
-            <g v-for="node in graphLayout.nodes" :key="'node:' + node.hash">
+            <g v-for="node in visibleGraphNodes" :key="'node:' + node.hash">
               <!-- Uncommitted Changes Hollow Ring -->
               <template v-if="node.hash === '*'">
                 <circle
@@ -209,7 +209,7 @@
 
           <!-- Row Content Rows (HTML rows aligned with SVG rowHeight) -->
           <div
-            v-for="(commit, idx) in filteredCommits"
+            v-for="{ commit, idx } in visibleCommits"
             :key="commit.hash"
             class="graph-row"
             :class="{
@@ -1475,6 +1475,54 @@ const totalSvgHeight = computed(() => {
   return Math.max(ROW_HEIGHT, base + extra);
 });
 
+const graphScrollTop = ref(0);
+const graphViewportHeight = ref(800);
+const VIRTUAL_OVERSCAN = 15;
+
+const visibleCommits = computed(() => {
+  const commits = filteredCommits.value;
+  const total = commits.length;
+  if (total === 0) return [];
+  if (total <= 35) {
+    return commits.map((commit, idx) => ({ commit, idx }));
+  }
+
+  const sTop = graphScrollTop.value;
+  const vHeight = graphViewportHeight.value;
+
+  const estStart = Math.floor(sTop / ROW_HEIGHT);
+  const estEnd = Math.ceil((sTop + vHeight) / ROW_HEIGHT) + 2;
+
+  const startIdx = Math.max(0, estStart - VIRTUAL_OVERSCAN);
+  let endIdx = Math.min(total, estEnd + VIRTUAL_OVERSCAN);
+
+  if (
+    expandedCommitIndex.value !== -1 &&
+    expandedCommitIndex.value >= startIdx &&
+    expandedCommitIndex.value <= endIdx
+  ) {
+    endIdx = Math.min(total, endIdx + Math.ceil(EXPANDED_PANEL_HEIGHT / ROW_HEIGHT));
+  }
+
+  const slice: Array<{ commit: GitGraphCommit; idx: number }> = [];
+  for (let i = startIdx; i < endIdx; i++) {
+    slice.push({ commit: commits[i], idx: i });
+  }
+  return slice;
+});
+
+const visibleGraphNodes = computed(() => {
+  const nodes = graphLayout.value.nodes;
+  if (filteredCommits.value.length <= 35) return nodes;
+
+  const sTop = graphScrollTop.value;
+  const vHeight = graphViewportHeight.value;
+  const minY = sTop - VIRTUAL_OVERSCAN * ROW_HEIGHT;
+  const maxY = sTop + vHeight + VIRTUAL_OVERSCAN * ROW_HEIGHT;
+
+  return nodes.filter((n) => n.y >= minY && n.y <= maxY);
+});
+
 interface FileTreeNode {
   name: string;
   path: string;
@@ -1737,6 +1785,9 @@ onMounted(async () => {
     isInitialLoading.value = false;
   }
   window.addEventListener("click", closeAllContextMenus);
+  if (tableWrapperRef.value) {
+    graphViewportHeight.value = tableWrapperRef.value.clientHeight || 800;
+  }
 });
 
 onBeforeUnmount(() => {
@@ -1817,6 +1868,11 @@ function jumpToCommit(parentHash: string) {
 
 function handleScroll() {
   closeAllContextMenus();
+
+  if (tableWrapperRef.value) {
+    graphScrollTop.value = tableWrapperRef.value.scrollTop;
+    graphViewportHeight.value = tableWrapperRef.value.clientHeight || 800;
+  }
 
   if (!tableWrapperRef.value || isLoadingGraph.value || isLoadingMore.value || !hasMoreCommits.value) {
     return;

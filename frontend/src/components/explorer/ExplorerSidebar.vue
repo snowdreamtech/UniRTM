@@ -61,7 +61,7 @@
     </div>
 
     <!-- Tree Content Area -->
-    <div v-show="isRootExpanded" class="explorer-tree-body">
+    <div v-show="isRootExpanded" class="explorer-tree-body" ref="treeBodyRef" @scroll="handleTreeScroll">
       <!-- Loading State -->
       <div v-if="isLoading && !filteredTree" class="tree-status-state">
         <span class="codicon codicon-loading codicon-modifier-spin"></span>
@@ -107,9 +107,41 @@
           </div>
         </div>
 
-        <!-- Render top-level children -->
-        <template v-if="sortedRootChildren.length > 0">
-          <FileTreeNode v-for="child in sortedRootChildren" :key="child.path || child.name" :node="child" :depth="0" />
+        <!-- Render flat tree nodes (Virtual Scrolling for large trees) -->
+        <template v-if="flatVisibleNodes.length > 0">
+          <div
+            v-if="flatVisibleNodes.length > 50"
+            class="tree-virtual-container"
+            :style="{ height: virtualTreeTotalHeight + 'px', position: 'relative' }"
+          >
+            <div
+              class="tree-virtual-slider"
+              :style="{
+                transform: `translateY(${virtualTreeRows[0]?.top || 0}px)`,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+              }"
+            >
+              <FileTreeNode
+                v-for="vItem in virtualTreeRows"
+                :key="vItem.item.key"
+                :node="vItem.item.node"
+                :depth="vItem.item.depth"
+                :flat="true"
+              />
+            </div>
+          </div>
+          <template v-else>
+            <FileTreeNode
+              v-for="item in flatVisibleNodes"
+              :key="item.key"
+              :node="item.node"
+              :depth="item.depth"
+              :flat="true"
+            />
+          </template>
         </template>
 
         <div v-else-if="!isInlineCreatingRoot" class="tree-empty-state">
@@ -128,7 +160,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
-import { useFileTree } from "../../composables/useFileTree";
+import { useFileTree, flattenVisibleTree, type FlatTreeNode } from "../../composables/useFileTree";
+import { useVirtualList } from "../../composables/useVirtualList";
 import FileTreeNode from "./FileTreeNode.vue";
 import FileContextMenu from "./FileContextMenu.vue";
 import DeleteConfirmModal from "./DeleteConfirmModal.vue";
@@ -211,13 +244,23 @@ watch(
   { immediate: true }
 );
 
-const sortedRootChildren = computed(() => {
-  const children = filteredTree.value?.children || [];
-  return [...children].sort((a, b) => {
-    if (a.is_dir && !b.is_dir) return -1;
-    if (!a.is_dir && b.is_dir) return 1;
-    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
-  });
+const flatVisibleNodes = computed(() => {
+  const rootChildren = filteredTree.value?.children || [];
+  return flattenVisibleTree(rootChildren, expandedPaths.value, 0);
+});
+
+const treeBodyRef = ref<HTMLElement | null>(null);
+
+const {
+  visibleItems: virtualTreeRows,
+  totalHeight: virtualTreeTotalHeight,
+  handleScroll: handleTreeScroll,
+  scrollToIndex: scrollToTreeIndex,
+} = useVirtualList<FlatTreeNode>({
+  items: flatVisibleNodes,
+  itemHeight: 26,
+  containerRef: treeBodyRef,
+  overscan: 10,
 });
 
 function handleToolbarNewFile() {
@@ -279,17 +322,25 @@ onMounted(() => {
   revealCleanup = onRevealFile((req) => {
     revealPath(req.path);
     nextTick(() => {
-      const fileName = req.path.split("/").pop() || req.path;
-      const el =
-        document.querySelector(`.tree-node-row[title*="${CSS.escape(req.path)}"]`) ||
-        document.querySelector(`.tree-node-row[title*="${CSS.escape(fileName)}"]`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        el.classList.add("reveal-flash");
-        setTimeout(() => {
-          el.classList.remove("reveal-flash");
-        }, 1800);
+      const targetIdx = flatVisibleNodes.value.findIndex(
+        (item) => item.node.path === req.path || item.node.path.endsWith("/" + req.path)
+      );
+      if (targetIdx !== -1) {
+        scrollToTreeIndex(targetIdx, "center");
       }
+      nextTick(() => {
+        const fileName = req.path.split("/").pop() || req.path;
+        const el =
+          document.querySelector(`.tree-node-row[title*="${CSS.escape(req.path)}"]`) ||
+          document.querySelector(`.tree-node-row[title*="${CSS.escape(fileName)}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          el.classList.add("reveal-flash");
+          setTimeout(() => {
+            el.classList.remove("reveal-flash");
+          }, 1800);
+        }
+      });
     });
   });
 });

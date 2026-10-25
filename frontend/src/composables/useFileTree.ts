@@ -20,6 +20,47 @@ export interface FSNode {
   children?: FSNode[];
 }
 
+export interface FlatTreeNode {
+  node: FSNode;
+  depth: number;
+  hasChildren: boolean;
+  isExpanded: boolean;
+  key: string;
+}
+
+export function flattenVisibleTree(nodes: FSNode[], expandedPaths: Set<string>, depth: number = 0): FlatTreeNode[] {
+  const result: FlatTreeNode[] = [];
+  if (!nodes || nodes.length === 0) return result;
+
+  const sorted = [...nodes].sort((a, b) => {
+    if (a.is_dir && !b.is_dir) return -1;
+    if (!a.is_dir && b.is_dir) return 1;
+    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+  });
+
+  for (const node of sorted) {
+    const hasChildren = Boolean(node.is_dir && node.children && node.children.length > 0);
+    const isExpanded = node.is_dir && expandedPaths.has(node.path);
+
+    result.push({
+      node,
+      depth,
+      hasChildren,
+      isExpanded,
+      key: node.path || `${node.name}-${depth}`,
+    });
+
+    if (isExpanded && node.children && node.children.length > 0) {
+      const sub = flattenVisibleTree(node.children, expandedPaths, depth + 1);
+      for (let j = 0; j < sub.length; j++) {
+        result.push(sub[j]);
+      }
+    }
+  }
+
+  return result;
+}
+
 export interface WorkspaceRoot {
   id: string;
   name: string;

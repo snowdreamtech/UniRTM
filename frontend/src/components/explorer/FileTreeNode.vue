@@ -129,8 +129,8 @@
       </div>
     </div>
 
-    <!-- Recursive Children -->
-    <div v-if="node.is_dir && isExpanded && node.children && node.children.length > 0" class="tree-children">
+    <!-- Recursive Children (skipped in flat virtual tree mode) -->
+    <div v-if="!flat && node.is_dir && isExpanded && node.children && node.children.length > 0" class="tree-children">
       <FileTreeNode v-for="child in sortedChildren" :key="child.path || child.name" :node="child" :depth="depth + 1" />
     </div>
   </div>
@@ -144,10 +144,16 @@ import { useGit } from "../../composables/useGit";
 import TechIcon from "../common/TechIcon.vue";
 import { t } from "../../i18n";
 
-const props = defineProps<{
-  node: FSNode;
-  depth: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    node: FSNode;
+    depth: number;
+    flat?: boolean;
+  }>(),
+  {
+    flat: false,
+  }
+);
 
 const {
   selectedNode,

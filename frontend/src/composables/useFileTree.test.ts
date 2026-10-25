@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { useFileTree } from "./useFileTree";
+import { useFileTree, flattenVisibleTree, type FSNode } from "./useFileTree";
 import { useGit } from "./useGit";
 
 describe("useFileTree", () => {
@@ -472,5 +472,60 @@ describe("useFileTree", () => {
     expect(removeSuccess).toBe(true);
     expect(workspaceRoots.value.length).toBe(1);
     expect(isMultiRoot.value).toBe(false);
+  });
+
+  it("flattens visible tree according to expandedPaths", () => {
+    const mockNodes: FSNode[] = [
+      {
+        name: "b-dir",
+        path: "b-dir",
+        is_dir: true,
+        size: 0,
+        mod_time: "",
+        children: [
+          { name: "file2.txt", path: "b-dir/file2.txt", is_dir: false, size: 10, mod_time: "" },
+          {
+            name: "sub-dir",
+            path: "b-dir/sub-dir",
+            is_dir: true,
+            size: 0,
+            mod_time: "",
+            children: [{ name: "deep.ts", path: "b-dir/sub-dir/deep.ts", is_dir: false, size: 5, mod_time: "" }],
+          },
+        ],
+      },
+      {
+        name: "a-file.txt",
+        path: "a-file.txt",
+        is_dir: false,
+        size: 100,
+        mod_time: "",
+      },
+    ];
+
+    // Case 1: none expanded (only top-level, dir first then file)
+    const collapsed = flattenVisibleTree(mockNodes, new Set<string>());
+    expect(collapsed.length).toBe(2);
+    expect(collapsed[0].node.name).toBe("b-dir");
+    expect(collapsed[0].depth).toBe(0);
+    expect(collapsed[0].isExpanded).toBe(false);
+    expect(collapsed[1].node.name).toBe("a-file.txt");
+
+    // Case 2: expand b-dir
+    const expandedOne = flattenVisibleTree(mockNodes, new Set<string>(["b-dir"]));
+    expect(expandedOne.length).toBe(4);
+    expect(expandedOne[0].node.name).toBe("b-dir");
+    expect(expandedOne[1].node.name).toBe("sub-dir"); // dir first in b-dir
+    expect(expandedOne[1].depth).toBe(1);
+    expect(expandedOne[2].node.name).toBe("file2.txt");
+    expect(expandedOne[2].depth).toBe(1);
+    expect(expandedOne[3].node.name).toBe("a-file.txt");
+    expect(expandedOne[3].depth).toBe(0);
+
+    // Case 3: expand b-dir and b-dir/sub-dir
+    const expandedBoth = flattenVisibleTree(mockNodes, new Set<string>(["b-dir", "b-dir/sub-dir"]));
+    expect(expandedBoth.length).toBe(5);
+    expect(expandedBoth[2].node.name).toBe("deep.ts");
+    expect(expandedBoth[2].depth).toBe(2);
   });
 });
