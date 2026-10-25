@@ -127,15 +127,17 @@ onUnmounted(() => {
   border-radius: 3px;
   user-select: none;
   font-size: 11px;
-  transition: background 0.15s ease;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
 }
 
 .status-git-profile:hover {
-  background: var(--vscode-statusBarItem-hoverBackground, rgba(255, 255, 255, 0.12));
+  color: var(--text-main);
+  background: var(--hover-bg);
 }
 
 .gpg-badge {
-  color: #4ec9b0;
+  color: var(--accent-purple);
   display: inline-flex;
   align-items: center;
 }
@@ -145,10 +147,12 @@ onUnmounted(() => {
   bottom: 26px;
   left: 0;
   min-width: 280px;
-  background: var(--vscode-dropdown-background, #252526);
-  border: 1px solid var(--vscode-dropdown-border, #3c3c3c);
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  background: var(--modal-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  color: var(--text-main);
   z-index: 9999;
   display: flex;
   flex-direction: column;
@@ -156,22 +160,23 @@ onUnmounted(() => {
 }
 
 .dropdown-header {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--vscode-panel-border, #333);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--card-border);
   display: flex;
   flex-direction: column;
   gap: 2px;
+  background: var(--header-bg);
 }
 
 .header-title {
   font-size: 11px;
   font-weight: 600;
-  color: var(--vscode-foreground, #ccc);
+  color: var(--text-main);
 }
 
 .header-hint {
   font-size: 10px;
-  color: var(--vscode-descriptionForeground, #888);
+  color: var(--text-muted);
 }
 
 .profile-list {
@@ -181,18 +186,19 @@ onUnmounted(() => {
 }
 
 .profile-item {
-  padding: 6px 10px;
+  padding: 7px 12px;
   cursor: pointer;
   transition: background 0.12s ease;
+  color: var(--text-main);
 }
 
 .profile-item:hover {
-  background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.08));
+  background: var(--hover-bg);
 }
 
 .profile-item.active {
-  background: var(--vscode-list-activeSelectionBackground, #094771);
-  color: #fff;
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--accent-cyan);
 }
 
 .profile-title {
@@ -203,48 +209,50 @@ onUnmounted(() => {
 
 .profile-name {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .active-badge {
   font-size: 9px;
-  padding: 1px 4px;
-  background: #388a34;
-  color: #fff;
-  border-radius: 2px;
+  padding: 1px 5px;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+  border-radius: 3px;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
 .profile-details {
   font-size: 10px;
-  color: var(--vscode-descriptionForeground, #aaa);
+  color: var(--text-muted);
   display: flex;
   justify-content: space-between;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .detail-gpg {
-  color: #4ec9b0;
+  color: var(--accent-purple);
   font-family: monospace;
 }
 
 .dropdown-footer {
-  padding: 6px 10px;
-  border-top: 1px solid var(--vscode-panel-border, #333);
-  background: rgba(0, 0, 0, 0.15);
+  padding: 8px 12px;
+  border-top: 1px solid var(--card-border);
+  background: var(--header-bg);
 }
 
 .manage-btn {
   width: 100%;
   background: transparent;
   border: none;
-  color: var(--vscode-textLink-foreground, #3794ff);
+  color: var(--accent-cyan);
   font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
 .manage-btn:hover {

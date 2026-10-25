@@ -1,26 +1,31 @@
 <template>
   <div class="git-identity-settings" id="git-identity-settings-panel">
-    <!-- Header -->
-    <div class="settings-section-header">
-      <div class="section-title">
+    <!-- Header Divider & Title aligned with SettingsView design system -->
+    <div class="vault-divider"></div>
+    <div class="section-title-wrap">
+      <span class="section-icon">
         <span class="codicon codicon-shield"></span>
+      </span>
+      <div>
         <h3>{{ t("git_identity.title") || "Git Identity & Credential Vault" }}</h3>
+        <span class="section-sub">
+          {{
+            t("git_identity.desc") ||
+            "Manage multiple Git identities locally isolated per repository. Zero private key touching, system agent first, and hardened one-time nonce IPC."
+          }}
+        </span>
       </div>
-      <p class="section-desc">
-        {{
-          t("git_identity.desc") ||
-          "Manage multiple Git identities locally isolated per repository. Zero private key touching, system agent first, and hardened one-time nonce IPC."
-        }}
-      </p>
     </div>
 
-    <!-- Security Agents Status Cards -->
+    <!-- Security Agents Status Cards (Matches sec-card system) -->
     <div class="agent-status-row">
       <div class="status-card" :class="{ active: agentStatus.sshAgentActive }">
         <div class="card-header">
-          <span class="codicon codicon-key"></span>
-          <span class="card-title">SSH Agent</span>
-          <span class="status-indicator" :class="agentStatus.sshAgentActive ? 'online' : 'offline'">
+          <div class="header-left">
+            <span class="codicon codicon-key"></span>
+            <span class="card-title">SSH Agent</span>
+          </div>
+          <span class="sec-badge" :class="agentStatus.sshAgentActive ? 'green' : 'gray'">
             {{
               agentStatus.sshAgentActive
                 ? t("git_identity.active") || "Active"
@@ -29,7 +34,7 @@
           </span>
         </div>
         <div class="card-body">
-          <span v-if="agentStatus.sshAgentActive">
+          <span v-if="agentStatus.sshAgentActive" class="body-text">
             {{
               t("git_identity.loaded_keys", { count: agentStatus.sshAgentKeys }) ||
               `${agentStatus.sshAgentKeys} keys loaded in system agent`
@@ -43,9 +48,11 @@
 
       <div class="status-card" :class="{ active: agentStatus.gpgAgentActive }">
         <div class="card-header">
-          <span class="codicon codicon-lock"></span>
-          <span class="card-title">GPG Agent</span>
-          <span class="status-indicator" :class="agentStatus.gpgAgentActive ? 'online' : 'offline'">
+          <div class="header-left">
+            <span class="codicon codicon-lock"></span>
+            <span class="card-title">GPG Agent</span>
+          </div>
+          <span class="sec-badge" :class="agentStatus.gpgAgentActive ? 'green' : 'gray'">
             {{
               agentStatus.gpgAgentActive
                 ? t("git_identity.active") || "Active"
@@ -54,7 +61,7 @@
           </span>
         </div>
         <div class="card-body">
-          <span v-if="agentStatus.gpgAgentActive">{{
+          <span v-if="agentStatus.gpgAgentActive" class="body-text">{{
             t("git_identity.gpg_ready") || "gpg-agent running and responsive"
           }}</span>
           <span v-else class="text-muted">{{ t("git_identity.gpg_not_found") || "gpg-agent not responding" }}</span>
@@ -63,8 +70,10 @@
 
       <div class="status-card vault-control">
         <div class="card-header">
-          <span class="codicon codicon-clear-all"></span>
-          <span class="card-title">{{ t("git_identity.memory_vault") || "Session Vault" }}</span>
+          <div class="header-left">
+            <span class="codicon codicon-clear-all"></span>
+            <span class="card-title">{{ t("git_identity.memory_vault") || "Session Vault" }}</span>
+          </div>
         </div>
         <div class="card-body">
           <button class="clear-vault-btn" @click="handleClearKeyring">
@@ -75,7 +84,7 @@
       </div>
     </div>
 
-    <!-- Profiles List -->
+    <!-- Profiles Section -->
     <div class="profiles-section">
       <div class="section-toolbar">
         <h4>{{ t("git_identity.profiles_list") || "Identity Profiles" }}</h4>
@@ -95,12 +104,10 @@
           <div class="card-top">
             <div class="profile-name-row">
               <span class="name">{{ prof.name }}</span>
-              <span v-if="prof.id === activeProfileId" class="badge active-badge">{{
+              <span v-if="prof.id === activeProfileId" class="sec-badge cyan">{{
                 t("git_identity.active_workspace") || "Active in Workspace"
               }}</span>
-              <span v-if="prof.isDefault" class="badge default-badge">{{
-                t("git_identity.default") || "Default"
-              }}</span>
+              <span v-if="prof.isDefault" class="sec-badge gray">{{ t("git_identity.default") || "Default" }}</span>
             </div>
             <div class="card-actions">
               <button
@@ -142,7 +149,55 @@
       </div>
     </div>
 
-    <!-- Edit / Add Modal -->
+    <!-- Security Audit Trail Accordion -->
+    <div class="audit-trail-section">
+      <div class="section-toolbar pointer" @click="isAuditExpanded = !isAuditExpanded">
+        <div class="title-with-icon">
+          <span class="codicon" :class="isAuditExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+          <h4>{{ t("git_identity.audit_trail") || "Security & Credential Audit Trail" }}</h4>
+          <span class="audit-count">({{ auditRecords.length }})</span>
+        </div>
+        <button class="refresh-btn icon-btn" @click.stop="loadAuditRecords">
+          <span class="codicon codicon-refresh"></span>
+        </button>
+      </div>
+
+      <div v-if="isAuditExpanded" class="audit-table-wrapper">
+        <table v-if="auditRecords.length > 0" class="audit-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Action</th>
+              <th>Type</th>
+              <th>Key / Target</th>
+              <th>Result</th>
+              <th>Client IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="rec in auditRecords.slice().reverse()" :key="rec.id">
+              <td class="font-mono">{{ new Date(rec.timestamp).toLocaleTimeString() }}</td>
+              <td>
+                <span class="action-tag">{{ rec.action }}</span>
+              </td>
+              <td>
+                <span class="type-tag" :class="rec.type">{{ rec.type }}</span>
+              </td>
+              <td class="font-mono text-truncate max-w-150" :title="rec.targetKey">{{ rec.targetKey || "-" }}</td>
+              <td>
+                <span class="result-badge" :class="rec.result">{{ rec.result }}</span>
+              </td>
+              <td class="font-mono">{{ rec.clientIp }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="empty-audit">
+          {{ t("git_identity.no_audit_events") || "No credential access events recorded yet in this session." }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit / Add Modal Dialog -->
     <div v-if="isEditing" class="profile-modal-overlay">
       <div class="profile-modal">
         <div class="modal-header">
@@ -240,54 +295,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Security Audit Trail Accordion -->
-    <div class="audit-trail-section">
-      <div class="section-toolbar pointer" @click="isAuditExpanded = !isAuditExpanded">
-        <div class="title-with-icon">
-          <span class="codicon" :class="isAuditExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
-          <h4>{{ t("git_identity.audit_trail") || "Security & Credential Audit Trail" }}</h4>
-          <span class="audit-count">({{ auditRecords.length }})</span>
-        </div>
-        <button class="refresh-btn" @click.stop="loadAuditRecords">
-          <span class="codicon codicon-refresh"></span>
-        </button>
-      </div>
-
-      <div v-if="isAuditExpanded" class="audit-table-wrapper">
-        <table v-if="auditRecords.length > 0" class="audit-table">
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Action</th>
-              <th>Type</th>
-              <th>Key / Target</th>
-              <th>Result</th>
-              <th>Client IP</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="rec in auditRecords.slice().reverse()" :key="rec.id">
-              <td class="font-mono">{{ new Date(rec.timestamp).toLocaleTimeString() }}</td>
-              <td>
-                <span class="action-tag">{{ rec.action }}</span>
-              </td>
-              <td>
-                <span class="type-tag" :class="rec.type">{{ rec.type }}</span>
-              </td>
-              <td class="font-mono text-truncate max-w-150" :title="rec.targetKey">{{ rec.targetKey || "-" }}</td>
-              <td>
-                <span class="result-badge" :class="rec.result">{{ rec.result }}</span>
-              </td>
-              <td class="font-mono">{{ rec.clientIp }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div v-else class="empty-audit">
-          {{ t("git_identity.no_audit_events") || "No credential access events recorded yet in this session." }}
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -382,191 +389,238 @@ onMounted(() => {
 .git-identity-settings {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  padding: 1rem 0;
+  gap: 1.25rem;
+  margin-top: 1rem;
 }
 
-.settings-section-header {
-  border-bottom: 1px solid var(--vscode-panel-border, #333);
-  padding-bottom: 0.8rem;
+.vault-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 0.5rem 0 0.8rem 0;
+  opacity: 0.6;
 }
 
-.section-title {
+.section-title-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.section-icon {
+  font-size: 1.2rem;
+  color: var(--accent-cyan);
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 1.1rem;
-  color: var(--vscode-foreground, #fff);
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid var(--card-border);
+  flex-shrink: 0;
 }
 
-.section-desc {
-  font-size: 0.82rem;
-  color: var(--vscode-descriptionForeground, #888);
-  margin-top: 4px;
+.section-title-wrap h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 4px 0;
 }
 
+.section-sub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  display: block;
+}
+
+/* Agent Status Row */
 .agent-status-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+  gap: 14px;
 }
 
 .status-card {
-  background: var(--vscode-editor-background, #1e1e1e);
-  border: 1px solid var(--vscode-panel-border, #333);
-  border-radius: 4px;
-  padding: 10px 12px;
+  padding: 14px;
+  border-radius: 6px;
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.status-card:hover {
+  border-color: var(--card-border-active);
 }
 
 .status-card.active {
-  border-color: #2e6930;
+  border-color: rgba(16, 185, 129, 0.35);
 }
 
 .card-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
-  font-size: 12px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
-.status-indicator {
-  margin-left: auto;
-  font-size: 10px;
-  padding: 1px 5px;
-  border-radius: 2px;
+.sec-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
   text-transform: uppercase;
 }
 
-.status-indicator.online {
-  background: #235a25;
-  color: #7ee787;
+.sec-badge.green {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
 }
 
-.status-indicator.offline {
-  background: #3e3e3e;
-  color: #888;
+.sec-badge.cyan {
+  background: rgba(0, 229, 255, 0.15);
+  color: var(--accent-cyan);
+}
+
+.sec-badge.purple {
+  background: rgba(157, 78, 221, 0.15);
+  color: var(--accent-purple);
+}
+
+.sec-badge.gray {
+  background: var(--hover-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
 }
 
 .card-body {
-  font-size: 11px;
-  color: var(--vscode-descriptionForeground, #aaa);
+  font-size: 0.78rem;
+}
+
+.card-body .body-text {
+  color: var(--text-main);
+}
+
+.card-body .text-muted {
+  color: var(--text-muted);
 }
 
 .clear-vault-btn {
-  background: transparent;
-  border: 1px solid var(--vscode-button-secondaryBorder, #444);
-  color: var(--vscode-foreground, #ccc);
-  padding: 3px 8px;
-  font-size: 11px;
-  border-radius: 3px;
+  background: var(--hover-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  border-radius: 4px;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  transition: all 0.2s ease;
 }
 
 .clear-vault-btn:hover {
-  background: var(--vscode-button-secondaryHoverBackground, rgba(255, 255, 255, 0.08));
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* Profiles Section */
+.profiles-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .section-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
 }
 
-.section-toolbar.pointer {
-  cursor: pointer;
-  user-select: none;
+.section-toolbar h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
 }
 
-.title-with-icon {
-  display: flex;
+.action-btn.add-btn {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-
-.audit-count {
-  font-size: 11px;
-  color: var(--vscode-descriptionForeground, #888);
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--vscode-button-background, #0e639c);
-  color: #fff;
+  gap: 5px;
+  background: var(--accent-cyan);
+  color: #070a12;
+  font-weight: 600;
   border: none;
-  padding: 4px 10px;
-  border-radius: 3px;
-  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 0.78rem;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.action-btn:hover {
-  background: var(--vscode-button-hoverBackground, #1177bb);
+.action-btn.add-btn:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 10px var(--accent-cyan-glow);
 }
 
 .profiles-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .profile-card {
-  background: var(--vscode-editor-background, #1e1e1e);
-  border: 1px solid var(--vscode-panel-border, #333);
-  border-radius: 4px;
-  padding: 10px;
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.profile-card:hover {
+  border-color: var(--card-border-active);
 }
 
 .profile-card.current {
-  border-color: #0e639c;
-  background: rgba(14, 99, 156, 0.08);
+  border-color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.05);
 }
 
 .card-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 8px;
 }
 
 .profile-name-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .profile-name-row .name {
-  font-size: 13px;
+  font-size: 0.88rem;
   font-weight: 600;
-}
-
-.badge {
-  font-size: 9px;
-  padding: 1px 4px;
-  border-radius: 2px;
-  text-transform: uppercase;
-}
-
-.active-badge {
-  background: #0e639c;
-  color: #fff;
-}
-
-.default-badge {
-  background: #3e3e3e;
-  color: #ccc;
+  color: var(--text-main);
 }
 
 .card-actions {
@@ -577,51 +631,160 @@ onMounted(() => {
 .icon-btn {
   background: transparent;
   border: none;
-  color: var(--vscode-foreground, #aaa);
-  padding: 2px 4px;
+  color: var(--text-muted);
+  padding: 3px 6px;
   cursor: pointer;
   border-radius: 3px;
+  transition: all 0.15s ease;
 }
 
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--hover-bg);
+  color: var(--text-main);
 }
 
 .apply-btn {
-  color: #7ee787;
+  color: var(--success);
+}
+
+.apply-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
 }
 
 .delete-btn:hover {
-  color: #f85149;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
 }
 
 .card-details {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 0.76rem;
 }
 
 .detail-row {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .detail-row .label {
-  color: var(--vscode-descriptionForeground, #888);
+  color: var(--text-muted);
   width: 32px;
+  flex-shrink: 0;
+}
+
+.detail-row .val {
+  color: var(--text-main);
 }
 
 .text-gpg {
-  color: #4ec9b0;
+  color: var(--accent-purple);
+}
+
+/* Audit Trail */
+.audit-trail-section {
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  transition: all 0.2s ease;
+}
+
+.section-toolbar.pointer {
+  cursor: pointer;
+  user-select: none;
+}
+
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+}
+
+.title-with-icon h4 {
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.audit-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.audit-table-wrapper {
+  margin-top: 10px;
+  overflow-x: auto;
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.audit-table th {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--card-border);
+  color: var(--text-muted);
+  background: var(--header-bg);
+  font-weight: 600;
+}
+
+.audit-table td {
+  padding: 7px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--card-border);
+  color: var(--text-main);
+}
+
+.action-tag {
+  background: var(--hover-bg);
+  border: 1px solid var(--card-border);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.type-tag.ssh {
+  color: var(--accent-cyan);
+}
+
+.type-tag.gpg {
+  color: var(--accent-purple);
+}
+
+.type-tag.security_violation {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.result-badge.success {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.result-badge.denied_invalid_nonce {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.empty-audit {
+  padding: 14px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 /* Modal */
 .profile-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -630,55 +793,67 @@ onMounted(() => {
 
 .profile-modal {
   width: 480px;
-  background: var(--vscode-editor-background, #252526);
-  border: 1px solid var(--vscode-dropdown-border, #454545);
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  background: var(--modal-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
+  color: var(--text-main);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .modal-header {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--vscode-panel-border, #333);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--card-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .modal-header h3 {
-  font-size: 13px;
+  font-size: 0.95rem;
+  font-weight: 600;
   margin: 0;
+  color: var(--text-main);
 }
 
 .close-btn {
   background: transparent;
   border: none;
-  color: var(--vscode-foreground, #888);
+  color: var(--text-muted);
   cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.close-btn:hover {
+  color: var(--text-main);
+  background: var(--hover-bg);
 }
 
 .modal-body {
-  padding: 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .form-group label {
-  font-size: 11px;
-  color: var(--vscode-foreground, #ccc);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 .form-row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
 .flex-1 {
@@ -686,18 +861,24 @@ onMounted(() => {
 }
 
 .input-text {
-  background: var(--vscode-input-background, #3c3c3c);
-  border: 1px solid var(--vscode-input-border, #555);
-  color: var(--vscode-input-foreground, #fff);
-  padding: 5px 8px;
-  font-size: 12px;
-  border-radius: 3px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  border-radius: 4px;
   outline: none;
+  transition: all 0.15s ease;
+}
+
+.input-text:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.2);
 }
 
 .input-with-select {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
 .input-with-select .input-text {
@@ -705,113 +886,66 @@ onMounted(() => {
 }
 
 .select-discovered {
-  background: var(--vscode-dropdown-background, #3c3c3c);
-  border: 1px solid var(--vscode-dropdown-border, #555);
-  color: var(--vscode-dropdown-foreground, #fff);
-  font-size: 11px;
-  border-radius: 3px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  border-radius: 4px;
+  padding: 0 8px;
   max-width: 170px;
 }
 
 .check-row {
   flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-main);
   cursor: pointer;
 }
 
 .modal-footer {
-  padding: 10px 14px;
-  border-top: 1px solid var(--vscode-panel-border, #333);
+  padding: 12px 16px;
+  border-top: 1px solid var(--card-border);
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
+  background: var(--header-bg);
 }
 
 .btn {
-  padding: 5px 12px;
-  font-size: 12px;
-  border-radius: 3px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  border-radius: 4px;
   cursor: pointer;
   border: none;
+  font-weight: 500;
 }
 
 .btn.primary {
-  background: var(--vscode-button-background, #0e639c);
-  color: #fff;
-}
-
-.btn.secondary {
-  background: var(--vscode-button-secondaryBackground, #3a3d41);
-  color: #fff;
-}
-
-/* Audit table */
-.audit-trail-section {
-  background: var(--vscode-editor-background, #1e1e1e);
-  border: 1px solid var(--vscode-panel-border, #333);
-  border-radius: 4px;
-  padding: 10px;
-}
-
-.audit-table-wrapper {
-  margin-top: 8px;
-  overflow-x: auto;
-}
-
-.audit-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-}
-
-.audit-table th,
-.audit-table td {
-  padding: 5px 8px;
-  text-align: left;
-  border-bottom: 1px solid var(--vscode-panel-border, #2a2a2a);
-}
-
-.action-tag {
-  background: #333;
-  padding: 1px 4px;
-  border-radius: 2px;
-}
-
-.type-tag.ssh {
-  color: #79c0ff;
-}
-
-.type-tag.gpg {
-  color: #7ee787;
-}
-
-.type-tag.security_violation {
-  color: #f85149;
-  font-weight: bold;
-}
-
-.result-badge.success {
-  color: #7ee787;
-}
-
-.result-badge.denied_invalid_nonce {
-  color: #f85149;
+  background: var(--accent-cyan);
+  color: #070a12;
   font-weight: 600;
 }
 
-.empty-audit {
-  padding: 12px;
-  text-align: center;
-  font-size: 11px;
-  color: var(--vscode-descriptionForeground, #777);
+.btn.primary:hover {
+  filter: brightness(1.1);
+}
+
+.btn.secondary {
+  background: var(--btn-secondary-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+}
+
+.btn.secondary:hover {
+  background: var(--btn-secondary-hover-bg);
 }
 
 .max-w-150 {
