@@ -190,24 +190,53 @@ function connectWebSocket() {
     }
   };
 
+  let writeQueue: string[] = [];
+  let writeRafId: number | null = null;
+  let sniffDebounceTimer: any = null;
+  let pendingSniffText = "";
+
+  function flushWriteQueue() {
+    writeRafId = null;
+    if (!term || writeQueue.length === 0) return;
+    const combined = writeQueue.join("");
+    writeQueue = [];
+    term.write(combined);
+  }
+
+  function queueTerminalOutput(rawText: string) {
+    if (!rawText) return;
+    writeQueue.push(rawText);
+    appendChunk(props.paneId, rawText);
+    recordChunk(props.paneId, rawText);
+    feedOutput(props.paneId, rawText);
+
+    // Batch xterm writes to animation frames for 60fps rendering without blocking main thread
+    if (writeRafId === null) {
+      writeRafId = requestAnimationFrame(flushWriteQueue);
+    }
+
+    // Throttle port sniffing regex check to avoid regex freezing main thread during burst output
+    pendingSniffText += rawText;
+    if (!sniffDebounceTimer) {
+      sniffDebounceTimer = setTimeout(() => {
+        const textToSniff = pendingSniffText;
+        pendingSniffText = "";
+        sniffDebounceTimer = null;
+        sniffTerminalPorts(textToSniff);
+      }, 100);
+    }
+  }
+
   ws.onmessage = (event) => {
     if (!term) return;
     try {
       const msg = JSON.parse(event.data);
       if (msg.type === "output" && typeof msg.data === "string") {
-        term.write(msg.data);
-        appendChunk(props.paneId, msg.data);
-        recordChunk(props.paneId, msg.data);
-        feedOutput(props.paneId, msg.data);
-        sniffTerminalPorts(msg.data);
+        queueTerminalOutput(msg.data);
       }
     } catch {
       // Raw string fallback
-      term.write(event.data);
-      appendChunk(props.paneId, String(event.data));
-      recordChunk(props.paneId, String(event.data));
-      feedOutput(props.paneId, String(event.data));
-      sniffTerminalPorts(String(event.data));
+      queueTerminalOutput(String(event.data));
     }
   };
 
@@ -421,6 +450,14 @@ onBeforeUnmount(() => {
   if (resizeDebounceTimer) {
     clearTimeout(resizeDebounceTimer);
     resizeDebounceTimer = null;
+  }
+  if (writeRafId !== null) {
+    cancelAnimationFrame(writeRafId);
+    writeRafId = null;
+  }
+  if (sniffDebounceTimer) {
+    clearTimeout(sniffDebounceTimer);
+    sniffDebounceTimer = null;
   }
   if (themeObserver) {
     themeObserver.disconnect();
