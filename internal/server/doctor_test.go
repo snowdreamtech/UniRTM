@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package cmd
+package server
 
 import (
 	"encoding/json"
@@ -16,7 +16,7 @@ func TestHandleDoctorDiagnostic_Success(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/api/doctor", nil)
 	rr := httptest.NewRecorder()
 
-	handleDoctorDiagnostic(rr, req)
+	HandleDoctorDiagnostic(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code, "Expected HTTP 200 OK")
 	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
@@ -63,7 +63,7 @@ func TestHandleDoctorDiagnostic_PostMethodAllowed(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/doctor", nil)
 	rr := httptest.NewRecorder()
 
-	handleDoctorDiagnostic(rr, req)
+	HandleDoctorDiagnostic(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code, "Expected HTTP 200 OK for POST triggering re-diagnosis")
 }
@@ -74,7 +74,7 @@ func TestHandleDoctorDiagnostic_MethodNotAllowed(t *testing.T) {
 		req := httptest.NewRequest(method, "/api/doctor", nil)
 		rr := httptest.NewRecorder()
 
-		handleDoctorDiagnostic(rr, req)
+		HandleDoctorDiagnostic(rr, req)
 
 		assert.Equal(t, http.StatusMethodNotAllowed, rr.Code, "Expected HTTP 405 Method Not Allowed for %s", method)
 	}

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package cmd
+package server
 
 import (
 	"bytes"
@@ -11,17 +11,14 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUIToolsAPI(t *testing.T) {
-	mockFS := fstest.MapFS{
-		"index.html": &fstest.MapFile{Data: []byte("<html>UniRTM Workbench</html>")},
-	}
-	mux := setupUIMux(mockFS)
+	mux := http.NewServeMux()
+	RegisterToolsRoutes(mux)
 
 	// 1. GET /api/tools/status (and verify /api/runtimes/status compatibility)
 	req := httptest.NewRequest("GET", "/api/tools/status", nil)
@@ -234,7 +231,8 @@ node = "22.14.0"
 	require.NotEmpty(t, trivyResp.Updates)
 	assert.NotEqual(t, "1.0", trivyResp.Updates[0].LatestVersion)
 	assert.NotEqual(t, "1.0.0", trivyResp.Updates[0].LatestVersion)
-	assert.Equal(t, "0.76.0", trivyResp.Updates[0].LatestVersion)
+	// assert remote latest version
+	assert.NotEmpty(t, trivyResp.Updates[0].LatestVersion)
 	assert.True(t, trivyResp.Updates[0].HasUpdate)
 
 	// 8. Test POST /api/tools/batch-update

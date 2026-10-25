@@ -985,25 +985,8 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/network/proxy/test", handleTestNetworkProxy)
 	mux.HandleFunc("/api/network/ping", handlePingNetwork)
 
-	// Tools Management APIs (Canonical)
-	mux.HandleFunc("/api/tools/status", handleGetToolsStatus)
-	mux.HandleFunc("/api/tools/remote", handleGetToolsRemote)
-	mux.HandleFunc("/api/tools/use", handleUseTool)
-	mux.HandleFunc("/api/tools/remove", handleRemoveTool)
-	mux.HandleFunc("/api/tools/pin", handlePinTool)
-	mux.HandleFunc("/api/tools/check-updates", handleCheckToolsUpdates)
-	mux.HandleFunc("/api/tools/batch-update", handleBatchUpdateTools)
-	mux.HandleFunc("/api/tools/migrate-legacy", handleMigrateLegacyTool)
-
-	// Backward Compatibility Aliases (/api/runtimes/*)
-	mux.HandleFunc("/api/runtimes/status", handleGetToolsStatus)
-	mux.HandleFunc("/api/runtimes/remote", handleGetToolsRemote)
-	mux.HandleFunc("/api/runtimes/use", handleUseTool)
-	mux.HandleFunc("/api/runtimes/remove", handleRemoveTool)
-	mux.HandleFunc("/api/runtimes/pin", handlePinRuntime)
-	mux.HandleFunc("/api/runtimes/check-updates", handleCheckRuntimesUpdates)
-	mux.HandleFunc("/api/runtimes/batch-update", handleBatchUpdateRuntimes)
-	mux.HandleFunc("/api/runtimes/migrate-legacy", handleMigrateLegacyTool)
+	// ─── Tools & Runtimes APIs ───────────────────────────────────────────────
+	server.RegisterToolsRoutes(mux)
 
 	// Tasks Management APIs
 	mux.HandleFunc("/api/tasks", func(w http.ResponseWriter, r *http.Request) {
@@ -1053,15 +1036,9 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/hooks/install", handleInstallHooks)
 	mux.HandleFunc("/api/hooks/run", handleRunHook)
 
-	// Quality Guard & Harness Management APIs
-	mux.HandleFunc("/api/guard/status", handleGuardStatus)
-	mux.HandleFunc("/api/guard/run", handleGuardRun)
-	mux.HandleFunc("/api/guard/rules", handleGuardRules)
-	mux.HandleFunc("/api/guard/slots", handleGuardSlots)
-	mux.HandleFunc("/api/guard/toml", handleGuardToml)
-
-	// System Doctor & Health Diagnostics API
-	mux.HandleFunc("/api/doctor", handleDoctorDiagnostic)
+	// ─── Quality Guard & Doctor Diagnostics ──────────────────────────────────
+	server.RegisterGuardRoutes(mux)
+	server.RegisterDoctorRoutes(mux)
 
 	// Version Aliases Management APIs
 	mux.HandleFunc("/api/aliases", func(w http.ResponseWriter, r *http.Request) {
@@ -1173,10 +1150,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/git/clean", handleGitClean)
 	mux.HandleFunc("/api/git/pull", handleGitPull)
 	mux.HandleFunc("/api/git/fetch", handleGitFetch)
-	mux.HandleFunc("/api/git/credential-pending", handleGitCredentialPending)
-	mux.HandleFunc("/api/git/credential-respond", handleGitCredentialRespond)
-	mux.HandleFunc("/api/git/credential-clear-cache", handleGitCredentialClearCache)
-	mux.HandleFunc("/api/git/credential-internal-ask", handleGitCredentialInternalAsk)
+	server.RegisterCredentialRoutes(mux)
 
 	// ─── Port Forwarding API Handlers ──────────────────────────────────────────
 	mux.HandleFunc("/api/ports/list", handlePortsList)
@@ -4025,7 +3999,7 @@ func runGitCommandInDir(dir string, args ...string) (string, error) {
 	}
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
-	if askpassPath := getOrCreateAskPassHelper(); askpassPath != "" {
+	if askpassPath := server.GetOrCreateAskPassHelper(); askpassPath != "" {
 		cmd.Env = append(os.Environ(),
 			"GIT_ASKPASS="+askpassPath,
 			"SSH_ASKPASS="+askpassPath,

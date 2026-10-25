@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package cmd
+package server
 
 import (
 	"crypto/rand"
@@ -153,7 +153,7 @@ func (c *credentialCoordinator) GetPendingRequest() *GitCredentialRequest {
 }
 
 // HTTP API: GET /api/git/credential-pending
-func handleGitCredentialPending(w http.ResponseWriter, r *http.Request) {
+func HandleGitCredentialPending(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -167,7 +167,7 @@ func handleGitCredentialPending(w http.ResponseWriter, r *http.Request) {
 }
 
 // HTTP API: POST /api/git/credential-respond
-func handleGitCredentialRespond(w http.ResponseWriter, r *http.Request) {
+func HandleGitCredentialRespond(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -191,7 +191,7 @@ func handleGitCredentialRespond(w http.ResponseWriter, r *http.Request) {
 }
 
 // HTTP API: POST /api/git/credential-clear-cache
-func handleGitCredentialClearCache(w http.ResponseWriter, r *http.Request) {
+func HandleGitCredentialClearCache(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -209,14 +209,17 @@ var (
 	askpassHelperOnce sync.Once
 )
 
-// getOrCreateAskPassHelper creates a standalone lightweight POSIX shell script
+// ActivePort stores the bound listening port of the Workbench server.
+var ActivePort int = 5173
+
+// GetOrCreateAskPassHelper creates a standalone lightweight POSIX shell script
 // that relays Git / SSH passphrase prompts to UniRTM's broker HTTP endpoint.
-func getOrCreateAskPassHelper() string {
+func GetOrCreateAskPassHelper() string {
 	askpassHelperOnce.Do(func() {
 		tmpDir := os.TempDir()
 		scriptFile := filepath.Join(tmpDir, fmt.Sprintf("unirtm-askpass-%d.sh", os.Getpid()))
 
-		targetPort := uiPort
+		targetPort := ActivePort
 		if targetPort <= 0 {
 			targetPort = 5173
 		}
@@ -239,7 +242,7 @@ fi
 
 // HTTP API: POST /api/git/credential-internal-ask
 // Invoked by the askpass helper script when Git or SSH prompts for password.
-func handleGitCredentialInternalAsk(w http.ResponseWriter, r *http.Request) {
+func HandleGitCredentialInternalAsk(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -275,4 +278,16 @@ func handleGitCredentialInternalAsk(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	_, _ = w.Write([]byte(pass))
+}
+
+// RegisterCredentialRoutes registers Git credential broker endpoints.
+func RegisterCredentialRoutes(mux *http.ServeMux) {
+mux.HandleFunc("/api/credentials/pending", HandleGitCredentialPending)
+mux.HandleFunc("/api/credentials/respond", HandleGitCredentialRespond)
+mux.HandleFunc("/api/credentials/clear", HandleGitCredentialClearCache)
+mux.HandleFunc("/api/credentials/ask", HandleGitCredentialInternalAsk)
+mux.HandleFunc("/api/git/credential-pending", HandleGitCredentialPending)
+mux.HandleFunc("/api/git/credential-respond", HandleGitCredentialRespond)
+mux.HandleFunc("/api/git/credential-clear-cache", HandleGitCredentialClearCache)
+mux.HandleFunc("/api/git/credential-internal-ask", HandleGitCredentialInternalAsk)
 }

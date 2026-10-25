@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package cmd
+package server
 
 import (
 	"encoding/json"
@@ -15,7 +15,7 @@ func TestUIGuard_Endpoints(t *testing.T) {
 	// 1. Test GET /api/guard/rules
 	reqRules := httptest.NewRequest("GET", "/api/guard/rules", nil)
 	rrRules := httptest.NewRecorder()
-	handleGuardRules(rrRules, reqRules)
+	HandleGuardRules(rrRules, reqRules)
 
 	if rrRules.Code != http.StatusOK {
 		t.Fatalf("Expected 200 on /api/guard/rules, got %d", rrRules.Code)
@@ -36,7 +36,7 @@ func TestUIGuard_Endpoints(t *testing.T) {
 	// 2. Test GET /api/guard/status?mode=changed
 	reqStatus := httptest.NewRequest("GET", "/api/guard/status?mode=changed", nil)
 	rrStatus := httptest.NewRecorder()
-	handleGuardStatus(rrStatus, reqStatus)
+	HandleGuardStatus(rrStatus, reqStatus)
 
 	if rrStatus.Code != http.StatusOK {
 		t.Fatalf("Expected 200 on /api/guard/status, got %d", rrStatus.Code)
@@ -46,7 +46,7 @@ func TestUIGuard_Endpoints(t *testing.T) {
 	bodyRun := strings.NewReader(`{"mode":"staged","fix":false,"files":[]}`)
 	reqRun := httptest.NewRequest("POST", "/api/guard/run", bodyRun)
 	rrRun := httptest.NewRecorder()
-	handleGuardRun(rrRun, reqRun)
+	HandleGuardRun(rrRun, reqRun)
 
 	if rrRun.Code != http.StatusOK {
 		t.Fatalf("Expected 200 on /api/guard/run, got %d", rrRun.Code)
@@ -55,7 +55,7 @@ func TestUIGuard_Endpoints(t *testing.T) {
 	// 4. Test GET /api/guard/slots
 	reqSlots := httptest.NewRequest("GET", "/api/guard/slots", nil)
 	rrSlots := httptest.NewRecorder()
-	handleGuardSlots(rrSlots, reqSlots)
+	HandleGuardSlots(rrSlots, reqSlots)
 	if rrSlots.Code != http.StatusOK {
 		t.Fatalf("Expected 200 on /api/guard/slots, got %d", rrSlots.Code)
 	}
@@ -63,7 +63,7 @@ func TestUIGuard_Endpoints(t *testing.T) {
 	// 5. Test GET /api/guard/toml
 	reqToml := httptest.NewRequest("GET", "/api/guard/toml", nil)
 	rrToml := httptest.NewRecorder()
-	handleGuardToml(rrToml, reqToml)
+	HandleGuardToml(rrToml, reqToml)
 	if rrToml.Code != http.StatusOK {
 		t.Fatalf("Expected 200 on /api/guard/toml, got %d", rrToml.Code)
 	}

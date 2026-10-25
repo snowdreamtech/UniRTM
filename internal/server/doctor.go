@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package cmd
+package server
 
 import (
 	"context"
@@ -134,7 +134,7 @@ type DoctorSuggestion struct {
 	Actionable bool   `json:"actionable"`
 }
 
-func handleDoctorDiagnostic(w http.ResponseWriter, r *http.Request) {
+func HandleDoctorDiagnostic(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet && r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -142,7 +142,7 @@ func handleDoctorDiagnostic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	report, err := collectDoctorReport(r.Context())
+	report, err := CollectDoctorReport(r.Context())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -152,7 +152,7 @@ func handleDoctorDiagnostic(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(report)
 }
 
-func collectDoctorReport(ctx context.Context) (*DoctorDiagnosticReport, error) {
+func CollectDoctorReport(ctx context.Context) (*DoctorDiagnosticReport, error) {
 	cfg, _ := config.LoadFull()
 
 	cwd, _ := os.Getwd()
@@ -595,4 +595,10 @@ func collectDoctorReport(ctx context.Context) (*DoctorDiagnosticReport, error) {
 		Health:      health,
 		Suggestions: suggestions,
 	}, nil
+}
+
+// RegisterDoctorRoutes registers Doctor diagnostic HTTP endpoints.
+func RegisterDoctorRoutes(mux *http.ServeMux) {
+mux.HandleFunc("/api/doctor/diagnostic", HandleDoctorDiagnostic)
+mux.HandleFunc("/api/doctor", HandleDoctorDiagnostic)
 }

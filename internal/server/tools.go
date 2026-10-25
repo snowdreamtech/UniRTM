@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package cmd
+package server
 
 import (
 	"encoding/json"
@@ -60,7 +60,7 @@ var coreRuntimes = []struct {
 	{"ruby", "Ruby", "Dynamic, open source language with a focus on simplicity", "https://www.ruby-lang.org"},
 }
 
-func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
+func HandleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := r.Context()
 
@@ -335,7 +335,7 @@ func getLockfileVersions(tool string) []string {
 	return res
 }
 
-func handleGetToolsRemote(w http.ResponseWriter, r *http.Request) {
+func HandleGetToolsRemote(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	tool := strings.TrimSpace(r.URL.Query().Get("tool"))
 	if tool == "" {
@@ -508,7 +508,7 @@ func getFallbackRemoteVersions(tool string) []string {
 	}
 }
 
-func handleUseTool(w http.ResponseWriter, r *http.Request) {
+func HandleUseTool(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -562,7 +562,7 @@ func handleUseTool(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handleRemoveTool(w http.ResponseWriter, r *http.Request) {
+func HandleRemoveTool(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -608,7 +608,7 @@ func handleRemoveTool(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handleMigrateLegacyTool(w http.ResponseWriter, r *http.Request) {
+func HandleMigrateLegacyTool(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -653,7 +653,7 @@ func handleMigrateLegacyTool(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handlePinTool(w http.ResponseWriter, r *http.Request) {
+func HandlePinTool(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -729,7 +729,7 @@ type CheckUpdatesResponse struct {
 	PinnedCount     int                     `json:"pinned_count"`
 }
 
-func handleCheckToolsUpdates(w http.ResponseWriter, r *http.Request) {
+func HandleCheckToolsUpdates(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	targetTool := strings.TrimSpace(r.URL.Query().Get("tool"))
 
@@ -870,7 +870,7 @@ func handleCheckToolsUpdates(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handleBatchUpdateTools(w http.ResponseWriter, r *http.Request) {
+func HandleBatchUpdateTools(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -951,12 +951,32 @@ func handleBatchUpdateTools(w http.ResponseWriter, r *http.Request) {
 
 // Backward-compatible function aliases
 var (
-	handleGetRuntimesStatus    = handleGetToolsStatus
-	handleGetRuntimesRemote    = handleGetToolsRemote
-	handleUseRuntime           = handleUseTool
-	handleRemoveRuntime        = handleRemoveTool
-	handleMigrateLegacyRuntime = handleMigrateLegacyTool
-	handlePinRuntime           = handlePinTool
-	handleCheckRuntimesUpdates = handleCheckToolsUpdates
-	handleBatchUpdateRuntimes  = handleBatchUpdateTools
+	HandleGetRuntimesStatus    = HandleGetToolsStatus
+	HandleGetRuntimesRemote    = HandleGetToolsRemote
+	HandleUseRuntime           = HandleUseTool
+	HandleRemoveRuntime        = HandleRemoveTool
+	HandleMigrateLegacyRuntime = HandleMigrateLegacyTool
+	HandlePinRuntime           = HandlePinTool
+	HandleCheckRuntimesUpdates = HandleCheckToolsUpdates
+	HandleBatchUpdateRuntimes  = HandleBatchUpdateTools
 )
+
+// RegisterToolsRoutes registers tools and runtimes management HTTP endpoints.
+func RegisterToolsRoutes(mux *http.ServeMux) {
+mux.HandleFunc("/api/tools/status", HandleGetToolsStatus)
+mux.HandleFunc("/api/tools/remote", HandleGetToolsRemote)
+mux.HandleFunc("/api/tools/use", HandleUseTool)
+mux.HandleFunc("/api/tools/remove", HandleRemoveTool)
+mux.HandleFunc("/api/tools/pin", HandlePinTool)
+mux.HandleFunc("/api/tools/check-updates", HandleCheckToolsUpdates)
+mux.HandleFunc("/api/tools/batch-update", HandleBatchUpdateTools)
+mux.HandleFunc("/api/tools/migrate-legacy", HandleMigrateLegacyTool)
+mux.HandleFunc("/api/runtimes/status", HandleGetToolsStatus)
+mux.HandleFunc("/api/runtimes/remote", HandleGetToolsRemote)
+mux.HandleFunc("/api/runtimes/use", HandleUseTool)
+mux.HandleFunc("/api/runtimes/remove", HandleRemoveTool)
+mux.HandleFunc("/api/runtimes/pin", HandlePinRuntime)
+mux.HandleFunc("/api/runtimes/check-updates", HandleCheckRuntimesUpdates)
+mux.HandleFunc("/api/runtimes/batch-update", HandleBatchUpdateRuntimes)
+mux.HandleFunc("/api/runtimes/migrate-legacy", HandleMigrateLegacyTool)
+}

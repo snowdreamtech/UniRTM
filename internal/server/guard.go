@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package cmd
+package server
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/guard"
 )
 
-func handleGuardStatus(w http.ResponseWriter, r *http.Request) {
+func HandleGuardStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -94,7 +94,7 @@ func handleGuardStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handleGuardRun(w http.ResponseWriter, r *http.Request) {
+func HandleGuardRun(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -316,7 +316,7 @@ func buildStandardCliLogs(mode string, scannedFiles []string, res *guard.Pipelin
 	return logs
 }
 
-func handleGuardRules(w http.ResponseWriter, r *http.Request) {
+func HandleGuardRules(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -400,7 +400,7 @@ func handleGuardRules(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handleGuardSlots(w http.ResponseWriter, r *http.Request) {
+func HandleGuardSlots(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -477,7 +477,7 @@ func handleGuardSlots(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleGuardToml(w http.ResponseWriter, r *http.Request) {
+func HandleGuardToml(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -521,4 +521,13 @@ func handleGuardToml(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
 	}
+}
+
+// RegisterGuardRoutes registers Quality Guard HTTP endpoints.
+func RegisterGuardRoutes(mux *http.ServeMux) {
+mux.HandleFunc("/api/guard/status", HandleGuardStatus)
+mux.HandleFunc("/api/guard/run", HandleGuardRun)
+mux.HandleFunc("/api/guard/rules", HandleGuardRules)
+mux.HandleFunc("/api/guard/slots", HandleGuardSlots)
+mux.HandleFunc("/api/guard/toml", HandleGuardToml)
 }

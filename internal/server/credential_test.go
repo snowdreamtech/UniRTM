@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package cmd
+package server
 
 import (
 	"bytes"
@@ -104,7 +104,7 @@ func TestCredentialHTTPHandlers(t *testing.T) {
 	// 1. GET /api/git/credential-pending when empty
 	req := httptest.NewRequest(http.MethodGet, "/api/git/credential-pending", nil)
 	rec := httptest.NewRecorder()
-	handleGitCredentialPending(rec, req)
+	HandleGitCredentialPending(rec, req)
 
 	assert.Equal(t, http.StatusOK, rec.Code)
 	var pendingResp map[string]interface{}
@@ -116,7 +116,7 @@ func TestCredentialHTTPHandlers(t *testing.T) {
 	// 2. POST /api/git/credential-clear-cache
 	clearReq := httptest.NewRequest(http.MethodPost, "/api/git/credential-clear-cache", nil)
 	clearRec := httptest.NewRecorder()
-	handleGitCredentialClearCache(clearRec, clearReq)
+	HandleGitCredentialClearCache(clearRec, clearReq)
 	assert.Equal(t, http.StatusOK, clearRec.Code)
 
 	// 3. POST /api/git/credential-respond with non-existent ID
@@ -126,14 +126,14 @@ func TestCredentialHTTPHandlers(t *testing.T) {
 	})
 	respReq := httptest.NewRequest(http.MethodPost, "/api/git/credential-respond", bytes.NewReader(bodyBytes))
 	respRec := httptest.NewRecorder()
-	handleGitCredentialRespond(respRec, respReq)
+	HandleGitCredentialRespond(respRec, respReq)
 	assert.Equal(t, http.StatusOK, respRec.Code)
 	var respData map[string]interface{}
 	_ = json.Unmarshal(respRec.Body.Bytes(), &respData)
 	assert.False(t, respData["success"].(bool))
 
-	// 4. Test getOrCreateAskPassHelper
-	helperPath := getOrCreateAskPassHelper()
+	// 4. Test GetOrCreateAskPassHelper
+	helperPath := GetOrCreateAskPassHelper()
 	assert.NotEmpty(t, helperPath)
 
 	// 5. POST /api/git/credential-internal-ask with cache hit
@@ -144,7 +144,7 @@ func TestCredentialHTTPHandlers(t *testing.T) {
 		bytes.NewBufferString("Enter passphrase for key '/home/user/.ssh/id_rsa':"),
 	)
 	internalRec := httptest.NewRecorder()
-	handleGitCredentialInternalAsk(internalRec, internalReq)
+	HandleGitCredentialInternalAsk(internalRec, internalReq)
 	assert.Equal(t, http.StatusOK, internalRec.Code)
 	assert.Equal(t, "auto_cached_secret", internalRec.Body.String())
 }
