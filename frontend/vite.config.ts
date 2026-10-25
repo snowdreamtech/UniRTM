@@ -8168,18 +8168,19 @@ print(json.dumps({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          if (
+            id.includes("node_modules/vue/") ||
+            id.includes("node_modules/@vue/") ||
+            id.includes("node_modules/vue-router/") ||
+            id.includes("vite/preload-helper")
+          ) {
+            return "vendor-core";
+          }
           if (id.includes("monaco-editor") && !id.includes("worker")) {
             return "vendor-monaco";
           }
           if (id.includes("node_modules/@xterm") || id.includes("node_modules/xterm")) {
             return "vendor-terminal";
-          }
-          if (
-            id.includes("node_modules/vue/") ||
-            id.includes("node_modules/@vue/") ||
-            id.includes("node_modules/vue-router/")
-          ) {
-            return "vendor-core";
           }
           if (id.includes("node_modules/@vscode/codicons")) {
             return "vendor-codicons";
