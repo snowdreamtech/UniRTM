@@ -4,10 +4,12 @@
 package server
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net"
 	"net/http"
@@ -15,8 +17,10 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -299,7 +303,38 @@ func handlePlugins(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// RegisterStaticSPARoutes mounts the embedded frontend SPA filesystem.
+var gzipWriterPool = sync.Pool{
+	New: func() interface{} {
+		gz, _ := gzip.NewWriterLevel(io.Discard, gzip.BestSpeed)
+		return gz
+	},
+}
+
+type gzipResponseWriter struct {
+	http.ResponseWriter
+	writer *gzip.Writer
+}
+
+func (g *gzipResponseWriter) Write(b []byte) (int, error) {
+	return g.writer.Write(b)
+}
+
+func (g *gzipResponseWriter) WriteHeader(code int) {
+	g.Header().Del("Content-Length")
+	g.ResponseWriter.WriteHeader(code)
+}
+
+func isCompressibleExtension(path string) bool {
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".js", ".mjs", ".css", ".html", ".svg", ".json", ".map", ".txt", ".xml", ".wasm":
+		return true
+	default:
+		return false
+	}
+}
+
+// RegisterStaticSPARoutes mounts the embedded frontend SPA filesystem with gzip compression and caching headers.
 func RegisterStaticSPARoutes(mux *http.ServeMux, distFS fs.FS) {
 	fileServer := http.FileServer(http.FS(distFS))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -313,14 +348,40 @@ func RegisterStaticSPARoutes(mux *http.ServeMux, distFS fs.FS) {
 			path = "index.html"
 		}
 
-		// If static file exists, serve it; otherwise fallback to index.html (SPA routing)
-		if _, err := fs.Stat(distFS, path); err == nil {
-			fileServer.ServeHTTP(w, r)
+		targetPath := path
+		if _, err := fs.Stat(distFS, path); err != nil {
+			// Fallback to index.html for SPA client-side routes
+			targetPath = "index.html"
+			r.URL.Path = "/"
+		}
+
+		// Apply caching headers based on path pattern
+		if strings.HasPrefix(targetPath, "assets/") {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else {
+			w.Header().Set("Cache-Control", "no-cache")
+		}
+
+		// Check if client supports gzip and content is compressible
+		acceptsGzip := strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+		if acceptsGzip && isCompressibleExtension(targetPath) {
+			w.Header().Set("Content-Encoding", "gzip")
+			w.Header().Del("Content-Length")
+
+			gz := gzipWriterPool.Get().(*gzip.Writer)
+			defer gzipWriterPool.Put(gz)
+
+			gz.Reset(w)
+			defer gz.Close()
+
+			gzw := &gzipResponseWriter{
+				ResponseWriter: w,
+				writer:         gz,
+			}
+			fileServer.ServeHTTP(gzw, r)
 			return
 		}
 
-		// Fallback to index.html for SPA client-side routes
-		r.URL.Path = "/"
 		fileServer.ServeHTTP(w, r)
 	})
 }

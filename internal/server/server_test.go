@@ -21,25 +21,7 @@ func TestUIStaticAndAPIHandler(t *testing.T) {
 		t.Fatalf("GetFS failed: %v", err)
 	}
 
-	mux := http.NewServeMux()
-
-	// API
-	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ready"}`))
-	})
-
-	// Static SPA fallback
-	fileServer := http.FileServer(http.FS(distFS))
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/") {
-			http.NotFound(w, r)
-			return
-		}
-		r.URL.Path = "/"
-		fileServer.ServeHTTP(w, r)
-	})
+	mux := SetupUIMux(distFS)
 
 	// Test API status endpoint
 	req := httptest.NewRequest("GET", "/api/status", nil)
@@ -53,14 +35,27 @@ func TestUIStaticAndAPIHandler(t *testing.T) {
 		t.Errorf("Expected body to contain 'ready', got %s", rr.Body.String())
 	}
 
-	// Test root route serving SPA
+	// Test root route serving SPA with Cache-Control: no-cache
 	reqRoot := httptest.NewRequest("GET", "/", nil)
 	rrRoot := httptest.NewRecorder()
 	mux.ServeHTTP(rrRoot, reqRoot)
 
-	// Since dist contains index.html, it should return 200 or html
-	if rrRoot.Code != http.StatusOK {
-		t.Logf("Root returned status %d", rrRoot.Code)
+	if rrRoot.Code == http.StatusOK {
+		if cacheCtrl := rrRoot.Header().Get("Cache-Control"); cacheCtrl != "no-cache" {
+			t.Errorf("Expected Cache-Control: no-cache for index.html, got %q", cacheCtrl)
+		}
+	}
+
+	// Test root route with Accept-Encoding: gzip
+	reqGzip := httptest.NewRequest("GET", "/", nil)
+	reqGzip.Header.Set("Accept-Encoding", "gzip, deflate, br")
+	rrGzip := httptest.NewRecorder()
+	mux.ServeHTTP(rrGzip, reqGzip)
+
+	if rrGzip.Code == http.StatusOK {
+		if enc := rrGzip.Header().Get("Content-Encoding"); enc != "gzip" {
+			t.Errorf("Expected Content-Encoding: gzip for compressible route, got %q", enc)
+		}
 	}
 }
 
