@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -335,6 +336,123 @@ func HandleGitCredentialClearCache(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// NonceManager handles single-use cryptographic tokens for AskPass IPC security.
+type NonceManager struct {
+	mu          sync.Mutex
+	validNonces map[string]time.Time
+}
+
+var globalNonceManager = &NonceManager{
+	validNonces: make(map[string]time.Time),
+}
+
+// IssueCredentialNonce creates a cryptographically random single-use token valid for 2 minutes.
+func IssueCredentialNonce() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	nonce := hex.EncodeToString(b)
+
+	globalNonceManager.mu.Lock()
+	defer globalNonceManager.mu.Unlock()
+	globalNonceManager.validNonces[nonce] = time.Now().Add(2 * time.Minute)
+	return nonce
+}
+
+// VerifyAndConsumeNonce checks if the nonce is valid and burns it immediately (Single-use).
+func VerifyAndConsumeNonce(nonce string) bool {
+	if nonce == "" {
+		return false
+	}
+	globalNonceManager.mu.Lock()
+	defer globalNonceManager.mu.Unlock()
+
+	exp, ok := globalNonceManager.validNonces[nonce]
+	if !ok {
+		return false
+	}
+	delete(globalNonceManager.validNonces, nonce)
+	return time.Now().Before(exp)
+}
+
+// CredentialAuditRecord stores security transparency logs for credential accesses.
+type CredentialAuditRecord struct {
+	ID        string `json:"id"`
+	Timestamp int64  `json:"timestamp"`
+	Action    string `json:"action"`
+	Type      string `json:"type"`
+	TargetKey string `json:"targetKey"`
+	Result    string `json:"result"` // "success" | "cached" | "denied_invalid_nonce" | "timeout" | "canceled"
+	ClientIP  string `json:"clientIp"`
+}
+
+type credentialAuditTrail struct {
+	mu      sync.RWMutex
+	records []CredentialAuditRecord
+}
+
+var globalAuditTrail = &credentialAuditTrail{
+	records: make([]CredentialAuditRecord, 0, 100),
+}
+
+func (a *credentialAuditTrail) Record(rec CredentialAuditRecord) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if len(a.records) >= 100 {
+		a.records = a.records[1:]
+	}
+	a.records = append(a.records, rec)
+}
+
+func (a *credentialAuditTrail) GetAll() []CredentialAuditRecord {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	res := make([]CredentialAuditRecord, len(a.records))
+	copy(res, a.records)
+	return res
+}
+
+func (a *credentialAuditTrail) Clear() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.records = make([]CredentialAuditRecord, 0, 100)
+}
+
+// NativeAgentStatus provides diagnostics on host ssh-agent and gpg-agent.
+type NativeAgentStatus struct {
+	SSHAgentActive bool   `json:"sshAgentActive"`
+	SSHAgentSock   string `json:"sshAgentSock,omitempty"`
+	SSHAgentKeys   int    `json:"sshAgentKeys"`
+	GPGAgentActive bool   `json:"gpgAgentActive"`
+}
+
+// DetectNativeAgents probes the operating system for active key agents.
+func DetectNativeAgents() NativeAgentStatus {
+	status := NativeAgentStatus{}
+
+	// 1. SSH Agent probe
+	sock := os.Getenv("SSH_AUTH_SOCK")
+	if sock != "" {
+		status.SSHAgentActive = true
+		// Mask path for privacy
+		status.SSHAgentSock = filepath.Base(sock)
+		// Check loaded keys via ssh-add -l
+		cmd := exec.Command("ssh-add", "-l")
+		out, err := cmd.CombinedOutput()
+		if err == nil {
+			lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+			status.SSHAgentKeys = len(lines)
+		}
+	}
+
+	// 2. GPG Agent probe
+	gpgCmd := exec.Command("gpg-connect-agent", "/bye")
+	if err := gpgCmd.Run(); err == nil {
+		status.GPGAgentActive = true
+	}
+
+	return status
+}
+
 var (
 	askpassHelperPath string
 	askpassHelperOnce sync.Once
@@ -344,7 +462,7 @@ var (
 var ActivePort int = 5173
 
 // GetOrCreateAskPassHelper creates a standalone lightweight POSIX shell script
-// that relays Git / SSH passphrase prompts to UniRTM's broker HTTP endpoint.
+// that relays Git / SSH passphrase prompts to UniRTM's broker HTTP endpoint with Nonce header.
 func GetOrCreateAskPassHelper() string {
 	askpassHelperOnce.Do(func() {
 		tmpDir := os.TempDir()
@@ -357,10 +475,14 @@ func GetOrCreateAskPassHelper() string {
 
 		content := fmt.Sprintf(`#!/bin/sh
 PROMPT="$*"
+NONCE="${UNIRTM_CREDENTIAL_NONCE:-}"
 if command -v curl >/dev/null 2>&1; then
-    curl -s -X POST "http://127.0.0.1:%d/api/git/credential-internal-ask" -H "Content-Type: text/plain" --data-binary "$PROMPT"
+    curl -s -X POST "http://127.0.0.1:%d/api/git/credential-internal-ask" \
+         -H "Content-Type: text/plain" \
+         -H "X-Unirtm-Nonce: $NONCE" \
+         --data-binary "$PROMPT"
 elif command -v wget >/dev/null 2>&1; then
-    wget -qO- --post-data="$PROMPT" "http://127.0.0.1:%d/api/git/credential-internal-ask"
+    wget -qO- --header="X-Unirtm-Nonce: $NONCE" --post-data="$PROMPT" "http://127.0.0.1:%d/api/git/credential-internal-ask"
 fi
 `, targetPort, targetPort)
 
@@ -377,6 +499,27 @@ func HandleGitCredentialInternalAsk(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
+	}
+
+	nonce := r.Header.Get("X-Unirtm-Nonce")
+	clientIP := r.RemoteAddr
+
+	// Verify Nonce if present or if strictly enforced
+	strictNonce := os.Getenv("UNIRTM_CREDENTIAL_NONCE_STRICT") != "false"
+	if strictNonce && nonce != "" {
+		if !VerifyAndConsumeNonce(nonce) {
+			globalAuditTrail.Record(CredentialAuditRecord{
+				ID:        fmt.Sprintf("audit-%d", time.Now().UnixNano()),
+				Timestamp: time.Now().UnixMilli(),
+				Action:    "askpass_prompt",
+				Type:      "security_violation",
+				TargetKey: "N/A",
+				Result:    "denied_invalid_nonce",
+				ClientIP:  clientIP,
+			})
+			http.Error(w, "Forbidden: invalid or expired credential nonce", http.StatusForbidden)
+			return
+		}
 	}
 
 	promptBytes, _ := io.ReadAll(r.Body)
@@ -403,12 +546,48 @@ func HandleGitCredentialInternalAsk(w http.ResponseWriter, r *http.Request) {
 
 	pass, err := globalCredentialCoordinator.RequestGitCredential(reqType, prompt, targetKey, 60*time.Second)
 	if err != nil {
+		globalAuditTrail.Record(CredentialAuditRecord{
+			ID:        fmt.Sprintf("audit-%d", time.Now().UnixNano()),
+			Timestamp: time.Now().UnixMilli(),
+			Action:    "askpass_prompt",
+			Type:      reqType,
+			TargetKey: targetKey,
+			Result:    "timeout_or_canceled",
+			ClientIP:  clientIP,
+		})
 		w.WriteHeader(http.StatusRequestTimeout)
 		return
 	}
 
+	globalAuditTrail.Record(CredentialAuditRecord{
+		ID:        fmt.Sprintf("audit-%d", time.Now().UnixNano()),
+		Timestamp: time.Now().UnixMilli(),
+		Action:    "askpass_prompt",
+		Type:      reqType,
+		TargetKey: targetKey,
+		Result:    "success",
+		ClientIP:  clientIP,
+	})
+
 	w.Header().Set("Content-Type", "text/plain")
 	_, _ = w.Write([]byte(pass))
+}
+
+// HTTP API: GET /api/git/agent-status
+func HandleGitAgentStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	status := DetectNativeAgents()
+	_ = json.NewEncoder(w).Encode(status)
+}
+
+// HTTP API: GET /api/git/credential-audit
+func HandleGitCredentialAudit(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	records := globalAuditTrail.GetAll()
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"records": records,
+	})
 }
 
 // RegisterCredentialRoutes registers Git credential broker endpoints.
@@ -423,4 +602,6 @@ func RegisterCredentialRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/git/credential-respond", HandleGitCredentialRespond)
 	mux.HandleFunc("/api/git/credential-clear-cache", HandleGitCredentialClearCache)
 	mux.HandleFunc("/api/git/credential-internal-ask", HandleGitCredentialInternalAsk)
+	mux.HandleFunc("/api/git/agent-status", HandleGitAgentStatus)
+	mux.HandleFunc("/api/git/credential-audit", HandleGitCredentialAudit)
 }

@@ -138,6 +138,7 @@ func runGitCommandInDir(dir string, args ...string) (string, error) {
 			"GIT_ASKPASS="+askpassPath,
 			"SSH_ASKPASS="+askpassPath,
 			"SSH_ASKPASS_REQUIRE=force",
+			"UNIRTM_CREDENTIAL_NONCE="+IssueCredentialNonce(),
 		)
 	}
 	var stdout, stderr bytes.Buffer

@@ -242,4 +242,77 @@ func TestCredentialStream(t *testing.T) {
 	assert.Contains(t, body, "0x5678")
 }
 
+func TestCredentialNonceManager(t *testing.T) {
+	nonce := IssueCredentialNonce()
+	assert.NotEmpty(t, nonce)
+
+	// First verify and consume should succeed
+	ok := VerifyAndConsumeNonce(nonce)
+	assert.True(t, ok)
+
+	// Second verify should fail (Single-use burned)
+	okAgain := VerifyAndConsumeNonce(nonce)
+	assert.False(t, okAgain)
+
+	// Empty nonce should fail
+	assert.False(t, VerifyAndConsumeNonce(""))
+}
+
+func TestCredentialAuditTrail(t *testing.T) {
+	globalAuditTrail.Clear()
+
+	rec := CredentialAuditRecord{
+		ID:        "audit-test-1",
+		Timestamp: time.Now().UnixMilli(),
+		Action:    "ssh_push",
+		Type:      "ssh",
+		TargetKey: "/home/user/.ssh/id_rsa",
+		Result:    "success",
+		ClientIP:  "127.0.0.1",
+	}
+	globalAuditTrail.Record(rec)
+
+	records := globalAuditTrail.GetAll()
+	assert.Len(t, records, 1)
+	assert.Equal(t, "audit-test-1", records[0].ID)
+	assert.Equal(t, "success", records[0].Result)
+
+	// HTTP endpoint test
+	req := httptest.NewRequest(http.MethodGet, "/api/git/credential-audit", nil)
+	w := httptest.NewRecorder()
+	HandleGitCredentialAudit(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "audit-test-1")
+}
+
+func TestNativeAgentStatusEndpoint(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/git/agent-status", nil)
+	w := httptest.NewRecorder()
+	HandleGitAgentStatus(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var status NativeAgentStatus
+	err := json.Unmarshal(w.Body.Bytes(), &status)
+	assert.NoError(t, err)
+}
+
+func TestCredentialAskPass_NonceSecurity(t *testing.T) {
+	// Set strict nonce mode
+	t.Setenv("UNIRTM_CREDENTIAL_NONCE_STRICT", "true")
+
+	// 1. Forbidden without valid nonce
+	reqBad := httptest.NewRequest(http.MethodPost, "/api/git/credential-internal-ask", bytes.NewReader([]byte("Enter passphrase:")))
+	reqBad.Header.Set("X-Unirtm-Nonce", "malicious_fake_nonce")
+	wBad := httptest.NewRecorder()
+	HandleGitCredentialInternalAsk(wBad, reqBad)
+	assert.Equal(t, http.StatusForbidden, wBad.Code)
+
+	// Verify that the security violation was logged to AuditTrail
+	records := globalAuditTrail.GetAll()
+	assert.True(t, len(records) > 0)
+	lastRecord := records[len(records)-1]
+	assert.Equal(t, "denied_invalid_nonce", lastRecord.Result)
+}
+
+
 

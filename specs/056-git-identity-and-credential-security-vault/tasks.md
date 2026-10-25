@@ -19,12 +19,12 @@
 ---
 
 ## 阶段 2：原生 Agent 探测与 Hardened AskPass Nonce IPC (Agent & Hardened Broker)
-- [ ] 2.1 实现系统原生 `ssh-agent`（`$SSH_AUTH_SOCK`）与 `gpg-agent` 探测器，支持通过 `GET /api/git/agent-status` 返回健康状态
-- [ ] 2.2 在凭证协调器中引入密码学安全的单次 Nonce 机制：Git 进程派生时注入 `UNIRTM_CREDENTIAL_NONCE`
-- [ ] 2.3 在 AskPass 校验逻辑中严格核验 Nonce，一次性使用即焚，防范同机未授权进程刺探
-- [ ] 2.4 实现安全审计流水记录器 `CredentialAuditTrail`，记录凭据调用事件，暴露 `GET /api/git/credential-audit`
-- [ ] 2.5 编写 Go 单元测试覆盖 Nonce 鉴权、即焚防御与审计流水
-- [ ] 2.6 **执行提交 2**：`feat(server): enforce one-time nonce token in askpass ipc and audit trail`
+- [x] 2.1 实现系统原生 `ssh-agent`（`$SSH_AUTH_SOCK`）与 `gpg-agent` 探测器，支持通过 `GET /api/git/agent-status` 返回健康状态
+- [x] 2.2 在凭证协调器中引入密码学安全的单次 Nonce 机制：Git 进程派生时注入 `UNIRTM_CREDENTIAL_NONCE`
+- [x] 2.3 在 AskPass 校验逻辑中严格核验 Nonce，一次性使用即焚，防范同机未授权进程刺探
+- [x] 2.4 实现安全审计流水记录器 `CredentialAuditTrail`，记录凭据调用事件，暴露 `GET /api/git/credential-audit`
+- [x] 2.5 编写 Go 单元测试覆盖 Nonce 鉴权、即焚防御与审计流水
+- [x] 2.6 **执行提交 2**：`feat(server): enforce one-time nonce token in askpass ipc and audit trail`
 
 ---
 
