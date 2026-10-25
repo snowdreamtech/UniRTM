@@ -185,7 +185,26 @@ function getInitialDrawerOpen(): boolean {
   return localStorage.getItem(DRAWER_STORAGE_KEY) === "true";
 }
 
-const currentTab = computed<string>(() => (route.name as string) || "dashboard");
+function getInitialTabFromLocation(): string {
+  if (typeof window === "undefined") return "dashboard";
+  const path = window.location.pathname.replace(/^\/+/, "").split("/")[0];
+  const validTabs = [
+    "dashboard",
+    "explorer",
+    "scm",
+    "guard",
+    "tools",
+    "tasks",
+    "environments",
+    "marketplace",
+    "doctor",
+    "settings",
+    "about",
+  ];
+  return validTabs.includes(path) ? path : "dashboard";
+}
+
+const currentTab = computed<string>(() => (route.name as string) || getInitialTabFromLocation());
 const activeSubItem = ref<string>("");
 const isSidebarOpen = ref<boolean>(true);
 const isDrawerOpen = ref<boolean>(getInitialDrawerOpen());
@@ -610,7 +629,11 @@ const handleGlobalKeydown = createKeydownHandler({
 });
 
 onMounted(() => {
-  loadConfig();
+  loadConfig().finally(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("unirtm:config-ready"));
+    }
+  });
   fetchThemes();
   fetchKeybindings();
   checkUpdates().catch(() => {});

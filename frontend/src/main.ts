@@ -38,5 +38,10 @@ window.setTimeout(() => {
 }, 1200);
 
 setStartupProgress(25);
-createApp(App).use(router).mount("#app");
-setStartupProgress(75);
+const app = createApp(App);
+app.use(router);
+
+router.isReady().then(() => {
+  setStartupProgress(75);
+  app.mount("#app");
+});
