@@ -13,8 +13,28 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+type fsTreeCacheEntry struct {
+	response FSTreeResponse
+	cachedAt time.Time
+}
+
+var (
+	fsTreeCacheMu sync.RWMutex
+	fsTreeCache   = make(map[string]fsTreeCacheEntry)
+)
+
+const fsTreeCacheTTL = 1 * time.Second
+
+// InvalidateFSCache clears the cached filesystem tree.
+func InvalidateFSCache() {
+	fsTreeCacheMu.Lock()
+	fsTreeCache = make(map[string]fsTreeCacheEntry)
+	fsTreeCacheMu.Unlock()
+}
 
 // RegisterFSRoutes registers filesystem and workspace roots management routes.
 func RegisterFSRoutes(mux *http.ServeMux) {
@@ -363,6 +383,15 @@ func handleFSTree(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cacheKey := fmt.Sprintf("%s:%d:%t", targetDir, depth, showHidden)
+	fsTreeCacheMu.RLock()
+	if entry, found := fsTreeCache[cacheKey]; found && time.Since(entry.cachedAt) < fsTreeCacheTTL {
+		fsTreeCacheMu.RUnlock()
+		_ = json.NewEncoder(w).Encode(entry.response)
+		return
+	}
+	fsTreeCacheMu.RUnlock()
+
 	st, err := os.Stat(targetDir)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -397,6 +426,14 @@ func handleFSTree(w http.ResponseWriter, r *http.Request) {
 		Entries:  entries,
 		Children: entries,
 	}
+
+	fsTreeCacheMu.Lock()
+	fsTreeCache[cacheKey] = fsTreeCacheEntry{
+		response: resp,
+		cachedAt: time.Now(),
+	}
+	fsTreeCacheMu.Unlock()
+
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
@@ -451,6 +488,7 @@ func handleFSCreate(w http.ResponseWriter, r *http.Request) {
 		_ = f.Close()
 	}
 
+	InvalidateFSCache()
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "path": body.Path})
 }
 
@@ -490,6 +528,7 @@ func handleFSRename(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	InvalidateFSCache()
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "old_path": body.OldPath, "new_path": body.NewPath})
 }
 
@@ -531,6 +570,7 @@ func handleFSDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	InvalidateFSCache()
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "path": body.Path})
 }
 
@@ -627,5 +667,6 @@ func handleFSWrite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	InvalidateFSCache()
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "path": body.Path, "size": len(body.Content)})
 }

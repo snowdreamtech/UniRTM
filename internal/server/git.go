@@ -14,7 +14,28 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 )
+
+type gitStatusCacheEntry struct {
+	response GitStatusResponse
+	cachedAt time.Time
+}
+
+var (
+	gitStatusCacheMu sync.RWMutex
+	gitStatusCache   = make(map[string]gitStatusCacheEntry)
+)
+
+const gitStatusCacheTTL = 800 * time.Millisecond
+
+// InvalidateGitCache clears any cached Git status across repositories.
+func InvalidateGitCache() {
+	gitStatusCacheMu.Lock()
+	gitStatusCache = make(map[string]gitStatusCacheEntry)
+	gitStatusCacheMu.Unlock()
+}
 
 // RegisterGitRoutes registers all Git version control and repository management routes.
 func RegisterGitRoutes(mux *http.ServeMux) {
@@ -182,8 +203,23 @@ func resolveGitRepoDir(r *http.Request) string {
 	return wd
 }
 
+var readOnlyGitCmds = map[string]bool{
+	"status":    true,
+	"log":       true,
+	"diff":      true,
+	"branch":    true,
+	"rev-parse": true,
+	"config":    true,
+	"remote":    true,
+	"show":      true,
+	"show-ref":  true,
+}
+
 func runGitInReq(r *http.Request, args ...string) (string, error) {
 	dir := resolveGitRepoDir(r)
+	if len(args) > 0 && !readOnlyGitCmds[args[0]] {
+		InvalidateGitCache()
+	}
 	return runGitCommandInDir(dir, args...)
 }
 
@@ -370,6 +406,17 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	repoDir := resolveGitRepoDir(r)
+
+	// Check short-lived memory cache to prevent process thundering herds
+	gitStatusCacheMu.RLock()
+	if entry, found := gitStatusCache[repoDir]; found && time.Since(entry.cachedAt) < gitStatusCacheTTL {
+		gitStatusCacheMu.RUnlock()
+		_ = json.NewEncoder(w).Encode(entry.response)
+		return
+	}
+	gitStatusCacheMu.RUnlock()
+
 	porcelain, err := runGitInReq(r, "status", "--porcelain=v1", "-b")
 	if err != nil {
 		// Not a git repository or git error
@@ -458,6 +505,14 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 		Untracked:    untracked,
 		TotalChanges: len(staged) + len(unstaged) + len(untracked),
 	}
+
+	gitStatusCacheMu.Lock()
+	gitStatusCache[repoDir] = gitStatusCacheEntry{
+		response: resp,
+		cachedAt: time.Now(),
+	}
+	gitStatusCacheMu.Unlock()
+
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
