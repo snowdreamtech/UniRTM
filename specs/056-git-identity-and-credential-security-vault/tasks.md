@@ -9,12 +9,12 @@
 ---
 
 ## 阶段 1：后端 Git Profile 隔离管理与持久化 (Backend Identity Manager)
-- [ ] 1.1 在 `internal/server/` 中定义 `GitProfile`、`GitProfileManager` 数据模型与存储层（持久化在工作区受保护配置或应用私有配置）
-- [ ] 1.2 实现 `ApplyProfile(workspaceDir, profileID)`：仅通过 `git config --local` 修改局部 `.git/config`，严格杜绝全局污染
-- [ ] 1.3 实现公钥与 GPG 列表只读发现机制（仅扫描 `~/.ssh/*.pub` 与 `gpg --list-public-keys`，绝不触碰私钥）
-- [ ] 1.4 实现 HTTP 路由：`GET/POST/DELETE /api/git/profiles`，`POST /api/git/profile/apply`，`GET /api/git/system-keys`
-- [ ] 1.5 编写 `internal/server/git_profile_test.go` 单元测试，验证 Profile 保存与局部仓库配置写入隔离性
-- [ ] 1.6 **执行提交 1**：`feat(server): add git identity profile management with local repository isolation`
+- [x] 1.1 在 `internal/server/` 中定义 `GitProfile`、`GitProfileManager` 数据模型与存储层（持久化在工作区受保护配置或应用私有配置）
+- [x] 1.2 实现 `ApplyProfile(workspaceDir, profileID)`：仅通过 `git config --local` 修改局部 `.git/config`，严格杜绝全局污染
+- [x] 1.3 实现公钥与 GPG 列表只读发现机制（仅扫描 `~/.ssh/*.pub` 与 `gpg --list-public-keys`，绝不触碰私钥）
+- [x] 1.4 实现 HTTP 路由：`GET/POST/DELETE /api/git/profiles`，`POST /api/git/profile/apply`，`GET /api/git/system-keys`
+- [x] 1.5 编写 `internal/server/git_profile_test.go` 单元测试，验证 Profile 保存与局部仓库配置写入隔离性
+- [x] 1.6 **执行提交 1**：`feat(server): add git identity profile management with local repository isolation`
 
 ---
 

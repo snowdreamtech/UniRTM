@@ -422,6 +422,7 @@ func SetupUIMux(distFS fs.FS) *http.ServeMux {
 	RegisterMarketplaceRoutes(mux)
 	RegisterFSRoutes(mux)
 	RegisterGitRoutes(mux)
+	RegisterGitProfileRoutes(mux)
 	RegisterCredentialRoutes(mux)
 	RegisterPortsRoutes(mux)
 
