@@ -33,6 +33,8 @@ let monacoPromise: Promise<typeof import("monaco-editor")> | null = null;
 
 import { setupMonacoLocalization } from "./monacoLocalization";
 
+let loadedMonacoInstance: typeof import("monaco-editor") | null = null;
+
 /**
  * Asynchronously load the full Monaco Editor on-demand.
  * 100% offline via local Vite worker bundles.
@@ -43,10 +45,30 @@ export function loadMonaco(): Promise<typeof import("monaco-editor")> {
       await setupMonacoEnvironment();
       await setupMonacoLocalization();
       const monaco = await import("monaco-editor");
+      loadedMonacoInstance = monaco;
+      if (typeof window !== "undefined") {
+        (window as any).monaco = monaco;
+      }
       return monaco;
     })();
   }
   return monacoPromise;
+}
+
+/**
+ * Dispose an in-memory Monaco model associated with a closed file path to prevent memory leaks.
+ */
+export function disposeModelForPath(filePath: string): void {
+  if (!filePath || !loadedMonacoInstance) return;
+  try {
+    const uri = loadedMonacoInstance.Uri.file(filePath);
+    const model = loadedMonacoInstance.editor.getModel(uri);
+    if (model && !model.isDisposed()) {
+      model.dispose();
+    }
+  } catch {
+    // ignore
+  }
 }
 
 const EXTENSION_LANGUAGE_MAP: Record<string, string> = {

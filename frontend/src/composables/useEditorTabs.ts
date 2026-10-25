@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 import { ref, computed } from "vue";
-import { getLanguageForFile } from "../services/editor/monacoLoader";
+import { getLanguageForFile, disposeModelForPath } from "../services/editor/monacoLoader";
 import { useToast } from "./useToast";
 import { useWorkspaceBus } from "./useWorkspaceBus";
 
@@ -399,6 +399,7 @@ export function useEditorTabs() {
   function closeTab(tabId: string): void {
     const index = tabs.value.findIndex((t) => t.id === tabId);
     if (index === -1) return;
+    const removedTab = tabs.value[index];
 
     if (activeTabId.value === tabId) {
       if (tabs.value.length > 1) {
@@ -410,11 +411,18 @@ export function useEditorTabs() {
     }
 
     tabs.value.splice(index, 1);
+    if (removedTab?.path) {
+      disposeModelForPath(removedTab.path);
+    }
   }
 
   function closeOtherTabs(tabId: string): void {
+    const toRemove = tabs.value.filter((t) => t.id !== tabId && !t.isPinned);
     tabs.value = tabs.value.filter((t) => t.id === tabId || t.isPinned);
     activeTabId.value = tabId;
+    toRemove.forEach((t) => {
+      if (t.path) disposeModelForPath(t.path);
+    });
   }
 
   function closeTabsToRight(tabId: string): void {
@@ -426,19 +434,28 @@ export function useEditorTabs() {
       activeTabId.value = tabId;
     }
 
+    const toRemove = tabs.value.filter((tab, idx) => idx > index && !tab.isPinned);
     tabs.value = tabs.value.filter((tab, idx) => idx <= index || tab.isPinned);
+    toRemove.forEach((t) => {
+      if (t.path) disposeModelForPath(t.path);
+    });
   }
 
   function closeSavedTabs(): void {
+    const toRemove = tabs.value.filter((t) => !t.isDirty && !t.isPinned);
     const retained = tabs.value.filter((t) => t.isDirty || t.isPinned);
     tabs.value = retained;
     if (!retained.some((t) => t.id === activeTabId.value)) {
       activeTabId.value = retained[0]?.id || "";
     }
+    toRemove.forEach((t) => {
+      if (t.path) disposeModelForPath(t.path);
+    });
   }
 
   function closeAllTabs(forceAll = false): void {
     pendingOpenings.clear();
+    const toRemove = forceAll ? [...tabs.value] : tabs.value.filter((t) => !t.isPinned);
     if (forceAll) {
       tabs.value = [];
       activeTabId.value = "";
@@ -449,6 +466,9 @@ export function useEditorTabs() {
         activeTabId.value = pinned[0]?.id || "";
       }
     }
+    toRemove.forEach((t) => {
+      if (t.path) disposeModelForPath(t.path);
+    });
   }
 
   function togglePinTab(tabId: string): void {
