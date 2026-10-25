@@ -37,16 +37,16 @@
 ---
 
 ## 阶段 4：状态栏 Profile 切换器与安全设置面板 (UI Components)
-- [ ] 4.1 创建 `frontend/src/components/common/GitProfileStatus.vue` 状态栏组件，展示当前活跃 Profile 并支持 QuickPick 切换
-- [ ] 4.2 在 `frontend/src/components/layout/StatusBar.vue` 集成 `GitProfileStatus` 组件
-- [ ] 4.3 在设置中心或独立模块中增加 Git Identity 与凭证安全卡片（Profile 表单、Agent 指示灯、内存缓存清空、安全审计日志抽屉）
-- [ ] 4.4 编写或更新前端 UI 单元测试
-- [ ] 4.5 **执行提交 4**：`feat(ui): add GitProfileStatus status bar switcher and identity settings`
+- [x] 4.1 创建 `frontend/src/components/common/GitProfileStatus.vue` 状态栏组件，展示当前活跃 Profile 并支持 QuickPick 切换
+- [x] 4.2 在 `frontend/src/components/layout/StatusBar.vue` 集成 `GitProfileStatus` 组件
+- [x] 4.3 在设置中心或独立模块中增加 Git Identity 与凭证安全卡片（Profile 表单、Agent 指示灯、内存缓存清空、安全审计日志抽屉）
+- [x] 4.4 编写或更新前端 UI 单元测试
+- [x] 4.5 **执行提交 4**：`feat(ui): add GitProfileStatus status bar switcher and identity settings`
 
 ---
 
 ## 阶段 5：全 53 国多语言同步与全量质量门禁 (i18n & Quality Gate)
-- [ ] 5.1 更新 `frontend/src/i18n/types.ts`、`zh-CN.ts` 与 `en-US.ts`，定义多身份与安全保管箱相关词条
-- [ ] 5.2 自动同步词条至全部 53 种语言文件，确保 `i18n.test.ts` 0 报错
-- [ ] 5.3 运行全量 `npm run test` 与 `go test ./internal/server`，运行构建并验证 UniRTM 质量门禁
-- [ ] 5.4 **执行提交 5**：`feat(i18n): sync multi-language keys and finalize git identity security vault`
+- [x] 5.1 更新 `frontend/src/i18n/types.ts`、`zh-CN.ts` 与 `en-US.ts`，定义多身份与安全保管箱相关词条
+- [x] 5.2 自动同步词条至全部 53 种语言文件，确保 `i18n.test.ts` 0 报错
+- [x] 5.3 运行全量 `npm run test` 与 `go test ./internal/server`，运行构建并验证 UniRTM 质量门禁
+- [x] 5.4 **执行提交 5**：`feat(i18n): sync multi-language keys and finalize git identity security vault`
