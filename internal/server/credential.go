@@ -4,6 +4,7 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -69,11 +70,17 @@ type credentialCoordinator struct {
 	mu         sync.Mutex
 	activeChan map[string]chan GitCredentialResponse
 	pendingReq *GitCredentialRequest
+	notifyCh   chan struct{}
 }
 
-var globalCredentialCoordinator = &credentialCoordinator{
-	activeChan: make(map[string]chan GitCredentialResponse),
+func newCredentialCoordinator() *credentialCoordinator {
+	return &credentialCoordinator{
+		activeChan: make(map[string]chan GitCredentialResponse),
+		notifyCh:   make(chan struct{}),
+	}
 }
+
+var globalCredentialCoordinator = newCredentialCoordinator()
 
 func generateCredentialID() string {
 	b := make([]byte, 6)
@@ -104,6 +111,10 @@ func (c *credentialCoordinator) RequestGitCredential(reqType, prompt, targetKey 
 		Prompt:    prompt,
 		TargetKey: targetKey,
 		Timestamp: time.Now().UnixMilli(),
+	}
+	if c.notifyCh != nil {
+		close(c.notifyCh)
+		c.notifyCh = make(chan struct{})
 	}
 	c.mu.Unlock()
 
@@ -152,14 +163,63 @@ func (c *credentialCoordinator) GetPendingRequest() *GitCredentialRequest {
 	return c.pendingReq
 }
 
-// HTTP API: GET /api/git/credential-pending
+// WaitForPendingRequest blocks until a pending request is available,
+// the timeout expires, or the client context is cancelled.
+func (c *credentialCoordinator) WaitForPendingRequest(ctx context.Context, timeout time.Duration) *GitCredentialRequest {
+	c.mu.Lock()
+	if c.pendingReq != nil {
+		req := c.pendingReq
+		c.mu.Unlock()
+		return req
+	}
+	if c.notifyCh == nil {
+		c.notifyCh = make(chan struct{})
+	}
+	notify := c.notifyCh
+	c.mu.Unlock()
+
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	select {
+	case <-notify:
+		c.mu.Lock()
+		req := c.pendingReq
+		c.mu.Unlock()
+		return req
+	case <-timer.C:
+		c.mu.Lock()
+		req := c.pendingReq
+		c.mu.Unlock()
+		return req
+	case <-ctx.Done():
+		return nil
+	}
+}
+
+// HTTP API: GET /api/git/credential-pending?wait=25s
 func HandleGitCredentialPending(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	req := globalCredentialCoordinator.GetPendingRequest()
+
+	var req *GitCredentialRequest
+	waitParam := r.URL.Query().Get("wait")
+	if waitParam != "" {
+		waitDuration, err := time.ParseDuration(waitParam)
+		if err != nil || waitDuration <= 0 {
+			waitDuration = 25 * time.Second
+		}
+		if waitDuration > 60*time.Second {
+			waitDuration = 60 * time.Second
+		}
+		req = globalCredentialCoordinator.WaitForPendingRequest(r.Context(), waitDuration)
+	} else {
+		req = globalCredentialCoordinator.GetPendingRequest()
+	}
+
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"request": req,

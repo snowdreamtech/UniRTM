@@ -148,3 +148,66 @@ func TestCredentialHTTPHandlers(t *testing.T) {
 	assert.Equal(t, http.StatusOK, internalRec.Code)
 	assert.Equal(t, "auto_cached_secret", internalRec.Body.String())
 }
+
+func TestCredentialLongPolling(t *testing.T) {
+	globalSessionKeyring.Clear()
+
+	// 1. Long-polling timeout test (wait=40ms)
+	start := time.Now()
+	req := httptest.NewRequest(http.MethodGet, "/api/git/credential-pending?wait=40ms", nil)
+	rec := httptest.NewRecorder()
+	HandleGitCredentialPending(rec, req)
+	elapsed := time.Since(start)
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.True(t, elapsed >= 35*time.Millisecond)
+
+	var timeoutResp map[string]interface{}
+	err := json.Unmarshal(rec.Body.Bytes(), &timeoutResp)
+	assert.NoError(t, err)
+	assert.True(t, timeoutResp["success"].(bool))
+	assert.Nil(t, timeoutResp["request"])
+
+	// 2. Long-polling instant wake test when request arrives
+	woken := make(chan struct{})
+	go func() {
+		reqWake := httptest.NewRequest(http.MethodGet, "/api/git/credential-pending?wait=2s", nil)
+		recWake := httptest.NewRecorder()
+		HandleGitCredentialPending(recWake, reqWake)
+
+		assert.Equal(t, http.StatusOK, recWake.Code)
+		var wakeResp map[string]interface{}
+		_ = json.Unmarshal(recWake.Body.Bytes(), &wakeResp)
+		assert.True(t, wakeResp["success"].(bool))
+		reqMap := wakeResp["request"].(map[string]interface{})
+		assert.Equal(t, "instant-test", reqMap["id"])
+		close(woken)
+	}()
+
+	time.Sleep(30 * time.Millisecond)
+	globalCredentialCoordinator.mu.Lock()
+	globalCredentialCoordinator.pendingReq = &GitCredentialRequest{
+		ID:        "instant-test",
+		Type:      "ssh",
+		Prompt:    "Enter passphrase:",
+		Timestamp: time.Now().UnixMilli(),
+	}
+	if globalCredentialCoordinator.notifyCh != nil {
+		close(globalCredentialCoordinator.notifyCh)
+		globalCredentialCoordinator.notifyCh = make(chan struct{})
+	}
+	globalCredentialCoordinator.mu.Unlock()
+
+	select {
+	case <-woken:
+		// Succeeded immediately on event
+	case <-time.After(1 * time.Second):
+		t.Fatal("Long polling did not wake up promptly upon request arrival")
+	}
+
+	// Clean up pendingReq
+	globalCredentialCoordinator.mu.Lock()
+	globalCredentialCoordinator.pendingReq = nil
+	globalCredentialCoordinator.mu.Unlock()
+}
+
