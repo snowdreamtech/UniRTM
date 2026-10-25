@@ -152,8 +152,9 @@ export function useCredentialBroker() {
       if (eventSource) {
         eventSource.close();
       }
-      eventSource = new EventSourceCtor("/api/git/credential-stream");
-      eventSource.addEventListener("credential", (event: MessageEvent) => {
+      const es = new EventSourceCtor("/api/git/credential-stream");
+      eventSource = es;
+      es.addEventListener("credential", (event: MessageEvent) => {
         try {
           const req: CredentialRequest = JSON.parse(event.data);
           if (req && (!pendingRequest.value || pendingRequest.value.id !== req.id)) {
@@ -163,7 +164,7 @@ export function useCredentialBroker() {
           console.error("Failed to parse credential event:", e);
         }
       });
-      eventSource.onerror = () => {
+      es.onerror = () => {
         // EventSource will automatically reconnect according to browser spec
       };
     } catch (e) {

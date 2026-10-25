@@ -1839,6 +1839,9 @@
             </p>
           </div>
         </div>
+
+        <!-- Git Identity & Credential Security Vault -->
+        <GitIdentitySettings />
       </section>
 
       <!-- Add/Edit Hook Modal Dialog -->
@@ -2109,6 +2112,7 @@ import { useTerminal } from "../composables/useTerminal";
 import CustomSelect from "../components/CustomSelect.vue";
 import TechIcon from "../components/common/TechIcon.vue";
 import KeyboardShortcutsSettings from "../components/settings/KeyboardShortcutsSettings.vue";
+import GitIdentitySettings from "../components/common/GitIdentitySettings.vue";
 
 const router = useRouter();
 const route = useRoute();

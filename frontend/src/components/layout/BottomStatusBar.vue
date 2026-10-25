@@ -40,6 +40,9 @@
         </button>
       </div>
 
+      <!-- Git Identity Profile Switcher -->
+      <GitProfileStatus @open-settings="$emit('open-settings', $event)" />
+
       <div
         class="status-pill status-ready"
         id="status-health"
@@ -148,6 +151,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import TechIcon from "../common/TechIcon.vue";
+import GitProfileStatus from "../common/GitProfileStatus.vue";
 import { useAppScope } from "../../composables/useAppScope";
 import { useGit } from "../../composables/useGit";
 import { isMac } from "../../utils/platform";
@@ -172,6 +176,7 @@ defineEmits<{
   (e: "open-network-settings"): void;
   (e: "toggle-drawer"): void;
   (e: "open-shortcuts"): void;
+  (e: "open-settings", tab?: string): void;
 }>();
 
 const statusReadyText = computed(() => t("statusbar.status_ready") || "Ready");
