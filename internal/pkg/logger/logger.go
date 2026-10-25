@@ -129,28 +129,28 @@ var (
 	errorLumberjack     *lumberjack.Logger
 )
 
-// InitLogger initializes the logger with the specified error and gin log paths.
-// It returns the error and gin writers.
+// InitLogger initializes the logger with the specified error and operation log paths.
+// It returns the error and operation writers.
 //
 // Parameters:
 //   - errorLogPath: The path to the error log file.
-//   - ginLogPath: The path to the gin log file.
+//   - opLogPath: The path to the operation log file.
 //
 // Returns:
 //   - errorWriter: The error writer.
-//   - ginWriter: The gin writer.
-func InitLogger(errorLogPath, ginLogPath string) (errorWriter io.Writer, ginWriter io.Writer) {
+//   - opWriter: The operation writer.
+func InitLogger(errorLogPath, opLogPath string) (errorWriter io.Writer, opWriter io.Writer) {
 
 	// Set error.log
 	errorWriter = initErrorLogger(errorLogPath)
 
-	// Set gin.log
-	ginWriter = initGinLogger(ginLogPath)
+	// Set unirtm.log
+	opWriter = initGinLogger(opLogPath)
 
 	// Set zerologger as the default logger
-	initZeroLogger(ginWriter)
+	initZeroLogger(opWriter)
 
-	return errorWriter, ginWriter
+	return errorWriter, opWriter
 }
 
 // InitUniRTMLogger initializes the logger for UniRTM with rotating file writers
@@ -260,21 +260,20 @@ func initErrorLogger(filepath string) io.Writer {
 	return errorWriter
 }
 
-// InitGinLogger initializes the gin logger with the specified gin log path.
-// It returns the gin writer.
+// InitGinLogger initializes the logger with the specified log path.
+// It returns the operation writer.
 //
 // Parameters:
-//   - filepath: The path to the gin log file.
+//   - filepath: The path to the operation log file.
 //
 // Returns:
-//   - ginWriter: The gin writer.
+//   - opWriter: The operation writer.
 func initGinLogger(filepath string) io.Writer {
 	if filepath == "" {
-		filepath = "gin.log"
+		filepath = "unirtm.log"
 	}
 
-	// Set gin.log
-	ginlog := &lumberjack.Logger{
+	oplog := &lumberjack.Logger{
 		Filename:   filepath,
 		MaxSize:    500, // megabytes
 		MaxBackups: 10,
@@ -282,24 +281,24 @@ func initGinLogger(filepath string) io.Writer {
 		Compress:   true, // disabled by default
 	}
 
-	ginWriter := io.MultiWriter(ginlog, os.Stderr)
-	defaultWriter = ginWriter
+	opWriter := io.MultiWriter(oplog, os.Stderr)
+	defaultWriter = opWriter
 
-	return ginWriter
+	return opWriter
 }
 
 // ErrorHook is a hook for logging errors.
 type ErrorHook struct{}
 
 // Run executes the ErrorHook, logging the event at the specified level with the given message.
-// It writes the log output to the default error writer for the gin framework.
+// It writes the log output to the default error writer.
 //
 // Parameters:
 //   - e: The zerolog event to be logged.
 //   - level: The logging level of the event.
 //   - msg: The message to be logged.
 func (h ErrorHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
-	// Write the log output to the default error writer for the gin framework.
+	// Write the log output to the default error writer.
 	if zerolog.GlobalLevel() != zerolog.Disabled && level >= zerolog.ErrorLevel && level <= zerolog.PanicLevel {
 		t := colorize(time.Now().Format(time.RFC3339), colorDarkGray, NoColor)
 		l := colorize(zerolog.FormattedLevels[level], zerolog.LevelColors[level], NoColor)
@@ -359,7 +358,7 @@ func initZeroLogger(out io.Writer) {
 
 	// Set zerologger as the default logger
 	log.SetOutput(zerologger)
-	log.SetPrefix("[GIN-debug] ")
+	log.SetPrefix("[UNIRTM] ")
 	log.SetFlags(log.LUTC)
 
 	zlog.Logger = zerologger

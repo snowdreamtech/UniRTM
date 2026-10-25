@@ -16,10 +16,10 @@ import (
 func TestLogger_Init(t *testing.T) {
 	dir := t.TempDir()
 	errLog := filepath.Join(dir, "err.log")
-	ginLog := filepath.Join(dir, "gin.log")
+	opLog := filepath.Join(dir, "op.log")
 
 	// Test InitLogger
-	InitLogger(errLog, ginLog)
+	InitLogger(errLog, opLog)
 
 	// Test InitUniRTMLogger
 	InitUniRTMLogger(filepath.Join(dir, "unirtm.log"), filepath.Join(dir, "error.log"))

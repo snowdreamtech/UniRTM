@@ -247,12 +247,12 @@ go test -v -run TestErrorWithErr ./internal/pkg/logger/...
 
 ## Migration from Existing Logger
 
-The enhanced logger maintains backward compatibility with the existing `InitLogger()` function for Gin integration. New code should use `InitUniRTMLogger()` for full UniRTM functionality.
+The enhanced logger maintains backward compatibility with the existing `InitLogger()` function. New code should use `InitUniRTMLogger()` for full UniRTM functionality.
 
 ```go
-// Old (Gin-specific)
-errorWriter, ginWriter := logger.InitLogger("error.log", "gin.log")
+// Legacy initialization
+errorWriter, opWriter := logger.InitLogger("error.log", "unirtm.log")
 
-// New (UniRTM-specific)
+// Preferred UniRTM initialization
 opWriter, errWriter := logger.InitUniRTMLogger("unirtm.log", "error.log")
 ```
