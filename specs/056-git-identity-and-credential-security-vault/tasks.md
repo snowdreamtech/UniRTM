@@ -29,10 +29,10 @@
 ---
 
 ## 阶段 3：前端 Git Identity 状态管理与类型 (Frontend Composable & Types)
-- [ ] 3.1 在 `frontend/src/types/git.ts`（或 `credential.ts`）中定义 `GitProfile`、`SystemKeys`、`NativeAgentStatus`、`CredentialAuditRecord` 接口
-- [ ] 3.2 创建 `frontend/src/composables/useGitIdentity.ts` 组合式函数，管理 Profiles、切换、Agent 状态与审计流水
-- [ ] 3.3 编写 `frontend/src/composables/useGitIdentity.test.ts` 单元测试
-- [ ] 3.4 **执行提交 3**：`feat(frontend): implement useGitIdentity composable and types with tests`
+- [x] 3.1 在 `frontend/src/types/git.ts`（或 `credential.ts`）中定义 `GitProfile`、`SystemKeys`、`NativeAgentStatus`、`CredentialAuditRecord` 接口
+- [x] 3.2 创建 `frontend/src/composables/useGitIdentity.ts` 组合式函数，管理 Profiles、切换、Agent 状态与审计流水
+- [x] 3.3 编写 `frontend/src/composables/useGitIdentity.test.ts` 单元测试
+- [x] 3.4 **执行提交 3**：`feat(frontend): implement useGitIdentity composable and types with tests`
 
 ---
 

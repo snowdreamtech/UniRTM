@@ -313,6 +313,3 @@ func TestCredentialAskPass_NonceSecurity(t *testing.T) {
 	lastRecord := records[len(records)-1]
 	assert.Equal(t, "denied_invalid_nonce", lastRecord.Result)
 }
-
-
-
