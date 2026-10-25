@@ -665,11 +665,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { usePorts } from "../../composables/usePorts";
 import { t } from "../../i18n";
 import type { PortForwardItem, PortProtocol, PortRiskAssessment } from "../../types/ports";
 import { assessPortRisk } from "../../utils/portServiceRecognizer";
+
+const props = withDefaults(
+  defineProps<{
+    isActive?: boolean;
+  }>(),
+  {
+    isActive: true,
+  }
+);
 
 const isMac =
   typeof navigator !== "undefined" && /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent);
@@ -728,8 +737,10 @@ let pollTimer: any = null;
 
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
+  if (!props.isActive) return;
   pollTimer = setInterval(() => {
     if (typeof document !== "undefined" && document.hidden) return;
+    if (!props.isActive) return;
     fetchPorts();
   }, 3500);
 }
@@ -741,9 +752,21 @@ function stopPolling() {
   }
 }
 
+watch(
+  () => props.isActive,
+  (active) => {
+    if (active) {
+      fetchPorts();
+      startPolling();
+    } else {
+      stopPolling();
+    }
+  }
+);
+
 function handleVisibilityChange() {
   if (typeof document === "undefined") return;
-  if (document.hidden) {
+  if (document.hidden || !props.isActive) {
     stopPolling();
   } else {
     fetchPorts();
@@ -752,8 +775,10 @@ function handleVisibilityChange() {
 }
 
 onMounted(async () => {
-  await fetchPorts();
-  startPolling();
+  if (props.isActive) {
+    await fetchPorts();
+    startPolling();
+  }
 
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", handleVisibilityChange);

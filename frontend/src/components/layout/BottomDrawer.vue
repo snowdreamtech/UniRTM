@@ -550,7 +550,7 @@
       class="ports-drawer-wrapper"
       :style="{ height: `${effectiveBodyHeight}px` }"
     >
-      <PortsPanelView />
+      <PortsPanelView :isActive="isOpen && currentTab === 'ports'" />
     </div>
 
     <!-- Dragging overlay for drawer height -->
