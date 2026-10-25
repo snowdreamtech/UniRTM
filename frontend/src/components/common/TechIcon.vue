@@ -10,8 +10,8 @@
     :class="className"
     :style="{ width: `${size}px`, height: `${size}px`, minWidth: `${size}px` }"
     role="img"
-    :title="id"
-    :aria-label="id"
+    :title="title"
+    :aria-label="title || id"
   >
     <rect width="16" height="16" rx="2" fill="#CB3837" />
     <path fill="#ffffff" d="M3 3h10v10H8V5.5H5.5V13H3V3z" />
@@ -34,8 +34,8 @@
       color: colored ? 'var(--text-main, #cbd5e1)' : 'inherit',
     }"
     role="img"
-    :title="id"
-    :aria-label="id"
+    :title="title"
+    :aria-label="title || id"
   >
     <path
       fill-rule="evenodd"
@@ -49,9 +49,9 @@
     v-else-if="codiconClass"
     :class="['codicon', codiconClass, className]"
     :style="codiconStyles"
-    :title="id"
+    :title="title"
     role="img"
-    :aria-label="id"
+    :aria-label="title || id"
   ></span>
 
   <!-- 4. Dynamic Theme SVG / Custom Icon Theme File -->
@@ -61,15 +61,22 @@
     class="tech-icon tech-icon-svg"
     :class="className"
     :style="svgStyles"
-    :title="id"
-    :alt="id"
+    :title="title"
+    :alt="title || id"
     role="img"
   />
 
   <!-- 5. VS Code File Icon Theme (Seti UI baseline font) -->
-  <span v-else class="tech-icon" :class="className" :style="iconStyles" :title="id" role="img" :aria-label="id">{{
-    resolved.character
-  }}</span>
+  <span
+    v-else
+    class="tech-icon"
+    :class="className"
+    :style="iconStyles"
+    :title="title"
+    role="img"
+    :aria-label="title || id"
+    >{{ resolved.character }}</span
+  >
 </template>
 
 <script setup lang="ts">
@@ -167,6 +174,7 @@ const props = withDefaults(
     size?: number;
     colored?: boolean;
     className?: string;
+    title?: string;
   }>(),
   {
     size: 16,
