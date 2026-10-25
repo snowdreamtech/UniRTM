@@ -103,7 +103,7 @@
         >
           <div class="card-top">
             <div class="profile-name-row">
-              <span class="name">{{ prof.name }}</span>
+              <span class="name">{{ formatProfileName(prof) }}</span>
               <span v-if="prof.id === activeProfileId" class="sec-badge cyan">{{
                 t("git_identity.active_workspace") || "Active in Workspace"
               }}</span>
@@ -134,15 +134,22 @@
           <div class="card-details">
             <div class="detail-row">
               <span class="label">User:</span>
-              <span class="val font-mono">{{ prof.userName }} &lt;{{ prof.userEmail }}&gt;</span>
+              <span class="val font-mono text-truncate" :title="`${prof.userName} <${prof.userEmail}>`">
+                {{ prof.userName }} &lt;{{ prof.userEmail }}&gt;
+              </span>
             </div>
             <div v-if="prof.sshKeyPath" class="detail-row">
               <span class="label">SSH:</span>
-              <span class="val font-mono text-truncate">{{ prof.sshKeyPath }}</span>
+              <span class="val font-mono text-truncate" :title="prof.sshKeyPath">{{ prof.sshKeyPath }}</span>
             </div>
             <div v-if="prof.signingKey" class="detail-row">
               <span class="label">GPG:</span>
-              <span class="val font-mono text-gpg">{{ prof.signingKey }} {{ prof.gpgSign ? "(Auto-sign)" : "" }}</span>
+              <span class="val font-mono text-gpg" :title="`Key ID / Fingerprint: ${prof.signingKey}`">
+                <span class="gpg-key-id">{{ formatGpgKey(prof.signingKey) }}</span>
+                <span v-if="prof.gpgSign" class="auto-sign-badge">
+                  {{ t("git_identity.auto_sign_tag") || "(Auto-sign)" }}
+                </span>
+              </span>
             </div>
           </div>
         </div>
@@ -322,6 +329,22 @@ const {
 
 const isEditing = ref(false);
 const isAuditExpanded = ref(false);
+
+function formatProfileName(prof: GitProfile | Partial<GitProfile>): string {
+  if (!prof) return t("git_identity.default_profile") || "Default Profile";
+  if (prof.id === "default" || prof.name === "Default Profile" || prof.name === "Default") {
+    return t("git_identity.default_profile") || "Default Profile";
+  }
+  return prof.name || t("git_identity.default_profile") || "Default Profile";
+}
+
+function formatGpgKey(key?: string): string {
+  if (!key) return "";
+  if (key.length > 16) {
+    return key.slice(-16);
+  }
+  return key;
+}
 
 const editingProfile = ref<Partial<GitProfile>>({
   name: "",
@@ -579,7 +602,7 @@ onMounted(() => {
 
 .profiles-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 12px;
 }
 
@@ -591,6 +614,9 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
   transition: all 0.2s ease;
 }
 
@@ -608,6 +634,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
+  min-width: 0;
 }
 
 .profile-name-row {
@@ -615,17 +642,23 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .profile-name-row .name {
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-main);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-actions {
   display: flex;
   gap: 4px;
+  flex-shrink: 0;
 }
 
 .icon-btn {
@@ -660,27 +693,57 @@ onMounted(() => {
 .card-details {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   font-size: 0.76rem;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .detail-row {
   display: flex;
+  align-items: baseline;
   gap: 8px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .detail-row .label {
   color: var(--text-muted);
-  width: 32px;
+  width: 34px;
   flex-shrink: 0;
+  font-size: 0.74rem;
 }
 
 .detail-row .val {
   color: var(--text-main);
+  min-width: 0;
+  flex: 1;
 }
 
-.text-gpg {
+.detail-row .val.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-row .val.text-gpg {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
   color: var(--accent-purple);
+}
+
+.gpg-key-id {
+  font-family: monospace;
+  word-break: break-all;
+}
+
+.auto-sign-badge {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  white-space: nowrap;
 }
 
 /* Audit Trail */

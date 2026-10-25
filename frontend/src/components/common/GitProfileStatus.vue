@@ -25,14 +25,21 @@
         >
           <div class="profile-info">
             <div class="profile-title">
-              <span class="profile-name">{{ prof.name }}</span>
+              <span class="profile-name">{{ formatProfileName(prof) }}</span>
               <span v-if="prof.id === activeProfileId" class="active-badge">{{
                 t("git_identity.active") || "Active"
               }}</span>
             </div>
             <div class="profile-details">
-              <span>{{ prof.userName || "Anonymous" }} &lt;{{ prof.userEmail || "no-email" }}&gt;</span>
-              <span v-if="prof.signingKey" class="detail-gpg">GPG: {{ prof.signingKey.slice(-8) }}</span>
+              <span
+                class="detail-user text-truncate"
+                :title="`${prof.userName || 'Anonymous'} <${prof.userEmail || 'no-email'}>`"
+              >
+                {{ prof.userName || "Anonymous" }} &lt;{{ prof.userEmail || "no-email" }}&gt;
+              </span>
+              <span v-if="prof.signingKey" class="detail-gpg" :title="`GPG Key: ${prof.signingKey}`">
+                GPG: {{ formatShortGpg(prof.signingKey) }}
+              </span>
             </div>
           </div>
         </div>
@@ -65,20 +72,34 @@ const { profiles, activeProfileId, activeProfile, loadProfiles, applyProfile } =
 const isOpen = ref(false);
 const wrapperRef = ref<HTMLElement | null>(null);
 
+function formatProfileName(prof: any): string {
+  if (!prof) return t("git_identity.default_profile") || "Default Profile";
+  if (prof.id === "default" || prof.name === "Default Profile" || prof.name === "Default") {
+    return t("git_identity.default_profile") || "Default Profile";
+  }
+  return prof.name || t("git_identity.default_profile") || "Default Profile";
+}
+
+function formatShortGpg(key?: string): string {
+  if (!key) return "";
+  return key.slice(-8);
+}
+
 const activeProfileName = computed(() => {
   if (activeProfile.value) {
-    return activeProfile.value.name;
+    return formatProfileName(activeProfile.value);
   }
-  return t("git_identity.default") || "Default Profile";
+  return t("git_identity.default_profile") || "Default Profile";
 });
 
 const tooltipText = computed(() => {
   if (!activeProfile.value) {
-    return t("git_identity.click_to_switch") || "Git Identity: Default (Click to switch)";
+    return `${t("git_identity.default_profile") || "Default Profile"} (${t("git_identity.click_to_switch") || "Click to switch"})`;
   }
+  const name = formatProfileName(activeProfile.value);
   const email = activeProfile.value.userEmail ? ` <${activeProfile.value.userEmail}>` : "";
-  const sign = activeProfile.value.signingKey ? " • GPG Signed" : "";
-  return `Git Identity: ${activeProfile.value.name} (${activeProfile.value.userName}${email})${sign} • Click to switch`;
+  const sign = activeProfile.value.signingKey ? " • GPG" : "";
+  return `${name} (${activeProfile.value.userName}${email})${sign}`;
 });
 
 const toggleDropdown = () => {
@@ -150,7 +171,8 @@ onUnmounted(() => {
   position: absolute;
   bottom: 26px;
   left: 0;
-  min-width: 280px;
+  min-width: 320px;
+  max-width: 440px;
   background: var(--modal-bg);
   backdrop-filter: blur(16px);
   border: 1px solid var(--card-border);
@@ -205,15 +227,28 @@ onUnmounted(() => {
   color: var(--accent-cyan);
 }
 
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .profile-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
 }
 
 .profile-name {
   font-size: 12px;
   font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .active-badge {
@@ -224,17 +259,32 @@ onUnmounted(() => {
   border-radius: 3px;
   font-weight: 700;
   text-transform: uppercase;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .profile-details {
   font-size: 10px;
   color: var(--text-muted);
   display: flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-top: 3px;
+  min-width: 0;
+}
+
+.detail-user {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detail-gpg {
+  flex-shrink: 0;
+  white-space: nowrap;
   color: var(--accent-purple);
   font-family: monospace;
 }

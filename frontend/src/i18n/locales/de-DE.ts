@@ -2622,6 +2622,7 @@ export const deDe: TranslationDict = {
   "git_identity.new_profile": "Neues Profil",
   "git_identity.active_workspace": "Aktueller Arbeitsbereich aktiv",
   "git_identity.default": "Standard",
+  "git_identity.default_profile": "Standardprofil",
   "git_identity.apply_tooltip": "Auf das aktuelle lokale Repository des Arbeitsbereichs anwenden (.git/config)",
   "git_identity.edit": "Bearbeiten",
   "git_identity.delete": "Löschen",
@@ -2634,6 +2635,7 @@ export const deDe: TranslationDict = {
   "git_identity.select_discovered": "– Wählen Sie einen erkannten Schlüssel aus –",
   "git_identity.gpg_signing_key": "GPG-Signaturschlüssel-ID",
   "git_identity.enable_auto_sign": "Commits automatisch signieren (commit.gpgsign = true)",
+  "git_identity.auto_sign_tag": "(Automatisch signieren)",
   "git_identity.set_as_default": "Als globales Standardprofil festlegen",
   "git_identity.audit_trail": "Anmeldeinformationssicherheit und Anrufüberwachungsprotokolle",
   "git_identity.no_audit_events":
