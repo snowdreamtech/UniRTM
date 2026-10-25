@@ -18,6 +18,8 @@ export interface GraphPath {
   color: string;
   fromLane: number;
   toLane: number;
+  startY?: number;
+  endY?: number;
 }
 
 export interface GraphLayoutResult {
@@ -187,6 +189,8 @@ export function layoutGitGraph(commits: GitGraphCommit[], options: GraphLayoutOp
             color: pathColor,
             fromLane: lane,
             toLane: parentLane,
+            startY: Math.min(y, parentY),
+            endY: Math.max(y, parentY),
           });
         } else {
           // Smooth cubic bezier curve for branching / merging
@@ -199,6 +203,8 @@ export function layoutGitGraph(commits: GitGraphCommit[], options: GraphLayoutOp
             color: pathColor,
             fromLane: lane,
             toLane: parentLane,
+            startY: Math.min(y, parentY),
+            endY: Math.max(y, parentY),
           });
         }
       }

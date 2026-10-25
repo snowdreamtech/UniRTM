@@ -153,7 +153,7 @@
           <svg class="graph-svg-layer" :style="{ width: graphColWidth + 'px', height: totalSvgHeight + 'px' }">
             <!-- 1. Connecting Paths (Vertical lines & Bezier curves) -->
             <path
-              v-for="p in graphLayout.paths"
+              v-for="p in visibleGraphPaths"
               :key="p.id"
               :d="p.d"
               :stroke="p.color"
@@ -1521,6 +1521,23 @@ const visibleGraphNodes = computed(() => {
   const maxY = sTop + vHeight + VIRTUAL_OVERSCAN * ROW_HEIGHT;
 
   return nodes.filter((n) => n.y >= minY && n.y <= maxY);
+});
+
+const visibleGraphPaths = computed(() => {
+  const paths = graphLayout.value.paths;
+  if (filteredCommits.value.length <= 35) return paths;
+
+  const sTop = graphScrollTop.value;
+  const vHeight = graphViewportHeight.value;
+  const minY = sTop - VIRTUAL_OVERSCAN * ROW_HEIGHT;
+  const maxY = sTop + vHeight + VIRTUAL_OVERSCAN * ROW_HEIGHT;
+
+  return paths.filter((p) => {
+    if (p.startY !== undefined && p.endY !== undefined) {
+      return p.endY >= minY && p.startY <= maxY;
+    }
+    return true;
+  });
 });
 
 interface FileTreeNode {

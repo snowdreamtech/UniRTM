@@ -54,7 +54,7 @@
         <!-- Canvas Views -->
         <div class="canvas-content-wrapper">
           <router-view v-slot="{ Component }">
-            <keep-alive>
+            <keep-alive :max="4">
               <component
                 :is="Component"
                 :key="currentTab"
