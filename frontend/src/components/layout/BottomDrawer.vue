@@ -616,14 +616,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, defineAsyncComponent } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useToast } from "../../composables/useToast";
 import { useTerminal, TerminalItem } from "../../composables/useTerminal";
 import { useTerminalSessions } from "../../composables/useTerminalSessions";
-import XTerminalPane from "../terminal/XTerminalPane.vue";
-import PortsPanelView from "../ports/PortsPanelView.vue";
+
+const XTerminalPane = defineAsyncComponent(() => import("../terminal/XTerminalPane.vue"));
+const PortsPanelView = defineAsyncComponent(() => import("../ports/PortsPanelView.vue"));
+
 import { usePorts } from "../../composables/usePorts";
 import { useTerminalProcessWatcher } from "../../composables/useTerminalProcessWatcher";
 import { isMac } from "../../utils/platform";

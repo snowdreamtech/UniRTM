@@ -125,14 +125,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, defineAsyncComponent } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import TitleBar from "./components/layout/TitleBar.vue";
 import ActivityBar from "./components/layout/ActivityBar.vue";
 import SidebarPanel from "./components/layout/SidebarPanel.vue";
 import BottomStatusBar from "./components/layout/BottomStatusBar.vue";
-import BottomDrawer, { type LogItem, type DrawerTab } from "./components/layout/BottomDrawer.vue";
 import ToastNotification from "./components/ToastNotification.vue";
+import type { LogItem, DrawerTab } from "./components/layout/BottomDrawer.vue";
+
+const BottomDrawer = defineAsyncComponent(() => import("./components/layout/BottomDrawer.vue"));
 
 import { t, selectedLangSetting, setLanguage, SUPPORTED_LANGUAGES } from "./i18n";
 import { useTheme } from "./composables/useTheme";
@@ -142,10 +144,11 @@ import { useAppScope } from "./composables/useAppScope";
 import { useTerminalSessions } from "./composables/useTerminalSessions";
 import { useCredentialBroker } from "./composables/useCredentialBroker";
 import ScopeSwitcher from "./components/common/ScopeSwitcher.vue";
-import PassphraseModal from "./components/common/PassphraseModal.vue";
-import CommandPaletteModal from "./components/common/CommandPaletteModal.vue";
-import KeyboardShortcutsModal from "./components/common/KeyboardShortcutsModal.vue";
 import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
+
+const PassphraseModal = defineAsyncComponent(() => import("./components/common/PassphraseModal.vue"));
+const CommandPaletteModal = defineAsyncComponent(() => import("./components/common/CommandPaletteModal.vue"));
+const KeyboardShortcutsModal = defineAsyncComponent(() => import("./components/common/KeyboardShortcutsModal.vue"));
 
 const { startBrokerPolling, stopBrokerPolling } = useCredentialBroker();
 
