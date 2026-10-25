@@ -4,6 +4,8 @@
 package server
 
 import (
+	"encoding/json"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
@@ -62,4 +64,34 @@ func resolveConfigFilePath(global bool) string {
 		}
 	}
 	return "unirtm.toml"
+}
+
+// APIResponse represents the standard UniRTM API envelope format.
+type APIResponse struct {
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
+	Data    any    `json:"data,omitempty"`
+}
+
+// WriteJSON sends a JSON response with status code and payload.
+func WriteJSON(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(data)
+}
+
+// WriteSuccess sends a successful standard envelope response.
+func WriteSuccess(w http.ResponseWriter, data any) {
+	WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"data":    data,
+	})
+}
+
+// WriteError sends a standard JSON error response with an HTTP status code.
+func WriteError(w http.ResponseWriter, status int, message string) {
+	WriteJSON(w, status, map[string]interface{}{
+		"success": false,
+		"error":   message,
+	})
 }

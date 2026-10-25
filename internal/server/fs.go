@@ -16,6 +16,20 @@ import (
 	"time"
 )
 
+// RegisterFSRoutes registers filesystem and workspace roots management routes.
+func RegisterFSRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/workspace/roots", handleGetWorkspaceRoots)
+	mux.HandleFunc("/api/workspace/roots/add", handleAddWorkspaceRoot)
+	mux.HandleFunc("/api/workspace/roots/remove", handleRemoveWorkspaceRoot)
+
+	mux.HandleFunc("/api/fs/tree", handleFSTree)
+	mux.HandleFunc("/api/fs/create", handleFSCreate)
+	mux.HandleFunc("/api/fs/rename", handleFSRename)
+	mux.HandleFunc("/api/fs/delete", handleFSDelete)
+	mux.HandleFunc("/api/fs/read", handleFSRead)
+	mux.HandleFunc("/api/fs/write", handleFSWrite)
+}
+
 type FSEntry struct {
 	Name      string    `json:"name"`
 	Path      string    `json:"path"`

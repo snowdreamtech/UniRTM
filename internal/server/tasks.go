@@ -19,6 +19,54 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/hook"
 )
 
+// RegisterTasksRoutes registers tasks, environment variables, and hook routes.
+func RegisterTasksRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/tasks", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetTasks(w, r)
+		case http.MethodPost, http.MethodPut:
+			handleUpsertTask(w, r)
+		case http.MethodDelete:
+			handleDeleteTask(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		}
+	})
+	mux.HandleFunc("/api/tasks/run", handleRunTask)
+
+	mux.HandleFunc("/api/env", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetEnvVars(w, r)
+		case http.MethodPost, http.MethodPut:
+			handleUpsertEnvVar(w, r)
+		case http.MethodDelete:
+			handleDeleteEnvVar(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		}
+	})
+
+	mux.HandleFunc("/api/hooks", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetHooks(w, r)
+		case http.MethodPost, http.MethodPut:
+			handleUpsertHook(w, r)
+		case http.MethodDelete:
+			handleDeleteHook(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		}
+	})
+	mux.HandleFunc("/api/hooks/install", handleInstallHooks)
+	mux.HandleFunc("/api/hooks/run", handleRunHook)
+}
+
 func handleGetTasks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))

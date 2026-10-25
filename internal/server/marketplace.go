@@ -16,6 +16,53 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/theme"
 )
 
+// RegisterMarketplaceRoutes registers theme and extension marketplace routes.
+func RegisterMarketplaceRoutes(mux *http.ServeMux) {
+	themeMgr := theme.NewManager()
+
+	mux.HandleFunc("/api/themes", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetThemes(w, r, themeMgr)
+		case http.MethodDelete:
+			handleDeleteTheme(w, r, themeMgr)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		}
+	})
+	mux.HandleFunc("/api/themes/install", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		handleInstallTheme(w, r, themeMgr)
+	})
+	mux.HandleFunc("/api/themes/apply", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		handleApplyTheme(w, r)
+	})
+	mux.HandleFunc("/api/themes/assets/", func(w http.ResponseWriter, r *http.Request) {
+		handleThemeAssets(w, r, themeMgr)
+	})
+	mux.HandleFunc("/api/themes/marketplace/search", func(w http.ResponseWriter, r *http.Request) {
+		handleMarketplaceSearch(w, r, themeMgr)
+	})
+	mux.HandleFunc("/api/themes/marketplace/detail", func(w http.ResponseWriter, r *http.Request) {
+		handleMarketplaceDetail(w, r, themeMgr)
+	})
+	mux.HandleFunc("/api/themes/marketplace/install", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		handleMarketplaceInstall(w, r, themeMgr)
+	})
+}
+
 // ─── Theme Management Handlers ────────────────────────────────────────────────
 
 func handleGetThemes(w http.ResponseWriter, r *http.Request, themeMgr *theme.Manager) {

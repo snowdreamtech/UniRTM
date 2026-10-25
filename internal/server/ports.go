@@ -23,6 +23,18 @@ import (
 	"time"
 )
 
+// RegisterPortsRoutes registers port forwarding and detection routes.
+func RegisterPortsRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/ports/list", handlePortsList)
+	mux.HandleFunc("/api/ports/forward", handlePortForward)
+	mux.HandleFunc("/api/ports/update", handlePortUpdate)
+	mux.HandleFunc("/api/ports/stop", handlePortStop)
+	mux.HandleFunc("/api/ports/unforward", handlePortUnforward)
+	mux.HandleFunc("/api/ports/preview/", handlePortPreview)
+	mux.HandleFunc("/api/ports/probe", handlePortProbe)
+	mux.HandleFunc("/api/ports/workspace-hints", handlePortsWorkspaceHints)
+}
+
 type PortProbeInfo struct {
 	Port            int    `json:"port"`
 	IsHTTPS         bool   `json:"isHttps"`

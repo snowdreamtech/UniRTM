@@ -16,6 +16,47 @@ import (
 	"strings"
 )
 
+// RegisterGitRoutes registers all Git version control and repository management routes.
+func RegisterGitRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/git/repositories", handleGitRepositories)
+	mux.HandleFunc("/api/git/status", handleGitStatus)
+	mux.HandleFunc("/api/git/stage", handleGitStage)
+	mux.HandleFunc("/api/git/unstage", handleGitUnstage)
+	mux.HandleFunc("/api/git/discard", handleGitDiscard)
+	mux.HandleFunc("/api/git/commit", handleGitCommit)
+	mux.HandleFunc("/api/git/diff", handleGitDiff)
+	mux.HandleFunc("/api/git/branches", handleGitBranches)
+	mux.HandleFunc("/api/git/checkout", handleGitCheckout)
+	mux.HandleFunc("/api/git/sync", handleGitSync)
+	mux.HandleFunc("/api/git/log", handleGitLog)
+	mux.HandleFunc("/api/git/graph", handleGitGraph)
+	mux.HandleFunc("/api/git/commit-detail", handleGitCommitDetail)
+	mux.HandleFunc("/api/git/commit-diff", handleGitCommitDiff)
+	mux.HandleFunc("/api/git/compare", handleGitCompare)
+	mux.HandleFunc("/api/git/tag", handleGitTag)
+	mux.HandleFunc("/api/git/branch/create", handleGitBranchCreate)
+	mux.HandleFunc("/api/git/cherry-pick", handleGitCherryPick)
+	mux.HandleFunc("/api/git/revert", handleGitRevert)
+	mux.HandleFunc("/api/git/reset", handleGitReset)
+	mux.HandleFunc("/api/git/branch/rename", handleGitBranchRename)
+	mux.HandleFunc("/api/git/branch/delete", handleGitBranchDelete)
+	mux.HandleFunc("/api/git/branch/merge", handleGitBranchMerge)
+	mux.HandleFunc("/api/git/branch/rebase", handleGitBranchRebase)
+	mux.HandleFunc("/api/git/branch/push", handleGitBranchPush)
+	mux.HandleFunc("/api/git/tag/delete", handleGitTagDelete)
+	mux.HandleFunc("/api/git/tag/push", handleGitTagPush)
+	mux.HandleFunc("/api/git/archive", handleGitArchive)
+	mux.HandleFunc("/api/git/stash", handleGitStash)
+	mux.HandleFunc("/api/git/stash/apply", handleGitStashApply)
+	mux.HandleFunc("/api/git/stash/pop", handleGitStashPop)
+	mux.HandleFunc("/api/git/stash/drop", handleGitStashDrop)
+	mux.HandleFunc("/api/git/stash/branch", handleGitStashBranch)
+	mux.HandleFunc("/api/git/reset-uncommitted", handleGitResetUncommitted)
+	mux.HandleFunc("/api/git/clean", handleGitClean)
+	mux.HandleFunc("/api/git/pull", handleGitPull)
+	mux.HandleFunc("/api/git/fetch", handleGitFetch)
+}
+
 type GitChangeItem struct {
 	Path   string `json:"path"`
 	Status string `json:"status"`

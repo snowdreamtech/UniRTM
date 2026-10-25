@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -23,8 +24,6 @@ import (
 	"github.com/snowdreamtech/unirtm/frontend"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	"github.com/snowdreamtech/unirtm/internal/theme"
-	"golang.org/x/net/websocket"
 )
 
 // Options defines startup parameters for the Workbench HTTP server.
@@ -59,10 +58,11 @@ func Run(ctx context.Context, opts Options) error {
 	mux := SetupUIMux(distFS)
 
 	httpServer := &http.Server{
-		Handler:      mux,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Handler:           localSecurityMiddleware(mux),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	// Banner output
@@ -266,288 +266,41 @@ func isWSL() bool {
 	return false
 }
 
-func SetupUIMux(distFS fs.FS) *http.ServeMux {
-	mux := http.NewServeMux()
-
-	// ─── API Endpoints ────────────────────────────────────────────────────────
-	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		cm := config.NewConfigManager()
-		cfg, _ := cm.LoadHierarchy(r.Context())
-		pluginCount := 0
-		if cfg != nil {
-			pluginCount = len(cfg.Plugins)
-		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":        "ready",
-			"version":       env.GitTag,
-			"commit":        env.CommitHash,
-			"platform":      fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
-			"go_version":    runtime.Version(),
-			"tools_count":   5,
-			"tasks_count":   4,
-			"plugins_count": pluginCount,
-			"timestamp":     time.Now().Unix(),
-		})
+func handleStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cm := config.NewConfigManager()
+	cfg, _ := cm.LoadHierarchy(r.Context())
+	pluginCount := 0
+	if cfg != nil {
+		pluginCount = len(cfg.Plugins)
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":        "ready",
+		"version":       env.GitTag,
+		"commit":        env.CommitHash,
+		"platform":      fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		"go_version":    runtime.Version(),
+		"tools_count":   5,
+		"tasks_count":   4,
+		"plugins_count": pluginCount,
+		"timestamp":     time.Now().Unix(),
 	})
+}
 
-	mux.HandleFunc("/api/plugins", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		cm := config.NewConfigManager()
-		cfg, _ := cm.LoadHierarchy(r.Context())
-		if cfg == nil {
-			cfg = &config.Config{}
-		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"plugins": cfg.Plugins,
-		})
+func handlePlugins(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cm := config.NewConfigManager()
+	cfg, _ := cm.LoadHierarchy(r.Context())
+	if cfg == nil {
+		cfg = &config.Config{}
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"plugins": cfg.Plugins,
 	})
+}
 
-	mux.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet {
-			handleGetConfig(w, r)
-			return
-		} else if r.Method == http.MethodPost {
-			handlePostConfig(w, r)
-			return
-		}
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
-	})
-
-	mux.HandleFunc("/api/config/raw", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet {
-			handleGetConfigRaw(w, r)
-			return
-		} else if r.Method == http.MethodPost || r.Method == http.MethodPut {
-			handlePostConfigRaw(w, r)
-			return
-		}
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
-	})
-
-	mux.HandleFunc("/api/keybindings", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if r.Method == http.MethodGet {
-			handleGetKeybindings(w, r)
-			return
-		} else if r.Method == http.MethodPost || r.Method == http.MethodPut {
-			handlePostKeybindings(w, r)
-			return
-		}
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
-	})
-
-	mux.HandleFunc("/api/system/browsers", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"browsers": detectInstalledBrowsers(),
-		})
-	})
-	mux.HandleFunc("/api/system/check-update", handleSystemCheckUpdate)
-	mux.HandleFunc("/api/system/self-update", handleSystemSelfUpdate)
-	mux.HandleFunc("/api/terminals", handleGetTerminals)
-	mux.HandleFunc("/api/terminal/exec", handleTerminalExec)
-	mux.Handle("/api/terminal/ws", websocket.Handler(HandleTerminalWebSocket))
-
-	// ─── Network & Mirror API Endpoints ──────────────────────────────────────
-	mux.HandleFunc("/api/network/status", handleGetNetworkStatus)
-	mux.HandleFunc("/api/network/profile/use", handleUseNetworkProfile)
-	mux.HandleFunc("/api/network/profile/save", handleSaveNetworkProfile)
-	mux.HandleFunc("/api/network/profile/reset", handleResetNetworkProfile)
-	mux.HandleFunc("/api/network/profile/delete", handleDeleteNetworkProfile)
-	mux.HandleFunc("/api/network/registry/add", handleAddNetworkRegistry)
-	mux.HandleFunc("/api/network/registry/delete", handleDeleteNetworkRegistry)
-	mux.HandleFunc("/api/network/registry/override", handleOverrideNetworkRegistry)
-	mux.HandleFunc("/api/network/registry/reset", handleResetNetworkRegistry)
-	mux.HandleFunc("/api/network/registry/reset-all", handleResetAllNetworkRegistries)
-	mux.HandleFunc("/api/network/proxy", handleSetNetworkProxy)
-	mux.HandleFunc("/api/network/proxy/detect", handleDetectNetworkProxy)
-	mux.HandleFunc("/api/network/proxy/test", handleTestNetworkProxy)
-	mux.HandleFunc("/api/network/ping", handlePingNetwork)
-
-	// ─── Tools & Runtimes APIs ───────────────────────────────────────────────
-	RegisterToolsRoutes(mux)
-
-	// Tasks Management APIs
-	mux.HandleFunc("/api/tasks", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			handleGetTasks(w, r)
-		case http.MethodPost, http.MethodPut:
-			handleUpsertTask(w, r)
-		case http.MethodDelete:
-			handleDeleteTask(w, r)
-		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
-		}
-	})
-	mux.HandleFunc("/api/tasks/run", handleRunTask)
-
-	// Environment Variables Management APIs
-	mux.HandleFunc("/api/env", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			handleGetEnvVars(w, r)
-		case http.MethodPost, http.MethodPut:
-			handleUpsertEnvVar(w, r)
-		case http.MethodDelete:
-			handleDeleteEnvVar(w, r)
-		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
-		}
-	})
-
-	// Lifecycle Hooks Management APIs
-	mux.HandleFunc("/api/hooks", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			handleGetHooks(w, r)
-		case http.MethodPost, http.MethodPut:
-			handleUpsertHook(w, r)
-		case http.MethodDelete:
-			handleDeleteHook(w, r)
-		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
-		}
-	})
-	mux.HandleFunc("/api/hooks/install", handleInstallHooks)
-	mux.HandleFunc("/api/hooks/run", handleRunHook)
-
-	// ─── Quality Guard & Doctor Diagnostics ──────────────────────────────────
-	RegisterGuardRoutes(mux)
-	RegisterDoctorRoutes(mux)
-
-	// Version Aliases Management APIs
-	mux.HandleFunc("/api/aliases", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			handleGetAliases(w, r)
-		case http.MethodPost, http.MethodPut:
-			handleUpsertAlias(w, r)
-		case http.MethodDelete:
-			handleDeleteAlias(w, r)
-		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
-		}
-	})
-
-	// Theme Management APIs
-	themeMgr := theme.NewManager()
-	mux.HandleFunc("/api/themes", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodGet:
-			handleGetThemes(w, r, themeMgr)
-		case http.MethodDelete:
-			handleDeleteTheme(w, r, themeMgr)
-		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
-		}
-	})
-	mux.HandleFunc("/api/themes/install", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		handleInstallTheme(w, r, themeMgr)
-	})
-	mux.HandleFunc("/api/themes/apply", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		handleApplyTheme(w, r)
-	})
-	mux.HandleFunc("/api/themes/assets/", func(w http.ResponseWriter, r *http.Request) {
-		handleThemeAssets(w, r, themeMgr)
-	})
-	mux.HandleFunc("/api/themes/marketplace/search", func(w http.ResponseWriter, r *http.Request) {
-		handleMarketplaceSearch(w, r, themeMgr)
-	})
-	mux.HandleFunc("/api/themes/marketplace/detail", func(w http.ResponseWriter, r *http.Request) {
-		handleMarketplaceDetail(w, r, themeMgr)
-	})
-	mux.HandleFunc("/api/themes/marketplace/install", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		handleMarketplaceInstall(w, r, themeMgr)
-	})
-
-	// ─── Multi-root Workspace API Handlers ────────────────────────────────────
-	mux.HandleFunc("/api/workspace/roots", handleGetWorkspaceRoots)
-	mux.HandleFunc("/api/workspace/roots/add", handleAddWorkspaceRoot)
-	mux.HandleFunc("/api/workspace/roots/remove", handleRemoveWorkspaceRoot)
-
-	// ─── File System API Handlers ─────────────────────────────────────────────
-	mux.HandleFunc("/api/fs/tree", handleFSTree)
-	mux.HandleFunc("/api/fs/create", handleFSCreate)
-	mux.HandleFunc("/api/fs/rename", handleFSRename)
-	mux.HandleFunc("/api/fs/delete", handleFSDelete)
-	mux.HandleFunc("/api/fs/read", handleFSRead)
-	mux.HandleFunc("/api/fs/write", handleFSWrite)
-
-	// ─── Git SCM API Handlers ─────────────────────────────────────────────────
-	mux.HandleFunc("/api/git/repositories", handleGitRepositories)
-	mux.HandleFunc("/api/git/status", handleGitStatus)
-	mux.HandleFunc("/api/git/stage", handleGitStage)
-	mux.HandleFunc("/api/git/unstage", handleGitUnstage)
-	mux.HandleFunc("/api/git/discard", handleGitDiscard)
-	mux.HandleFunc("/api/git/commit", handleGitCommit)
-	mux.HandleFunc("/api/git/diff", handleGitDiff)
-	mux.HandleFunc("/api/git/branches", handleGitBranches)
-	mux.HandleFunc("/api/git/checkout", handleGitCheckout)
-	mux.HandleFunc("/api/git/sync", handleGitSync)
-	mux.HandleFunc("/api/git/log", handleGitLog)
-	mux.HandleFunc("/api/git/graph", handleGitGraph)
-	mux.HandleFunc("/api/git/commit-detail", handleGitCommitDetail)
-	mux.HandleFunc("/api/git/commit-diff", handleGitCommitDiff)
-	mux.HandleFunc("/api/git/compare", handleGitCompare)
-	mux.HandleFunc("/api/git/tag", handleGitTag)
-	mux.HandleFunc("/api/git/branch/create", handleGitBranchCreate)
-	mux.HandleFunc("/api/git/cherry-pick", handleGitCherryPick)
-	mux.HandleFunc("/api/git/revert", handleGitRevert)
-	mux.HandleFunc("/api/git/reset", handleGitReset)
-	mux.HandleFunc("/api/git/branch/rename", handleGitBranchRename)
-	mux.HandleFunc("/api/git/branch/delete", handleGitBranchDelete)
-	mux.HandleFunc("/api/git/branch/merge", handleGitBranchMerge)
-	mux.HandleFunc("/api/git/branch/rebase", handleGitBranchRebase)
-	mux.HandleFunc("/api/git/branch/push", handleGitBranchPush)
-	mux.HandleFunc("/api/git/tag/delete", handleGitTagDelete)
-	mux.HandleFunc("/api/git/tag/push", handleGitTagPush)
-	mux.HandleFunc("/api/git/archive", handleGitArchive)
-	mux.HandleFunc("/api/git/stash", handleGitStash)
-	mux.HandleFunc("/api/git/stash/apply", handleGitStashApply)
-	mux.HandleFunc("/api/git/stash/pop", handleGitStashPop)
-	mux.HandleFunc("/api/git/stash/drop", handleGitStashDrop)
-	mux.HandleFunc("/api/git/stash/branch", handleGitStashBranch)
-	mux.HandleFunc("/api/git/reset-uncommitted", handleGitResetUncommitted)
-	mux.HandleFunc("/api/git/clean", handleGitClean)
-	mux.HandleFunc("/api/git/pull", handleGitPull)
-	mux.HandleFunc("/api/git/fetch", handleGitFetch)
-	RegisterCredentialRoutes(mux)
-
-	// ─── Port Forwarding API Handlers ──────────────────────────────────────────
-	mux.HandleFunc("/api/ports/list", handlePortsList)
-	mux.HandleFunc("/api/ports/forward", handlePortForward)
-	mux.HandleFunc("/api/ports/update", handlePortUpdate)
-	mux.HandleFunc("/api/ports/stop", handlePortStop)
-	mux.HandleFunc("/api/ports/unforward", handlePortUnforward)
-	mux.HandleFunc("/api/ports/preview/", handlePortPreview)
-	mux.HandleFunc("/api/ports/probe", handlePortProbe)
-	mux.HandleFunc("/api/ports/workspace-hints", handlePortsWorkspaceHints)
-
-	// ─── Static SPA Handler ───────────────────────────────────────────────────
+// RegisterStaticSPARoutes mounts the embedded frontend SPA filesystem.
+func RegisterStaticSPARoutes(mux *http.ServeMux, distFS fs.FS) {
 	fileServer := http.FileServer(http.FS(distFS))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
@@ -570,6 +323,49 @@ func SetupUIMux(distFS fs.FS) *http.ServeMux {
 		r.URL.Path = "/"
 		fileServer.ServeHTTP(w, r)
 	})
+}
+
+// localSecurityMiddleware protects local developer workbench from cross-site DNS rebinding and malicious origins.
+func localSecurityMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			if u, err := url.Parse(origin); err == nil {
+				h := u.Hostname()
+				if h != "localhost" && h != "127.0.0.1" && h != "::1" && h != "" {
+					http.Error(w, "Forbidden: Untrusted Origin", http.StatusForbidden)
+					return
+				}
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// SetupUIMux configures and returns the central HTTP servemux with all modular domain routes.
+func SetupUIMux(distFS fs.FS) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	// ─── Status & Info ────────────────────────────────────────────────────────
+	mux.HandleFunc("/api/status", handleStatus)
+	mux.HandleFunc("/api/plugins", handlePlugins)
+
+	// ─── Domain Module Route Registrations ────────────────────────────────────
+	RegisterSystemRoutes(mux)
+	RegisterConfigRoutes(mux)
+	RegisterNetworkRoutes(mux)
+	RegisterToolsRoutes(mux)
+	RegisterTasksRoutes(mux)
+	RegisterGuardRoutes(mux)
+	RegisterDoctorRoutes(mux)
+	RegisterMarketplaceRoutes(mux)
+	RegisterFSRoutes(mux)
+	RegisterGitRoutes(mux)
+	RegisterCredentialRoutes(mux)
+	RegisterPortsRoutes(mux)
+
+	// ─── Static SPA Handler ───────────────────────────────────────────────────
+	RegisterStaticSPARoutes(mux, distFS)
 
 	return mux
 }

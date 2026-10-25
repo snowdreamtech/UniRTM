@@ -17,6 +17,62 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
+// RegisterConfigRoutes registers configuration, keybindings, and version alias routes.
+func RegisterConfigRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			handleGetConfig(w, r)
+			return
+		} else if r.Method == http.MethodPost {
+			handlePostConfig(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+	})
+
+	mux.HandleFunc("/api/config/raw", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			handleGetConfigRaw(w, r)
+			return
+		} else if r.Method == http.MethodPost || r.Method == http.MethodPut {
+			handlePostConfigRaw(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+	})
+
+	mux.HandleFunc("/api/keybindings", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			handleGetKeybindings(w, r)
+			return
+		} else if r.Method == http.MethodPost || r.Method == http.MethodPut {
+			handlePostKeybindings(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+	})
+
+	mux.HandleFunc("/api/aliases", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetAliases(w, r)
+		case http.MethodPost, http.MethodPut:
+			handleUpsertAlias(w, r)
+		case http.MethodDelete:
+			handleDeleteAlias(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		}
+	})
+}
+
 func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 	userPath := config.GetGlobalConfigPath()
 	userExists := false

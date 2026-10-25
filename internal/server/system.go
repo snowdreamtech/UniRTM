@@ -16,7 +16,23 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"golang.org/x/net/websocket"
 )
+
+// RegisterSystemRoutes registers all system, browser, and terminal routes.
+func RegisterSystemRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/system/browsers", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"browsers": detectInstalledBrowsers(),
+		})
+	})
+	mux.HandleFunc("/api/system/check-update", handleSystemCheckUpdate)
+	mux.HandleFunc("/api/system/self-update", handleSystemSelfUpdate)
+	mux.HandleFunc("/api/terminals", handleGetTerminals)
+	mux.HandleFunc("/api/terminal/exec", handleTerminalExec)
+	mux.Handle("/api/terminal/ws", websocket.Handler(HandleTerminalWebSocket))
+}
 
 func detectInstalledBrowsers() []DetectedBrowser {
 	var list []DetectedBrowser

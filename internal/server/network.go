@@ -13,6 +13,24 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/network"
 )
 
+// RegisterNetworkRoutes registers all mirror and network diagnostics routes.
+func RegisterNetworkRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/api/network/status", handleGetNetworkStatus)
+	mux.HandleFunc("/api/network/profile/use", handleUseNetworkProfile)
+	mux.HandleFunc("/api/network/profile/save", handleSaveNetworkProfile)
+	mux.HandleFunc("/api/network/profile/reset", handleResetNetworkProfile)
+	mux.HandleFunc("/api/network/profile/delete", handleDeleteNetworkProfile)
+	mux.HandleFunc("/api/network/registry/add", handleAddNetworkRegistry)
+	mux.HandleFunc("/api/network/registry/delete", handleDeleteNetworkRegistry)
+	mux.HandleFunc("/api/network/registry/override", handleOverrideNetworkRegistry)
+	mux.HandleFunc("/api/network/registry/reset", handleResetNetworkRegistry)
+	mux.HandleFunc("/api/network/registry/reset-all", handleResetAllNetworkRegistries)
+	mux.HandleFunc("/api/network/proxy", handleSetNetworkProxy)
+	mux.HandleFunc("/api/network/proxy/detect", handleDetectNetworkProxy)
+	mux.HandleFunc("/api/network/proxy/test", handleTestNetworkProxy)
+	mux.HandleFunc("/api/network/ping", handlePingNetwork)
+}
+
 func resolveNetworkPathFromRequest(r *http.Request, defaultScope string) string {
 	scope := r.URL.Query().Get("scope")
 	if scope == "" {

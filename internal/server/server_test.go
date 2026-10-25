@@ -677,3 +677,57 @@ func TestKeybindingsAPI(t *testing.T) {
 		t.Errorf("Expected body to contain 'ctrl+alt+g', got: %s", rrGet2.Body.String())
 	}
 }
+
+func TestLocalSecurityMiddleware(t *testing.T) {
+	innerHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
+	secureHandler := localSecurityMiddleware(innerHandler)
+
+	// 1. Valid local origins
+	for _, origin := range []string{"http://localhost:3000", "http://127.0.0.1:4000", "http://[::1]:5173", ""} {
+		req := httptest.NewRequest("GET", "/api/status", nil)
+		if origin != "" {
+			req.Header.Set("Origin", origin)
+		}
+		rr := httptest.NewRecorder()
+		secureHandler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("Expected 200 for origin %q, got %d", origin, rr.Code)
+		}
+	}
+
+	// 2. Untrusted external origins
+	for _, badOrigin := range []string{"https://malicious.com", "http://evil.org:8080"} {
+		req := httptest.NewRequest("GET", "/api/status", nil)
+		req.Header.Set("Origin", badOrigin)
+		rr := httptest.NewRecorder()
+		secureHandler.ServeHTTP(rr, req)
+		if rr.Code != http.StatusForbidden {
+			t.Errorf("Expected 403 Forbidden for bad origin %q, got %d", badOrigin, rr.Code)
+		}
+	}
+}
+
+func TestAPIResponseHelpers(t *testing.T) {
+	// 1. WriteSuccess
+	rrSuccess := httptest.NewRecorder()
+	WriteSuccess(rrSuccess, map[string]string{"sample": "val"})
+	if rrSuccess.Code != http.StatusOK {
+		t.Errorf("Expected 200, got %d", rrSuccess.Code)
+	}
+	if !strings.Contains(rrSuccess.Body.String(), `"sample":"val"`) {
+		t.Errorf("Unexpected WriteSuccess output: %s", rrSuccess.Body.String())
+	}
+
+	// 2. WriteError
+	rrError := httptest.NewRecorder()
+	WriteError(rrError, http.StatusBadRequest, "invalid parameter")
+	if rrError.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400, got %d", rrError.Code)
+	}
+	if !strings.Contains(rrError.Body.String(), `"error":"invalid parameter"`) {
+		t.Errorf("Unexpected WriteError output: %s", rrError.Body.String())
+	}
+}
