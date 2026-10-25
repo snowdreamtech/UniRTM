@@ -2630,9 +2630,19 @@ export const frFr: TranslationDict = {
   "git_identity.audit_trail": "Sécurité des informations d'identification et journaux d'audit des appels",
   "git_identity.no_audit_events": "Il n’existe aucun enregistrement d’appel d’identification pour la session en cours.",
   "git_identity.switch_profile": "Changer de profil d'identité Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Partiellement efficace dans l'entrepôt actuel",
+  "git_identity.manage_profiles": "Configurer l'identité...",
   "git_identity.click_to_switch": "Identité Git : par défaut (cliquez pour changer)",
+  "git_identity.use_ssh_agent_default": "-- Utiliser l'agent SSH par défaut (mot de passe automatiquement exempté) --",
+  "git_identity.select_discovered_gpg": "-- Sélectionnez une clé GPG découverte --",
+  "git_identity.ssh_agent_ready": "L'agent SSH est activé (automatiquement sans mot de passe)",
+  "git_identity.gpg_agent_ready": "L'agent GPG est prêt",
+  "git_identity.ssh_key_placeholder":
+    "Laissez-le vide pour utiliser automatiquement l'agent SSH (passthrough sans mot de passe)",
+  "git_identity.ssh_key_hint":
+    "Lorsqu'il est laissé vide, Git effectuera automatiquement une authentification sans mot de passe via l'agent SSH activé et la configuration SSH du système pour éviter de saisir à plusieurs reprises le mot de passe de la clé privée.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent mettra en cache le mot de passe en mémoire pendant la période de validité de la session et terminera automatiquement la soumission de la signature sans avoir à saisir le mot de passe pendant cette période.",
 };
 
 export default frFr;

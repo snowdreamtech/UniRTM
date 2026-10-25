@@ -2597,7 +2597,7 @@ export const ocFr: TranslationDict = {
   "git_identity.new_profile": "Perfil novèl",
   "git_identity.active_workspace": "Espaci de trabalh actual actiu",
   "git_identity.default": "Per defaut",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "identitat per defaut",
   "git_identity.apply_tooltip": "Aplicar al depaus local de l'espaci de trabalh actual (.git/config)",
   "git_identity.edit": "Modificar",
   "git_identity.delete": "Suprimir",
@@ -2610,14 +2610,23 @@ export const ocFr: TranslationDict = {
   "git_identity.select_discovered": "-- Seleccionatz una clau descobèrta --",
   "git_identity.gpg_signing_key": "ID de clau de signatura GPG",
   "git_identity.enable_auto_sign": "Signatz automaticament los engatjaments (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(signatura automatica)",
   "git_identity.set_as_default": "Definir coma perfil per defaut global",
   "git_identity.audit_trail": "Registres d'auditoria de seguretat de las credencialas e d'apèls",
   "git_identity.no_audit_events": "I a pas cap d'enregistrament d'apèl d'identificacion per la sesilha actuala.",
   "git_identity.switch_profile": "Cambiar lo perfil d'identitat Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Parcialament eficaç dins l'entrepaus actual",
+  "git_identity.manage_profiles": "Configurar l'identitat...",
   "git_identity.click_to_switch": "Identitat Git : per defaut (clicatz per bascular)",
+  "git_identity.use_ssh_agent_default": "-- Utilizar l'agent SSH per defaut (senhal exemptat automaticament) --",
+  "git_identity.select_discovered_gpg": "-- Seleccionatz una clau GPG descobèrta --",
+  "git_identity.ssh_agent_ready": "L'agent SSH es activat (automaticament sens senhal)",
+  "git_identity.gpg_agent_ready": "L'agent GPG es prèst",
+  "git_identity.ssh_key_placeholder": "Daissatz-lo vuèg per utilizar automaticament l'agent SSH (pass sens senhal)",
+  "git_identity.ssh_key_hint":
+    "Quand es daissat void, Git completarà automaticament l'autentificacion sens senhal a travèrs l'agent SSH activat e la configuracion SSH del sistèma per evitar d'introduire repetidament lo senhal de la clau privada.",
+  "git_identity.gpg_key_hint":
+    "L'agent GPG cacherà lo senhal dins la memòria pendent lo periòde de validitat de la sesilha, e completarà automaticament la somission de la signatura sens aver d'introduire lo senhal pendent aqueste periòde.",
 };
 
 export default ocFr;

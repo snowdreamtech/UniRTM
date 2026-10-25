@@ -327,8 +327,10 @@ func DiscoverSystemKeys() (*SystemKeysSummary, error) {
 					continue
 				}
 				recordType := fields[0]
-				if recordType == "pub" {
+				if recordType == "pub" || recordType == "sec" {
 					currentKeyID = fields[4]
+				} else if recordType == "fpr" && len(fields) >= 10 && fields[9] != "" {
+					currentKeyID = fields[9]
 				} else if recordType == "uid" && currentKeyID != "" {
 					uid := fields[9]
 					summary.GPGKeys = append(summary.GPGKeys, SystemGPGKey{

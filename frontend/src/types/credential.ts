@@ -36,6 +36,7 @@ export interface SystemSSHKey {
 
 export interface SystemGPGKey {
   keyId: string;
+  shortKeyId?: string;
   userId: string;
   algo?: string;
   created?: string;

@@ -2598,7 +2598,7 @@ export const bgBg: TranslationDict = {
   "git_identity.new_profile": "Нов профил",
   "git_identity.active_workspace": "Активно текущо работно пространство",
   "git_identity.default": "По подразбиране",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "идентичност по подразбиране",
   "git_identity.apply_tooltip": "Прилагане към текущото локално хранилище на работното пространство (.git/config)",
   "git_identity.edit": "Редактиране",
   "git_identity.delete": "Изтриване",
@@ -2611,14 +2611,25 @@ export const bgBg: TranslationDict = {
   "git_identity.select_discovered": "-- Изберете открит ключ --",
   "git_identity.gpg_signing_key": "ID на ключ за подпис на GPG",
   "git_identity.enable_auto_sign": "Автоматично подписване на ангажименти (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(автоматичен подпис)",
   "git_identity.set_as_default": "Задайте като глобален профил по подразбиране",
   "git_identity.audit_trail": "Сигурност на идентификационните данни и журнали за одит на обаждания",
   "git_identity.no_audit_events": "Няма запис на обаждане с идентификационни данни за текущата сесия.",
   "git_identity.switch_profile": "Превключване на профил за идентичност на Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Частично действащ в настоящия склад",
+  "git_identity.manage_profiles": "Конфигуриране на самоличност...",
   "git_identity.click_to_switch": "Git самоличност: по подразбиране (щракнете за превключване)",
+  "git_identity.use_ssh_agent_default":
+    "-- Използвайте SSH агент по подразбиране (автоматично освобождаване на паролата) --",
+  "git_identity.select_discovered_gpg": "-- Изберете открит GPG ключ --",
+  "git_identity.ssh_agent_ready": "SSH агентът е активиран (автоматично без парола)",
+  "git_identity.gpg_agent_ready": "GPG агентът е готов",
+  "git_identity.ssh_key_placeholder":
+    "Оставете празно, за да използвате автоматично SSH агент (преминаване без парола)",
+  "git_identity.ssh_key_hint":
+    "Когато остане празно, Git автоматично ще завърши удостоверяване без парола чрез активирания SSH агент и системната SSH конфигурация, за да избегне многократното въвеждане на паролата за частния ключ.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent ще кешира паролата в паметта по време на периода на валидност на сесията и автоматично ще завърши подаването на подпис, без да се налага да въвеждате паролата през този период.",
 };
 
 export default bgBg;

@@ -2589,7 +2589,7 @@ export const taIn: TranslationDict = {
   "git_identity.new_profile": "புதிய சுயவிவரம்",
   "git_identity.active_workspace": "தற்போதைய பணியிடம் செயலில் உள்ளது",
   "git_identity.default": "இயல்புநிலை",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "இயல்புநிலை அடையாளம்",
   "git_identity.apply_tooltip": "தற்போதைய பணியிட உள்ளூர் களஞ்சியத்திற்கு (.git/config) விண்ணப்பிக்கவும்",
   "git_identity.edit": "திருத்தவும்",
   "git_identity.delete": "நீக்கு",
@@ -2602,14 +2602,23 @@ export const taIn: TranslationDict = {
   "git_identity.select_discovered": "-- கண்டுபிடிக்கப்பட்ட விசையைத் தேர்ந்தெடுக்கவும் --",
   "git_identity.gpg_signing_key": "GPG கையொப்ப விசை ஐடி",
   "git_identity.enable_auto_sign": "தானாக கையொப்பமிடுகிறது (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(தானியங்கி கையொப்பம்)",
   "git_identity.set_as_default": "உலகளாவிய இயல்புநிலை சுயவிவரமாக அமைக்கவும்",
   "git_identity.audit_trail": "நற்சான்றிதழ் பாதுகாப்பு மற்றும் அழைப்பு தணிக்கை பதிவுகள்",
   "git_identity.no_audit_events": "நடப்பு அமர்வுக்கான நற்சான்றிதழ் அழைப்பு பதிவு இல்லை.",
   "git_identity.switch_profile": "Git அடையாள சுயவிவரத்தை மாற்றவும்",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "தற்போதைய கிடங்கில் ஓரளவு பயனுள்ளதாக இருக்கும்",
+  "git_identity.manage_profiles": "அடையாளத்தை உள்ளமைக்கவும்...",
   "git_identity.click_to_switch": "Git அடையாளம்: இயல்புநிலை (மாற்ற கிளிக் செய்யவும்)",
+  "git_identity.use_ssh_agent_default": "-- இயல்புநிலையாக SSH முகவரைப் பயன்படுத்தவும் (தானாகவே விலக்கு கடவுச்சொல்) --",
+  "git_identity.select_discovered_gpg": "-- கண்டுபிடிக்கப்பட்ட GPG விசையைத் தேர்ந்தெடுக்கவும் --",
+  "git_identity.ssh_agent_ready": "SSH முகவர் செயல்படுத்தப்பட்டது (தானாக கடவுச்சொல் இல்லாதது)",
+  "git_identity.gpg_agent_ready": "GPG ஏஜென்ட் தயாராக உள்ளது",
+  "git_identity.ssh_key_placeholder": "SSH முகவர் (கடவுச்சொல் இல்லாத பாஸ்த்ரூ) தானாக பயன்படுத்த அதை காலியாக விடவும்",
+  "git_identity.ssh_key_hint":
+    "காலியாக விடப்பட்டால், தனிப்பட்ட விசை கடவுச்சொல்லை மீண்டும் மீண்டும் உள்ளிடுவதைத் தவிர்க்க, செயல்படுத்தப்பட்ட SSH முகவர் மற்றும் கணினி SSH உள்ளமைவு மூலம் கடவுச்சொல் இல்லாத அங்கீகாரத்தை Git தானாகவே நிறைவு செய்யும்.",
+  "git_identity.gpg_key_hint":
+    "அமர்வின் செல்லுபடியாகும் காலத்தில் GPG முகவர் கடவுச்சொல்லை நினைவகத்தில் தேக்கி வைப்பார், மேலும் இந்தக் காலகட்டத்தில் கடவுச்சொல்லை உள்ளிடாமல் தானாகவே கையொப்பச் சமர்ப்பிப்பை நிறைவு செய்வார்.",
 };
 
 export default taIn;

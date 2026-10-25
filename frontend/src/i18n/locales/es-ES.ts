@@ -2621,9 +2621,20 @@ export const esEs: TranslationDict = {
   "git_identity.audit_trail": "Seguridad de credenciales y registros de auditoría de llamadas",
   "git_identity.no_audit_events": "No hay ningún registro de llamada de credenciales para la sesión actual.",
   "git_identity.switch_profile": "Cambiar perfil de identidad de Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Parcialmente efectivo en el almacén actual.",
+  "git_identity.manage_profiles": "Configurar identidad...",
   "git_identity.click_to_switch": "Identidad de Git: predeterminada (haga clic para cambiar)",
+  "git_identity.use_ssh_agent_default":
+    "-- Utilice el Agente SSH de forma predeterminada (contraseña exenta automáticamente) --",
+  "git_identity.select_discovered_gpg": "-- Seleccione una clave GPG descubierta --",
+  "git_identity.ssh_agent_ready": "El Agente SSH está activado (automáticamente sin contraseña)",
+  "git_identity.gpg_agent_ready": "El agente GPG está listo",
+  "git_identity.ssh_key_placeholder":
+    "Déjelo en blanco para usar automáticamente el Agente SSH (transferencia sin contraseña)",
+  "git_identity.ssh_key_hint":
+    "Cuando se deja en blanco, Git completará automáticamente la autenticación sin contraseña a través del Agente SSH activado y la configuración SSH del sistema para evitar ingresar repetidamente la contraseña de la clave privada.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent almacenará en caché la contraseña en la memoria durante el período de validez de la sesión y completará automáticamente el envío de la firma sin tener que ingresar la contraseña durante este período.",
 };
 
 export default esEs;

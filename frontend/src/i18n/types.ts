@@ -2402,6 +2402,7 @@ export interface TranslationDict {
   "git_identity.new_profile": string;
   "git_identity.active_workspace": string;
   "git_identity.default": string;
+  "git_identity.default_profile": string;
   "git_identity.apply_tooltip": string;
   "git_identity.edit": string;
   "git_identity.delete": string;
@@ -2414,6 +2415,7 @@ export interface TranslationDict {
   "git_identity.select_discovered": string;
   "git_identity.gpg_signing_key": string;
   "git_identity.enable_auto_sign": string;
+  "git_identity.auto_sign_tag": string;
   "git_identity.set_as_default": string;
   "git_identity.audit_trail": string;
   "git_identity.no_audit_events": string;
@@ -2421,4 +2423,11 @@ export interface TranslationDict {
   "git_identity.local_isolation_hint": string;
   "git_identity.manage_profiles": string;
   "git_identity.click_to_switch": string;
+  "git_identity.use_ssh_agent_default": string;
+  "git_identity.select_discovered_gpg": string;
+  "git_identity.ssh_agent_ready": string;
+  "git_identity.gpg_agent_ready": string;
+  "git_identity.ssh_key_placeholder": string;
+  "git_identity.ssh_key_hint": string;
+  "git_identity.gpg_key_hint": string;
 }

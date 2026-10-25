@@ -2573,7 +2573,7 @@ export const ltLt: TranslationDict = {
   "git_identity.new_profile": "Naujas profilis",
   "git_identity.active_workspace": "Dabartinė darbo sritis aktyvi",
   "git_identity.default": "Numatytoji",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "numatytoji tapatybė",
   "git_identity.apply_tooltip": "Taikyti dabartinei darbo srities vietinei saugyklai (.git/config)",
   "git_identity.edit": "Redaguoti",
   "git_identity.delete": "Ištrinti",
@@ -2586,14 +2586,25 @@ export const ltLt: TranslationDict = {
   "git_identity.select_discovered": "-- Pasirinkite aptiktą raktą --",
   "git_identity.gpg_signing_key": "GPG parašo rakto ID",
   "git_identity.enable_auto_sign": "Automatiškai pasirašyti įsipareigojimus (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(automatinis parašas)",
   "git_identity.set_as_default": "Nustatyti kaip visuotinį numatytąjį profilį",
   "git_identity.audit_trail": "Kredencialų sauga ir skambučių audito žurnalai",
   "git_identity.no_audit_events": "Dabartinės sesijos kredencialų skambučio įrašo nėra.",
   "git_identity.switch_profile": "Perjunkite „Git“ tapatybės profilį",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Iš dalies efektyvus dabartiniame sandėlyje",
+  "git_identity.manage_profiles": "Konfigūruoti tapatybę...",
   "git_identity.click_to_switch": "Git tapatybė: numatytoji (spustelėkite, kad perjungtumėte)",
+  "git_identity.use_ssh_agent_default":
+    "– Pagal numatytuosius nustatymus naudokite SSH agentą (automatiškai atleidžiamas slaptažodis) –",
+  "git_identity.select_discovered_gpg": "-- Pasirinkite aptiktą GPG raktą --",
+  "git_identity.ssh_agent_ready": "SSH agentas suaktyvintas (automatiškai be slaptažodžio)",
+  "git_identity.gpg_agent_ready": "GPG agentas paruoštas",
+  "git_identity.ssh_key_placeholder":
+    "Palikite tuščią, kad automatiškai naudotumėte SSH agentą (perėjimas be slaptažodžio)",
+  "git_identity.ssh_key_hint":
+    "Kai paliksite tuščią, „Git“ automatiškai užbaigs autentifikavimą be slaptažodžio per suaktyvintą SSH agentą ir sistemos SSH konfigūraciją, kad būtų išvengta pakartotinio privataus rakto slaptažodžio įvedimo.",
+  "git_identity.gpg_key_hint":
+    "GPG agentas saugo slaptažodį atmintyje per seanso galiojimo laikotarpį ir automatiškai užbaigs parašo pateikimą neįvesdamas slaptažodžio per šį laikotarpį.",
 };
 
 export default ltLt;

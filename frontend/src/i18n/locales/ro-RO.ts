@@ -2583,7 +2583,7 @@ export const roRo: TranslationDict = {
   "git_identity.new_profile": "Profil nou",
   "git_identity.active_workspace": "Spațiul de lucru curent activ",
   "git_identity.default": "Implicit",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "identitate implicită",
   "git_identity.apply_tooltip": "Aplicați la depozitul local actual al spațiului de lucru (.git/config)",
   "git_identity.edit": "Editați",
   "git_identity.delete": "Ștergeți",
@@ -2596,14 +2596,23 @@ export const roRo: TranslationDict = {
   "git_identity.select_discovered": "-- Selectați o cheie descoperită --",
   "git_identity.gpg_signing_key": "ID-ul cheii semnăturii GPG",
   "git_identity.enable_auto_sign": "Semnează automat commit-uri (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(semnătură automată)",
   "git_identity.set_as_default": "Setați ca profil global implicit",
   "git_identity.audit_trail": "Securitatea acreditărilor și jurnalele de auditare a apelurilor",
   "git_identity.no_audit_events": "Nu există nicio înregistrare a apelurilor de acreditări pentru sesiunea curentă.",
   "git_identity.switch_profile": "Comutați profilul de identitate Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Parțial eficient în depozitul actual",
+  "git_identity.manage_profiles": "Configurați identitatea...",
   "git_identity.click_to_switch": "Identitate Git: implicit (dați clic pentru a comuta)",
+  "git_identity.use_ssh_agent_default": "-- Utilizați agentul SSH în mod prestabilit (parolă scutită automat) --",
+  "git_identity.select_discovered_gpg": "-- Selectați o cheie GPG descoperită --",
+  "git_identity.ssh_agent_ready": "Agentul SSH este activat (automat fără parolă)",
+  "git_identity.gpg_agent_ready": "Agentul GPG este gata",
+  "git_identity.ssh_key_placeholder": "Lăsați necompletat pentru a utiliza automat SSH Agent (passthrough fără parolă)",
+  "git_identity.ssh_key_hint":
+    "Când este lăsat necompletat, Git va finaliza automat autentificarea fără parolă prin agentul SSH activat și configurația SSH a sistemului pentru a evita introducerea repetă a parolei cheii private.",
+  "git_identity.gpg_key_hint":
+    "Agentul GPG va stoca parola în memoria cache în perioada de valabilitate a sesiunii și va finaliza automat trimiterea semnăturii fără a fi nevoie să introduceți parola în această perioadă.",
 };
 
 export default roRo;

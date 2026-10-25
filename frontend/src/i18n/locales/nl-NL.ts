@@ -2575,7 +2575,7 @@ export const nlNl: TranslationDict = {
   "git_identity.new_profile": "Nieuw profiel",
   "git_identity.active_workspace": "Huidige werkruimte actief",
   "git_identity.default": "Standaard",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "standaard identiteit",
   "git_identity.apply_tooltip": "Toepassen op de huidige lokale werkruimterepository (.git/config)",
   "git_identity.edit": "Bewerken",
   "git_identity.delete": "Verwijderen",
@@ -2588,14 +2588,24 @@ export const nlNl: TranslationDict = {
   "git_identity.select_discovered": "-- Selecteer een ontdekte sleutel --",
   "git_identity.gpg_signing_key": "GPG-handtekening sleutel-ID",
   "git_identity.enable_auto_sign": "Automatisch commits ondertekenen (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(automatische handtekening)",
   "git_identity.set_as_default": "Instellen als globaal standaardprofiel",
   "git_identity.audit_trail": "Referentiebeveiliging en oproepauditlogboeken",
   "git_identity.no_audit_events": "Er is geen referentiegespreksrecord voor de huidige sessie.",
   "git_identity.switch_profile": "Schakel over naar Git Identity-profiel",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Gedeeltelijk effectief in het huidige magazijn",
+  "git_identity.manage_profiles": "Identiteit configureren...",
   "git_identity.click_to_switch": "Git-identiteit: standaard (klik om te schakelen)",
+  "git_identity.use_ssh_agent_default": "-- Gebruik standaard SSH Agent (wachtwoord automatisch vrijgesteld) --",
+  "git_identity.select_discovered_gpg": "-- Selecteer een ontdekte GPG-sleutel --",
+  "git_identity.ssh_agent_ready": "SSH Agent is geactiveerd (automatisch wachtwoordvrij)",
+  "git_identity.gpg_agent_ready": "GPG-agent is klaar",
+  "git_identity.ssh_key_placeholder":
+    "Laat dit leeg om SSH Agent automatisch te gebruiken (wachtwoordvrije passthrough)",
+  "git_identity.ssh_key_hint":
+    "Als je dit veld leeg laat, zal Git automatisch de wachtwoordvrije authenticatie voltooien via de geactiveerde SSH Agent en de SSH-systeemconfiguratie om te voorkomen dat je herhaaldelijk het privésleutelwachtwoord invoert.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent slaat het wachtwoord in het geheugen op tijdens de geldigheidsperiode van de sessie en voltooit automatisch de indiening van de handtekening zonder dat u tijdens deze periode het wachtwoord hoeft in te voeren.",
 };
 
 export default nlNl;

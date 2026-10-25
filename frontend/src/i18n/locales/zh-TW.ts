@@ -2496,6 +2496,14 @@ export const zhTw: TranslationDict = {
   "git_identity.local_isolation_hint": "當前倉庫局部生效",
   "git_identity.manage_profiles": "配置身份...",
   "git_identity.click_to_switch": "Git 身份：默认（点击切换）",
+  "git_identity.use_ssh_agent_default": "-- 預設使用 SSH Agent (自動免密) --",
+  "git_identity.select_discovered_gpg": "-- 選擇已發現 GPG 金鑰 --",
+  "git_identity.ssh_agent_ready": "SSH Agent 已啟用 (自動免密)",
+  "git_identity.gpg_agent_ready": "GPG Agent 已就緒",
+  "git_identity.ssh_key_placeholder": "留空則自動使用 SSH Agent (免密直通)",
+  "git_identity.ssh_key_hint":
+    "留空時，Git 將自動透過已啟用的 SSH Agent 和系統 SSH 設定完成免密認證，避免重複輸入金鑰密碼。",
+  "git_identity.gpg_key_hint": "GPG Agent 會在會話有效期間將密碼快取在記憶體中，期間免輸密碼自動完成提交簽名。",
 };
 
 export default zhTw;

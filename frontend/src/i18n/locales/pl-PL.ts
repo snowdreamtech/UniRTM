@@ -2574,7 +2574,7 @@ export const plPl: TranslationDict = {
   "git_identity.new_profile": "Nowy profil",
   "git_identity.active_workspace": "Bieżący obszar roboczy jest aktywny",
   "git_identity.default": "Domyślne",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "domyślna tożsamość",
   "git_identity.apply_tooltip": "Zastosuj do bieżącego lokalnego repozytorium obszaru roboczego (.git/config)",
   "git_identity.edit": "Edytuj",
   "git_identity.delete": "Usuń",
@@ -2587,14 +2587,24 @@ export const plPl: TranslationDict = {
   "git_identity.select_discovered": "-- Wybierz odkryty klucz --",
   "git_identity.gpg_signing_key": "Identyfikator klucza podpisu GPG",
   "git_identity.enable_auto_sign": "Automatycznie podpisuj zatwierdzenia (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(podpis automatyczny)",
   "git_identity.set_as_default": "Ustaw jako globalny profil domyślny",
   "git_identity.audit_trail": "Dzienniki kontroli zabezpieczeń i połączeń telefonicznych",
   "git_identity.no_audit_events": "Brak rekordu połączenia uwierzytelniającego dla bieżącej sesji.",
   "git_identity.switch_profile": "Zmień profil tożsamości Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Częściowo skuteczny w obecnym magazynie",
+  "git_identity.manage_profiles": "Skonfiguruj tożsamość...",
   "git_identity.click_to_switch": "Tożsamość Git: domyślna (kliknij, aby przełączyć)",
+  "git_identity.use_ssh_agent_default": "-- Domyślnie używaj agenta SSH (automatycznie wykluczaj hasło) --",
+  "git_identity.select_discovered_gpg": "-- Wybierz odkryty klucz GPG --",
+  "git_identity.ssh_agent_ready": "Agent SSH jest aktywowany (automatycznie bez hasła)",
+  "git_identity.gpg_agent_ready": "Agent GPG jest gotowy",
+  "git_identity.ssh_key_placeholder":
+    "Pozostaw to puste, aby automatycznie używać agenta SSH (przekazywanie bez hasła)",
+  "git_identity.ssh_key_hint":
+    "Jeśli pozostawisz to pole puste, Git automatycznie zakończy uwierzytelnianie bez hasła poprzez aktywowanego agenta SSH i systemową konfigurację SSH, aby uniknąć wielokrotnego wprowadzania hasła klucza prywatnego.",
+  "git_identity.gpg_key_hint":
+    "Agent GPG będzie buforował hasło w pamięci przez okres ważności sesji i automatycznie dokończy składanie podpisu bez konieczności wprowadzania hasła w tym okresie.",
 };
 
 export default plPl;

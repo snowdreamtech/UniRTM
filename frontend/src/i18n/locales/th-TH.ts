@@ -2527,7 +2527,7 @@ export const thTh: TranslationDict = {
   "git_identity.new_profile": "โปรไฟล์ใหม่",
   "git_identity.active_workspace": "พื้นที่ทำงานปัจจุบันใช้งานอยู่",
   "git_identity.default": "ค่าเริ่มต้น",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "ข้อมูลระบุตัวตนเริ่มต้น",
   "git_identity.apply_tooltip": "ใช้กับที่เก็บในพื้นที่ทำงานปัจจุบัน (.git/config)",
   "git_identity.edit": "แก้ไข",
   "git_identity.delete": "ลบ",
@@ -2540,14 +2540,23 @@ export const thTh: TranslationDict = {
   "git_identity.select_discovered": "-- เลือกกุญแจที่ค้นพบ --",
   "git_identity.gpg_signing_key": "รหัสคีย์ลายเซ็น GPG",
   "git_identity.enable_auto_sign": "ลงนามคอมมิตโดยอัตโนมัติ (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(ลายเซ็นอัตโนมัติ)",
   "git_identity.set_as_default": "ตั้งเป็นโปรไฟล์เริ่มต้นส่วนกลาง",
   "git_identity.audit_trail": "การรักษาความปลอดภัยข้อมูลรับรองและบันทึกการตรวจสอบการโทร",
   "git_identity.no_audit_events": "ไม่มีบันทึกการโทรข้อมูลรับรองสำหรับเซสชันปัจจุบัน",
   "git_identity.switch_profile": "สลับโปรไฟล์ Git Identity",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "มีผลบางส่วนในคลังสินค้าปัจจุบัน",
+  "git_identity.manage_profiles": "กำหนดค่าข้อมูลประจำตัว...",
   "git_identity.click_to_switch": "ข้อมูลประจำตัว Git: ค่าเริ่มต้น (คลิกเพื่อสลับ)",
+  "git_identity.use_ssh_agent_default": "-- ใช้ SSH Agent เป็นค่าเริ่มต้น (ยกเว้นรหัสผ่านโดยอัตโนมัติ) --",
+  "git_identity.select_discovered_gpg": "-- เลือกคีย์ GPG ที่ค้นพบ --",
+  "git_identity.ssh_agent_ready": "เปิดใช้งาน SSH Agent แล้ว (ไม่มีรหัสผ่านโดยอัตโนมัติ)",
+  "git_identity.gpg_agent_ready": "ตัวแทน GPG พร้อมแล้ว",
+  "git_identity.ssh_key_placeholder": "เว้นว่างไว้เพื่อใช้ SSH Agent โดยอัตโนมัติ (ส่งผ่านโดยไม่ต้องใช้รหัสผ่าน)",
+  "git_identity.ssh_key_hint":
+    "เมื่อเว้นว่างไว้ Git จะทำการตรวจสอบสิทธิ์โดยไม่ใช้รหัสผ่านโดยอัตโนมัติผ่าน SSH Agent ที่เปิดใช้งานและการกำหนดค่า SSH ของระบบ เพื่อหลีกเลี่ยงการป้อนรหัสผ่านคีย์ส่วนตัวซ้ำๆ",
+  "git_identity.gpg_key_hint":
+    "ตัวแทน GPG จะแคชรหัสผ่านไว้ในหน่วยความจำในช่วงเวลาที่มีผลใช้ได้ของเซสชัน และดำเนินการส่งลายเซ็นให้เสร็จสิ้นโดยอัตโนมัติโดยไม่ต้องป้อนรหัสผ่านในช่วงเวลานี้",
 };
 
 export default thTh;

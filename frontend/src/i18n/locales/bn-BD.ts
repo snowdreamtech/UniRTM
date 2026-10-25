@@ -2548,7 +2548,7 @@ export const bnBd: TranslationDict = {
   "git_identity.new_profile": "নতুন প্রোফাইল",
   "git_identity.active_workspace": "বর্তমান কর্মক্ষেত্র সক্রিয়",
   "git_identity.default": "ডিফল্ট",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "ডিফল্ট পরিচয়",
   "git_identity.apply_tooltip": "বর্তমান ওয়ার্কস্পেস স্থানীয় সংগ্রহস্থলে আবেদন করুন (.git/config)",
   "git_identity.edit": "সম্পাদনা করুন",
   "git_identity.delete": "মুছুন",
@@ -2561,14 +2561,24 @@ export const bnBd: TranslationDict = {
   "git_identity.select_discovered": "-- একটি আবিষ্কৃত কী নির্বাচন করুন --",
   "git_identity.gpg_signing_key": "GPG স্বাক্ষর কী আইডি",
   "git_identity.enable_auto_sign": "স্বয়ংক্রিয়ভাবে কমিট সাইন ইন করুন (commit.gpgsign = সত্য)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(স্বয়ংক্রিয় স্বাক্ষর)",
   "git_identity.set_as_default": "গ্লোবাল ডিফল্ট প্রোফাইল হিসাবে সেট করুন",
   "git_identity.audit_trail": "শংসাপত্রের নিরাপত্তা এবং কল অডিট লগ",
   "git_identity.no_audit_events": "বর্তমান সেশনের জন্য কোনো প্রমাণপত্রের কল রেকর্ড নেই।",
   "git_identity.switch_profile": "গিট আইডেন্টিটি প্রোফাইল স্যুইচ করুন",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "বর্তমান গুদামে আংশিকভাবে কার্যকর",
+  "git_identity.manage_profiles": "পরিচয় কনফিগার করুন...",
   "git_identity.click_to_switch": "গিট পরিচয়: ডিফল্ট (সুইচ করতে ক্লিক করুন)",
+  "git_identity.use_ssh_agent_default": "-- ডিফল্টরূপে SSH এজেন্ট ব্যবহার করুন (স্বয়ংক্রিয়ভাবে মুক্ত পাসওয়ার্ড) --",
+  "git_identity.select_discovered_gpg": "-- একটি আবিষ্কৃত GPG কী নির্বাচন করুন --",
+  "git_identity.ssh_agent_ready": "SSH এজেন্ট সক্রিয় করা হয়েছে (স্বয়ংক্রিয়ভাবে পাসওয়ার্ড-মুক্ত)",
+  "git_identity.gpg_agent_ready": "GPG এজেন্ট প্রস্তুত",
+  "git_identity.ssh_key_placeholder":
+    "স্বয়ংক্রিয়ভাবে SSH এজেন্ট (পাসওয়ার্ড-মুক্ত পাসথ্রু) ব্যবহার করতে এটি ফাঁকা রাখুন",
+  "git_identity.ssh_key_hint":
+    "ফাঁকা রাখা হলে, Git স্বয়ংক্রিয়ভাবে সক্রিয় SSH এজেন্ট এবং সিস্টেম SSH কনফিগারেশনের মাধ্যমে পাসওয়ার্ড-মুক্ত প্রমাণীকরণ সম্পূর্ণ করবে যাতে বারবার ব্যক্তিগত কী পাসওয়ার্ড প্রবেশ করা না হয়।",
+  "git_identity.gpg_key_hint":
+    "GPG এজেন্ট সেশনের মেয়াদের সময় মেমরিতে পাসওয়ার্ড ক্যাশে করবে এবং এই সময়ের মধ্যে পাসওয়ার্ড না দিয়েই স্বয়ংক্রিয়ভাবে স্বাক্ষর জমা সম্পূর্ণ করবে।",
 };
 
 export default bnBd;

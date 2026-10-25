@@ -2571,9 +2571,20 @@ export const jaJp: TranslationDict = {
   "git_identity.audit_trail": "認証情報のセキュリティと通話監査ログ",
   "git_identity.no_audit_events": "現在のセッションには資格情報呼び出しレコードがありません。",
   "git_identity.switch_profile": "Git ID プロファイルの切り替え",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "現在の倉庫では部分的に効果がある",
+  "git_identity.manage_profiles": "ID を構成します...",
   "git_identity.click_to_switch": "Git ID: デフォルト (クリックして切り替え)",
+  "git_identity.use_ssh_agent_default":
+    "-- デフォルトで SSH エージェントを使用します (パスワードが自動的に免除されます) --",
+  "git_identity.select_discovered_gpg": "-- 検出された GPG キーを選択します --",
+  "git_identity.ssh_agent_ready": "SSH エージェントがアクティブ化されます (自動的にパスワードが不要になります)。",
+  "git_identity.gpg_agent_ready": "GPG エージェントの準備が完了しました",
+  "git_identity.ssh_key_placeholder":
+    "SSH エージェント (パスワード不要のパススルー) を自動的に使用するには、空白のままにします。",
+  "git_identity.ssh_key_hint":
+    "空白のままにすると、Git は、秘密キーのパスワードを繰り返し入力することを避けるために、アクティブ化された SSH エージェントとシステム SSH 構成を通じてパスワードなしの認証を自動的に完了します。",
+  "git_identity.gpg_key_hint":
+    "GPG エージェントはセッションの有効期間中にパスワードをメモリにキャッシュし、この期間中にパスワードを入力しなくても署名の送信を自動的に完了します。",
 };
 
 export default jaJp;

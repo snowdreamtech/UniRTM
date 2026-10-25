@@ -2566,7 +2566,7 @@ export const ukUa: TranslationDict = {
   "git_identity.new_profile": "Новий профіль",
   "git_identity.active_workspace": "Поточна робоча область активна",
   "git_identity.default": "За замовчуванням",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "ідентифікатор за замовчуванням",
   "git_identity.apply_tooltip": "Застосувати до поточного локального сховища робочої області (.git/config)",
   "git_identity.edit": "Редагувати",
   "git_identity.delete": "Видалити",
@@ -2579,14 +2579,25 @@ export const ukUa: TranslationDict = {
   "git_identity.select_discovered": "-- Виберіть знайдений ключ --",
   "git_identity.gpg_signing_key": "Ідентифікатор ключа підпису GPG",
   "git_identity.enable_auto_sign": "Автоматично підписувати коміти (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(автоматичний підпис)",
   "git_identity.set_as_default": "Встановити як глобальний профіль за умовчанням",
   "git_identity.audit_trail": "Безпека облікових даних і журнали аудиту викликів",
   "git_identity.no_audit_events": "Для поточного сеансу немає облікових даних про виклик.",
   "git_identity.switch_profile": "Змінити профіль Git Identity",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Частково ефективний на поточному складі",
+  "git_identity.manage_profiles": "Налаштувати особу...",
   "git_identity.click_to_switch": "Git identity: за замовчуванням (клацніть, щоб переключити)",
+  "git_identity.use_ssh_agent_default":
+    "-- Використовувати SSH Agent за замовчуванням (автоматично виключати пароль) --",
+  "git_identity.select_discovered_gpg": "-- Виберіть знайдений ключ GPG --",
+  "git_identity.ssh_agent_ready": "SSH Agent активований (автоматично без пароля)",
+  "git_identity.gpg_agent_ready": "Агент GPG готовий",
+  "git_identity.ssh_key_placeholder":
+    "Залиште поле порожнім, щоб автоматично використовувати SSH Agent (прохід без пароля)",
+  "git_identity.ssh_key_hint":
+    "Якщо залишити порожнім, Git автоматично завершить автентифікацію без пароля через активований SSH-агент і системну конфігурацію SSH, щоб уникнути повторного введення пароля закритого ключа.",
+  "git_identity.gpg_key_hint":
+    "Агент GPG кешуватиме пароль у пам’яті протягом періоду дії сеансу та автоматично завершить надсилання підпису без необхідності вводити пароль протягом цього періоду.",
 };
 
 export default ukUa;

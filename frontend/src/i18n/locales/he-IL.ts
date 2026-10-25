@@ -2501,7 +2501,7 @@ export const heIl: TranslationDict = {
   "git_identity.new_profile": "פרופיל חדש",
   "git_identity.active_workspace": "סביבת העבודה הנוכחית פעילה",
   "git_identity.default": "ברירת מחדל",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "זהות ברירת מחדל",
   "git_identity.apply_tooltip": "החל על המאגר המקומי של סביבת העבודה הנוכחית (.git/config)",
   "git_identity.edit": "ערוך",
   "git_identity.delete": "מחק",
@@ -2514,14 +2514,23 @@ export const heIl: TranslationDict = {
   "git_identity.select_discovered": "-- בחר מפתח שהתגלה --",
   "git_identity.gpg_signing_key": "מזהה מפתח חתימת GPG",
   "git_identity.enable_auto_sign": "חתום אוטומטית על התחייבויות (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(חתימה אוטומטית)",
   "git_identity.set_as_default": "הגדר כפרופיל ברירת מחדל גלובלי",
   "git_identity.audit_trail": "אבטחת אישורים ויומני ביקורת שיחות",
   "git_identity.no_audit_events": "אין רשומת שיחות אישור עבור ההפעלה הנוכחית.",
   "git_identity.switch_profile": "החלף פרופיל Git Identity",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "יעיל חלקית במחסן הנוכחי",
+  "git_identity.manage_profiles": "קבע תצורה של זהות...",
   "git_identity.click_to_switch": "זהות Git: ברירת מחדל (לחץ כדי לעבור)",
+  "git_identity.use_ssh_agent_default": "-- השתמש בסוכן SSH כברירת מחדל (סיסמה פטורה אוטומטית) --",
+  "git_identity.select_discovered_gpg": "-- בחר מפתח GPG שהתגלה --",
+  "git_identity.ssh_agent_ready": "סוכן SSH מופעל (ללא סיסמה אוטומטית)",
+  "git_identity.gpg_agent_ready": "סוכן GPG מוכן",
+  "git_identity.ssh_key_placeholder": "השאר את זה ריק כדי להשתמש באופן אוטומטי בסוכן SSH (מעבר ללא סיסמה)",
+  "git_identity.ssh_key_hint":
+    "כאשר נותר ריק, Git ישלים אוטומטית אימות ללא סיסמה באמצעות תצורת סוכן SSH ומערכת SSH המופעלת כדי למנוע הזנה חוזרת של סיסמת המפתח הפרטי.",
+  "git_identity.gpg_key_hint":
+    "סוכן GPG ישמור את הסיסמה בזיכרון במהלך תקופת התוקף של הפגישה, וישלים אוטומטית את הגשת החתימה ללא צורך להזין את הסיסמה במהלך תקופה זו.",
 };
 
 export default heIl;

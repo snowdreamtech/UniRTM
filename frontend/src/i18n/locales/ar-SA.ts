@@ -2532,7 +2532,7 @@ export const arSa: TranslationDict = {
   "git_identity.new_profile": "ملف تعريف جديد",
   "git_identity.active_workspace": "مساحة العمل الحالية نشطة",
   "git_identity.default": "الافتراضي",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "الهوية الافتراضية",
   "git_identity.apply_tooltip": "تنطبق على المستودع المحلي لمساحة العمل الحالية (.git/config)",
   "git_identity.edit": "تحرير",
   "git_identity.delete": "حذف",
@@ -2545,14 +2545,23 @@ export const arSa: TranslationDict = {
   "git_identity.select_discovered": "-- حدد المفتاح المكتشف --",
   "git_identity.gpg_signing_key": "معرف مفتاح توقيع GPG",
   "git_identity.enable_auto_sign": "تسجيل الالتزامات تلقائيًا (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(التوقيع التلقائي)",
   "git_identity.set_as_default": "تعيين كملف تعريف افتراضي عام",
   "git_identity.audit_trail": "أمان بيانات الاعتماد وسجلات تدقيق المكالمات",
   "git_identity.no_audit_events": "لا يوجد سجل مكالمات اعتماد للجلسة الحالية.",
   "git_identity.switch_profile": "تبديل ملف تعريف هوية Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "فعالة جزئيا في المستودع الحالي",
+  "git_identity.manage_profiles": "تكوين الهوية...",
   "git_identity.click_to_switch": "هوية Git: افتراضية (انقر للتبديل)",
+  "git_identity.use_ssh_agent_default": "- استخدم وكيل SSH افتراضيًا (كلمة المرور المستثناة تلقائيًا) -",
+  "git_identity.select_discovered_gpg": "- حدد مفتاح GPG المكتشف -",
+  "git_identity.ssh_agent_ready": "تم تنشيط وكيل SSH (بدون كلمة مرور تلقائيًا)",
+  "git_identity.gpg_agent_ready": "وكيل GPG جاهز",
+  "git_identity.ssh_key_placeholder": "اتركه فارغًا لاستخدام وكيل SSH تلقائيًا (عبور بدون كلمة مرور)",
+  "git_identity.ssh_key_hint":
+    "عند تركه فارغًا، سيقوم Git تلقائيًا بإكمال المصادقة الخالية من كلمة المرور من خلال وكيل SSH المنشط وتكوين SSH للنظام لتجنب إدخال كلمة مرور المفتاح الخاص بشكل متكرر.",
+  "git_identity.gpg_key_hint":
+    "سيقوم وكيل GPG بتخزين كلمة المرور في الذاكرة مؤقتًا خلال فترة صلاحية الجلسة، وإكمال تقديم التوقيع تلقائيًا دون الحاجة إلى إدخال كلمة المرور خلال هذه الفترة.",
 };
 
 export default arSa;

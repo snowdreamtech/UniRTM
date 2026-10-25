@@ -2545,7 +2545,7 @@ export const noNo: TranslationDict = {
   "git_identity.new_profile": "Ny profil",
   "git_identity.active_workspace": "Gjeldende arbeidsområde aktivt",
   "git_identity.default": "Standard",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "standard identitet",
   "git_identity.apply_tooltip": "Bruk på det gjeldende lokale depotet for arbeidsområdet (.git/config)",
   "git_identity.edit": "Rediger",
   "git_identity.delete": "Slett",
@@ -2558,14 +2558,23 @@ export const noNo: TranslationDict = {
   "git_identity.select_discovered": "-- Velg en oppdaget nøkkel --",
   "git_identity.gpg_signing_key": "GPG-signaturnøkkel-ID",
   "git_identity.enable_auto_sign": "Signer forpliktelser automatisk (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(automatisk signatur)",
   "git_identity.set_as_default": "Angi som global standardprofil",
   "git_identity.audit_trail": "Påloggingssikkerhet og anropsrevisjonslogger",
   "git_identity.no_audit_events": "Det er ingen påloggingsanropspost for gjeldende økt.",
   "git_identity.switch_profile": "Bytt Git-identitetsprofil",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Delvis effektiv i dagens lager",
+  "git_identity.manage_profiles": "Konfigurer identitet...",
   "git_identity.click_to_switch": "Git-identitet: Standard (klikk for å bytte)",
+  "git_identity.use_ssh_agent_default": "-- Bruk SSH Agent som standard (automatisk fritatt passord) --",
+  "git_identity.select_discovered_gpg": "-- Velg en oppdaget GPG-nøkkel --",
+  "git_identity.ssh_agent_ready": "SSH Agent er aktivert (automatisk passordfri)",
+  "git_identity.gpg_agent_ready": "GPG Agent er klar",
+  "git_identity.ssh_key_placeholder": "La det stå tomt for automatisk å bruke SSH Agent (password-fri passthrough)",
+  "git_identity.ssh_key_hint":
+    "Når det står tomt, vil Git automatisk fullføre passordfri autentisering gjennom den aktiverte SSH Agent og system SSH-konfigurasjonen for å unngå gjentatt inntasting av privatnøkkelpassordet.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent vil hurtigbufre passordet i minnet i løpet av øktens gyldighetsperiode, og automatisk fullføre signaturinnsendingen uten å måtte angi passordet i løpet av denne perioden.",
 };
 
 export default noNo;

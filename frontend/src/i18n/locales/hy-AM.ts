@@ -2576,7 +2576,7 @@ export const hyAm: TranslationDict = {
   "git_identity.new_profile": "Նոր պրոֆիլ",
   "git_identity.active_workspace": "Ընթացիկ աշխատանքային տարածքը ակտիվ է",
   "git_identity.default": "Կանխադրված",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "լռելյայն ինքնություն",
   "git_identity.apply_tooltip": "Կիրառել ընթացիկ աշխատանքային տարածքի տեղական պահեստին (.git/config)",
   "git_identity.edit": "Խմբագրել",
   "git_identity.delete": "Ջնջել",
@@ -2589,14 +2589,24 @@ export const hyAm: TranslationDict = {
   "git_identity.select_discovered": "-- Ընտրեք հայտնաբերված բանալի --",
   "git_identity.gpg_signing_key": "GPG ստորագրության բանալի ID",
   "git_identity.enable_auto_sign": "Ավտոմատ ստորագրել commits (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(ավտոմատ ստորագրություն)",
   "git_identity.set_as_default": "Սահմանել որպես գլոբալ լռելյայն պրոֆիլ",
   "git_identity.audit_trail": "Հավատարմագրերի անվտանգություն և զանգերի աուդիտի տեղեկամատյաններ",
   "git_identity.no_audit_events": "Ընթացիկ նստաշրջանի համար հավատարմագրային զանգերի գրանցում չկա:",
   "git_identity.switch_profile": "Փոխեք Git Identity պրոֆիլը",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Մասամբ արդյունավետ ընթացիկ պահեստում",
+  "git_identity.manage_profiles": "Կարգավորել ինքնությունը...",
   "git_identity.click_to_switch": "Git-ի ինքնությունը՝ լռելյայն (սեղմեք՝ անցնելու համար)",
+  "git_identity.use_ssh_agent_default": "-- Օգտագործեք SSH գործակալը լռելյայն (ավտոմատ կերպով ազատված գաղտնաբառից) --",
+  "git_identity.select_discovered_gpg": "-- Ընտրեք հայտնաբերված GPG բանալի --",
+  "git_identity.ssh_agent_ready": "SSH գործակալը ակտիվացված է (ավտոմատ կերպով առանց գաղտնաբառի)",
+  "git_identity.gpg_agent_ready": "GPG գործակալը պատրաստ է",
+  "git_identity.ssh_key_placeholder":
+    "Թողեք այն դատարկ՝ SSH Agent-ը ավտոմատ կերպով օգտագործելու համար (գաղտնաբառ չպարունակող անցում)",
+  "git_identity.ssh_key_hint":
+    "Երբ դատարկ մնա, Git-ը ավտոմատ կերպով կավարտի առանց գաղտնաբառի նույնականացումը ակտիվացված SSH գործակալի և համակարգի SSH կոնֆիգուրացիայի միջոցով՝ մասնավոր բանալու գաղտնաբառի բազմիցս մուտքագրումից խուսափելու համար:",
+  "git_identity.gpg_key_hint":
+    "GPG Agent-ը կքեշի գաղտնաբառը հիշողության մեջ նիստի վավերականության ժամկետի ընթացքում և ավտոմատ կերպով կավարտի ստորագրության ներկայացումը, առանց գաղտնաբառ մուտքագրելու այս ժամանակահատվածում:",
 };
 
 export default hyAm;

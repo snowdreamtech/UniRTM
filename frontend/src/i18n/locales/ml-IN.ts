@@ -2593,7 +2593,7 @@ export const mlIn: TranslationDict = {
   "git_identity.new_profile": "പുതിയ പ്രൊഫൈൽ",
   "git_identity.active_workspace": "നിലവിലെ വർക്ക്‌സ്‌പെയ്‌സ് സജീവമാണ്",
   "git_identity.default": "സ്ഥിരസ്ഥിതി",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "സ്ഥിര ഐഡൻ്റിറ്റി",
   "git_identity.apply_tooltip": "നിലവിലെ വർക്ക്‌സ്‌പെയ്‌സ് ലോക്കൽ റിപ്പോസിറ്ററിയിലേക്ക് (.git/config) പ്രയോഗിക്കുക",
   "git_identity.edit": "എഡിറ്റ് ചെയ്യുക",
   "git_identity.delete": "ഇല്ലാതാക്കുക",
@@ -2606,14 +2606,24 @@ export const mlIn: TranslationDict = {
   "git_identity.select_discovered": "-- കണ്ടെത്തിയ കീ തിരഞ്ഞെടുക്കുക --",
   "git_identity.gpg_signing_key": "GPG സിഗ്നേച്ചർ കീ ഐഡി",
   "git_identity.enable_auto_sign": "കമ്മിറ്റ്സ് സ്വയമേവ സൈൻ ചെയ്യുക (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(യാന്ത്രിക ഒപ്പ്)",
   "git_identity.set_as_default": "ആഗോള ഡിഫോൾട്ട് പ്രൊഫൈലായി സജ്ജമാക്കുക",
   "git_identity.audit_trail": "ക്രെഡൻഷ്യൽ സുരക്ഷയും കോൾ ഓഡിറ്റ് ലോഗുകളും",
   "git_identity.no_audit_events": "നിലവിലെ സെഷനിൽ ക്രെഡൻഷ്യൽ കോൾ റെക്കോർഡ് ഒന്നുമില്ല.",
   "git_identity.switch_profile": "Git ഐഡൻ്റിറ്റി പ്രൊഫൈൽ മാറുക",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "നിലവിലെ വെയർഹൗസിൽ ഭാഗികമായി ഫലപ്രദമാണ്",
+  "git_identity.manage_profiles": "ഐഡൻ്റിറ്റി കോൺഫിഗർ ചെയ്യുക...",
   "git_identity.click_to_switch": "Git ഐഡൻ്റിറ്റി: ഡിഫോൾട്ട് (സ്വിച്ചുചെയ്യാൻ ക്ലിക്ക് ചെയ്യുക)",
+  "git_identity.use_ssh_agent_default": "-- ഡിഫോൾട്ടായി SSH ഏജൻ്റ് ഉപയോഗിക്കുക (യാന്ത്രികമായി ഒഴിവാക്കിയ പാസ്‌വേഡ്) --",
+  "git_identity.select_discovered_gpg": "-- കണ്ടെത്തിയ GPG കീ തിരഞ്ഞെടുക്കുക --",
+  "git_identity.ssh_agent_ready": "SSH ഏജൻ്റ് സജീവമാക്കി (യാന്ത്രികമായി പാസ്‌വേഡ് രഹിതം)",
+  "git_identity.gpg_agent_ready": "GPG ഏജൻ്റ് തയ്യാറാണ്",
+  "git_identity.ssh_key_placeholder":
+    "SSH ഏജൻ്റ് സ്വയമേവ ഉപയോഗിക്കുന്നതിന് ഇത് ശൂന്യമായി വിടുക (പാസ്‌വേഡ് രഹിത പാസ്‌ത്രൂ)",
+  "git_identity.ssh_key_hint":
+    "ശൂന്യമായി ഇടുമ്പോൾ, സ്വകാര്യ കീ പാസ്‌വേഡ് ആവർത്തിച്ച് നൽകുന്നത് ഒഴിവാക്കുന്നതിനായി സജീവമാക്കിയ എസ്എസ്എച്ച് ഏജൻ്റിലൂടെയും സിസ്റ്റം എസ്എസ്എച്ച് കോൺഫിഗറേഷനിലൂടെയും പാസ്‌വേഡ് രഹിത പ്രാമാണീകരണം Git സ്വയമേവ പൂർത്തിയാക്കും.",
+  "git_identity.gpg_key_hint":
+    "സെഷൻ്റെ സാധുത കാലയളവിൽ GPG ഏജൻ്റ് മെമ്മറിയിൽ പാസ്‌വേഡ് കാഷെ ചെയ്യും, ഈ കാലയളവിൽ പാസ്‌വേഡ് നൽകാതെ തന്നെ ഒപ്പ് സമർപ്പിക്കൽ സ്വയമേവ പൂർത്തിയാക്കും.",
 };
 
 export default mlIn;

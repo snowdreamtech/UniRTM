@@ -2564,7 +2564,7 @@ export const trTr: TranslationDict = {
   "git_identity.new_profile": "Yeni Profil",
   "git_identity.active_workspace": "Mevcut çalışma alanı etkin",
   "git_identity.default": "Varsayılan",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "varsayılan kimlik",
   "git_identity.apply_tooltip": "Geçerli çalışma alanı yerel deposuna (.git/config) uygula",
   "git_identity.edit": "Düzenle",
   "git_identity.delete": "Sil",
@@ -2577,14 +2577,24 @@ export const trTr: TranslationDict = {
   "git_identity.select_discovered": "-- Bulunan bir anahtarı seçin --",
   "git_identity.gpg_signing_key": "GPG İmza Anahtarı Kimliği",
   "git_identity.enable_auto_sign": "Taahhütleri otomatik olarak imzala (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(otomatik imza)",
   "git_identity.set_as_default": "Genel varsayılan Profil olarak ayarla",
   "git_identity.audit_trail": "Kimlik bilgisi güvenliği ve çağrı denetim günlükleri",
   "git_identity.no_audit_events": "Geçerli oturum için kimlik bilgisi arama kaydı yok.",
   "git_identity.switch_profile": "Git Kimlik Profilini Değiştir",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Mevcut depoda kısmen etkili",
+  "git_identity.manage_profiles": "Kimliği yapılandır...",
   "git_identity.click_to_switch": "Git kimliği: Varsayılan (geçiş yapmak için tıklayın)",
+  "git_identity.use_ssh_agent_default":
+    "-- Varsayılan olarak SSH Agent'ı kullanın (şifreyi otomatik olarak muaf tutun) --",
+  "git_identity.select_discovered_gpg": "-- Bulunan bir GPG anahtarını seçin --",
+  "git_identity.ssh_agent_ready": "SSH Aracısı etkinleştirildi (otomatik olarak şifresiz)",
+  "git_identity.gpg_agent_ready": "GPG Temsilcisi hazır",
+  "git_identity.ssh_key_placeholder": "SSH Agent'ı (şifresiz geçiş) otomatik olarak kullanmak için boş bırakın",
+  "git_identity.ssh_key_hint":
+    "Boş bırakıldığında Git, özel anahtar parolasının tekrar tekrar girilmesini önlemek için etkinleştirilmiş SSH Aracısı ve sistem SSH yapılandırması aracılığıyla parolasız kimlik doğrulamasını otomatik olarak tamamlayacaktır.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent, oturumun geçerlilik süresi boyunca şifreyi hafızada önbelleğe alacak ve bu süre zarfında şifre girmeye gerek kalmadan imza gönderimini otomatik olarak tamamlayacaktır.",
 };
 
 export default trTr;

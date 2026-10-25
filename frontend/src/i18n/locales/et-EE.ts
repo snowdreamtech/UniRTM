@@ -2554,7 +2554,7 @@ export const etEe: TranslationDict = {
   "git_identity.new_profile": "Uus profiil",
   "git_identity.active_workspace": "Praegune tööruum aktiivne",
   "git_identity.default": "Vaikimisi",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "vaikeidentiteet",
   "git_identity.apply_tooltip": "Rakenda praeguses tööruumi kohalikus hoidlas (.git/config)",
   "git_identity.edit": "Muuda",
   "git_identity.delete": "Kustuta",
@@ -2567,14 +2567,23 @@ export const etEe: TranslationDict = {
   "git_identity.select_discovered": "-- Valige leitud võti --",
   "git_identity.gpg_signing_key": "GPG allkirjavõtme ID",
   "git_identity.enable_auto_sign": "Pühendumiste automaatne allkirjastamine (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(automaatne allkiri)",
   "git_identity.set_as_default": "Määra globaalseks vaikeprofiiliks",
   "git_identity.audit_trail": "Mandaadi turvalisus ja kõnede auditi logid",
   "git_identity.no_audit_events": "Praeguse seansi jaoks pole mandaadi kõnekirjet.",
   "git_identity.switch_profile": "Giti identiteediprofiili vahetamine",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Osaliselt efektiivne praeguses laos",
+  "git_identity.manage_profiles": "Identiteedi seadistamine...",
   "git_identity.click_to_switch": "Giti identiteet: vaikimisi (lülitamiseks klõpsake)",
+  "git_identity.use_ssh_agent_default": "-- Kasutage vaikimisi SSH agenti (automaatselt vabastatud parool) --",
+  "git_identity.select_discovered_gpg": "-- Valige leitud GPG võti --",
+  "git_identity.ssh_agent_ready": "SSH Agent on aktiveeritud (automaatselt paroolivaba)",
+  "git_identity.gpg_agent_ready": "GPG agent on valmis",
+  "git_identity.ssh_key_placeholder": "SSH agendi (paroolivaba läbipääsu) automaatseks kasutamiseks jätke see tühjaks.",
+  "git_identity.ssh_key_hint":
+    "Kui see jääb tühjaks, viib Git automaatselt lõpule paroolivaba autentimise aktiveeritud SSH agendi ja süsteemi SSH konfiguratsiooni kaudu, et vältida privaatvõtme parooli korduvat sisestamist.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent salvestab seansi kehtivusaja jooksul parooli mällu ja viib automaatselt allkirja esitamise lõpule, ilma et peaks selle aja jooksul parooli sisestama.",
 };
 
 export default etEe;

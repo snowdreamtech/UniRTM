@@ -2538,7 +2538,7 @@ export const urPk: TranslationDict = {
   "git_identity.new_profile": "نیا پروفائل",
   "git_identity.active_workspace": "موجودہ ورک اسپیس فعال ہے۔",
   "git_identity.default": "طے شدہ",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "پہلے سے طے شدہ شناخت",
   "git_identity.apply_tooltip": "موجودہ ورک اسپیس لوکل ریپوزٹری (.git/config) پر اپلائی کریں",
   "git_identity.edit": "ترمیم کریں۔",
   "git_identity.delete": "حذف کریں۔",
@@ -2551,14 +2551,24 @@ export const urPk: TranslationDict = {
   "git_identity.select_discovered": "-- دریافت شدہ کلید کو منتخب کریں --",
   "git_identity.gpg_signing_key": "GPG دستخط کلید ID",
   "git_identity.enable_auto_sign": "خود بخود کمٹ پر دستخط کریں (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(خودکار دستخط)",
   "git_identity.set_as_default": "عالمی ڈیفالٹ پروفائل کے طور پر سیٹ کریں۔",
   "git_identity.audit_trail": "اسناد کی حفاظت اور کال آڈٹ لاگز",
   "git_identity.no_audit_events": "موجودہ سیشن کے لیے کوئی سندی کال ریکارڈ نہیں ہے۔",
   "git_identity.switch_profile": "Git شناختی پروفائل سوئچ کریں۔",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "موجودہ گودام میں جزوی طور پر موثر ہے۔",
+  "git_identity.manage_profiles": "شناخت کنفیگر کریں...",
   "git_identity.click_to_switch": "گٹ شناخت: ڈیفالٹ (سوئچ کرنے کے لیے کلک کریں)",
+  "git_identity.use_ssh_agent_default": "-- بطور ڈیفالٹ SSH ایجنٹ استعمال کریں (خود بخود مستثنی پاس ورڈ) --",
+  "git_identity.select_discovered_gpg": "-- ایک دریافت شدہ GPG کلید منتخب کریں --",
+  "git_identity.ssh_agent_ready": "SSH ایجنٹ کو چالو کیا جاتا ہے (خود بخود پاس ورڈ سے پاک)",
+  "git_identity.gpg_agent_ready": "جی پی جی ایجنٹ تیار ہے۔",
+  "git_identity.ssh_key_placeholder":
+    "SSH ایجنٹ (پاس ورڈ فری پاس تھرو) کو خود بخود استعمال کرنے کے لیے اسے خالی چھوڑ دیں۔",
+  "git_identity.ssh_key_hint":
+    "خالی چھوڑے جانے پر، Git ایکٹیویٹڈ SSH ایجنٹ اور سسٹم SSH کنفیگریشن کے ذریعے خود بخود پاس ورڈ سے پاک توثیق مکمل کر لے گا تاکہ بار بار پرائیویٹ کلیدی پاس ورڈ داخل کرنے سے بچا جا سکے۔",
+  "git_identity.gpg_key_hint":
+    "جی پی جی ایجنٹ سیشن کی میعاد کے دوران پاس ورڈ کو میموری میں کیش کرے گا، اور اس مدت کے دوران پاس ورڈ درج کیے بغیر دستخط جمع کرانے کو خود بخود مکمل کر لے گا۔",
 };
 
 export default urPk;

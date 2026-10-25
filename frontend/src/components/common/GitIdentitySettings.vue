@@ -244,26 +244,51 @@
 
           <!-- SSH Key Selection -->
           <div class="form-group">
-            <label>{{ t("git_identity.ssh_key") || "SSH Key (Local Path / Discovered)" }}</label>
+            <div class="field-label-row">
+              <label>{{ t("git_identity.ssh_key") || "SSH Key (Local Path / Discovered)" }}</label>
+              <span v-if="agentStatus.sshAgentActive" class="agent-hint-tag">
+                <span class="codicon codicon-pass"></span>
+                {{ t("git_identity.ssh_agent_ready") || "SSH Agent Active (Password-less)" }}
+              </span>
+            </div>
             <div class="input-with-select">
               <input
                 v-model="editingProfile.sshKeyPath"
                 type="text"
-                placeholder="e.g. ~/.ssh/id_ed25519"
+                :placeholder="t('git_identity.ssh_key_placeholder') || 'Leave empty to use SSH Agent (password-less)'"
                 class="input-text"
               />
-              <select v-if="systemKeys.sshKeys.length > 0" class="select-discovered" @change="onSelectDiscoveredSSH">
-                <option value="">{{ t("git_identity.select_discovered") || "-- Select Discovered Key --" }}</option>
+              <select
+                v-if="systemKeys.sshKeys.length > 0"
+                :value="selectedSshKeyOption"
+                class="select-discovered"
+                @change="onSelectDiscoveredSSH"
+              >
+                <option value="">
+                  {{ t("git_identity.use_ssh_agent_default") || "-- Use SSH Agent / System Default --" }}
+                </option>
                 <option v-for="k in systemKeys.sshKeys" :key="k.path" :value="k.path">
                   {{ k.name }} ({{ k.algorithm }})
                 </option>
               </select>
             </div>
+            <small class="field-helper-text">
+              {{
+                t("git_identity.ssh_key_hint") ||
+                "When left empty, Git will automatically use SSH Agent and system SSH configuration for password-less authentication."
+              }}
+            </small>
           </div>
 
           <!-- GPG Key Selection -->
           <div class="form-group">
-            <label>{{ t("git_identity.gpg_signing_key") || "GPG Signing Key ID" }}</label>
+            <div class="field-label-row">
+              <label>{{ t("git_identity.gpg_signing_key") || "GPG Signing Key ID" }}</label>
+              <span v-if="agentStatus.gpgAgentActive" class="agent-hint-tag">
+                <span class="codicon codicon-pass"></span>
+                {{ t("git_identity.gpg_agent_ready") || "GPG Agent Ready" }}
+              </span>
+            </div>
             <div class="input-with-select">
               <input
                 v-model="editingProfile.signingKey"
@@ -271,13 +296,26 @@
                 placeholder="e.g. 3AA5C34371567BD2"
                 class="input-text"
               />
-              <select v-if="systemKeys.gpgKeys.length > 0" class="select-discovered" @change="onSelectDiscoveredGPG">
-                <option value="">{{ t("git_identity.select_discovered") || "-- Select GPG Key --" }}</option>
+              <select
+                v-if="systemKeys.gpgKeys.length > 0"
+                :value="selectedGpgKeyOption"
+                class="select-discovered"
+                @change="onSelectDiscoveredGPG"
+              >
+                <option value="">
+                  {{ t("git_identity.select_discovered_gpg") || "-- Select GPG Key --" }}
+                </option>
                 <option v-for="g in systemKeys.gpgKeys" :key="g.keyId" :value="g.keyId">
-                  {{ g.keyId }} ({{ g.userId }})
+                  {{ formatGpgKey(g.keyId) }} ({{ g.userId }})
                 </option>
               </select>
             </div>
+            <small class="field-helper-text">
+              {{
+                t("git_identity.gpg_key_hint") ||
+                "GPG Agent caches your passphrase in memory for the session duration, enabling seamless signing without repeated password prompts."
+              }}
+            </small>
           </div>
 
           <div class="form-row check-row">
@@ -306,7 +344,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useGitIdentity } from "../../composables/useGitIdentity";
 import type { GitProfile } from "../../types/credential";
 import { t } from "../../i18n";
@@ -356,6 +394,28 @@ const editingProfile = ref<Partial<GitProfile>>({
   isDefault: false,
 });
 
+const selectedSshKeyOption = computed(() => {
+  if (!editingProfile.value.sshKeyPath) return "";
+  const path = editingProfile.value.sshKeyPath.trim();
+  const matched = systemKeys.value.sshKeys.find(
+    (k) => k.path === path || path.endsWith(k.name) || k.path.endsWith(path)
+  );
+  return matched ? matched.path : path;
+});
+
+const selectedGpgKeyOption = computed(() => {
+  if (!editingProfile.value.signingKey) return "";
+  const signKey = editingProfile.value.signingKey.trim().toLowerCase();
+  const matched = systemKeys.value.gpgKeys.find(
+    (g) =>
+      g.keyId.toLowerCase() === signKey ||
+      signKey.endsWith(g.keyId.toLowerCase()) ||
+      g.keyId.toLowerCase().endsWith(signKey) ||
+      (g.shortKeyId && signKey.endsWith(g.shortKeyId.toLowerCase()))
+  );
+  return matched ? matched.keyId : "";
+});
+
 const openAddForm = () => {
   editingProfile.value = {
     name: "",
@@ -370,7 +430,10 @@ const openAddForm = () => {
 };
 
 const editProfile = (prof: GitProfile) => {
-  editingProfile.value = { ...prof };
+  editingProfile.value = {
+    ...prof,
+    name: formatProfileName(prof),
+  };
   isEditing.value = true;
 };
 
@@ -382,9 +445,7 @@ const handleSaveProfile = async () => {
 
 const onSelectDiscoveredSSH = (e: Event) => {
   const target = e.target as HTMLSelectElement;
-  if (target.value) {
-    editingProfile.value.sshKeyPath = target.value;
-  }
+  editingProfile.value.sshKeyPath = target.value;
 };
 
 const onSelectDiscoveredGPG = (e: Event) => {
@@ -392,6 +453,8 @@ const onSelectDiscoveredGPG = (e: Event) => {
   if (target.value) {
     editingProfile.value.signingKey = target.value;
     editingProfile.value.gpgSign = true;
+  } else {
+    editingProfile.value.signingKey = "";
   }
 };
 
@@ -1019,5 +1082,29 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.agent-hint-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.field-helper-text {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.3;
 }
 </style>

@@ -2548,7 +2548,7 @@ export const hiIn: TranslationDict = {
   "git_identity.new_profile": "नई प्रोफ़ाइल",
   "git_identity.active_workspace": "वर्तमान कार्यस्थान सक्रिय",
   "git_identity.default": "डिफ़ॉल्ट",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "डिफ़ॉल्ट पहचान",
   "git_identity.apply_tooltip": "वर्तमान कार्यस्थान स्थानीय भंडार पर लागू करें (.git/config)",
   "git_identity.edit": "संपादित करें",
   "git_identity.delete": "हटाएँ",
@@ -2561,14 +2561,25 @@ export const hiIn: TranslationDict = {
   "git_identity.select_discovered": "-- खोजी गई कुंजी का चयन करें --",
   "git_identity.gpg_signing_key": "जीपीजी हस्ताक्षर कुंजी आईडी",
   "git_identity.enable_auto_sign": "स्वचालित रूप से प्रतिबद्धता पर हस्ताक्षर करें (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(स्वचालित हस्ताक्षर)",
   "git_identity.set_as_default": "वैश्विक डिफ़ॉल्ट प्रोफ़ाइल के रूप में सेट करें",
   "git_identity.audit_trail": "क्रेडेंशियल सुरक्षा और कॉल ऑडिट लॉग",
   "git_identity.no_audit_events": "वर्तमान सत्र के लिए कोई क्रेडेंशियल कॉल रिकॉर्ड नहीं है.",
   "git_identity.switch_profile": "Git पहचान प्रोफ़ाइल स्विच करें",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "वर्तमान गोदाम में आंशिक रूप से प्रभावी",
+  "git_identity.manage_profiles": "पहचान कॉन्फ़िगर करें...",
   "git_identity.click_to_switch": "गिट पहचान: डिफ़ॉल्ट (स्विच करने के लिए क्लिक करें)",
+  "git_identity.use_ssh_agent_default":
+    "--डिफ़ॉल्ट रूप से SSH एजेंट का उपयोग करें (स्वचालित रूप से पासवर्ड मुक्त करें) --",
+  "git_identity.select_discovered_gpg": "-- खोजी गई GPG कुंजी चुनें --",
+  "git_identity.ssh_agent_ready": "SSH एजेंट सक्रिय है (स्वचालित रूप से पासवर्ड-मुक्त)",
+  "git_identity.gpg_agent_ready": "जीपीजी एजेंट तैयार है",
+  "git_identity.ssh_key_placeholder":
+    "SSH एजेंट (पासवर्ड-मुक्त पासथ्रू) का स्वचालित रूप से उपयोग करने के लिए इसे खाली छोड़ दें",
+  "git_identity.ssh_key_hint":
+    "खाली छोड़े जाने पर, निजी कुंजी पासवर्ड को बार-बार दर्ज करने से बचने के लिए Git सक्रिय SSH एजेंट और सिस्टम SSH कॉन्फ़िगरेशन के माध्यम से स्वचालित रूप से पासवर्ड-मुक्त प्रमाणीकरण पूरा कर लेगा।",
+  "git_identity.gpg_key_hint":
+    "जीपीजी एजेंट सत्र की वैधता अवधि के दौरान पासवर्ड को मेमोरी में कैश कर देगा, और इस अवधि के दौरान पासवर्ड दर्ज किए बिना हस्ताक्षर सबमिशन स्वचालित रूप से पूरा कर देगा।",
 };
 
 export default hiIn;

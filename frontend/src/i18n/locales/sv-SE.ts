@@ -2552,7 +2552,7 @@ export const svSe: TranslationDict = {
   "git_identity.new_profile": "Ny profil",
   "git_identity.active_workspace": "Aktuell arbetsyta aktiv",
   "git_identity.default": "Standard",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "standardidentitet",
   "git_identity.apply_tooltip": "Applicera på det aktuella lokala arkivet för arbetsytan (.git/config)",
   "git_identity.edit": "Redigera",
   "git_identity.delete": "Ta bort",
@@ -2565,14 +2565,23 @@ export const svSe: TranslationDict = {
   "git_identity.select_discovered": "-- Välj en upptäckt nyckel --",
   "git_identity.gpg_signing_key": "GPG Signature Key ID",
   "git_identity.enable_auto_sign": "Signera bekräftelser automatiskt (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(automatisk signatur)",
   "git_identity.set_as_default": "Ställ in som global standardprofil",
   "git_identity.audit_trail": "Autentiseringssäkerhet och samtalsrevisionsloggar",
   "git_identity.no_audit_events": "Det finns ingen referenssamtalspost för den aktuella sessionen.",
   "git_identity.switch_profile": "Byt Git-identitetsprofil",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Delvis effektiv i nuvarande lager",
+  "git_identity.manage_profiles": "Konfigurera identitet...",
   "git_identity.click_to_switch": "Git-identitet: Standard (klicka för att byta)",
+  "git_identity.use_ssh_agent_default": "-- Använd SSH Agent som standard (automatiskt undantaget lösenord) --",
+  "git_identity.select_discovered_gpg": "-- Välj en upptäckt GPG-nyckel --",
+  "git_identity.ssh_agent_ready": "SSH Agent är aktiverad (automatiskt lösenordsfri)",
+  "git_identity.gpg_agent_ready": "GPG Agent är redo",
+  "git_identity.ssh_key_placeholder": "Lämna det tomt för att automatiskt använda SSH Agent (lösenordsfri passthrough)",
+  "git_identity.ssh_key_hint":
+    "När det lämnas tomt kommer Git automatiskt att slutföra lösenordsfri autentisering genom den aktiverade SSH Agenten och systemets SSH-konfiguration för att undvika att upprepade gånger ange lösenordet för den privata nyckeln.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent kommer att cacha lösenordet i minnet under sessionens giltighetstid och automatiskt slutföra signaturinlämningen utan att behöva ange lösenordet under denna period.",
 };
 
 export default svSe;

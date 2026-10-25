@@ -2562,7 +2562,7 @@ export const hrHr: TranslationDict = {
   "git_identity.new_profile": "Novi profil",
   "git_identity.active_workspace": "Trenutačni radni prostor aktivan",
   "git_identity.default": "Zadano",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "zadani identitet",
   "git_identity.apply_tooltip": "Primijeni na trenutno lokalno spremište radnog prostora (.git/config)",
   "git_identity.edit": "Uredi",
   "git_identity.delete": "Izbriši",
@@ -2575,14 +2575,23 @@ export const hrHr: TranslationDict = {
   "git_identity.select_discovered": "-- Odaberite otkriveni ključ --",
   "git_identity.gpg_signing_key": "ID ključa GPG potpisa",
   "git_identity.enable_auto_sign": "Automatski potpisuj obveze (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(automatski potpis)",
   "git_identity.set_as_default": "Postavi kao globalni zadani profil",
   "git_identity.audit_trail": "Sigurnost vjerodajnica i zapisnici revizije poziva",
   "git_identity.no_audit_events": "Ne postoji evidencija poziva s vjerodajnicama za trenutnu sesiju.",
   "git_identity.switch_profile": "Promijeni Git profil identiteta",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Djelomično učinkovito u trenutnom skladištu",
+  "git_identity.manage_profiles": "Konfiguriraj identitet...",
   "git_identity.click_to_switch": "Git identitet: Zadano (kliknite za promjenu)",
+  "git_identity.use_ssh_agent_default": "-- Koristi SSH agent prema zadanim postavkama (automatski izuzeta lozinka) --",
+  "git_identity.select_discovered_gpg": "-- Odaberite otkriveni GPG ključ --",
+  "git_identity.ssh_agent_ready": "SSH agent je aktiviran (automatski bez lozinke)",
+  "git_identity.gpg_agent_ready": "GPG Agent je spreman",
+  "git_identity.ssh_key_placeholder": "Ostavite prazno za automatsku upotrebu SSH agenta (prolaz bez lozinke)",
+  "git_identity.ssh_key_hint":
+    "Kada ostane prazno, Git će automatski dovršiti autentifikaciju bez lozinke putem aktiviranog SSH agenta i SSH konfiguracije sustava kako bi se izbjeglo ponovno unošenje lozinke privatnog ključa.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent će pohraniti lozinku u memoriju tijekom razdoblja valjanosti sesije i automatski dovršiti podnošenje potpisa bez potrebe za unosom lozinke tijekom tog razdoblja.",
 };
 
 export default hrHr;

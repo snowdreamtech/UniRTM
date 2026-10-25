@@ -2548,7 +2548,7 @@ export const daDk: TranslationDict = {
   "git_identity.new_profile": "Ny profil",
   "git_identity.active_workspace": "Aktuelt arbejdsområde aktivt",
   "git_identity.default": "Standard",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "standard identitet",
   "git_identity.apply_tooltip": "Anvend på det aktuelle arbejdsområde lokale lager (.git/config)",
   "git_identity.edit": "redigere",
   "git_identity.delete": "slette",
@@ -2561,14 +2561,23 @@ export const daDk: TranslationDict = {
   "git_identity.select_discovered": "-- Vælg en opdaget nøgle --",
   "git_identity.gpg_signing_key": "GPG-signaturnøgle-id",
   "git_identity.enable_auto_sign": "Underskriv automatisk commits (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(automatisk signatur)",
   "git_identity.set_as_default": "Indstil som global standardprofil",
   "git_identity.audit_trail": "Oplysningssikkerhed og opkaldsrevisionslogfiler",
   "git_identity.no_audit_events": "Der er ingen legitimationsopkaldspost for den aktuelle session.",
   "git_identity.switch_profile": "Skift Git-identitetsprofil",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Delvis effektiv i det nuværende lager",
+  "git_identity.manage_profiles": "Konfigurer identitet...",
   "git_identity.click_to_switch": "Git-identitet: Standard (klik for at skifte)",
+  "git_identity.use_ssh_agent_default": "-- Brug SSH Agent som standard (automatisk fritaget adgangskode) --",
+  "git_identity.select_discovered_gpg": "-- Vælg en opdaget GPG-nøgle --",
+  "git_identity.ssh_agent_ready": "SSH Agent er aktiveret (automatisk adgangskodefri)",
+  "git_identity.gpg_agent_ready": "GPG Agent er klar",
+  "git_identity.ssh_key_placeholder": "Lad det stå tomt for automatisk at bruge SSH Agent (password-fri passthrough)",
+  "git_identity.ssh_key_hint":
+    "Når det er tomt, vil Git automatisk fuldføre adgangskodefri godkendelse gennem den aktiverede SSH Agent og system SSH-konfiguration for at undgå gentagne gange at indtaste adgangskoden til den private nøgle.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent vil cache adgangskoden i hukommelsen under sessionens gyldighedsperiode og fuldføre automatisk signaturindsendelsen uden at skulle indtaste adgangskoden i denne periode.",
 };
 
 export default daDk;

@@ -2572,4 +2572,13 @@ export const enUs: TranslationDict = {
   "git_identity.local_isolation_hint": "Local repo only",
   "git_identity.manage_profiles": "Configure Profiles...",
   "git_identity.click_to_switch": "Git Identity: Default (Click to switch)",
+  "git_identity.use_ssh_agent_default": "-- Use SSH Agent / System Default (Password-less) --",
+  "git_identity.select_discovered_gpg": "-- Select Discovered GPG Key --",
+  "git_identity.ssh_agent_ready": "SSH Agent Active (Password-less)",
+  "git_identity.gpg_agent_ready": "GPG Agent Ready",
+  "git_identity.ssh_key_placeholder": "Leave empty to use SSH Agent (password-less)",
+  "git_identity.ssh_key_hint":
+    "When left empty, Git will automatically use SSH Agent and system SSH configuration for password-less authentication.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent caches your passphrase in memory for the session duration, enabling seamless signing without repeated password prompts.",
 };

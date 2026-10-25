@@ -2580,7 +2580,7 @@ export const azAz: TranslationDict = {
   "git_identity.new_profile": "Yeni Profil",
   "git_identity.active_workspace": "Cari iş sahəsi aktivdir",
   "git_identity.default": "Defolt",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "standart şəxsiyyət",
   "git_identity.apply_tooltip": "Cari iş sahəsinin yerli repozitoriyasına müraciət edin (.git/config)",
   "git_identity.edit": "Redaktə et",
   "git_identity.delete": "Sil",
@@ -2593,14 +2593,24 @@ export const azAz: TranslationDict = {
   "git_identity.select_discovered": "-- Aşkar edilmiş açarı seçin --",
   "git_identity.gpg_signing_key": "GPG İmza Açarının ID-si",
   "git_identity.enable_auto_sign": "Öhdəlikləri avtomatik imzalayın (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(avtomatik imza)",
   "git_identity.set_as_default": "Qlobal defolt Profil kimi təyin edin",
   "git_identity.audit_trail": "Etibarnamə təhlükəsizliyi və zəng auditi qeydləri",
   "git_identity.no_audit_events": "Cari sessiya üçün etimadnamə zəng qeydi yoxdur.",
   "git_identity.switch_profile": "Git Identity Profilə keçin",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Cari anbarda qismən təsirli",
+  "git_identity.manage_profiles": "Şəxsiyyəti konfiqurasiya edin...",
   "git_identity.click_to_switch": "Git identifikasiyası: Defolt (keçirmək üçün klikləyin)",
+  "git_identity.use_ssh_agent_default":
+    "-- Defolt olaraq SSH Agentindən istifadə edin (avtomatik olaraq azad parol) --",
+  "git_identity.select_discovered_gpg": "-- Aşkar edilmiş GPG açarını seçin --",
+  "git_identity.ssh_agent_ready": "SSH Agent aktivləşdirildi (avtomatik olaraq parolsuz)",
+  "git_identity.gpg_agent_ready": "GPG Agent hazırdır",
+  "git_identity.ssh_key_placeholder": "SSH Agentindən avtomatik istifadə etmək üçün onu boş buraxın (parolsuz keçid)",
+  "git_identity.ssh_key_hint":
+    "Boş qaldıqda, Git şəxsi açar parolunu təkrar daxil etməmək üçün aktivləşdirilmiş SSH Agenti və sistem SSH konfiqurasiyası vasitəsilə avtomatik parolsuz autentifikasiyanı tamamlayacaq.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent sessiyanın etibarlılıq müddəti ərzində parolu yaddaşda saxlayacaq və bu müddət ərzində parol daxil etmədən imza təqdimini avtomatik tamamlayacaq.",
 };
 
 export default azAz;

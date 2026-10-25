@@ -2577,7 +2577,7 @@ export const ptBr: TranslationDict = {
   "git_identity.new_profile": "Novo perfil",
   "git_identity.active_workspace": "Espaço de trabalho atual ativo",
   "git_identity.default": "Padrão",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "identidade padrão",
   "git_identity.apply_tooltip": "Aplicar ao repositório local do espaço de trabalho atual (.git/config)",
   "git_identity.edit": "Editar",
   "git_identity.delete": "Excluir",
@@ -2590,14 +2590,23 @@ export const ptBr: TranslationDict = {
   "git_identity.select_discovered": "-- Selecione uma chave descoberta --",
   "git_identity.gpg_signing_key": "ID da chave de assinatura GPG",
   "git_identity.enable_auto_sign": "Assinar commits automaticamente (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(assinatura automática)",
   "git_identity.set_as_default": "Definir como perfil padrão global",
   "git_identity.audit_trail": "Segurança de credenciais e registros de auditoria de chamadas",
   "git_identity.no_audit_events": "Não há registro de chamada de credencial para a sessão atual.",
   "git_identity.switch_profile": "Alternar perfil de identidade do Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Parcialmente eficaz no armazém atual",
+  "git_identity.manage_profiles": "Configurar identidade...",
   "git_identity.click_to_switch": "Identidade Git: Padrão (clique para alternar)",
+  "git_identity.use_ssh_agent_default": "-- Use o Agente SSH por padrão (isenta automaticamente a senha) --",
+  "git_identity.select_discovered_gpg": "-- Selecione uma chave GPG descoberta --",
+  "git_identity.ssh_agent_ready": "Agente SSH está ativado (automaticamente sem senha)",
+  "git_identity.gpg_agent_ready": "O Agente GPG está pronto",
+  "git_identity.ssh_key_placeholder": "Deixe em branco para usar automaticamente o Agente SSH (passagem sem senha)",
+  "git_identity.ssh_key_hint":
+    "Quando deixado em branco, o Git concluirá automaticamente a autenticação sem senha por meio do Agente SSH ativado e da configuração SSH do sistema para evitar inserir repetidamente a senha da chave privada.",
+  "git_identity.gpg_key_hint":
+    "O Agente GPG armazenará a senha em cache na memória durante o período de validade da sessão e concluirá automaticamente o envio da assinatura sem a necessidade de inserir a senha durante esse período.",
 };
 
 export default ptBr;

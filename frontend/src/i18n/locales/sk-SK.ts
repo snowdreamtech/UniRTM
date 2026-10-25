@@ -2569,7 +2569,7 @@ export const skSk: TranslationDict = {
   "git_identity.new_profile": "Nový profil",
   "git_identity.active_workspace": "Aktuálny pracovný priestor je aktívny",
   "git_identity.default": "Predvolené",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "predvolená identita",
   "git_identity.apply_tooltip": "Použiť na lokálny archív aktuálneho pracovného priestoru (.git/config)",
   "git_identity.edit": "Upraviť",
   "git_identity.delete": "Odstrániť",
@@ -2582,14 +2582,24 @@ export const skSk: TranslationDict = {
   "git_identity.select_discovered": "-- Vyberte nájdený kľúč --",
   "git_identity.gpg_signing_key": "ID podpisového kľúča GPG",
   "git_identity.enable_auto_sign": "Automaticky podpísať odovzdania (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(automatický podpis)",
   "git_identity.set_as_default": "Nastaviť ako globálny predvolený profil",
   "git_identity.audit_trail": "Zabezpečenie poverení a protokoly auditu hovorov",
   "git_identity.no_audit_events": "Pre aktuálnu reláciu neexistuje žiadny záznam hovoru o poverení.",
   "git_identity.switch_profile": "Prepnite Git Identity Profile",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Čiastočne účinné v súčasnom sklade",
+  "git_identity.manage_profiles": "Konfigurovať identitu...",
   "git_identity.click_to_switch": "Identita Git: Predvolená (kliknutím prepnete)",
+  "git_identity.use_ssh_agent_default": "-- Predvolene použiť agenta SSH (automaticky vyňať heslo) --",
+  "git_identity.select_discovered_gpg": "-- Vyberte nájdený kľúč GPG --",
+  "git_identity.ssh_agent_ready": "SSH Agent je aktivovaný (automaticky bez hesla)",
+  "git_identity.gpg_agent_ready": "Agent GPG je pripravený",
+  "git_identity.ssh_key_placeholder":
+    "Ak chcete automaticky použiť agenta SSH (priechod bez hesla), nechajte pole prázdne",
+  "git_identity.ssh_key_hint":
+    "Ak ho ponecháte prázdne, Git automaticky dokončí autentifikáciu bez hesla prostredníctvom aktivovaného agenta SSH a systémovej konfigurácie SSH, aby sa zabránilo opakovanému zadávaniu hesla súkromného kľúča.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent uloží heslo do vyrovnávacej pamäte počas doby platnosti relácie a automaticky dokončí odoslanie podpisu bez toho, aby počas tejto doby musel zadávať heslo.",
 };
 
 export default skSk;

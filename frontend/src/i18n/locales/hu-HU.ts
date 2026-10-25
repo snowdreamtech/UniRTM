@@ -2587,7 +2587,7 @@ export const huHu: TranslationDict = {
   "git_identity.new_profile": "Új profil",
   "git_identity.active_workspace": "Az aktuális munkaterület aktív",
   "git_identity.default": "Alapértelmezett",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "alapértelmezett identitás",
   "git_identity.apply_tooltip": "Alkalmazás az aktuális munkaterület helyi lerakatára (.git/config)",
   "git_identity.edit": "Szerkesztés",
   "git_identity.delete": "Törölje",
@@ -2600,14 +2600,25 @@ export const huHu: TranslationDict = {
   "git_identity.select_discovered": "-- Válasszon ki egy felfedezett kulcsot --",
   "git_identity.gpg_signing_key": "GPG aláírási kulcs azonosítója",
   "git_identity.enable_auto_sign": "Végrehajtások automatikus aláírása (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(automatikus aláírás)",
   "git_identity.set_as_default": "Beállítás globális alapértelmezett profilként",
   "git_identity.audit_trail": "Hitelesítési adatok biztonsága és hívásnaplók",
   "git_identity.no_audit_events": "Az aktuális munkamenethez nincs hitelesítő hívásrekord.",
   "git_identity.switch_profile": "Váltson Git identitásprofilt",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Részben hatékony a jelenlegi raktárban",
+  "git_identity.manage_profiles": "Identitás konfigurálása...",
   "git_identity.click_to_switch": "Git-identitás: Alapértelmezett (kattintással válthat)",
+  "git_identity.use_ssh_agent_default":
+    "-- SSH Agent használata alapértelmezés szerint (automatikusan mentesített jelszó) --",
+  "git_identity.select_discovered_gpg": "-- Válasszon ki egy felfedezett GPG kulcsot --",
+  "git_identity.ssh_agent_ready": "Az SSH Agent aktiválva (automatikusan jelszómentes)",
+  "git_identity.gpg_agent_ready": "A GPG Agent készen áll",
+  "git_identity.ssh_key_placeholder":
+    "Hagyja üresen az SSH Agent (jelszó nélküli átjelentkezés) automatikus használatához.",
+  "git_identity.ssh_key_hint":
+    "Ha üresen hagyja, a Git automatikusan befejezi a jelszó nélküli hitelesítést az aktivált SSH-ügynökön és a rendszer SSH-konfigurációján keresztül, hogy elkerülje a privát kulcs jelszavának ismételt megadását.",
+  "git_identity.gpg_key_hint":
+    "A GPG Agent a munkamenet érvényességi ideje alatt gyorsítótárazza a jelszót a memóriában, és automatikusan befejezi az aláírás beküldését anélkül, hogy ez alatt az időszak alatt meg kellene adnia a jelszót.",
 };
 
 export default huHu;

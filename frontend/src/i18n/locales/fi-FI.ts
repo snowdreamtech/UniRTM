@@ -2555,7 +2555,7 @@ export const fiFi: TranslationDict = {
   "git_identity.new_profile": "Uusi profiili",
   "git_identity.active_workspace": "Nykyinen työtila aktiivinen",
   "git_identity.default": "Oletus",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "oletusidentiteetti",
   "git_identity.apply_tooltip": "Käytä nykyiseen työtilan paikalliseen tietovarastoon (.git/config)",
   "git_identity.edit": "Muokkaa",
   "git_identity.delete": "Poista",
@@ -2568,14 +2568,24 @@ export const fiFi: TranslationDict = {
   "git_identity.select_discovered": "-- Valitse löydetty avain --",
   "git_identity.gpg_signing_key": "GPG-allekirjoitusavaimen tunnus",
   "git_identity.enable_auto_sign": "Allekirjoita sitoumukset automaattisesti (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(automaattinen allekirjoitus)",
   "git_identity.set_as_default": "Aseta globaaliksi oletusprofiiliksi",
   "git_identity.audit_trail": "Tunnistetietojen suojaus ja puheluntarkastuslokit",
   "git_identity.no_audit_events": "Nykyiselle istunnolle ei ole valtuustietojen puhelutietuetta.",
   "git_identity.switch_profile": "Vaihda Git-identiteettiprofiilia",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Osittain toimiva nykyisessä varastossa",
+  "git_identity.manage_profiles": "Määritä henkilöllisyys...",
   "git_identity.click_to_switch": "Git-identiteetti: oletus (vaihda napsauttamalla)",
+  "git_identity.use_ssh_agent_default": "-- Käytä SSH-agenttia oletuksena (automaattisesti vapautettu salasana) --",
+  "git_identity.select_discovered_gpg": "-- Valitse löydetty GPG-avain --",
+  "git_identity.ssh_agent_ready": "SSH Agent on aktivoitu (automaattisesti ilman salasanaa)",
+  "git_identity.gpg_agent_ready": "GPG-agentti on valmis",
+  "git_identity.ssh_key_placeholder":
+    "Jätä se tyhjäksi, jos haluat käyttää automaattisesti SSH-agenttia (salasanaton läpikulku)",
+  "git_identity.ssh_key_hint":
+    "Kun jätetään tyhjäksi, Git suorittaa automaattisesti salasanattoman todennuksen aktivoidun SSH-agentin ja järjestelmän SSH-määrityksen kautta välttääkseen yksityisen avaimen salasanan toistuvan syöttämisen.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent tallentaa salasanan välimuistiin istunnon voimassaoloaikana ja suorittaa allekirjoituksen lähettämisen automaattisesti loppuun ilman salasanan syöttämistä tänä aikana.",
 };
 
 export default fiFi;

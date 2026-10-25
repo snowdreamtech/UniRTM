@@ -4764,6 +4764,7 @@ print(json.dumps({
                   timeout: 3000,
                 });
                 let currentKeyId = "";
+                let currentFingerprint = "";
                 let currentUserId = "";
                 let currentAlgo = "";
                 let currentCreated = "";
@@ -4773,23 +4774,28 @@ print(json.dumps({
                   if (fields[0] === "sec") {
                     if (currentKeyId) {
                       gpgKeys.push({
-                        keyId: currentKeyId,
+                        keyId: currentFingerprint || currentKeyId,
+                        shortKeyId: currentKeyId,
                         userId: currentUserId || currentKeyId,
                         algo: currentAlgo,
                         created: currentCreated,
                       });
                     }
                     currentKeyId = fields[4] || "";
+                    currentFingerprint = "";
                     currentAlgo = fields[2] ? `RSA-${fields[2]}` : "RSA";
                     currentCreated = fields[5] || "";
                     currentUserId = "";
+                  } else if (fields[0] === "fpr" && !currentFingerprint) {
+                    currentFingerprint = fields[9] || "";
                   } else if (fields[0] === "uid" && !currentUserId) {
                     currentUserId = fields[9] || "";
                   }
                 }
                 if (currentKeyId) {
                   gpgKeys.push({
-                    keyId: currentKeyId,
+                    keyId: currentFingerprint || currentKeyId,
+                    shortKeyId: currentKeyId,
                     userId: currentUserId || currentKeyId,
                     algo: currentAlgo,
                     created: currentCreated,

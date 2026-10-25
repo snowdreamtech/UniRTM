@@ -2531,7 +2531,7 @@ export const faIr: TranslationDict = {
   "git_identity.new_profile": "نمایه جدید",
   "git_identity.active_workspace": "فضای کاری فعلی فعال است",
   "git_identity.default": "پیش فرض",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "هویت پیش فرض",
   "git_identity.apply_tooltip": "اعمال در مخزن محلی فضای کاری فعلی (git/config.)",
   "git_identity.edit": "ویرایش کنید",
   "git_identity.delete": "حذف کنید",
@@ -2544,14 +2544,23 @@ export const faIr: TranslationDict = {
   "git_identity.select_discovered": "-- یک کلید کشف شده را انتخاب کنید --",
   "git_identity.gpg_signing_key": "شناسه کلید امضای GPG",
   "git_identity.enable_auto_sign": "امضای خودکار commit ها (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(امضای خودکار)",
   "git_identity.set_as_default": "به عنوان نمایه پیش فرض جهانی تنظیم کنید",
   "git_identity.audit_trail": "امنیت اعتبار و گزارش های حسابرسی تماس",
   "git_identity.no_audit_events": "هیچ سابقه تماس اعتباری برای جلسه فعلی وجود ندارد.",
   "git_identity.switch_profile": "نمایه هویت Git را تغییر دهید",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "تا حدی در انبار فعلی موثر است",
+  "git_identity.manage_profiles": "پیکربندی هویت...",
   "git_identity.click_to_switch": "هویت Git: پیش‌فرض (برای جابه‌جایی کلیک کنید)",
+  "git_identity.use_ssh_agent_default": "- به طور پیش فرض از SSH Agent استفاده کنید (گذرواژه معاف به طور خودکار) -",
+  "git_identity.select_discovered_gpg": "-- یک کلید GPG کشف شده را انتخاب کنید --",
+  "git_identity.ssh_agent_ready": "SSH Agent فعال می شود (به طور خودکار بدون رمز عبور)",
+  "git_identity.gpg_agent_ready": "GPG Agent آماده است",
+  "git_identity.ssh_key_placeholder": "برای استفاده خودکار از SSH Agent (عبور بدون رمز عبور) آن را خالی بگذارید.",
+  "git_identity.ssh_key_hint":
+    "وقتی خالی بماند، Git به طور خودکار احراز هویت بدون رمز عبور را از طریق SSH Agent فعال شده و پیکربندی سیستم SSH تکمیل می‌کند تا از وارد کردن مکرر رمز عبور کلید خصوصی جلوگیری کند.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent در طول مدت اعتبار جلسه، رمز عبور را در حافظه پنهان می کند و به طور خودکار بدون نیاز به وارد کردن رمز عبور در این مدت، ارسال امضا را تکمیل می کند.",
 };
 
 export default faIr;

@@ -2641,9 +2641,19 @@ export const deDe: TranslationDict = {
   "git_identity.no_audit_events":
     "Für die aktuelle Sitzung ist kein Anrufdatensatz mit Anmeldeinformationen vorhanden.",
   "git_identity.switch_profile": "Git-Identitätsprofil wechseln",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Teilweise wirksam im aktuellen Lager",
+  "git_identity.manage_profiles": "Identität konfigurieren...",
   "git_identity.click_to_switch": "Git-Identität: Standard (zum Wechseln klicken)",
+  "git_identity.use_ssh_agent_default": "-- Standardmäßig SSH-Agent verwenden (Passwort automatisch ausnehmen) --",
+  "git_identity.select_discovered_gpg": "-- Wählen Sie einen erkannten GPG-Schlüssel aus --",
+  "git_identity.ssh_agent_ready": "SSH-Agent ist aktiviert (automatisch passwortfrei)",
+  "git_identity.gpg_agent_ready": "Der GPG-Agent ist bereit",
+  "git_identity.ssh_key_placeholder":
+    "Lassen Sie das Feld leer, um den SSH-Agenten automatisch zu verwenden (passwortfreies Passthrough).",
+  "git_identity.ssh_key_hint":
+    "Wenn das Feld leer gelassen wird, führt Git die kennwortlose Authentifizierung automatisch über den aktivierten SSH-Agenten und die System-SSH-Konfiguration durch, um eine wiederholte Eingabe des Kennworts für den privaten Schlüssel zu vermeiden.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent speichert das Passwort während der Gültigkeitsdauer der Sitzung im Speicher und schließt die Signaturübermittlung automatisch ab, ohne dass in diesem Zeitraum das Passwort eingegeben werden muss.",
 };
 
 export default deDe;

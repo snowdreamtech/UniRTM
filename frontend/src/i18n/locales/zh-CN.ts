@@ -2516,4 +2516,12 @@ export const zhCn: TranslationDict = {
   "git_identity.local_isolation_hint": "当前仓库局部生效",
   "git_identity.manage_profiles": "配置身份...",
   "git_identity.click_to_switch": "Git 身份：默认（点击切换）",
+  "git_identity.use_ssh_agent_default": "-- 默认使用 SSH Agent (自动免密) --",
+  "git_identity.select_discovered_gpg": "-- 选择已发现 GPG 密钥 --",
+  "git_identity.ssh_agent_ready": "SSH Agent 已激活 (自动免密)",
+  "git_identity.gpg_agent_ready": "GPG Agent 已就绪",
+  "git_identity.ssh_key_placeholder": "留空则自动使用 SSH Agent (免密直通)",
+  "git_identity.ssh_key_hint":
+    "留空时，Git 将自动通过已激活的 SSH Agent 和系统 SSH 配置完成免密认证，避免重复输入私钥密码。",
+  "git_identity.gpg_key_hint": "GPG Agent 会在会话有效期内将密码缓存在内存中，期间免输密码自动完成提交签名。",
 };

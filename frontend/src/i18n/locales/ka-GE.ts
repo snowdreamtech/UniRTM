@@ -2568,7 +2568,7 @@ export const kaGe: TranslationDict = {
   "git_identity.new_profile": "ახალი პროფილი",
   "git_identity.active_workspace": "მიმდინარე სამუშაო სივრცე აქტიურია",
   "git_identity.default": "ნაგულისხმევი",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "ნაგულისხმევი იდენტიფიკაცია",
   "git_identity.apply_tooltip": "მიმართვა მიმდინარე სამუშაო სივრცის ადგილობრივ საცავზე (.git/config)",
   "git_identity.edit": "რედაქტირება",
   "git_identity.delete": "წაშლა",
@@ -2581,14 +2581,24 @@ export const kaGe: TranslationDict = {
   "git_identity.select_discovered": "-- აირჩიეთ აღმოჩენილი გასაღები --",
   "git_identity.gpg_signing_key": "GPG ხელმოწერის გასაღების ID",
   "git_identity.enable_auto_sign": "ავტომატური ხელმოწერა commits (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(ავტომატური ხელმოწერა)",
   "git_identity.set_as_default": "დააყენეთ როგორც გლობალური ნაგულისხმევი პროფილი",
   "git_identity.audit_trail": "სერთიფიკატების დაცვა და ზარის აუდიტის ჟურნალი",
   "git_identity.no_audit_events": "მიმდინარე სესიისთვის არ არსებობს რწმუნებათა სიგელის ზარის ჩანაწერი.",
   "git_identity.switch_profile": "გადართეთ Git Identity პროფილი",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "ნაწილობრივ ეფექტურია მიმდინარე საწყობში",
+  "git_identity.manage_profiles": "პირადობის კონფიგურაცია...",
   "git_identity.click_to_switch": "Git ID: ნაგულისხმევი (დააწკაპუნეთ გადასართავად)",
+  "git_identity.use_ssh_agent_default":
+    "-- ნაგულისხმევად გამოიყენეთ SSH აგენტი (ავტომატურად გათავისუფლებული პაროლი) --",
+  "git_identity.select_discovered_gpg": "-- აირჩიეთ აღმოჩენილი GPG გასაღები --",
+  "git_identity.ssh_agent_ready": "SSH აგენტი გააქტიურებულია (ავტომატურად პაროლის გარეშე)",
+  "git_identity.gpg_agent_ready": "GPG აგენტი მზად არის",
+  "git_identity.ssh_key_placeholder": "დატოვეთ ცარიელი SSH აგენტის ავტომატურად გამოსაყენებლად (პაროლის გარეშე)",
+  "git_identity.ssh_key_hint":
+    "როდესაც ცარიელი დარჩება, Git ავტომატურად დაასრულებს პაროლის გარეშე ავთენტიფიკაციას გააქტიურებული SSH აგენტისა და სისტემის SSH კონფიგურაციის მეშვეობით, რათა თავიდან აიცილოს პირადი გასაღების პაროლის განმეორებითი შეყვანა.",
+  "git_identity.gpg_key_hint":
+    "GPG აგენტი შეინახავს პაროლს მეხსიერებაში სესიის მოქმედების პერიოდში და ავტომატურად დაასრულებს ხელმოწერის გაგზავნას ამ პერიოდის განმავლობაში პაროლის შეყვანის გარეშე.",
 };
 
 export default kaGe;

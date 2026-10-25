@@ -2588,7 +2588,7 @@ export const caEs: TranslationDict = {
   "git_identity.new_profile": "Nou perfil",
   "git_identity.active_workspace": "Espai de treball actual actiu",
   "git_identity.default": "Per defecte",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "identitat per defecte",
   "git_identity.apply_tooltip": "Aplicar al dipòsit local de l'espai de treball actual (.git/config)",
   "git_identity.edit": "Edita",
   "git_identity.delete": "Suprimeix",
@@ -2601,14 +2601,25 @@ export const caEs: TranslationDict = {
   "git_identity.select_discovered": "-- Seleccioneu una clau descoberta --",
   "git_identity.gpg_signing_key": "Identificador de clau de signatura GPG",
   "git_identity.enable_auto_sign": "Signa automàticament les confirmacions (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(signatura automàtica)",
   "git_identity.set_as_default": "Estableix com a perfil global predeterminat",
   "git_identity.audit_trail": "Seguretat de credencials i registres d'auditoria de trucades",
   "git_identity.no_audit_events": "No hi ha cap registre de trucada de credencials per a la sessió actual.",
   "git_identity.switch_profile": "Canvia el perfil d'identitat de Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Parcialment efectiu al magatzem actual",
+  "git_identity.manage_profiles": "Configura la identitat...",
   "git_identity.click_to_switch": "Identitat de Git: per defecte (fes clic per canviar)",
+  "git_identity.use_ssh_agent_default":
+    "-- Utilitzeu l'agent SSH de manera predeterminada (contrasenya exempta automàticament) --",
+  "git_identity.select_discovered_gpg": "-- Seleccioneu una clau GPG descoberta --",
+  "git_identity.ssh_agent_ready": "L'agent SSH està activat (automàticament sense contrasenya)",
+  "git_identity.gpg_agent_ready": "L'agent GPG està preparat",
+  "git_identity.ssh_key_placeholder":
+    "Deixeu-lo en blanc per utilitzar automàticament l'agent SSH (passthrough sense contrasenya)",
+  "git_identity.ssh_key_hint":
+    "Quan es deixa en blanc, Git completarà automàticament l'autenticació sense contrasenya mitjançant l'agent SSH activat i la configuració SSH del sistema per evitar introduir repetidament la contrasenya de la clau privada.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent guardarà la contrasenya a la memòria cau durant el període de validesa de la sessió i completarà automàticament l'enviament de la signatura sense haver d'introduir la contrasenya durant aquest període.",
 };
 
 export default caEs;

@@ -2585,7 +2585,7 @@ export const glEs: TranslationDict = {
   "git_identity.new_profile": "Novo perfil",
   "git_identity.active_workspace": "Espazo de traballo actual activo",
   "git_identity.default": "Por defecto",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "identidade predeterminada",
   "git_identity.apply_tooltip": "Aplicar ao repositorio local do espazo de traballo actual (.git/config)",
   "git_identity.edit": "Editar",
   "git_identity.delete": "Eliminar",
@@ -2598,14 +2598,23 @@ export const glEs: TranslationDict = {
   "git_identity.select_discovered": "-- Seleccione unha chave descuberta --",
   "git_identity.gpg_signing_key": "ID de chave de sinatura GPG",
   "git_identity.enable_auto_sign": "Asinar automaticamente as confirmacións (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(sinatura automática)",
   "git_identity.set_as_default": "Establecer como Perfil predeterminado global",
   "git_identity.audit_trail": "Seguridade de credenciais e rexistros de auditoría de chamadas",
   "git_identity.no_audit_events": "Non hai ningún rexistro de chamadas de credenciais para a sesión actual.",
   "git_identity.switch_profile": "Cambiar o perfil de identidade de Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Parcialmente efectivo no almacén actual",
+  "git_identity.manage_profiles": "Configurar a identidade...",
   "git_identity.click_to_switch": "Identidade Git: predeterminada (faga clic para cambiar)",
+  "git_identity.use_ssh_agent_default": "-- Usa o axente SSH por defecto (contrasinal exento automaticamente) --",
+  "git_identity.select_discovered_gpg": "-- Seleccione unha clave GPG descuberta --",
+  "git_identity.ssh_agent_ready": "O axente SSH está activado (automáticamente sen contrasinal)",
+  "git_identity.gpg_agent_ready": "O axente GPG está listo",
+  "git_identity.ssh_key_placeholder": "Déixao en branco para usar automaticamente SSH Agent (paso sen contrasinal)",
+  "git_identity.ssh_key_hint":
+    "Cando se deixa en branco, Git completará automaticamente a autenticación sen contrasinal a través do axente SSH activado e da configuración SSH do sistema para evitar que se introduza repetidamente o contrasinal da clave privada.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent almacenará o contrasinal na memoria caché durante o período de validez da sesión e completará automaticamente o envío da sinatura sen ter que introducir o contrasinal durante este período.",
 };
 
 export default glEs;

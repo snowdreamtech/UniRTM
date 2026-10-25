@@ -2595,7 +2595,7 @@ export const elGr: TranslationDict = {
   "git_identity.new_profile": "Νέο Προφίλ",
   "git_identity.active_workspace": "Ο τρέχων χώρος εργασίας είναι ενεργός",
   "git_identity.default": "Προεπιλογή",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "προεπιλεγμένη ταυτότητα",
   "git_identity.apply_tooltip": "Εφαρμογή στον τρέχοντα τοπικό χώρο αποθήκευσης (.git/config)",
   "git_identity.edit": "Επεξεργασία",
   "git_identity.delete": "Διαγραφή",
@@ -2608,14 +2608,23 @@ export const elGr: TranslationDict = {
   "git_identity.select_discovered": "-- Επιλέξτε ένα κλειδί που ανακαλύφθηκε --",
   "git_identity.gpg_signing_key": "Αναγνωριστικό κλειδιού υπογραφής GPG",
   "git_identity.enable_auto_sign": "Αυτόματη υπογραφή δεσμεύσεων (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(αυτόματη υπογραφή)",
   "git_identity.set_as_default": "Ορισμός ως καθολικού προεπιλεγμένου προφίλ",
   "git_identity.audit_trail": "Ασφάλεια διαπιστευτηρίων και αρχεία καταγραφής ελέγχου κλήσεων",
   "git_identity.no_audit_events": "Δεν υπάρχει εγγραφή κλήσης διαπιστευτηρίων για την τρέχουσα περίοδο σύνδεσης.",
   "git_identity.switch_profile": "Αλλαγή προφίλ ταυτότητας Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Μερικώς αποτελεσματικό στην τρέχουσα αποθήκη",
+  "git_identity.manage_profiles": "Διαμόρφωση ταυτότητας...",
   "git_identity.click_to_switch": "Ταυτότητα Git: Προεπιλογή (κάντε κλικ για εναλλαγή)",
+  "git_identity.use_ssh_agent_default": "-- Χρήση SSH Agent από προεπιλογή (αυτόματη απαλλαγή κωδικού πρόσβασης) --",
+  "git_identity.select_discovered_gpg": "-- Επιλέξτε ένα κλειδί GPG που ανακαλύφθηκε --",
+  "git_identity.ssh_agent_ready": "Το SSH Agent ενεργοποιείται (αυτόματα χωρίς κωδικό πρόσβασης)",
+  "git_identity.gpg_agent_ready": "Το GPG Agent είναι έτοιμο",
+  "git_identity.ssh_key_placeholder": "Αφήστε το κενό για αυτόματη χρήση του SSH Agent (χωρίς κωδικό πρόσβασης)",
+  "git_identity.ssh_key_hint":
+    "Όταν μείνει κενό, το Git θα ολοκληρώσει αυτόματα τον έλεγχο ταυτότητας χωρίς κωδικό πρόσβασης μέσω του ενεργοποιημένου SSH Agent και της διαμόρφωσης συστήματος SSH για να αποφύγει την επανειλημμένη εισαγωγή του κωδικού πρόσβασης του ιδιωτικού κλειδιού.",
+  "git_identity.gpg_key_hint":
+    "Το GPG Agent θα αποθηκεύσει προσωρινά τον κωδικό πρόσβασης στη μνήμη κατά τη διάρκεια της περιόδου ισχύος της συνεδρίας και θα ολοκληρώσει αυτόματα την υποβολή της υπογραφής χωρίς να χρειάζεται να εισάγετε τον κωδικό πρόσβασης κατά τη διάρκεια αυτής της περιόδου.",
 };
 
 export default elGr;

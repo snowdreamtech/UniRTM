@@ -2556,7 +2556,7 @@ export const slSi: TranslationDict = {
   "git_identity.new_profile": "Nov profil",
   "git_identity.active_workspace": "Trenutni delovni prostor je aktiven",
   "git_identity.default": "Privzeto",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "privzeta identiteta",
   "git_identity.apply_tooltip": "Uporabi za trenutno lokalno skladišče delovnega prostora (.git/config)",
   "git_identity.edit": "Uredi",
   "git_identity.delete": "Izbriši",
@@ -2569,14 +2569,23 @@ export const slSi: TranslationDict = {
   "git_identity.select_discovered": "-- Izberite odkrit ključ --",
   "git_identity.gpg_signing_key": "ID ključa podpisa GPG",
   "git_identity.enable_auto_sign": "Samodejno podpiši potrditve (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(samodejni podpis)",
   "git_identity.set_as_default": "Nastavi kot globalni privzeti profil",
   "git_identity.audit_trail": "Varnost poverilnic in dnevniki nadzora klicev",
   "git_identity.no_audit_events": "Za trenutno sejo ni zapisa klica poverilnice.",
   "git_identity.switch_profile": "Preklop Git Identity Profile",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Delno učinkovito v trenutnem skladišču",
+  "git_identity.manage_profiles": "Konfiguriraj identiteto ...",
   "git_identity.click_to_switch": "Identiteta Git: privzeto (kliknite za preklop)",
+  "git_identity.use_ssh_agent_default": "-- Privzeto uporabi agenta SSH (samodejno izvzeto geslo) --",
+  "git_identity.select_discovered_gpg": "-- Izberite odkrit ključ GPG --",
+  "git_identity.ssh_agent_ready": "SSH agent je aktiviran (samodejno brez gesla)",
+  "git_identity.gpg_agent_ready": "Agent GPG je pripravljen",
+  "git_identity.ssh_key_placeholder": "Pustite prazno za samodejno uporabo agenta SSH (prehod brez gesla)",
+  "git_identity.ssh_key_hint":
+    "Ko pustite prazno, bo Git samodejno dokončal preverjanje pristnosti brez gesla prek aktiviranega agenta SSH in sistemske konfiguracije SSH, da se izognete večkratnemu vnašanju gesla zasebnega ključa.",
+  "git_identity.gpg_key_hint":
+    "Agent GPG bo med obdobjem veljavnosti seje predpomnil geslo v pomnilnik in samodejno dokončal oddajo podpisa, ne da bi bilo treba v tem obdobju vnesti geslo.",
 };
 
 export default slSi;

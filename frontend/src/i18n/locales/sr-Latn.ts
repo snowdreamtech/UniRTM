@@ -2559,7 +2559,7 @@ export const srLatn: TranslationDict = {
   "git_identity.new_profile": "Нови профил",
   "git_identity.active_workspace": "Тренутни радни простор је активан",
   "git_identity.default": "Подразумевано",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "подразумевани идентитет",
   "git_identity.apply_tooltip": "Примени на тренутно локално спремиште радног простора (.гит/цонфиг)",
   "git_identity.edit": "Уреди",
   "git_identity.delete": "Избриши",
@@ -2572,14 +2572,23 @@ export const srLatn: TranslationDict = {
   "git_identity.select_discovered": "-- Изаберите откривени кључ --",
   "git_identity.gpg_signing_key": "ИД кључа за потпис ГПГ",
   "git_identity.enable_auto_sign": "Аутоматски потпишите урезивање (цоммит.гпгсигн = труе)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(аутоматски потпис)",
   "git_identity.set_as_default": "Постави као глобални подразумевани профил",
   "git_identity.audit_trail": "Сигурност акредитива и евиденција ревизије позива",
   "git_identity.no_audit_events": "Не постоји евиденција позива са акредитивима за тренутну сесију.",
   "git_identity.switch_profile": "Промени профил Гит идентитета",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Делимично ефективно у тренутном складишту",
+  "git_identity.manage_profiles": "Конфигуришите идентитет...",
   "git_identity.click_to_switch": "Гит идентитет: подразумевано (кликните за пребацивање)",
+  "git_identity.use_ssh_agent_default": "-- Подразумевано користите ССХ агента (аутоматски изузета лозинка) --",
+  "git_identity.select_discovered_gpg": "-- Изаберите откривени ГПГ кључ --",
+  "git_identity.ssh_agent_ready": "ССХ агент је активиран (аутоматски без лозинке)",
+  "git_identity.gpg_agent_ready": "ГПГ Агент је спреман",
+  "git_identity.ssh_key_placeholder": "Оставите празно да бисте аутоматски користили ССХ агента (пролаз без лозинке)",
+  "git_identity.ssh_key_hint":
+    "Када оставите празно, Гит ће аутоматски довршити аутентификацију без лозинке преко активираног ССХ агента и системске ССХ конфигурације како би се избегао узастопно уношење лозинке приватног кључа.",
+  "git_identity.gpg_key_hint":
+    "ГПГ Агент ће кеширати лозинку у меморију током периода важења сесије и аутоматски завршити подношење потписа без потребе да унесе лозинку током овог периода.",
 };
 
 export default srLatn;

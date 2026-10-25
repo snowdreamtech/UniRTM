@@ -2517,7 +2517,7 @@ export const koKr: TranslationDict = {
   "git_identity.new_profile": "새 프로필",
   "git_identity.active_workspace": "현재 작업공간이 활성화되어 있습니다.",
   "git_identity.default": "기본값",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "기본 ID",
   "git_identity.apply_tooltip": "현재 작업공간 로컬 저장소(.git/config)에 적용",
   "git_identity.edit": "편집",
   "git_identity.delete": "삭제",
@@ -2530,14 +2530,23 @@ export const koKr: TranslationDict = {
   "git_identity.select_discovered": "-- 검색된 키를 선택하세요 --",
   "git_identity.gpg_signing_key": "GPG 서명 키 ID",
   "git_identity.enable_auto_sign": "커밋에 자동으로 서명합니다(commit.gpgsign = true).",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(자동 서명)",
   "git_identity.set_as_default": "전역 기본 프로필로 설정",
   "git_identity.audit_trail": "자격 증명 보안 및 통화 감사 로그",
   "git_identity.no_audit_events": "현재 세션에 대한 자격 증명 통화 기록이 없습니다.",
   "git_identity.switch_profile": "Git ID 프로필 전환",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "현재 창고에서는 부분적으로 유효함",
+  "git_identity.manage_profiles": "ID 구성...",
   "git_identity.click_to_switch": "Git ID: 기본값(전환하려면 클릭)",
+  "git_identity.use_ssh_agent_default": "-- 기본적으로 SSH 에이전트 사용(비밀번호 자동 면제) --",
+  "git_identity.select_discovered_gpg": "-- 발견된 GPG 키를 선택하세요 --",
+  "git_identity.ssh_agent_ready": "SSH 에이전트가 활성화되었습니다(자동으로 비밀번호가 필요 없음).",
+  "git_identity.gpg_agent_ready": "GPG 에이전트가 준비되었습니다",
+  "git_identity.ssh_key_placeholder": "SSH 에이전트(비밀번호 없는 통과)를 자동으로 사용하려면 비워 두세요.",
+  "git_identity.ssh_key_hint":
+    "비워 두면 Git은 개인 키 비밀번호를 반복적으로 입력하지 않도록 활성화된 SSH 에이전트 및 시스템 SSH 구성을 통해 비밀번호 없는 인증을 자동으로 완료합니다.",
+  "git_identity.gpg_key_hint":
+    "GPG 에이전트는 세션 유효 기간 동안 비밀번호를 메모리에 캐시하고, 이 기간 동안 비밀번호를 입력할 필요 없이 자동으로 서명 제출을 완료합니다.",
 };
 
 export default koKr;

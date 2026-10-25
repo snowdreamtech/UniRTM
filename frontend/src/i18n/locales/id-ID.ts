@@ -2549,7 +2549,7 @@ export const idId: TranslationDict = {
   "git_identity.new_profile": "Profil Baru",
   "git_identity.active_workspace": "Ruang kerja saat ini aktif",
   "git_identity.default": "Bawaan",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "identitas bawaan",
   "git_identity.apply_tooltip": "Terapkan ke repositori lokal ruang kerja saat ini (.git/config)",
   "git_identity.edit": "Sunting",
   "git_identity.delete": "Hapus",
@@ -2562,14 +2562,24 @@ export const idId: TranslationDict = {
   "git_identity.select_discovered": "-- Pilih kunci yang ditemukan --",
   "git_identity.gpg_signing_key": "ID Kunci Tanda Tangan GPG",
   "git_identity.enable_auto_sign": "Menandatangani komit secara otomatis (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(tanda tangan otomatis)",
   "git_identity.set_as_default": "Tetapkan sebagai Profil default global",
   "git_identity.audit_trail": "Keamanan kredensial dan log audit panggilan",
   "git_identity.no_audit_events": "Tidak ada catatan panggilan kredensial untuk sesi saat ini.",
   "git_identity.switch_profile": "Ganti Profil Identitas Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Efektif sebagian di gudang saat ini",
+  "git_identity.manage_profiles": "Konfigurasikan identitas...",
   "git_identity.click_to_switch": "Identitas Git: Default (klik untuk beralih)",
+  "git_identity.use_ssh_agent_default": "-- Gunakan Agen SSH secara default (kata sandi otomatis dikecualikan) --",
+  "git_identity.select_discovered_gpg": "-- Pilih kunci GPG yang ditemukan --",
+  "git_identity.ssh_agent_ready": "SSH Agent diaktifkan (otomatis bebas kata sandi)",
+  "git_identity.gpg_agent_ready": "Agen GPG sudah siap",
+  "git_identity.ssh_key_placeholder":
+    "Biarkan kosong untuk menggunakan SSH Agent secara otomatis (passthrough bebas kata sandi)",
+  "git_identity.ssh_key_hint":
+    "Jika dibiarkan kosong, Git akan secara otomatis menyelesaikan autentikasi bebas kata sandi melalui Agen SSH yang diaktifkan dan konfigurasi SSH sistem untuk menghindari memasukkan kata sandi kunci pribadi berulang kali.",
+  "git_identity.gpg_key_hint":
+    "Agen GPG akan menyimpan kata sandi dalam memori selama masa berlaku sesi, dan secara otomatis menyelesaikan pengiriman tanda tangan tanpa harus memasukkan kata sandi selama periode ini.",
 };
 
 export default idId;

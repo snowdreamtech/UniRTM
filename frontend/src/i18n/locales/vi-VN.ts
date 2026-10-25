@@ -2566,7 +2566,7 @@ export const viVn: TranslationDict = {
   "git_identity.new_profile": "Hồ sơ mới",
   "git_identity.active_workspace": "Không gian làm việc hiện tại đang hoạt động",
   "git_identity.default": "Mặc định",
-  "git_identity.default_profile": "Default Profile",
+  "git_identity.default_profile": "danh tính mặc định",
   "git_identity.apply_tooltip": "Áp dụng cho kho lưu trữ cục bộ của không gian làm việc hiện tại (.git/config)",
   "git_identity.edit": "Chỉnh sửa",
   "git_identity.delete": "Xóa",
@@ -2579,14 +2579,23 @@ export const viVn: TranslationDict = {
   "git_identity.select_discovered": "-- Chọn khóa đã được phát hiện --",
   "git_identity.gpg_signing_key": "ID khóa chữ ký GPG",
   "git_identity.enable_auto_sign": "Tự động ký xác nhận (commit.gpgsign = true)",
-  "git_identity.auto_sign_tag": "(Auto-sign)",
+  "git_identity.auto_sign_tag": "(chữ ký tự động)",
   "git_identity.set_as_default": "Đặt làm Hồ sơ mặc định chung",
   "git_identity.audit_trail": "Nhật ký kiểm tra cuộc gọi và bảo mật thông tin xác thực",
   "git_identity.no_audit_events": "Không có bản ghi cuộc gọi thông tin xác thực cho phiên hiện tại.",
   "git_identity.switch_profile": "Chuyển hồ sơ nhận dạng Git",
-  "git_identity.local_isolation_hint": "Local repo only",
-  "git_identity.manage_profiles": "Configure Profiles...",
+  "git_identity.local_isolation_hint": "Hiệu quả một phần trong kho hiện tại",
+  "git_identity.manage_profiles": "Định cấu hình danh tính...",
   "git_identity.click_to_switch": "Nhận dạng Git: Mặc định (bấm để chuyển đổi)",
+  "git_identity.use_ssh_agent_default": "-- Sử dụng SSH Agent theo mặc định (tự động miễn mật khẩu) --",
+  "git_identity.select_discovered_gpg": "-- Chọn khóa GPG đã phát hiện --",
+  "git_identity.ssh_agent_ready": "SSH Agent được kích hoạt (tự động không cần mật khẩu)",
+  "git_identity.gpg_agent_ready": "Đại lý GPG đã sẵn sàng",
+  "git_identity.ssh_key_placeholder": "Để trống để tự động sử dụng SSH Agent (chuyển qua không cần mật khẩu)",
+  "git_identity.ssh_key_hint":
+    "Khi để trống, Git sẽ tự động hoàn tất xác thực không cần mật khẩu thông qua Tác nhân SSH được kích hoạt và cấu hình SSH hệ thống để tránh nhập mật khẩu khóa riêng tư nhiều lần.",
+  "git_identity.gpg_key_hint":
+    "GPG Agent sẽ lưu mật khẩu vào bộ nhớ trong thời gian hiệu lực của phiên và tự động hoàn tất việc gửi chữ ký mà không cần phải nhập mật khẩu trong khoảng thời gian này.",
 };
 
 export default viVn;
