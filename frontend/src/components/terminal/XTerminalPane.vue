@@ -143,6 +143,10 @@ function updateTerminalTheme() {
 let lastSentCols = 0;
 let lastSentRows = 0;
 let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let writeQueue: string[] = [];
+let writeRafId: number | null = null;
+let sniffDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingSniffText = "";
 
 function connectWebSocket() {
   if (!term) return;
@@ -189,11 +193,6 @@ function connectWebSocket() {
       sendResize();
     }
   };
-
-  let writeQueue: string[] = [];
-  let writeRafId: number | null = null;
-  let sniffDebounceTimer: any = null;
-  let pendingSniffText = "";
 
   function flushWriteQueue() {
     writeRafId = null;
