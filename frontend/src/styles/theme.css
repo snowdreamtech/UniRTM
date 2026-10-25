@@ -783,6 +783,21 @@ html[dir="rtl"] .xterm,
   color: inherit !important;
 }
 
+/* Cut action scissors icon definition (missing in @vscode/codicons font) */
+.codicon.codicon-scissors:before,
+.codicon-scissors:before {
+  content: "" !important;
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23000' d='M4.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0-4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm0 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0-4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM7.2 7.5l2.4-2.4-.7-.7L6.5 6.8 4.1 4.4l-.7.7 2.4 2.4-2.4 2.4.7.7 2.4-2.4 2.4 2.4.7-.7-2.4-2.4zm2.1-.5l5.2-5.2-.7-.7-5.9 5.9.7.7.7-.7zm0 1l-.7-.7-.7.7 5.9 5.9.7-.7-5.2-5.2z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23000' d='M4.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0-4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm0 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0-4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM7.2 7.5l2.4-2.4-.7-.7L6.5 6.8 4.1 4.4l-.7.7 2.4 2.4-2.4 2.4.7.7 2.4-2.4 2.4 2.4.7-.7-2.4-2.4zm2.1-.5l5.2-5.2-.7-.7-5.9 5.9.7.7.7-.7zm0 1l-.7-.7-.7.7 5.9 5.9.7-.7-5.2-5.2z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+
 /* Action Label: Left-aligned, flexible width, ellipsis */
 .context-view .monaco-menu .monaco-action-bar.vertical .action-label,
 .tab-context-menu .action-label,
