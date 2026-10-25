@@ -726,18 +726,46 @@ const changeLocalPortInputRef = ref<HTMLInputElement | null>(null);
 
 let pollTimer: any = null;
 
-onMounted(async () => {
-  await fetchPorts();
-  // Poll listening ports every 3.5 seconds
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(() => {
+    if (typeof document !== "undefined" && document.hidden) return;
     fetchPorts();
   }, 3500);
+}
 
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+function handleVisibilityChange() {
+  if (typeof document === "undefined") return;
+  if (document.hidden) {
+    stopPolling();
+  } else {
+    fetchPorts();
+    startPolling();
+  }
+}
+
+onMounted(async () => {
+  await fetchPorts();
+  startPolling();
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+  }
   window.addEventListener("click", closeContextMenu);
 });
 
 onBeforeUnmount(() => {
-  if (pollTimer) clearInterval(pollTimer);
+  stopPolling();
+  if (typeof document !== "undefined") {
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }
   window.removeEventListener("click", closeContextMenu);
 });
 

@@ -129,7 +129,10 @@ export function useCredentialBroker() {
    */
   function startBrokerPolling(intervalMs: number = 800) {
     if (pollTimer) return;
-    pollTimer = setInterval(checkPendingRequest, intervalMs);
+    pollTimer = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      checkPendingRequest();
+    }, intervalMs);
   }
 
   /**
