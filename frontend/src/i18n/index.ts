@@ -2,9 +2,6 @@ import { ref, computed } from "vue";
 import type { TranslationDict } from "./types";
 export type { TranslationDict };
 
-import { zhCn } from "./locales/zh-CN";
-import { enUs } from "./locales/en-US";
-
 export const SUPPORTED_LANGUAGES = [
   { code: "zh-CN", name: "Simplified Chinese", nativeName: "\u7b80\u4f53\u4e2d\u6587" },
   { code: "en-US", name: "English", nativeName: "English" },
@@ -61,18 +58,11 @@ export const SUPPORTED_LANGUAGES = [
   { code: "et-EE", name: "Eesti", nativeName: "Eesti" },
 ];
 
-// Vite glob import for dynamic lazy-loading locale chunks (excluding pre-bundled zh-CN and en-US)
-const localeLoaders = import.meta.glob<Record<string, any>>([
-  "./locales/*.ts",
-  "!./locales/zh-CN.ts",
-  "!./locales/en-US.ts",
-]);
+// Vite glob import for dynamic lazy-loading of all 53 locale chunks on demand
+const localeLoaders = import.meta.glob<Record<string, any>>("./locales/*.ts");
 
 // Reactive map of loaded locale dictionaries
-export const loadedDictionaries = ref<Record<string, TranslationDict>>({
-  "zh-CN": zhCn,
-  "en-US": enUs,
-});
+export const loadedDictionaries = ref<Record<string, TranslationDict>>({});
 
 const DEFAULT_LOCALE = "en-US";
 
@@ -184,17 +174,13 @@ export function updateDocumentDir() {
 
 export const setLanguage = setLocale;
 
-// Asynchronously load initial locale if not pre-bundled
+// Asynchronously load initial locale
 const initLoc = getInitialLocale();
-if (initLoc !== "zh-CN" && initLoc !== "en-US") {
-  setLocale(initLoc);
-} else {
-  updateDocumentDir();
-}
+setLocale(initLoc);
 
 export function t(key: keyof TranslationDict, params?: Record<string, string | number>): string {
-  const dict = loadedDictionaries.value[currentLocale.value] || loadedDictionaries.value[DEFAULT_LOCALE] || enUs;
-  let text = dict[key] || loadedDictionaries.value[DEFAULT_LOCALE]?.[key] || enUs[key];
+  const dict = loadedDictionaries.value[currentLocale.value] || loadedDictionaries.value[DEFAULT_LOCALE];
+  let text = dict ? dict[key] : loadedDictionaries.value[DEFAULT_LOCALE]?.[key];
 
   if (!text) {
     if (import.meta.env.DEV) {

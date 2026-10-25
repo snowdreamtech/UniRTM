@@ -3,7 +3,6 @@
 
 import { watch } from "vue";
 import { t, currentLocale, loadedDictionaries, type TranslationDict } from "../../i18n";
-import { zhCn } from "../../i18n/locales/zh-CN";
 
 /**
  * Maps standard Monaco Editor context menu labels to i18n translation keys.
@@ -91,8 +90,7 @@ for (const [englishLabel, key] of Object.entries(MONACO_LABEL_TO_KEY)) {
   registerLabelKey(englishLabel, key);
 }
 
-// 2. Synchronously pre-index core locales
-indexDictionary(zhCn);
+// 2. Reactively index any loaded dictionaries in O(1)
 
 // 3. Register common Monaco NLS aliases using unicode escapes
 registerLabelKey("\u67e5\u770b\u5b9a\u4e49", "editor.action.peek_definition");
