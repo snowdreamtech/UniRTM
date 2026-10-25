@@ -145,7 +145,7 @@ func InitLogger(errorLogPath, opLogPath string) (errorWriter io.Writer, opWriter
 	errorWriter = initErrorLogger(errorLogPath)
 
 	// Set unirtm.log
-	opWriter = initGinLogger(opLogPath)
+	opWriter = initOpLogger(opLogPath)
 
 	// Set zerologger as the default logger
 	initZeroLogger(opWriter)
@@ -260,7 +260,7 @@ func initErrorLogger(filepath string) io.Writer {
 	return errorWriter
 }
 
-// InitGinLogger initializes the logger with the specified log path.
+// initOpLogger initializes the logger with the specified log path.
 // It returns the operation writer.
 //
 // Parameters:
@@ -268,7 +268,7 @@ func initErrorLogger(filepath string) io.Writer {
 //
 // Returns:
 //   - opWriter: The operation writer.
-func initGinLogger(filepath string) io.Writer {
+func initOpLogger(filepath string) io.Writer {
 	if filepath == "" {
 		filepath = "unirtm.log"
 	}
