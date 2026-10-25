@@ -1860,7 +1860,7 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  flex: 1;
+  flex-shrink: 0;
 }
 
 .changes-box {
@@ -2127,6 +2127,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   margin-bottom: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
 }
 
 .action-pill.small {
@@ -2164,6 +2165,7 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-gutter: stable;
+  flex-shrink: 0;
 }
 
 .commits-list .empty-state {
@@ -2199,9 +2201,10 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 14px;
+  padding: 0 14px;
   height: 38px;
   min-height: 38px;
+  max-height: 38px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--card-border);
   font-size: 12px;
