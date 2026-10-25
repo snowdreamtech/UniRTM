@@ -702,7 +702,7 @@
           </button>
         </div>
 
-        <div class="modal-body-versions">
+        <div ref="remoteVersionsContainerRef" class="modal-body-versions" @scroll="handleRemoteVersionsScroll">
           <div v-if="loadingRemote" class="remote-loading-box">
             <span class="spin-icon">
               <TechIcon id="workbench:sync" :size="16" />
@@ -710,7 +710,7 @@
             <span>{{ t("runtimes.fetching_releases") || "Fetching available releases..." }}</span>
           </div>
 
-          <div v-else-if="filteredRemoteVersions.length === 0" class="remote-empty-box">
+          <div v-else-if="processedRemoteVersions.length === 0" class="remote-empty-box">
             <div class="empty-icon-wrap">
               <TechIcon id="workbench:search" :size="24" />
             </div>
@@ -751,70 +751,135 @@
             </div>
           </div>
 
-          <div v-else v-for="rv in filteredRemoteVersions" :key="rv.version" class="remote-ver-row">
-            <div class="remote-ver-info">
-              <span class="font-mono ver-name">{{ formatVersion(rv.version) }}</span>
-              <span
-                v-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)"
-                class="installed-tag"
-                :class="{ 'active-scope-tag': isActiveInModalScope(selectedRuntime?.id || '', rv.version) }"
-                :title="
-                  isActiveInModalScope(selectedRuntime?.id || '', rv.version)
-                    ? t('runtimes.ver_active_installed') || 'Currently active and installed locally'
-                    : t('runtimes.ver_cached') || 'Cached in local pool, switch instantly without download'
-                "
-              >
-                {{ t("runtimes.installed") || "Installed" }}
-              </span>
-              <span
-                v-else-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version)"
-                class="installed-tag is-missing"
-                :title="
-                  modalInstallScope === 'user'
-                    ? t('runtimes.ver_missing_user') || 'Configured in user profile, but not downloaded locally'
-                    : t('runtimes.ver_missing_workspace') || 'Configured in workspace, but not downloaded locally'
-                "
-              >
-                {{ t("runtimes.status_missing") || "Missing" }}
-              </span>
-            </div>
-
-            <button
-              class="install-action-btn"
-              :class="{
-                'is-active-ver':
-                  isActiveInModalScope(selectedRuntime?.id || '', rv.version) &&
-                  isAlreadyInstalled(selectedRuntime?.id || '', rv.version),
-                'is-installed':
-                  isAlreadyInstalled(selectedRuntime?.id || '', rv.version) &&
-                  !isActiveInModalScope(selectedRuntime?.id || '', rv.version),
+          <!-- Virtual Scrolling when there are > 40 versions (e.g. Node/Go/Python with 1000+ versions) -->
+          <div
+            v-else-if="processedRemoteVersions.length > 40"
+            class="remote-versions-virtual-container"
+            :style="{ height: virtualRemoteVersionsTotalHeight + 'px', position: 'relative', width: '100%' }"
+          >
+            <div
+              class="remote-versions-virtual-slider"
+              :style="{
+                transform: `translateY(${virtualRemoteVersions[0]?.top || 0}px)`,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.35rem',
               }"
-              :disabled="
-                installingVer === rv.version ||
-                (isActiveInModalScope(selectedRuntime?.id || '', rv.version) &&
-                  isAlreadyInstalled(selectedRuntime?.id || '', rv.version))
-              "
-              @click="installRemoteVersion(selectedRuntime?.id || '', rv.version)"
             >
-              <span v-if="installingVer === rv.version">{{ t("runtimes.installing") || "Installing..." }}</span>
-              <span
-                v-else-if="
-                  isActiveInModalScope(selectedRuntime?.id || '', rv.version) &&
-                  isAlreadyInstalled(selectedRuntime?.id || '', rv.version)
-                "
-              >
-                {{ t("runtimes.active_badge") || "Active" }}
-              </span>
-              <span v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">
-                {{
-                  modalInstallScope === "user"
-                    ? t("runtimes.set_user") || "Set as User"
-                    : t("runtimes.set_workspace") || "Set as Workspace"
-                }}
-              </span>
-              <span v-else>{{ t("runtimes.install_apply") || "Install & Apply" }}</span>
-            </button>
+              <div v-for="vItem in virtualRemoteVersions" :key="vItem.item.version" class="remote-ver-row">
+                <div class="remote-ver-info">
+                  <span class="font-mono ver-name">{{ vItem.item.formatted }}</span>
+                  <span
+                    v-if="vItem.item.isInstalled"
+                    class="installed-tag"
+                    :class="{ 'active-scope-tag': vItem.item.isActive }"
+                    :title="
+                      vItem.item.isActive
+                        ? t('runtimes.ver_active_installed') || 'Currently active and installed locally'
+                        : t('runtimes.ver_cached') || 'Cached in local pool, switch instantly without download'
+                    "
+                  >
+                    {{ t("runtimes.installed") || "Installed" }}
+                  </span>
+                  <span
+                    v-else-if="vItem.item.isActive"
+                    class="installed-tag is-missing"
+                    :title="
+                      modalInstallScope === 'user'
+                        ? t('runtimes.ver_missing_user') || 'Configured in user profile, but not downloaded locally'
+                        : t('runtimes.ver_missing_workspace') || 'Configured in workspace, but not downloaded locally'
+                    "
+                  >
+                    {{ t("runtimes.status_missing") || "Missing" }}
+                  </span>
+                </div>
+
+                <button
+                  class="install-action-btn"
+                  :class="{
+                    'is-active-ver': vItem.item.isActive && vItem.item.isInstalled,
+                    'is-installed': vItem.item.isInstalled && !vItem.item.isActive,
+                  }"
+                  :disabled="installingVer === vItem.item.version || (vItem.item.isActive && vItem.item.isInstalled)"
+                  @click="installRemoteVersion(selectedRuntime?.id || '', vItem.item.version)"
+                >
+                  <span v-if="installingVer === vItem.item.version">{{
+                    t("runtimes.installing") || "Installing..."
+                  }}</span>
+                  <span v-else-if="vItem.item.isActive && vItem.item.isInstalled">
+                    {{ t("runtimes.active_badge") || "Active" }}
+                  </span>
+                  <span v-else-if="vItem.item.isInstalled">
+                    {{
+                      modalInstallScope === "user"
+                        ? t("runtimes.set_user") || "Set as User"
+                        : t("runtimes.set_workspace") || "Set as Workspace"
+                    }}
+                  </span>
+                  <span v-else>{{ t("runtimes.install_apply") || "Install & Apply" }}</span>
+                </button>
+              </div>
+            </div>
           </div>
+
+          <!-- Non-virtual rendering for small lists <= 40 items -->
+          <template v-else>
+            <div v-for="rv in processedRemoteVersions" :key="rv.version" class="remote-ver-row">
+              <div class="remote-ver-info">
+                <span class="font-mono ver-name">{{ rv.formatted }}</span>
+                <span
+                  v-if="rv.isInstalled"
+                  class="installed-tag"
+                  :class="{ 'active-scope-tag': rv.isActive }"
+                  :title="
+                    rv.isActive
+                      ? t('runtimes.ver_active_installed') || 'Currently active and installed locally'
+                      : t('runtimes.ver_cached') || 'Cached in local pool, switch instantly without download'
+                  "
+                >
+                  {{ t("runtimes.installed") || "Installed" }}
+                </span>
+                <span
+                  v-else-if="rv.isActive"
+                  class="installed-tag is-missing"
+                  :title="
+                    modalInstallScope === 'user'
+                      ? t('runtimes.ver_missing_user') || 'Configured in user profile, but not downloaded locally'
+                      : t('runtimes.ver_missing_workspace') || 'Configured in workspace, but not downloaded locally'
+                  "
+                >
+                  {{ t("runtimes.status_missing") || "Missing" }}
+                </span>
+              </div>
+
+              <button
+                class="install-action-btn"
+                :class="{
+                  'is-active-ver': rv.isActive && rv.isInstalled,
+                  'is-installed': rv.isInstalled && !rv.isActive,
+                }"
+                :disabled="installingVer === rv.version || (rv.isActive && rv.isInstalled)"
+                @click="installRemoteVersion(selectedRuntime?.id || '', rv.version)"
+              >
+                <span v-if="installingVer === rv.version">{{ t("runtimes.installing") || "Installing..." }}</span>
+                <span v-else-if="rv.isActive && rv.isInstalled">
+                  {{ t("runtimes.active_badge") || "Active" }}
+                </span>
+                <span v-else-if="rv.isInstalled">
+                  {{
+                    modalInstallScope === "user"
+                      ? t("runtimes.set_user") || "Set as User"
+                      : t("runtimes.set_workspace") || "Set as Workspace"
+                  }}
+                </span>
+                <span v-else>{{ t("runtimes.install_apply") || "Install & Apply" }}</span>
+              </button>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -1082,6 +1147,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../i18n";
 import { useToast } from "../composables/useToast";
+import { useVirtualList } from "../composables/useVirtualList";
 import TechIcon from "../components/common/TechIcon.vue";
 import { validateRuntimeVersion } from "../utils/versionValidator";
 import { useToolUpdates, type ToolUpdateItem } from "../composables/useToolUpdates";
@@ -1799,6 +1865,41 @@ function isActiveInModalScope(toolId: string, ver: string): boolean {
   const cleanTarget = targetVer.replace(/^[vV]+/, "").trim();
   return cleanVer === cleanTarget;
 }
+
+export interface ProcessedRemoteVersion {
+  version: string;
+  formatted: string;
+  isInstalled: boolean;
+  isActive: boolean;
+}
+
+const processedRemoteVersions = computed<ProcessedRemoteVersion[]>(() => {
+  const toolId = selectedRuntime.value?.id || "";
+  const list = filteredRemoteVersions.value;
+  return list.map((v) => {
+    const isInst = isAlreadyInstalled(toolId, v.version);
+    const isAct = isActiveInModalScope(toolId, v.version);
+    return {
+      version: v.version,
+      formatted: formatVersion(v.version),
+      isInstalled: isInst,
+      isActive: isAct,
+    };
+  });
+});
+
+const remoteVersionsContainerRef = ref<HTMLElement | null>(null);
+
+const {
+  visibleItems: virtualRemoteVersions,
+  totalHeight: virtualRemoteVersionsTotalHeight,
+  handleScroll: handleRemoteVersionsScroll,
+} = useVirtualList<ProcessedRemoteVersion>({
+  items: processedRemoteVersions,
+  itemHeight: 46,
+  containerRef: remoteVersionsContainerRef,
+  overscan: 8,
+});
 
 async function fetchStatus() {
   loading.value = true;
