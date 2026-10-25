@@ -4698,13 +4698,27 @@ print(json.dumps({
               if (envSock) {
                 sshAgentActive = true;
                 sshAgentSock = path.basename(envSock);
-                try {
-                  const out = execFileSync("ssh-add", ["-l"], { encoding: "utf-8", timeout: 2000 }).trim();
-                  const lines = out
-                    .split("\n")
-                    .filter((l) => l.trim().length > 0 && !l.includes("The agent has no identities."));
-                  sshAgentKeys = lines.length;
-                } catch (_) {}
+              }
+
+              try {
+                const out = execFileSync("ssh-add", ["-l"], { encoding: "utf-8", timeout: 2000 }).trim();
+                const lines = out
+                  .split("\n")
+                  .filter((l) => l.trim().length > 0 && !l.toLowerCase().includes("no identities"));
+                sshAgentKeys = lines.length;
+                sshAgentActive = true;
+                if (!sshAgentSock) {
+                  sshAgentSock = process.platform === "win32" ? "named_pipe" : "agent";
+                }
+              } catch (e: any) {
+                const stdout = (e.stdout || e.message || "").toString();
+                if (stdout.toLowerCase().includes("no identities")) {
+                  sshAgentActive = true;
+                  sshAgentKeys = 0;
+                  if (!sshAgentSock) {
+                    sshAgentSock = process.platform === "win32" ? "named_pipe" : "agent";
+                  }
+                }
               }
 
               let gpgAgentActive = false;
@@ -4715,7 +4729,12 @@ print(json.dumps({
                 try {
                   const out = execFileSync("pgrep", ["-x", "gpg-agent"], { encoding: "utf-8", timeout: 1000 }).trim();
                   if (out) gpgAgentActive = true;
-                } catch (_) {}
+                } catch (_) {
+                  try {
+                    execFileSync("gpgconf", ["--list-dirs", "agent-socket"], { encoding: "utf-8", timeout: 2000 });
+                    gpgAgentActive = true;
+                  } catch (_) {}
+                }
               }
 
               res.end(

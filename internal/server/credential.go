@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -429,25 +430,51 @@ type NativeAgentStatus struct {
 func DetectNativeAgents() NativeAgentStatus {
 	status := NativeAgentStatus{}
 
-	// 1. SSH Agent probe
+	// 1. SSH Agent probe (Linux/macOS Unix domain socket, or Windows OpenSSH Service named pipe)
 	sock := os.Getenv("SSH_AUTH_SOCK")
 	if sock != "" {
 		status.SSHAgentActive = true
-		// Mask path for privacy
 		status.SSHAgentSock = filepath.Base(sock)
-		// Check loaded keys via ssh-add -l
-		cmd := exec.Command("ssh-add", "-l")
-		out, err := cmd.CombinedOutput()
-		if err == nil {
-			lines := strings.Split(strings.TrimSpace(string(out)), "\n")
-			status.SSHAgentKeys = len(lines)
+	}
+
+	// Always probe reachability and identities via ssh-add -l.
+	// This ensures seamless support on Windows (where OpenSSH agent uses named pipe \\.\pipe\openssh-ssh-agent without setting SSH_AUTH_SOCK).
+	cmd := exec.Command("ssh-add", "-l")
+	out, err := cmd.CombinedOutput()
+	outStr := strings.TrimSpace(string(out))
+	if err == nil {
+		status.SSHAgentActive = true
+		if status.SSHAgentSock == "" {
+			if runtime.GOOS == "windows" {
+				status.SSHAgentSock = "named_pipe"
+			} else {
+				status.SSHAgentSock = "agent"
+			}
+		}
+		lines := strings.Split(outStr, "\n")
+		status.SSHAgentKeys = len(lines)
+	} else if strings.Contains(strings.ToLower(outStr), "no identities") {
+		// Exit code 1 means agent is alive and responsive, but 0 keys loaded currently
+		status.SSHAgentActive = true
+		status.SSHAgentKeys = 0
+		if status.SSHAgentSock == "" {
+			if runtime.GOOS == "windows" {
+				status.SSHAgentSock = "named_pipe"
+			} else {
+				status.SSHAgentSock = "agent"
+			}
 		}
 	}
 
-	// 2. GPG Agent probe
+	// 2. GPG Agent probe (cross-platform via gpg-connect-agent and gpgconf fallback)
 	gpgCmd := exec.Command("gpg-connect-agent", "/bye")
 	if err := gpgCmd.Run(); err == nil {
 		status.GPGAgentActive = true
+	} else {
+		confCmd := exec.Command("gpgconf", "--list-dirs", "agent-socket")
+		if err := confCmd.Run(); err == nil {
+			status.GPGAgentActive = true
+		}
 	}
 
 	return status
