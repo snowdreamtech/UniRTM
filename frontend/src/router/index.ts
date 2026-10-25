@@ -2,8 +2,6 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
-import DashboardView from "../views/DashboardView.vue";
-
 const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
@@ -12,7 +10,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/dashboard",
     name: "dashboard",
-    component: DashboardView,
+    component: () => import("../views/DashboardView.vue"),
   },
   {
     path: "/explorer",

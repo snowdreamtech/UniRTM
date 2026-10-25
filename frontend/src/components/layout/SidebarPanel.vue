@@ -384,15 +384,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount, defineAsyncComponent } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
-import ExplorerSidebar from "../explorer/ExplorerSidebar.vue";
-import SourceControlSidebar from "../scm/SourceControlSidebar.vue";
-import GuardSidebar from "../guard/GuardSidebar.vue";
-import ToolContextMenu, { type ToolMenuActionType } from "../tools/ToolContextMenu.vue";
-import TaskContextMenu, { type TaskMenuActionType } from "../tasks/TaskContextMenu.vue";
-import EnvironmentContextMenu, { type EnvMenuActionType } from "../environments/EnvironmentContextMenu.vue";
+
+const ExplorerSidebar = defineAsyncComponent(() => import("../explorer/ExplorerSidebar.vue"));
+const SourceControlSidebar = defineAsyncComponent(() => import("../scm/SourceControlSidebar.vue"));
+const GuardSidebar = defineAsyncComponent(() => import("../guard/GuardSidebar.vue"));
+const ToolContextMenu = defineAsyncComponent(() => import("../tools/ToolContextMenu.vue"));
+const TaskContextMenu = defineAsyncComponent(() => import("../tasks/TaskContextMenu.vue"));
+const EnvironmentContextMenu = defineAsyncComponent(() => import("../environments/EnvironmentContextMenu.vue"));
+import type { ToolMenuActionType } from "../tools/ToolContextMenu.vue";
+import type { TaskMenuActionType } from "../tasks/TaskContextMenu.vue";
+import type { EnvMenuActionType } from "../environments/EnvironmentContextMenu.vue";
 import { useFileTree } from "../../composables/useFileTree";
 import { useToolUpdates } from "../../composables/useToolUpdates";
 import { useToolScope } from "../../composables/useToolScope";
