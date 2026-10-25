@@ -98,32 +98,51 @@ describe("useCredentialBroker composable", () => {
     expect(broker.pendingRequest.value).toBeNull();
   });
 
-  it("supports startBrokerPolling, boostPolling, and stopBrokerPolling cleanly", async () => {
+  it("supports startBrokerPolling and live EventSource stream events cleanly", async () => {
     const broker = useCredentialBroker();
 
-    let fetchCount = 0;
-    global.fetch = vi.fn().mockImplementation(async () => {
-      fetchCount++;
-      return {
-        ok: true,
-        json: async () => ({ success: true, request: null }),
-      };
-    });
+    let eventHandler: ((e: any) => void) | null = null;
+    let closed = false;
 
-    broker.startBrokerPolling(30);
-    await new Promise((r) => setTimeout(r, 15));
-    expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("wait=25s"), expect.any(Object));
+    class MockEventSource {
+      url: string;
+      constructor(url: string) {
+        this.url = url;
+      }
+      addEventListener(event: string, handler: (e: any) => void) {
+        if (event === "credential") {
+          eventHandler = handler;
+        }
+      }
+      close() {
+        closed = true;
+      }
+    }
 
-    // Boost polling
-    broker.boostPolling(500);
-    await new Promise((r) => setTimeout(r, 60));
-    expect(fetchCount).toBeGreaterThanOrEqual(2);
+    (globalThis as any).EventSource = MockEventSource;
 
-    // Stop polling
+    broker.startBrokerPolling();
+    expect(eventHandler).not.toBeNull();
+
+    // Emit live credential event from server
+    const mockEvent = {
+      data: JSON.stringify({
+        id: "stream-req-1",
+        type: "gpg",
+        prompt: "Enter GPG Passphrase:",
+        targetKey: "key-123",
+        timestamp: Date.now(),
+      }),
+    };
+    eventHandler!(mockEvent);
+
+    expect(broker.isPromptOpen.value).toBe(true);
+    expect(broker.pendingRequest.value?.id).toBe("stream-req-1");
+
+    // Stop listener
     broker.stopBrokerPolling();
-    const countAfterStop = fetchCount;
-    await new Promise((r) => setTimeout(r, 80));
-    expect(fetchCount).toBe(countAfterStop);
+    expect(closed).toBe(true);
+
+    delete (globalThis as any).EventSource;
   });
 });

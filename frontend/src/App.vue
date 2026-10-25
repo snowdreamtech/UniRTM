@@ -599,7 +599,7 @@ onMounted(() => {
   fetchThemes();
   fetchKeybindings();
   checkUpdates().catch(() => {});
-  startBrokerPolling(1000);
+  startBrokerPolling();
   window.addEventListener("keydown", handleGlobalKeydown);
 });
 

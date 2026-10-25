@@ -9,15 +9,6 @@ const lastError = ref<string | null>(null);
 // In-memory session keyring cache
 const sessionKeyring = ref<Map<string, string>>(new Map());
 
-const LONG_POLL_TIMEOUT = "25s";
-const BOOST_DURATION_MS = 15000;
-
-let pollTimer: ReturnType<typeof setTimeout> | null = null;
-let currentAbortController: AbortController | null = null;
-let isPollingActive = false;
-let isChecking = false;
-let boostUntil = 0;
-
 export function useCredentialBroker() {
   /**
    * Trigger prompt modal for credential request
@@ -114,18 +105,11 @@ export function useCredentialBroker() {
   }
 
   /**
-   * Check backend for pending credential requests via Long-Polling
+   * Check backend for pending credential requests
    */
-  async function checkPendingRequest(
-    signal?: AbortSignal,
-    waitDuration: string = LONG_POLL_TIMEOUT
-  ): Promise<CredentialRequest | null> {
+  async function checkPendingRequest(): Promise<CredentialRequest | null> {
     try {
-      const url = waitDuration
-        ? `/api/git/credential-pending?wait=${encodeURIComponent(waitDuration)}`
-        : "/api/git/credential-pending";
-      const res = await fetch(url, {
-        signal,
+      const res = await fetch("/api/git/credential-pending", {
         cache: "no-store",
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -144,91 +128,69 @@ export function useCredentialBroker() {
     }
   }
 
-  async function runPollLoop() {
-    if (!isPollingActive) return;
+  let eventSource: EventSource | null = null;
+  let isListening = false;
 
-    if (typeof document !== "undefined" && document.hidden) {
-      // Suspend long-poll while document is hidden to save connections
-      pollTimer = setTimeout(runPollLoop, 2000);
+  /**
+   * Start live push-event listener via Server-Sent Events
+   */
+  function startBrokerPolling() {
+    if (isListening) return;
+    isListening = true;
+
+    const EventSourceCtor =
+      (typeof window !== "undefined" && (window as any).EventSource) ||
+      (typeof globalThis !== "undefined" && (globalThis as any).EventSource);
+
+    if (!EventSourceCtor) {
+      // Fallback if environment does not support EventSource (e.g. non-browser testing)
+      checkPendingRequest();
       return;
     }
 
-    if (isPromptOpen.value) {
-      // Pause while prompt is currently open
-      pollTimer = setTimeout(runPollLoop, 1000);
-      return;
-    }
-
-    const startTime = Date.now();
-    let hasErrorOrEarlyReturn = false;
-
-    if (!isChecking) {
-      isChecking = true;
-      currentAbortController = new AbortController();
-      try {
-        const req = await checkPendingRequest(currentAbortController.signal, LONG_POLL_TIMEOUT);
-        if (!req) {
-          // If returned quickly (under 5s) without any credential, back off to avoid tight loops
-          const elapsed = Date.now() - startTime;
-          if (elapsed < 5000) {
-            hasErrorOrEarlyReturn = true;
-          }
-        }
-      } catch {
-        hasErrorOrEarlyReturn = true;
-      } finally {
-        isChecking = false;
-        currentAbortController = null;
+    try {
+      if (eventSource) {
+        eventSource.close();
       }
+      eventSource = new EventSourceCtor("/api/git/credential-stream");
+      eventSource.addEventListener("credential", (event: MessageEvent) => {
+        try {
+          const req: CredentialRequest = JSON.parse(event.data);
+          if (req && (!pendingRequest.value || pendingRequest.value.id !== req.id)) {
+            promptCredential(req);
+          }
+        } catch (e) {
+          console.error("Failed to parse credential event:", e);
+        }
+      });
+      eventSource.onerror = () => {
+        // EventSource will automatically reconnect according to browser spec
+      };
+    } catch (e) {
+      console.warn("Failed to initialize EventSource credential listener:", e);
     }
-
-    if (!isPollingActive) return;
-
-    // If early return or error occurred, back off at least 5000ms; otherwise schedule next long-poll immediately
-    const nextDelay = hasErrorOrEarlyReturn ? 5000 : 50;
-    pollTimer = setTimeout(runPollLoop, nextDelay);
   }
 
   /**
-   * Boost polling / interrupt hanging request to immediately catch incoming credentials
+   * Boost / immediate check on action
    */
-  function boostPolling(durationMs: number = BOOST_DURATION_MS) {
-    boostUntil = Math.max(boostUntil, Date.now() + durationMs);
-    if (!isPollingActive) return;
-    if (currentAbortController) {
-      currentAbortController.abort();
-      currentAbortController = null;
-    }
-    if (pollTimer) {
-      clearTimeout(pollTimer);
-      pollTimer = null;
-    }
-    if (!isChecking) {
-      runPollLoop();
+  function boostPolling() {
+    // If not yet listening or reconnecting, ensure connection or check directly
+    if (!isListening) {
+      startBrokerPolling();
+    } else {
+      checkPendingRequest();
     }
   }
 
   /**
-   * Start background long-polling
-   */
-  function startBrokerPolling(_ignoredInterval?: number) {
-    if (isPollingActive) return;
-    isPollingActive = true;
-    runPollLoop();
-  }
-
-  /**
-   * Stop polling and cancel any in-flight hanging requests
+   * Stop live event listener
    */
   function stopBrokerPolling() {
-    isPollingActive = false;
-    if (currentAbortController) {
-      currentAbortController.abort();
-      currentAbortController = null;
-    }
-    if (pollTimer) {
-      clearTimeout(pollTimer);
-      pollTimer = null;
+    isListening = false;
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
     }
   }
 

@@ -4635,6 +4635,22 @@ print(json.dumps({
               }
             };
 
+            // GET /api/git/credential-stream (Server-Sent Events)
+            if (reqPath === "/api/git/credential-stream" && req.method === "GET") {
+              res.setHeader("Content-Type", "text/event-stream");
+              res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+              res.setHeader("Connection", "keep-alive");
+              res.setHeader("X-Accel-Buffering", "no");
+              res.write(": keep-alive\n\n");
+              const timer = setInterval(() => {
+                if (!res.writableEnded) {
+                  res.write(": keep-alive\n\n");
+                }
+              }, 15000);
+              req.on("close", () => clearInterval(timer));
+              return;
+            }
+
             // GET /api/git/credential-pending
             if (reqPath === "/api/git/credential-pending" && req.method === "GET") {
               res.setHeader("Content-Type", "application/json");
