@@ -76,23 +76,7 @@
 import { computed } from "vue";
 import { useIconTheme } from "../../composables/useIconTheme";
 
-const props = withDefaults(
-  defineProps<{
-    id: string;
-    size?: number;
-    colored?: boolean;
-    className?: string;
-  }>(),
-  {
-    size: 16,
-    colored: true,
-    className: "",
-  }
-);
-
-const { resolveIcon } = useIconTheme();
-
-const WORKBENCH_CODICON_MAP: Record<string, string> = {
+const WORKBENCH_CODICON_MAP: Readonly<Record<string, string>> = Object.freeze({
   "workbench:dashboard": "codicon-graph",
   "workbench:explorer": "codicon-files",
   "workbench:runtimes": "codicon-server",
@@ -138,41 +122,66 @@ const WORKBENCH_CODICON_MAP: Record<string, string> = {
   "workbench:cards": "codicon-editor-layout",
   "workbench:list": "codicon-table",
   "workbench:more": "codicon-more",
-};
+});
 
-const codiconClass = computed<string | null>(() => {
-  const id = props.id || "";
+interface ParsedIconInfo {
+  isNpm: boolean;
+  isGithub: boolean;
+  codiconClass: string | null;
+  normalizedId: string;
+}
+
+const parsedIconCache = new Map<string, ParsedIconInfo>();
+
+function parseIconId(rawId: string): ParsedIconInfo {
+  const cached = parsedIconCache.get(rawId);
+  if (cached) return cached;
+
+  const id = rawId || "";
+  const lower = id.toLowerCase();
+  const isNpm = lower.startsWith("npm:") || lower === "npm";
+  const isGithub = lower.startsWith("github:") || lower === "github" || lower === "workbench:github";
+
+  let codiconClass: string | null = null;
   if (id.startsWith("codicon:")) {
-    const name = id.replace("codicon:", "").trim();
-    return `codicon-${name}`;
+    codiconClass = `codicon-${id.slice(8).trim()}`;
+  } else if (id.startsWith("workbench:")) {
+    codiconClass = WORKBENCH_CODICON_MAP[id] || `codicon-${id.slice(10)}`;
   }
-  if (id.startsWith("workbench:")) {
-    return WORKBENCH_CODICON_MAP[id] || `codicon-${id.replace("workbench:", "")}`;
+
+  let normalizedId = rawId;
+  if (lower.startsWith("go:")) normalizedId = "go";
+  else if (lower.startsWith("pipx:") || lower.startsWith("pip:") || lower.startsWith("pypi:")) normalizedId = "python";
+  else if (lower.startsWith("cargo:")) normalizedId = "rust";
+
+  const res: ParsedIconInfo = { isNpm, isGithub, codiconClass, normalizedId };
+  if (parsedIconCache.size < 500) {
+    parsedIconCache.set(rawId, res);
   }
-  return null;
-});
+  return res;
+}
 
-const isNpm = computed(() => {
-  const id = props.id?.toLowerCase() || "";
-  return id.startsWith("npm:") || id === "npm";
-});
+const props = withDefaults(
+  defineProps<{
+    id: string;
+    size?: number;
+    colored?: boolean;
+    className?: string;
+  }>(),
+  {
+    size: 16,
+    colored: true,
+    className: "",
+  }
+);
 
-const isGithub = computed(() => {
-  const id = props.id?.toLowerCase() || "";
-  return id.startsWith("github:") || id === "github" || id === "workbench:github";
-});
+const { resolveIcon } = useIconTheme();
 
-const normalizedId = computed(() => {
-  const id = props.id?.toLowerCase() || "";
-  if (id.startsWith("go:")) return "go";
-  if (id.startsWith("pipx:") || id.startsWith("pip:") || id.startsWith("pypi:")) return "python";
-  if (id.startsWith("cargo:")) return "rust";
-  return props.id;
-});
-
-const resolved = computed(() => {
-  return resolveIcon(normalizedId.value);
-});
+const iconInfo = computed(() => parseIconId(props.id));
+const isNpm = computed(() => iconInfo.value.isNpm);
+const isGithub = computed(() => iconInfo.value.isGithub);
+const codiconClass = computed(() => iconInfo.value.codiconClass);
+const resolved = computed(() => resolveIcon(iconInfo.value.normalizedId));
 
 const codiconStyles = computed(() => {
   return {
