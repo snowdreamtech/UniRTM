@@ -203,7 +203,7 @@
               </div>
               <MonacoEditor
                 v-else
-                :key="'primary-' + activeTab.id"
+                key="primary-editor"
                 :tab="activeTab"
                 @change="handleEditorChange"
                 @cursor-change="handleCursorChange"
@@ -258,7 +258,7 @@
               </div>
               <MonacoEditor
                 v-else
-                :key="'split-' + splitState.tab.id"
+                key="split-editor"
                 :tab="splitState.tab"
                 @change="handleSplitEditorChange"
                 @save="handleSplitEditorSave"
@@ -317,12 +317,12 @@
           </div>
 
           <!-- 3. Monaco Diff Editor (Diff Tab) -->
-          <MonacoDiffEditor v-else-if="activeTab.isDiff" :key="'diff-' + activeTab.id" :tab="activeTab" />
+          <MonacoDiffEditor v-else-if="activeTab.isDiff" key="diff-editor" :tab="activeTab" />
 
           <!-- 4. Monaco Code Editor (Normal Tab) -->
           <MonacoEditor
             v-else
-            :key="activeTab.id"
+            key="single-editor"
             :tab="activeTab"
             @change="handleEditorChange"
             @cursor-change="handleCursorChange"

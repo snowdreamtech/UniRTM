@@ -148,7 +148,7 @@ onMounted(async () => {
 });
 
 watch(
-  () => [props.tab.diffMeta?.originalContent, props.tab.diffMeta?.modifiedContent],
+  () => [props.tab.id, props.tab.diffMeta?.originalContent, props.tab.diffMeta?.modifiedContent],
   () => {
     updateModels();
   }
