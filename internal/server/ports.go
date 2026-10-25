@@ -72,7 +72,30 @@ type PortForwardRequest struct {
 	Visibility string `json:"visibility,omitempty"`
 }
 
+var (
+	portsCacheMu   sync.RWMutex
+	portsCacheData []SystemListeningPort
+	portsCacheTime time.Time
+	portsCacheTTL  = 1500 * time.Millisecond
+)
+
+// InvalidatePortsCache clears the listening ports cache.
+func InvalidatePortsCache() {
+	portsCacheMu.Lock()
+	portsCacheTime = time.Time{}
+	portsCacheMu.Unlock()
+}
+
 func scanListeningPorts() ([]SystemListeningPort, error) {
+	portsCacheMu.RLock()
+	if time.Since(portsCacheTime) < portsCacheTTL && portsCacheData != nil {
+		cached := make([]SystemListeningPort, len(portsCacheData))
+		copy(cached, portsCacheData)
+		portsCacheMu.RUnlock()
+		return cached, nil
+	}
+	portsCacheMu.RUnlock()
+
 	portsMap := make(map[int]SystemListeningPort)
 
 	// 1. Try ss (fastest, standard on modern Linux)
@@ -115,42 +138,44 @@ func scanListeningPorts() ([]SystemListeningPort, error) {
 		}
 	}
 
-	// 2. Try lsof as supplementary / fallback (useful for macOS or when ss couldn't resolve pid)
-	if lsofPath, err := exec.LookPath("lsof"); err == nil {
-		out, err := exec.Command(lsofPath, "-iTCP", "-sTCP:LISTEN", "-P", "-n").Output()
-		if err == nil {
-			lines := strings.Split(string(out), "\n")
-			for _, line := range lines {
-				line = strings.TrimSpace(line)
-				if strings.HasPrefix(line, "COMMAND") || line == "" {
-					continue
-				}
-				fields := strings.Fields(line)
-				if len(fields) < 9 {
-					continue
-				}
-				procName := fields[0]
-				pid, _ := strconv.Atoi(fields[1])
-				nameField := fields[8]
-				port := extractPortFromAddr(nameField)
-				if port <= 0 || port > 65535 {
-					continue
-				}
-
-				existing, ok := portsMap[port]
-				if !ok {
-					existing = SystemListeningPort{
-						Port:         port,
-						Protocol:     "tcp",
-						LocalAddress: nameField,
+	// 2. Try lsof as supplementary / fallback (useful for macOS or when ss couldn't resolve ports)
+	if len(portsMap) == 0 || runtime.GOOS != "linux" {
+		if lsofPath, err := exec.LookPath("lsof"); err == nil {
+			out, err := exec.Command(lsofPath, "-iTCP", "-sTCP:LISTEN", "-P", "-n").Output()
+			if err == nil {
+				lines := strings.Split(string(out), "\n")
+				for _, line := range lines {
+					line = strings.TrimSpace(line)
+					if strings.HasPrefix(line, "COMMAND") || line == "" {
+						continue
 					}
+					fields := strings.Fields(line)
+					if len(fields) < 9 {
+						continue
+					}
+					procName := fields[0]
+					pid, _ := strconv.Atoi(fields[1])
+					nameField := fields[8]
+					port := extractPortFromAddr(nameField)
+					if port <= 0 || port > 65535 {
+						continue
+					}
+
+					existing, ok := portsMap[port]
+					if !ok {
+						existing = SystemListeningPort{
+							Port:         port,
+							Protocol:     "tcp",
+							LocalAddress: nameField,
+						}
+					}
+					if existing.Pid == 0 && pid > 0 {
+						existing.Pid = pid
+						existing.Process = procName
+						existing.CommandLine = readProcessCmdline(pid)
+					}
+					portsMap[port] = existing
 				}
-				if existing.Pid == 0 && pid > 0 {
-					existing.Pid = pid
-					existing.Process = procName
-					existing.CommandLine = readProcessCmdline(pid)
-				}
-				portsMap[port] = existing
 			}
 		}
 	}
@@ -208,6 +233,11 @@ func scanListeningPorts() ([]SystemListeningPort, error) {
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Port < result[j].Port
 	})
+
+	portsCacheMu.Lock()
+	portsCacheData = result
+	portsCacheTime = time.Now()
+	portsCacheMu.Unlock()
 
 	return result, nil
 }
@@ -488,6 +518,7 @@ func handlePortForward(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid port"})
 		return
 	}
+	InvalidatePortsCache()
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"port":    req.Port,
@@ -507,6 +538,7 @@ func handlePortUpdate(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid port"})
 		return
 	}
+	InvalidatePortsCache()
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"port":    req.Port,
@@ -521,6 +553,7 @@ func handlePortStop(w http.ResponseWriter, r *http.Request) {
 	}
 	var req PortForwardRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
+	InvalidatePortsCache()
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"port":    req.Port,
@@ -535,6 +568,7 @@ func handlePortUnforward(w http.ResponseWriter, r *http.Request) {
 	}
 	var req PortForwardRequest
 	_ = json.NewDecoder(r.Body).Decode(&req)
+	InvalidatePortsCache()
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
 		"port":    req.Port,

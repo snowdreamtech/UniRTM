@@ -161,16 +161,17 @@ func buildFSTree(wd, dirPath, currentRelPath string, currentDepth, maxDepth int,
 
 		entryRelPath := filepath.ToSlash(filepath.Join(currentRelPath, name))
 		fullEntryPath := filepath.Join(dirPath, name)
-		fi, err := d.Info()
-		size := int64(0)
-		modTime := ""
-		if err == nil {
-			size = fi.Size()
-			modTime = fi.ModTime().UTC().Format(time.RFC3339)
-		}
-
 		isDir := d.IsDir()
 		isIgnored := isPathIgnored(entryRelPath, name, ignoredMap, parentIgnored)
+
+		size := int64(0)
+		modTime := ""
+		if !isDir {
+			if fi, err := d.Info(); err == nil {
+				size = fi.Size()
+				modTime = fi.ModTime().UTC().Format(time.RFC3339)
+			}
+		}
 
 		entry := FSEntry{
 			Name:      name,
