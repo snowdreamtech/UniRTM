@@ -761,13 +761,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch, defineAsyncComponent } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
-import MonacoEditor from "../components/editor/MonacoEditor.vue";
-import MonacoDiffEditor from "../components/editor/MonacoDiffEditor.vue";
-import LocalHistoryModal from "../components/explorer/LocalHistoryModal.vue";
+
+const MonacoEditor = defineAsyncComponent(() => import("../components/editor/MonacoEditor.vue"));
+const MonacoDiffEditor = defineAsyncComponent(() => import("../components/editor/MonacoDiffEditor.vue"));
+const LocalHistoryModal = defineAsyncComponent(() => import("../components/explorer/LocalHistoryModal.vue"));
 import { useFileTree } from "../composables/useFileTree";
 import { useEditorTabs, type EditorTab } from "../composables/useEditorTabs";
 import { useWorkspaceBus } from "../composables/useWorkspaceBus";
