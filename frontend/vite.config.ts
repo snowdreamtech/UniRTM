@@ -4635,6 +4635,43 @@ print(json.dumps({
               }
             };
 
+            // GET /api/git/credential-pending
+            if (reqPath === "/api/git/credential-pending" && req.method === "GET") {
+              res.setHeader("Content-Type", "application/json");
+              res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+              res.setHeader("Pragma", "no-cache");
+              res.setHeader("Expires", "0");
+
+              let waitSec = 0;
+              try {
+                const u = new URL(reqUrl, "http://localhost");
+                const waitStr = u.searchParams.get("wait");
+                if (waitStr) {
+                  waitSec = parseInt(waitStr, 10);
+                }
+              } catch (_) {}
+
+              const waitMs = waitSec > 0 ? Math.min(waitSec * 1000, 30000) : 0;
+              if (waitMs > 0) {
+                const timer = setTimeout(() => {
+                  if (!res.writableEnded) {
+                    res.end(JSON.stringify({ success: true, request: null }));
+                  }
+                }, waitMs);
+                req.on("close", () => clearTimeout(timer));
+              } else {
+                res.end(JSON.stringify({ success: true, request: null }));
+              }
+              return;
+            }
+
+            // POST /api/git/credential-respond
+            if (reqPath === "/api/git/credential-respond" && req.method === "POST") {
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ success: true }));
+              return;
+            }
+
             // GET /api/git/repositories
             if (reqPath === "/api/git/repositories" && req.method === "GET") {
               try {

@@ -124,7 +124,14 @@ export function useCredentialBroker() {
       const url = waitDuration
         ? `/api/git/credential-pending?wait=${encodeURIComponent(waitDuration)}`
         : "/api/git/credential-pending";
-      const res = await fetch(url, { signal });
+      const res = await fetch(url, {
+        signal,
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+      });
       if (!res.ok) return null;
       const data = await res.json();
       if (data && data.request && (!pendingRequest.value || pendingRequest.value.id !== data.request.id)) {
@@ -152,11 +159,23 @@ export function useCredentialBroker() {
       return;
     }
 
+    const startTime = Date.now();
+    let hasErrorOrEarlyReturn = false;
+
     if (!isChecking) {
       isChecking = true;
       currentAbortController = new AbortController();
       try {
-        await checkPendingRequest(currentAbortController.signal, LONG_POLL_TIMEOUT);
+        const req = await checkPendingRequest(currentAbortController.signal, LONG_POLL_TIMEOUT);
+        if (!req) {
+          // If returned quickly (under 5s) without any credential, back off to avoid tight loops
+          const elapsed = Date.now() - startTime;
+          if (elapsed < 5000) {
+            hasErrorOrEarlyReturn = true;
+          }
+        }
+      } catch {
+        hasErrorOrEarlyReturn = true;
       } finally {
         isChecking = false;
         currentAbortController = null;
@@ -165,8 +184,9 @@ export function useCredentialBroker() {
 
     if (!isPollingActive) return;
 
-    // Immediately schedule the next hanging long-poll on completion
-    pollTimer = setTimeout(runPollLoop, 50);
+    // If early return or error occurred, back off at least 5000ms; otherwise schedule next long-poll immediately
+    const nextDelay = hasErrorOrEarlyReturn ? 5000 : 50;
+    pollTimer = setTimeout(runPollLoop, nextDelay);
   }
 
   /**
