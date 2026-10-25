@@ -726,3 +726,34 @@ func TestAPIResponseHelpers(t *testing.T) {
 		t.Errorf("Unexpected WriteError output: %s", rrError.Body.String())
 	}
 }
+
+func TestGitBranchesCache(t *testing.T) {
+	InvalidateGitCache()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/git/branches", handleGitBranches)
+
+	req1 := httptest.NewRequest("GET", "/api/git/branches", nil)
+	rr1 := httptest.NewRecorder()
+	mux.ServeHTTP(rr1, req1)
+	if rr1.Code != http.StatusOK {
+		t.Fatalf("Expected 200, got %d", rr1.Code)
+	}
+
+	gitBranchesCacheMu.RLock()
+	cacheLen := len(gitBranchesCache)
+	gitBranchesCacheMu.RUnlock()
+	if cacheLen == 0 {
+		t.Errorf("Expected gitBranchesCache to be populated after GET /api/git/branches")
+	}
+
+	// Invalidation test
+	InvalidateGitCache()
+	gitBranchesCacheMu.RLock()
+	clearedLen := len(gitBranchesCache)
+	gitBranchesCacheMu.RUnlock()
+	if clearedLen != 0 {
+		t.Errorf("Expected gitBranchesCache to be empty after InvalidateGitCache(), got %d", clearedLen)
+	}
+}
+

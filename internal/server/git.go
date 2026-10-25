@@ -23,18 +23,33 @@ type gitStatusCacheEntry struct {
 	cachedAt time.Time
 }
 
+type gitBranchesCacheEntry struct {
+	current  string
+	branches []GitBranchItem
+	cachedAt time.Time
+}
+
 var (
-	gitStatusCacheMu sync.RWMutex
-	gitStatusCache   = make(map[string]gitStatusCacheEntry)
+	gitStatusCacheMu   sync.RWMutex
+	gitStatusCache     = make(map[string]gitStatusCacheEntry)
+	gitBranchesCacheMu sync.RWMutex
+	gitBranchesCache   = make(map[string]gitBranchesCacheEntry)
 )
 
-const gitStatusCacheTTL = 800 * time.Millisecond
+const (
+	gitStatusCacheTTL   = 800 * time.Millisecond
+	gitBranchesCacheTTL = 1500 * time.Millisecond
+)
 
 // InvalidateGitCache clears any cached Git status across repositories.
 func InvalidateGitCache() {
 	gitStatusCacheMu.Lock()
 	gitStatusCache = make(map[string]gitStatusCacheEntry)
 	gitStatusCacheMu.Unlock()
+
+	gitBranchesCacheMu.Lock()
+	gitBranchesCache = make(map[string]gitBranchesCacheEntry)
+	gitBranchesCacheMu.Unlock()
 }
 
 // RegisterGitRoutes registers all Git version control and repository management routes.
@@ -687,6 +702,19 @@ func handleGitBranches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	repoDir := resolveGitRepoDir(r)
+	gitBranchesCacheMu.RLock()
+	if entry, found := gitBranchesCache[repoDir]; found && time.Since(entry.cachedAt) < gitBranchesCacheTTL {
+		gitBranchesCacheMu.RUnlock()
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":  true,
+			"current":  entry.current,
+			"branches": entry.branches,
+		})
+		return
+	}
+	gitBranchesCacheMu.RUnlock()
+
 	out, err := runGitInReq(r, "branch", "-a", "--format=%(refname:short)|%(HEAD)")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -715,6 +743,14 @@ func handleGitBranches(w http.ResponseWriter, r *http.Request) {
 			IsRemote:  strings.HasPrefix(bName, "origin/"),
 		})
 	}
+
+	gitBranchesCacheMu.Lock()
+	gitBranchesCache[repoDir] = gitBranchesCacheEntry{
+		current:  current,
+		branches: branches,
+		cachedAt: time.Now(),
+	}
+	gitBranchesCacheMu.Unlock()
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":  true,
