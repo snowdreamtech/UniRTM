@@ -501,7 +501,7 @@ async function fetchDoctorReport() {
       report.value = data;
       const d = new Date(data.timestamp ? data.timestamp * 1000 : Date.now());
       lastCheckedTime.value = d.toLocaleTimeString();
-      notifyDoctorChanged();
+      notifyDoctorChanged(data);
       emit(
         "log-event",
         data.status === "healthy" ? "SUCCESS" : "WARN",

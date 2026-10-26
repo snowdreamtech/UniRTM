@@ -74,7 +74,7 @@ type ToolActionListener = (req: ToolActionRequest) => void;
 type ToolsChangeListener = () => void;
 type TaskActionListener = (req: TaskActionRequest) => void;
 type TasksChangeListener = () => void;
-type DoctorChangeListener = () => void;
+type DoctorChangeListener = (report?: any) => void;
 type EnvActionListener = (req: EnvActionRequest) => void;
 type EnvsChangeListener = () => void;
 
@@ -429,10 +429,10 @@ export function useWorkspaceBus() {
   /**
    * Broadcast environment doctor diagnosis change
    */
-  function notifyDoctorChanged(): void {
+  function notifyDoctorChanged(report?: any): void {
     doctorChangeListeners.forEach((fn) => {
       try {
-        fn();
+        fn(report);
       } catch (err) {
         console.error("[WorkspaceBus] Error in doctor change listener:", err);
       }

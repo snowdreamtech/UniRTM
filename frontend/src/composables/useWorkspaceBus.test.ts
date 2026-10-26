@@ -211,17 +211,23 @@ describe("useWorkspaceBus", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it("handles notifyDoctorChanged broadcasts", () => {
+  it("handles notifyDoctorChanged broadcasts with and without payload", () => {
     const bus = useWorkspaceBus();
     const listener = vi.fn();
     const unsub = bus.onDoctorChanged(listener);
 
     bus.notifyDoctorChanged();
     expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith(undefined);
+
+    const mockReport = { score: 100, status: "healthy" };
+    bus.notifyDoctorChanged(mockReport);
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenCalledWith(mockReport);
 
     unsub();
     bus.notifyDoctorChanged();
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledTimes(2);
   });
 
   it("handles envAction broadcasts for edit, copy-value, copy-name, and delete", () => {

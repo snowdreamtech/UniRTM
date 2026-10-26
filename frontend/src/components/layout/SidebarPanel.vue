@@ -828,7 +828,11 @@ interface DoctorCheckItem {
 
 const doctorReport = ref<any>(null);
 
-async function fetchSidebarDoctorStatus() {
+async function fetchSidebarDoctorStatus(cachedReport?: any) {
+  if (cachedReport) {
+    doctorReport.value = cachedReport;
+    return;
+  }
   try {
     const res = await fetch("/api/doctor");
     const contentType = res.headers.get("content-type") || "";
@@ -911,10 +915,12 @@ onMounted(async () => {
   fetchSidebarTasks();
   fetchSidebarEnvs();
   fetchSidebarToolsStatus();
-  fetchSidebarDoctorStatus();
+  if (props.currentTab === "doctor") {
+    fetchSidebarDoctorStatus();
+  }
   unsubToolsChanged = onToolsChanged(fetchSidebarToolsStatus);
   unsubTasksChanged = onTasksChanged(fetchSidebarTasks);
-  unsubDoctorChanged = onDoctorChanged(fetchSidebarDoctorStatus);
+  unsubDoctorChanged = onDoctorChanged((report) => fetchSidebarDoctorStatus(report));
   unsubEnvsChanged = onEnvsChanged(fetchSidebarEnvs);
 });
 
