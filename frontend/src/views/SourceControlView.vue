@@ -529,7 +529,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, defineAsyncComponent } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useGit } from "../composables/useGit";
 import { useEditorTabs } from "../composables/useEditorTabs";
@@ -538,14 +538,15 @@ import { useTheme } from "../composables/useTheme";
 
 import { loadMonaco, getLanguageForFile } from "../services/editor/monacoLoader";
 import TechIcon from "../components/common/TechIcon.vue";
-import GitGraphView from "../components/scm/GitGraphView.vue";
+const GitGraphView = defineAsyncComponent(() => import("../components/scm/GitGraphView.vue"));
 import GitMoreActionsMenu from "../components/scm/GitMoreActionsMenu.vue";
 import { useGuard } from "../composables/useGuard";
 import GitFileContextMenu, {
   type ContextMenuTargetFile,
   type FileMenuActionType,
 } from "../components/scm/GitFileContextMenu.vue";
-import GitActionModal, { type GitModalActionType } from "../components/scm/GitActionModal.vue";
+import type { GitModalActionType } from "../components/scm/GitActionModal.vue";
+const GitActionModal = defineAsyncComponent(() => import("../components/scm/GitActionModal.vue"));
 import { useToast } from "../composables/useToast";
 import { t } from "../i18n";
 
