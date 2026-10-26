@@ -388,7 +388,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, defineAsyncComponent 
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 
-const ExplorerSidebar = defineAsyncComponent(() => import("../explorer/ExplorerSidebar.vue"));
+import ExplorerSidebar from "../explorer/ExplorerSidebar.vue";
 const SourceControlSidebar = defineAsyncComponent(() => import("../scm/SourceControlSidebar.vue"));
 const GuardSidebar = defineAsyncComponent(() => import("../guard/GuardSidebar.vue"));
 const ToolContextMenu = defineAsyncComponent(() => import("../tools/ToolContextMenu.vue"));

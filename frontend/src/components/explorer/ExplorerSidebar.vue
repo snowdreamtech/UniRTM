@@ -62,10 +62,18 @@
 
     <!-- Tree Content Area -->
     <div v-show="isRootExpanded" class="explorer-tree-body" ref="treeBodyRef" @scroll="handleTreeScroll">
-      <!-- Loading State -->
-      <div v-if="isLoading && !filteredTree" class="tree-status-state">
-        <span class="codicon codicon-loading codicon-modifier-spin"></span>
-        <span class="status-text">{{ t("explorer.loading_tree") || "Loading directory tree..." }}</span>
+      <!-- Loading State: Shimmering Tree Skeleton -->
+      <div v-if="isLoading && !filteredTree" class="tree-skeleton-container" aria-busy="true">
+        <div
+          v-for="(w, idx) in skeletonRowWidths"
+          :key="idx"
+          class="tree-skeleton-row"
+          :style="{ paddingLeft: `${14 + (idx % 3) * 12}px` }"
+        >
+          <div class="skeleton-twistie"></div>
+          <div class="skeleton-icon"></div>
+          <div class="skeleton-bar" :style="{ width: w }"></div>
+        </div>
       </div>
 
       <!-- Error State -->
@@ -204,6 +212,7 @@ const { onRevealFile } = useWorkspaceBus();
 
 const rootCreateInputRef = ref<HTMLInputElement | null>(null);
 const createRootInputValue = ref("");
+const skeletonRowWidths = ["55%", "72%", "42%", "64%", "50%", "58%"];
 
 const workspaceName = computed(() => {
   if (isMultiRoot.value) {
@@ -478,6 +487,53 @@ onBeforeUnmount(() => {
 .retry-btn:hover {
   background-color: rgba(128, 128, 128, 0.12);
   color: var(--text-main);
+}
+
+.tree-skeleton-container {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  gap: 4px;
+}
+
+.tree-skeleton-row {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.skeleton-twistie {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--hover-bg, rgba(255, 255, 255, 0.06));
+  animation: shimmerPulse 1.4s ease-in-out infinite alternate;
+}
+
+.skeleton-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--hover-bg, rgba(255, 255, 255, 0.08));
+  animation: shimmerPulse 1.4s ease-in-out infinite alternate;
+}
+
+.skeleton-bar {
+  height: 11px;
+  border-radius: 3px;
+  background: var(--hover-bg, rgba(255, 255, 255, 0.07));
+  animation: shimmerPulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes shimmerPulse {
+  0% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0.85;
+  }
 }
 
 .tree-empty-state {

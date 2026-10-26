@@ -111,7 +111,7 @@ const addFolderModal = ref<AddFolderModalState>({
   defaultName: "",
 });
 
-const workspaceRoots = ref<WorkspaceRoot[]>([]);
+const workspaceRoots = ref<WorkspaceRoot[]>([{ id: "root-primary", name: "UNIRTM", path: "" }]);
 const isMultiRoot = computed(() => workspaceRoots.value.length > 1);
 
 const activeFileContent = ref<string>("");
@@ -161,7 +161,8 @@ export function useFileTree() {
   async function fetchWorkspaceRoots(): Promise<WorkspaceRoot[]> {
     try {
       const res = await fetch("/api/workspace/roots");
-      if (res.ok) {
+      const contentType = res.headers.get("content-type") || "";
+      if (res.ok && contentType.includes("json")) {
         const data = await res.json();
         if (Array.isArray(data.roots) && data.roots.length > 0) {
           workspaceRoots.value = data.roots;
