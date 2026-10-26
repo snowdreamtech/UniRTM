@@ -314,6 +314,7 @@ onMounted(() => {
     theme: getXtermTheme(isDark),
     allowProposedApi: true,
     convertEol: true,
+    scrollback: 3000,
   });
 
   fitAddon = new FitAddon();

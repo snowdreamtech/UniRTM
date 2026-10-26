@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-import { ref, computed } from "vue";
+import { ref, shallowRef, computed } from "vue";
 import { useToast } from "./useToast";
 import { t } from "../i18n";
 import { useWorkspaceBus } from "./useWorkspaceBus";
@@ -171,8 +171,8 @@ const status = ref<GitStatusData>({
 });
 
 const branches = ref<GitBranchItem[]>([]);
-const commits = ref<GitCommitItem[]>([]);
-const graphCommits = ref<GitGraphCommit[]>([]);
+const commits = shallowRef<GitCommitItem[]>([]);
+const graphCommits = shallowRef<GitGraphCommit[]>([]);
 const selectedCommit = ref<GitGraphCommit | null>(null);
 const selectedCommitDetail = ref<GitCommitDetail | null>(null);
 const activeCommitDiff = ref<GitCommitDiffResult | null>(null);
@@ -200,6 +200,7 @@ const lastError = ref<string | null>(null);
 let inFlightStatusPromise: Promise<GitStatusData> | null = null;
 let inFlightBranchesPromise: Promise<GitBranchItem[]> | null = null;
 let inFlightLogPromise: Promise<GitCommitItem[]> | null = null;
+let inFlightGraphPromise: Promise<GitGraphCommit[]> | null = null;
 
 function gitFetch(url: string, init?: RequestInit): Promise<Response> {
   if (!activeRepo.value) {
@@ -604,43 +605,57 @@ export function useGit() {
     limit?: number;
     showStashes?: boolean;
   }): Promise<GitGraphCommit[]> {
-    isLoadingGraph.value = true;
-    try {
-      const b = options?.branch !== undefined ? options.branch : graphFilterBranches.value;
-      const p = options?.path !== undefined ? options.path : graphFilterPath.value;
-      const limit = options?.limit !== undefined ? options.limit : graphLimit.value;
-      graphLimit.value = limit;
-
-      const q = new URLSearchParams();
-      if (Array.isArray(b)) {
-        if (b.length > 0 && !b.includes("all")) {
-          q.set("branch", b.join(","));
-        }
-      } else if (b && b !== "all") {
-        q.set("branch", b);
-      }
-      if (p) q.set("path", p);
-      if (options?.showStashes !== undefined) {
-        graphShowStashes.value = options.showStashes;
-        q.set("showStashes", String(options.showStashes));
-      }
-      q.set("limit", String(limit));
-
-      const res = await gitFetch(`/api/git/graph?${q.toString()}`);
-      if (!res.ok) throw new Error(`Git graph failed: HTTP ${res.status}`);
-      const data = await res.json();
-      const rawCommits = Array.isArray(data.commits) ? data.commits : [];
-      graphCommits.value = rawCommits;
-      const normalCount = rawCommits.filter((c: any) => !c.isStash && c.hash !== "*").length;
-      hasMoreCommits.value = normalCount >= limit;
-      return graphCommits.value;
-    } catch (err: any) {
-      console.error("fetchGraph error:", err);
-      showToast(err.message || t("scm.toast.get_graph_failed") || "Failed to get Git commit graph", "error");
-      return [];
-    } finally {
-      isLoadingGraph.value = false;
+    if (!options && inFlightGraphPromise) {
+      return inFlightGraphPromise;
     }
+    const runFetch = async () => {
+      isLoadingGraph.value = true;
+      try {
+        const b = options?.branch !== undefined ? options.branch : graphFilterBranches.value;
+        const p = options?.path !== undefined ? options.path : graphFilterPath.value;
+        const limit = options?.limit !== undefined ? options.limit : graphLimit.value;
+        graphLimit.value = limit;
+
+        const q = new URLSearchParams();
+        if (Array.isArray(b)) {
+          if (b.length > 0 && !b.includes("all")) {
+            q.set("branch", b.join(","));
+          }
+        } else if (b && b !== "all") {
+          q.set("branch", b);
+        }
+        if (p) q.set("path", p);
+        if (options?.showStashes !== undefined) {
+          graphShowStashes.value = options.showStashes;
+          q.set("showStashes", String(options.showStashes));
+        }
+        q.set("limit", String(limit));
+
+        const res = await gitFetch(`/api/git/graph?${q.toString()}`);
+        if (!res.ok) throw new Error(`Git graph failed: HTTP ${res.status}`);
+        const data = await res.json();
+        const rawCommits = Array.isArray(data.commits) ? data.commits : [];
+        graphCommits.value = rawCommits;
+        const normalCount = rawCommits.filter((c: any) => !c.isStash && c.hash !== "*").length;
+        hasMoreCommits.value = normalCount >= limit;
+        return graphCommits.value;
+      } catch (err: any) {
+        console.error("fetchGraph error:", err);
+        showToast(err.message || t("scm.toast.get_graph_failed") || "Failed to get Git commit graph", "error");
+        return [];
+      } finally {
+        isLoadingGraph.value = false;
+        if (!options) {
+          inFlightGraphPromise = null;
+        }
+      }
+    };
+
+    if (!options) {
+      inFlightGraphPromise = runFetch();
+      return inFlightGraphPromise;
+    }
+    return runFetch();
   }
 
   /**

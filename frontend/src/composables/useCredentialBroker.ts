@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { ref, shallowRef } from "vue";
 import type { CredentialRequest, CredentialResponse } from "../types/credential";
 
 const pendingRequest = ref<CredentialRequest | null>(null);
@@ -7,11 +7,28 @@ const isSubmitting = ref(false);
 const lastError = ref<string | null>(null);
 
 // In-memory session keyring cache
-const sessionKeyring = ref<Map<string, string>>(new Map());
+const sessionKeyring = shallowRef<Map<string, string>>(new Map());
 
 // Module-level singleton EventSource listener
 let eventSource: EventSource | null = null;
 let isListening = false;
+let isVisibilityListenerAttached = false;
+
+function ensureVisibilityListener() {
+  if (isVisibilityListenerAttached || typeof document === "undefined") return;
+  isVisibilityListenerAttached = true;
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && isListening) {
+      if (!eventSource || eventSource.readyState === 2) {
+        // Closed state - re-establish stream
+        isListening = false;
+        useCredentialBroker().startBrokerPolling();
+      } else {
+        useCredentialBroker().checkPendingRequest();
+      }
+    }
+  });
+}
 
 export function useCredentialBroker() {
   /**
@@ -136,6 +153,7 @@ export function useCredentialBroker() {
    * Start live push-event listener via Server-Sent Events
    */
   function startBrokerPolling() {
+    ensureVisibilityListener();
     if (isListening) return;
     isListening = true;
 

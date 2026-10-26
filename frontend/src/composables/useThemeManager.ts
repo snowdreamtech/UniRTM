@@ -64,82 +64,91 @@ watch(effectiveTheme, async (newEffective) => {
   await applyColorTheme(targetTheme, colorThemes.value);
 });
 
+let inFlightFetchThemes: Promise<void> | null = null;
+
 export function useThemeManager() {
   const fetchThemes = async () => {
-    loading.value = true;
-    error.value = null;
-    try {
-      const res = await fetch("/api/themes");
-      if (!res.ok) {
-        throw new Error(`Failed to fetch themes: ${res.statusText}`);
-      }
-      const data: any = await res.json();
-      colorThemes.value = data.colors || data.color_themes || [];
-      iconThemes.value = data.icons || data.icon_themes || [];
-      productIconThemes.value = data.products || data.product_icon_themes || defaultProducts;
-
-      const serverColor = data.active?.color || data.active_color_theme || "default";
-      activeIconTheme.value = data.active?.icon || data.active_icon_theme || "seti";
-      activeProductIconTheme.value = data.active?.product || data.active_product_icon_theme || "codicons";
-      activeAppearance.value = data.active?.appearance || "system";
-
-      // Apply appearance mode first
-      applyAppearanceTheme(activeAppearance.value);
-
-      // Initialize preferred themes from server or localStorage
-      const serverThemeItem = colorThemes.value.find((c) => c.id === serverColor);
-      const isServerLight =
-        serverColor === "light" ||
-        (serverThemeItem && (serverThemeItem.ui_theme === "vs" || serverThemeItem.ui_theme === "light"));
-
-      if (!localStorage.getItem(PREF_DARK_KEY)) {
-        if (!isServerLight && serverColor !== "default") {
-          preferredDarkTheme.value = serverColor;
-          localStorage.setItem(PREF_DARK_KEY, serverColor);
-        } else {
-          preferredDarkTheme.value = "default";
-        }
-      } else {
-        preferredDarkTheme.value = localStorage.getItem(PREF_DARK_KEY)!;
-      }
-
-      if (!localStorage.getItem(PREF_LIGHT_KEY)) {
-        if (isServerLight) {
-          preferredLightTheme.value = serverColor;
-          localStorage.setItem(PREF_LIGHT_KEY, serverColor);
-        } else {
-          preferredLightTheme.value = "default";
-        }
-      } else {
-        preferredLightTheme.value = localStorage.getItem(PREF_LIGHT_KEY)!;
-      }
-
-      // Determine active theme based on effective appearance mode
-      const targetTheme = effectiveTheme.value === "light" ? preferredLightTheme.value : preferredDarkTheme.value;
-      activeColorTheme.value = targetTheme;
-
-      // Apply active themes hot
-      await applyColorTheme(targetTheme, colorThemes.value);
-
-      const activeIconItem = iconThemes.value.find((i) => i.id === activeIconTheme.value);
-      if (activeIconItem) {
-        await iconThemeService.loadAndApplyTheme(activeIconItem);
-      } else {
-        await iconThemeService.switchTheme("seti");
-      }
-
-      const activeProductItem = productIconThemes.value.find((p) => p.id === activeProductIconTheme.value);
-      if (activeProductItem) {
-        await productIconThemeService.loadAndApplyTheme(activeProductItem);
-      } else {
-        productIconThemeService.resetToDefault();
-      }
-    } catch (err: any) {
-      error.value = err.message || "Failed to load themes";
-      console.error("[useThemeManager] fetchThemes error:", err);
-    } finally {
-      loading.value = false;
+    if (inFlightFetchThemes) {
+      return inFlightFetchThemes;
     }
+    inFlightFetchThemes = (async () => {
+      loading.value = true;
+      error.value = null;
+      try {
+        const res = await fetch("/api/themes");
+        if (!res.ok) {
+          throw new Error(`Failed to fetch themes: ${res.statusText}`);
+        }
+        const data: any = await res.json();
+        colorThemes.value = data.colors || data.color_themes || [];
+        iconThemes.value = data.icons || data.icon_themes || [];
+        productIconThemes.value = data.products || data.product_icon_themes || defaultProducts;
+
+        const serverColor = data.active?.color || data.active_color_theme || "default";
+        activeIconTheme.value = data.active?.icon || data.active_icon_theme || "seti";
+        activeProductIconTheme.value = data.active?.product || data.active_product_icon_theme || "codicons";
+        activeAppearance.value = data.active?.appearance || "system";
+
+        // Apply appearance mode first
+        applyAppearanceTheme(activeAppearance.value);
+
+        // Initialize preferred themes from server or localStorage
+        const serverThemeItem = colorThemes.value.find((c) => c.id === serverColor);
+        const isServerLight =
+          serverColor === "light" ||
+          (serverThemeItem && (serverThemeItem.ui_theme === "vs" || serverThemeItem.ui_theme === "light"));
+
+        if (!localStorage.getItem(PREF_DARK_KEY)) {
+          if (!isServerLight && serverColor !== "default") {
+            preferredDarkTheme.value = serverColor;
+            localStorage.setItem(PREF_DARK_KEY, serverColor);
+          } else {
+            preferredDarkTheme.value = "default";
+          }
+        } else {
+          preferredDarkTheme.value = localStorage.getItem(PREF_DARK_KEY)!;
+        }
+
+        if (!localStorage.getItem(PREF_LIGHT_KEY)) {
+          if (isServerLight) {
+            preferredLightTheme.value = serverColor;
+            localStorage.setItem(PREF_LIGHT_KEY, serverColor);
+          } else {
+            preferredLightTheme.value = "default";
+          }
+        } else {
+          preferredLightTheme.value = localStorage.getItem(PREF_LIGHT_KEY)!;
+        }
+
+        // Determine active theme based on effective appearance mode
+        const targetTheme = effectiveTheme.value === "light" ? preferredLightTheme.value : preferredDarkTheme.value;
+        activeColorTheme.value = targetTheme;
+
+        // Apply active themes hot
+        await applyColorTheme(targetTheme, colorThemes.value);
+
+        const activeIconItem = iconThemes.value.find((i) => i.id === activeIconTheme.value);
+        if (activeIconItem) {
+          await iconThemeService.loadAndApplyTheme(activeIconItem);
+        } else {
+          await iconThemeService.switchTheme("seti");
+        }
+
+        const activeProductItem = productIconThemes.value.find((p) => p.id === activeProductIconTheme.value);
+        if (activeProductItem) {
+          await productIconThemeService.loadAndApplyTheme(activeProductItem);
+        } else {
+          productIconThemeService.resetToDefault();
+        }
+      } catch (err: any) {
+        error.value = err.message || "Failed to load themes";
+        console.error("[useThemeManager] fetchThemes error:", err);
+      } finally {
+        loading.value = false;
+        inFlightFetchThemes = null;
+      }
+    })();
+    return inFlightFetchThemes;
   };
 
   const installTheme = async (file: File) => {

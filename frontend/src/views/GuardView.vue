@@ -4053,6 +4053,8 @@ function getBuiltinRuleForExtAndCategory(
 }
 
 .rich-rule-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
   display: flex;
   flex-direction: column;
   padding: 1rem 1.15rem;

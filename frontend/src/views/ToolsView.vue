@@ -2777,6 +2777,8 @@ onBeforeUnmount(() => {
 }
 
 .runtime-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 200px;
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
@@ -4583,6 +4585,8 @@ onBeforeUnmount(() => {
 }
 
 .tool-table-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 54px;
   border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.05));
   transition: background 0.15s ease;
 }

@@ -4696,6 +4696,8 @@ watch(
 }
 
 .settings-category-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
   padding: 20px;
   border-radius: 8px;
   border: 1px solid var(--card-border);

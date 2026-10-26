@@ -1,5 +1,8 @@
 import { ref, computed } from "vue";
 import { useTerminal, TerminalItem } from "./useTerminal";
+import { useTerminalPersistence } from "./useTerminalPersistence";
+import { useTerminalProcessWatcher } from "./useTerminalProcessWatcher";
+import { useTerminalNotifier } from "./useTerminalNotifier";
 
 export type SplitDirection = "none" | "vertical" | "horizontal";
 
@@ -164,12 +167,30 @@ export function useTerminalSessions() {
     }
   }
 
+  function cleanupPaneResources(paneId: string): void {
+    if (!paneId) return;
+    unregisterTerminalSender(paneId);
+    try {
+      useTerminalPersistence().clearBuffer(paneId);
+    } catch {}
+    try {
+      const watcher = useTerminalProcessWatcher();
+      watcher.activeProcesses.delete(paneId);
+      watcher.customTitles.delete(paneId);
+    } catch {}
+    try {
+      useTerminalNotifier().clearTracked(paneId);
+    } catch {}
+  }
+
   function closePane(paneId: string, sessionId?: string) {
     const targetSession = sessionId
       ? sessions.value.find((s) => s.id === sessionId)
       : sessions.value.find((s) => s.panes.some((p) => p.id === paneId));
 
     if (!targetSession) return;
+
+    cleanupPaneResources(paneId);
 
     if (targetSession.panes.length > 1) {
       targetSession.panes = targetSession.panes.filter((p) => p.id !== paneId);
@@ -183,6 +204,13 @@ export function useTerminalSessions() {
   function closeSession(sessionId: string) {
     const idx = sessions.value.findIndex((s) => s.id === sessionId);
     if (idx === -1) return;
+
+    const removedSession = sessions.value[idx];
+    if (removedSession && Array.isArray(removedSession.panes)) {
+      for (const p of removedSession.panes) {
+        cleanupPaneResources(p.id);
+      }
+    }
 
     sessions.value.splice(idx, 1);
 

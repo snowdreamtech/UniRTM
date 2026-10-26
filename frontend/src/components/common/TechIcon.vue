@@ -1,7 +1,7 @@
 <template>
   <!-- 1. Tech Brand Icons: NPM -->
   <svg
-    v-if="isNpm"
+    v-if="iconInfo.isNpm"
     xmlns="http://www.w3.org/2000/svg"
     :width="size"
     :height="size"
@@ -19,7 +19,7 @@
 
   <!-- 2. Tech Brand Icons: GitHub -->
   <svg
-    v-else-if="isGithub"
+    v-else-if="iconInfo.isGithub"
     xmlns="http://www.w3.org/2000/svg"
     :width="size"
     :height="size"
@@ -46,8 +46,8 @@
 
   <!-- 3. Official VS Code Product Icon Theme (@vscode/codicons) -->
   <span
-    v-else-if="codiconClass"
-    :class="['codicon', codiconClass, className]"
+    v-else-if="iconInfo.codiconClass"
+    :class="['codicon', iconInfo.codiconClass, className]"
     :style="codiconStyles"
     :title="title"
     role="img"
@@ -188,9 +188,6 @@ const props = withDefaults(
 const { resolveIcon } = useIconTheme();
 
 const iconInfo = computed(() => parseIconId(props.id));
-const isNpm = computed(() => iconInfo.value.isNpm);
-const isGithub = computed(() => iconInfo.value.isGithub);
-const codiconClass = computed(() => iconInfo.value.codiconClass);
 const resolved = computed(() => resolveIcon(iconInfo.value.normalizedId));
 
 const codiconStyles = computed(() => {

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-import { ref, reactive, computed } from "vue";
+import { ref, shallowRef, reactive, computed } from "vue";
 import type {
   MarketplaceExtension,
   MarketplaceSearchResponse,
@@ -11,15 +11,16 @@ import type {
 import { useThemeManager } from "./useThemeManager";
 
 const searchQuery = ref<string>("");
-const searchResults = ref<MarketplaceExtension[]>([]);
+const searchResults = shallowRef<MarketplaceExtension[]>([]);
 const totalSize = ref<number>(0);
 const currentPage = ref<number>(1);
 const pageSize = ref<number>(24);
 const isSearching = ref<boolean>(false);
 const installingMap = reactive<Record<string, boolean>>({});
 const marketplaceError = ref<string | null>(null);
-const activeDetail = ref<MarketplaceExtensionDetail | null>(null);
+const activeDetail = shallowRef<MarketplaceExtensionDetail | null>(null);
 const isLoadingDetail = ref<boolean>(false);
+let searchAbortController: AbortController | null = null;
 
 const totalPages = computed(() => {
   if (totalSize.value <= 0 || pageSize.value <= 0) return 1;
@@ -30,6 +31,12 @@ export function useThemeMarketplace() {
   const { fetchThemes } = useThemeManager();
 
   const searchThemes = async (q?: string, page: number = 1, size?: number) => {
+    if (searchAbortController) {
+      searchAbortController.abort();
+    }
+    searchAbortController = new AbortController();
+    const currentSignal = searchAbortController.signal;
+
     isSearching.value = true;
     marketplaceError.value = null;
     if (q !== undefined) {
@@ -44,7 +51,7 @@ export function useThemeMarketplace() {
 
     try {
       const url = `/api/themes/marketplace/search?q=${encodeURIComponent(searchQuery.value)}&size=${pageSize.value}&offset=${offset}`;
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: currentSignal });
       if (!res.ok) {
         throw new Error(`Failed to search Open VSX: ${res.statusText}`);
       }
@@ -52,10 +59,16 @@ export function useThemeMarketplace() {
       searchResults.value = data.extensions || [];
       totalSize.value = data.totalSize || 0;
     } catch (err: any) {
+      if (err.name === "AbortError") {
+        return;
+      }
       marketplaceError.value = err.message || "Failed to query themes";
       console.error("[useThemeMarketplace] search error:", err);
     } finally {
-      isSearching.value = false;
+      if (searchAbortController?.signal === currentSignal) {
+        isSearching.value = false;
+        searchAbortController = null;
+      }
     }
   };
 

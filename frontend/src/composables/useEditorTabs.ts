@@ -411,7 +411,7 @@ export function useEditorTabs() {
     }
 
     tabs.value.splice(index, 1);
-    if (removedTab?.path) {
+    if (removedTab?.path && !tabs.value.some((t) => t.path === removedTab.path)) {
       disposeModelForPath(removedTab.path);
     }
   }
@@ -421,7 +421,9 @@ export function useEditorTabs() {
     tabs.value = tabs.value.filter((t) => t.id === tabId || t.isPinned);
     activeTabId.value = tabId;
     toRemove.forEach((t) => {
-      if (t.path) disposeModelForPath(t.path);
+      if (t.path && !tabs.value.some((rem) => rem.path === t.path)) {
+        disposeModelForPath(t.path);
+      }
     });
   }
 
@@ -437,7 +439,9 @@ export function useEditorTabs() {
     const toRemove = tabs.value.filter((tab, idx) => idx > index && !tab.isPinned);
     tabs.value = tabs.value.filter((tab, idx) => idx <= index || tab.isPinned);
     toRemove.forEach((t) => {
-      if (t.path) disposeModelForPath(t.path);
+      if (t.path && !tabs.value.some((rem) => rem.path === t.path)) {
+        disposeModelForPath(t.path);
+      }
     });
   }
 
@@ -449,7 +453,9 @@ export function useEditorTabs() {
       activeTabId.value = retained[0]?.id || "";
     }
     toRemove.forEach((t) => {
-      if (t.path) disposeModelForPath(t.path);
+      if (t.path && !tabs.value.some((rem) => rem.path === t.path)) {
+        disposeModelForPath(t.path);
+      }
     });
   }
 
@@ -467,7 +473,9 @@ export function useEditorTabs() {
       }
     }
     toRemove.forEach((t) => {
-      if (t.path) disposeModelForPath(t.path);
+      if (t.path && !tabs.value.some((rem) => rem.path === t.path)) {
+        disposeModelForPath(t.path);
+      }
     });
   }
 
