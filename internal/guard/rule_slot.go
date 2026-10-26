@@ -109,31 +109,87 @@ func (s *SlotRule) Execute(ctx context.Context, files []string, opts ExecuteOpti
 		parts = []string{toolName}
 	}
 
-	var cmdArgs []string
-	hasPlaceholder := false
-
 	normalizedMatchingFiles := make([]string, len(matchingFiles))
 	for i, f := range matchingFiles {
 		normalizedMatchingFiles[i] = filepath.ToSlash(f)
 	}
 
+	hasPlaceholder := false
 	for _, p := range parts[1:] {
-		if p == "{{files}}" {
-			cmdArgs = append(cmdArgs, normalizedMatchingFiles...)
+		if strings.Contains(p, "{{files}}") {
 			hasPlaceholder = true
-		} else if strings.Contains(p, "{{files}}") {
-			replaced := strings.ReplaceAll(p, "{{files}}", strings.Join(normalizedMatchingFiles, " "))
-			cmdArgs = append(cmdArgs, replaced)
-			hasPlaceholder = true
-		} else {
-			cmdArgs = append(cmdArgs, p)
+			break
 		}
 	}
 
-	if !hasPlaceholder && len(normalizedMatchingFiles) > 0 && !strings.Contains(s.slot.ID, "linter") && !strings.Contains(s.slot.ID, "secret") {
-		cmdArgs = append(cmdArgs, normalizedMatchingFiles...)
+	shouldAppendFiles := !hasPlaceholder && len(normalizedMatchingFiles) > 0 &&
+		!strings.Contains(s.slot.ID, "linter") && !strings.Contains(s.slot.ID, "secret")
+
+	// If command doesn't use files, execute once
+	if !hasPlaceholder && !shouldAppendFiles {
+		return s.executeBatch(ctx, toolBin, parts[1:], toolName, opts, nil)
 	}
 
+	// Chunk files to avoid exceeding OS command line limits (especially on Windows 32k/8k limit)
+	batches := chunkFiles(normalizedMatchingFiles, 50, 4000)
+	var allIssues []Issue
+
+	for _, batch := range batches {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+
+		var cmdArgs []string
+		for _, p := range parts[1:] {
+			if p == "{{files}}" {
+				cmdArgs = append(cmdArgs, batch...)
+			} else if strings.Contains(p, "{{files}}") {
+				replaced := strings.ReplaceAll(p, "{{files}}", strings.Join(batch, " "))
+				cmdArgs = append(cmdArgs, replaced)
+			} else {
+				cmdArgs = append(cmdArgs, p)
+			}
+		}
+		if shouldAppendFiles {
+			cmdArgs = append(cmdArgs, batch...)
+		}
+
+		issues, err := s.executeBatch(ctx, toolBin, cmdArgs, toolName, opts, batch)
+		if err != nil {
+			return nil, err
+		}
+		allIssues = append(allIssues, issues...)
+	}
+
+	return allIssues, nil
+}
+
+// chunkFiles groups file paths into batches not exceeding maxCount items or maxChars total character length
+func chunkFiles(files []string, maxCount int, maxChars int) [][]string {
+	if len(files) == 0 {
+		return nil
+	}
+	var batches [][]string
+	var currentBatch []string
+	currentChars := 0
+
+	for _, f := range files {
+		fLen := len(f) + 1
+		if len(currentBatch) > 0 && (len(currentBatch) >= maxCount || currentChars+fLen > maxChars) {
+			batches = append(batches, currentBatch)
+			currentBatch = nil
+			currentChars = 0
+		}
+		currentBatch = append(currentBatch, f)
+		currentChars += fLen
+	}
+	if len(currentBatch) > 0 {
+		batches = append(batches, currentBatch)
+	}
+	return batches
+}
+
+func (s *SlotRule) executeBatch(ctx context.Context, toolBin string, cmdArgs []string, toolName string, opts ExecuteOptions, batch []string) ([]Issue, error) {
 	cmd := exec.CommandContext(ctx, toolBin, cmdArgs...)
 	cmd.Stdin = bytes.NewReader(nil)
 	if opts.WorkspaceDir != "" {
@@ -207,8 +263,8 @@ func (s *SlotRule) Execute(ctx context.Context, files []string, opts ExecuteOpti
 		}
 	} else {
 		firstFile := "workspace"
-		if len(matchingFiles) > 0 {
-			firstFile = matchingFiles[0]
+		if len(batch) > 0 {
+			firstFile = batch[0]
 		}
 		firstLine := strings.Split(outputCombined, "\n")[0]
 		issues = append(issues, Issue{

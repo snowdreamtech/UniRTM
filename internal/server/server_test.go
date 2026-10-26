@@ -756,4 +756,3 @@ func TestGitBranchesCache(t *testing.T) {
 		t.Errorf("Expected gitBranchesCache to be empty after InvalidateGitCache(), got %d", clearedLen)
 	}
 }
-
