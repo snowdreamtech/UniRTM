@@ -4427,14 +4427,20 @@ async function handleRunProbeAll() {
 }
 
 onMounted(() => {
+  // Phase 1: Core critical configuration and UI options
   loadConfigData();
   loadSystemStatus();
-  loadNetworkStatus();
-  fetchHooksList();
-  fetchAliasesList();
-  handleDetectProxy(false);
   fetchThemes();
   fetchTerminals();
+
+  // Phase 2: Deferred secondary inspection & network integrations
+  setTimeout(() => {
+    loadNetworkStatus();
+    fetchHooksList();
+    fetchAliasesList();
+    handleDetectProxy(false);
+  }, 30);
+
   if (props.activeCategory) {
     setTimeout(() => {
       scrollToCategory(props.activeCategory!);
