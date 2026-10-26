@@ -111,6 +111,9 @@ image = "golang:alpine"
 
 func TestSidecarInLoadHierarchy(t *testing.T) {
 	tmpDir := t.TempDir()
+	if realDir, err := filepath.EvalSymlinks(tmpDir); err == nil {
+		tmpDir = realDir
+	}
 	cwd, _ := os.Getwd()
 	os.Chdir(tmpDir)
 	defer os.Chdir(cwd)
