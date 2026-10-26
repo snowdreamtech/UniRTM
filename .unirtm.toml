@@ -248,7 +248,7 @@ output = "interleaved"
 [tasks.build]
 description = "Compile UniRTM single binary with embedded frontend"
 depends = ["build:frontend"]
-run = "go build -o unirtm main.go"
+run = "unirtm exec -- go build -trimpath -ldflags=\"-s -w\" -o unirtm main.go"
 output = "interleaved"
 
 [settings]

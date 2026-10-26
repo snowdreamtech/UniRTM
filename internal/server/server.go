@@ -370,6 +370,13 @@ func RegisterStaticSPARoutes(mux *http.ServeMux, distFS fs.FS) {
 			r.URL.Path = "/"
 		}
 
+		if _, err := fs.Stat(distFS, targetPath); err != nil {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><title>UniRTM Workbench</title><style>body{font-family:sans-serif;background:#1e1e1e;color:#eee;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}div{text-align:center;padding:2rem;border:1px solid #333;border-radius:8px;background:#252526}code{background:#333;padding:2px 6px;border-radius:4px;color:#4ec9b0}</style></head><body><div><h2>UniRTM Workbench Assets Not Found</h2><p>Please build frontend assets before compiling Go binary:</p><p><code>unirtm run build</code> or <code>cd frontend &amp;&amp; npm run build</code></p></div></body></html>`))
+			return
+		}
+
 		// Apply caching headers based on path pattern
 		if strings.HasPrefix(targetPath, "assets/") {
 			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
