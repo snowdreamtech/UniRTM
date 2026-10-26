@@ -671,6 +671,10 @@ watch(currentLocale, () => {
 });
 
 onBeforeUnmount(() => {
+  if (diffDebounceTimer) {
+    clearTimeout(diffDebounceTimer);
+    diffDebounceTimer = null;
+  }
   themeObserver.disconnect();
   resizeObserver?.disconnect();
   editorInstance?.dispose();

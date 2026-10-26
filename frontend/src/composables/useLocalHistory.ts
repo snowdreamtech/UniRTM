@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-import { ref } from "vue";
+import { ref, shallowRef } from "vue";
 import { useWorkspaceBus } from "./useWorkspaceBus";
 
 export interface HistorySnapshot {
@@ -14,7 +14,8 @@ export interface HistorySnapshot {
 }
 
 const MAX_SNAPSHOTS_PER_FILE = 20;
-const snapshotsMap = ref<Map<string, HistorySnapshot[]>>(new Map());
+const MAX_TRACKED_FILES = 30;
+const snapshotsMap = shallowRef<Map<string, HistorySnapshot[]>>(new Map());
 
 const activeHistoryModal = ref<{
   visible: boolean;
@@ -44,12 +45,18 @@ export function useLocalHistory() {
       path,
       timestamp: Date.now(),
       content,
-      size: new Blob([content]).size,
+      size: content.length,
       label,
     };
 
     const nextList = [snapshot, ...list].slice(0, MAX_SNAPSHOTS_PER_FILE);
     const nextMap = new Map(snapshotsMap.value);
+    if (!nextMap.has(path) && nextMap.size >= MAX_TRACKED_FILES) {
+      const oldestKey = nextMap.keys().next().value;
+      if (oldestKey) {
+        nextMap.delete(oldestKey);
+      }
+    }
     nextMap.set(path, nextList);
     snapshotsMap.value = nextMap;
 

@@ -71,15 +71,17 @@ export function useTerminalNotifier() {
     if (!task) return null;
 
     // Check for error keywords
+    const errorSample = chunk.length > 2048 ? chunk.slice(0, 1024) + " " + chunk.slice(-1024) : chunk;
     for (const pattern of ERROR_PATTERNS) {
-      if (pattern.test(chunk)) {
+      if (pattern.test(errorSample)) {
         task.hasError = true;
         break;
       }
     }
 
     // Check if shell prompt returned
-    if (SHELL_PROMPT_REGEX.test(chunk)) {
+    const promptSample = chunk.length > 512 ? chunk.slice(-512) : chunk;
+    if (SHELL_PROMPT_REGEX.test(promptSample)) {
       const durationMs = Date.now() - task.startTime;
       const durationSec = Math.round(durationMs / 1000);
       const isSuccess = !task.hasError;

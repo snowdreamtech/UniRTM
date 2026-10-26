@@ -5,6 +5,38 @@ const MAX_BUFFER_CHARS = 300_000; // ~5000 lines
 const STORAGE_PREFIX = "unirtm_term_buf_";
 
 const memoryBuffers = new Map<string, string>();
+const storageDebounceTimers = new Map<string, any>();
+
+function scheduleStorageSync(paneId: string, content: string): void {
+  if (typeof sessionStorage === "undefined") return;
+  const existing = storageDebounceTimers.get(paneId);
+  if (existing) clearTimeout(existing);
+
+  const timer = setTimeout(() => {
+    storageDebounceTimers.delete(paneId);
+    try {
+      sessionStorage.setItem(`${STORAGE_PREFIX}${paneId}`, content);
+    } catch {
+      // Fall back silently to in-memory only when quota exceeded
+    }
+  }, 350);
+  storageDebounceTimers.set(paneId, timer);
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    for (const [paneId, timer] of storageDebounceTimers) {
+      clearTimeout(timer);
+      const content = memoryBuffers.get(paneId);
+      if (content && typeof sessionStorage !== "undefined") {
+        try {
+          sessionStorage.setItem(`${STORAGE_PREFIX}${paneId}`, content);
+        } catch {}
+      }
+    }
+    storageDebounceTimers.clear();
+  });
+}
 
 /**
  * Strip ANSI colors and cursor controls to plain readable text
@@ -42,14 +74,7 @@ export function useTerminalPersistence() {
     }
 
     memoryBuffers.set(paneId, current);
-
-    if (typeof sessionStorage !== "undefined") {
-      try {
-        sessionStorage.setItem(`${STORAGE_PREFIX}${paneId}`, current);
-      } catch {
-        // Fall back silently to in-memory only when quota exceeded
-      }
-    }
+    scheduleStorageSync(paneId, current);
   }
 
   /**
@@ -82,6 +107,11 @@ export function useTerminalPersistence() {
    */
   function clearBuffer(paneId: string): void {
     if (!paneId) return;
+    const timer = storageDebounceTimers.get(paneId);
+    if (timer) {
+      clearTimeout(timer);
+      storageDebounceTimers.delete(paneId);
+    }
     memoryBuffers.delete(paneId);
     if (typeof sessionStorage !== "undefined") {
       try {
@@ -122,6 +152,10 @@ export function useTerminalPersistence() {
   }
 
   function _clearAllForTest(): void {
+    for (const timer of storageDebounceTimers.values()) {
+      clearTimeout(timer);
+    }
+    storageDebounceTimers.clear();
     memoryBuffers.clear();
     if (typeof sessionStorage !== "undefined") {
       try {

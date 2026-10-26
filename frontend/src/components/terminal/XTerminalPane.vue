@@ -148,6 +148,14 @@ let writeRafId: number | null = null;
 let sniffDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingSniffText = "";
 
+function flushWriteQueue() {
+  writeRafId = null;
+  if (!term || writeQueue.length === 0) return;
+  const combined = writeQueue.join("");
+  writeQueue = [];
+  term.write(combined);
+}
+
 function connectWebSocket() {
   if (!term) return;
   isConnecting.value = true;
@@ -194,14 +202,6 @@ function connectWebSocket() {
     }
   };
 
-  function flushWriteQueue() {
-    writeRafId = null;
-    if (!term || writeQueue.length === 0) return;
-    const combined = writeQueue.join("");
-    writeQueue = [];
-    term.write(combined);
-  }
-
   function queueTerminalOutput(rawText: string) {
     if (!rawText) return;
     writeQueue.push(rawText);
@@ -210,12 +210,25 @@ function connectWebSocket() {
     feedOutput(props.paneId, rawText);
 
     // Batch xterm writes to animation frames for 60fps rendering without blocking main thread
-    if (writeRafId === null) {
-      writeRafId = requestAnimationFrame(flushWriteQueue);
+    // When tab is hidden in background, requestAnimationFrame does not fire in modern browsers.
+    // Use setTimeout or flush directly to prevent unbounded writeQueue growth.
+    if (typeof document !== "undefined" && document.hidden) {
+      if (writeQueue.length >= 60) {
+        flushWriteQueue();
+      } else if (writeRafId === null) {
+        writeRafId = setTimeout(flushWriteQueue, 120) as unknown as number;
+      }
+    } else {
+      if (writeRafId === null) {
+        writeRafId = requestAnimationFrame(flushWriteQueue);
+      }
     }
 
     // Throttle port sniffing regex check to avoid regex freezing main thread during burst output
     pendingSniffText += rawText;
+    if (pendingSniffText.length > 32768) {
+      pendingSniffText = pendingSniffText.slice(-32768);
+    }
     if (!sniffDebounceTimer) {
       sniffDebounceTimer = setTimeout(() => {
         const textToSniff = pendingSniffText;
@@ -424,6 +437,27 @@ onMounted(() => {
       }
     })
   );
+
+  function handleDocVisibilityChange() {
+    if (typeof document !== "undefined" && !document.hidden) {
+      if (writeQueue.length > 0) {
+        flushWriteQueue();
+      }
+      if (fitAddon) {
+        try {
+          fitAddon.fit();
+          sendResize();
+        } catch {}
+      }
+    }
+  }
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", handleDocVisibilityChange);
+    busCleanups.push(() => {
+      document.removeEventListener("visibilitychange", handleDocVisibilityChange);
+    });
+  }
 });
 
 watch(
@@ -452,9 +486,14 @@ onBeforeUnmount(() => {
     resizeDebounceTimer = null;
   }
   if (writeRafId !== null) {
-    cancelAnimationFrame(writeRafId);
+    if (typeof cancelAnimationFrame === "function") {
+      cancelAnimationFrame(writeRafId);
+    }
+    clearTimeout(writeRafId);
     writeRafId = null;
   }
+  writeQueue = [];
+  pendingSniffText = "";
   if (sniffDebounceTimer) {
     clearTimeout(sniffDebounceTimer);
     sniffDebounceTimer = null;

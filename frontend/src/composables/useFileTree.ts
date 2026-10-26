@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-import { ref, computed } from "vue";
+import { ref, shallowRef, computed } from "vue";
 import { useToast } from "./useToast";
 import { useEditorTabs } from "./useEditorTabs";
 import { useWorkspaceBus } from "./useWorkspaceBus";
@@ -93,10 +93,10 @@ export interface ContextMenuState {
   node: FSNode | null;
 }
 
-const tree = ref<FSNode | null>(null);
+const tree = shallowRef<FSNode | null>(null);
 const isLoading = ref<boolean>(false);
 const error = ref<string | null>(null);
-const selectedNode = ref<FSNode | null>(null);
+const selectedNode = shallowRef<FSNode | null>(null);
 const expandedPaths = ref<Set<string>>(new Set([""]));
 const searchQuery = ref<string>("");
 const inlineAction = ref<InlineAction | null>(null);

@@ -390,7 +390,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../i18n";
 import { useToast } from "../composables/useToast";
 import { formatUpdateProgress, type UpdateProgressPayload } from "../utils/updater";
@@ -595,6 +595,8 @@ const handleCheckUpdate = async () => {
   }
 };
 
+let updateTimer: ReturnType<typeof setInterval> | null = null;
+
 const handlePerformUpdate = async () => {
   if (upgradeHint.value) {
     await copyUpgradeCommand();
@@ -606,7 +608,8 @@ const handlePerformUpdate = async () => {
   currentProgress.value = { stage: "checking", percentage: 15 };
   updateMessage.value = "";
 
-  const timer = setInterval(() => {
+  if (updateTimer) clearInterval(updateTimer);
+  updateTimer = setInterval(() => {
     if (updateProgress.value < 85) {
       updateProgress.value += 10;
       currentProgress.value = {
@@ -643,7 +646,10 @@ const handlePerformUpdate = async () => {
   } catch (err: any) {
     showToast(err.message || t("about.onlineUpdateFailed", { error: "Update failed" }), "error");
   } finally {
-    clearInterval(timer);
+    if (updateTimer) {
+      clearInterval(updateTimer);
+      updateTimer = null;
+    }
     updating.value = false;
   }
 };
@@ -658,6 +664,13 @@ const handleRestartApp = async () => {
 
 onMounted(async () => {
   await fetchSystemStatus();
+});
+
+onBeforeUnmount(() => {
+  if (updateTimer) {
+    clearInterval(updateTimer);
+    updateTimer = null;
+  }
 });
 </script>
 
