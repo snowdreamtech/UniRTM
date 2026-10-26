@@ -29,16 +29,26 @@ export interface FlatTreeNode {
 }
 
 const fileCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+const sortedNodesCache = new WeakMap<FSNode[], FSNode[]>();
+
+function getSortedNodes(nodes: FSNode[]): FSNode[] {
+  let sorted = sortedNodesCache.get(nodes);
+  if (!sorted) {
+    sorted = [...nodes].sort((a, b) => {
+      if (a.is_dir && !b.is_dir) return -1;
+      if (!a.is_dir && b.is_dir) return 1;
+      return fileCollator.compare(a.name, b.name);
+    });
+    sortedNodesCache.set(nodes, sorted);
+  }
+  return sorted;
+}
 
 export function flattenVisibleTree(nodes: FSNode[], expandedPaths: Set<string>, depth: number = 0): FlatTreeNode[] {
   const result: FlatTreeNode[] = [];
   if (!nodes || nodes.length === 0) return result;
 
-  const sorted = [...nodes].sort((a, b) => {
-    if (a.is_dir && !b.is_dir) return -1;
-    if (!a.is_dir && b.is_dir) return 1;
-    return fileCollator.compare(a.name, b.name);
-  });
+  const sorted = getSortedNodes(nodes);
 
   for (const node of sorted) {
     const hasChildren = Boolean(node.is_dir && node.children && node.children.length > 0);

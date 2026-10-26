@@ -20,6 +20,10 @@ const updateResults = ref<ToolUpdateItem[]>([]);
 const isChecking = ref(false);
 const lastCheckedAt = ref<number | null>(null);
 
+let inFlightUpdatePromise: Promise<ToolUpdateItem[]> | null = null;
+let inFlightKey = "";
+const UPDATES_CACHE_TTL_MS = 60_000;
+
 export function useToolUpdates() {
   const { activeScope } = useAppScope();
 
@@ -146,10 +150,6 @@ export function useToolUpdates() {
     }
   }
 
-  let inFlightUpdatePromise: Promise<ToolUpdateItem[]> | null = null;
-  let inFlightKey = "";
-  const UPDATES_CACHE_TTL_MS = 60_000;
-
   async function checkUpdates(isGlobal?: boolean, force = false): Promise<ToolUpdateItem[]> {
     const targetGlobal = isGlobal !== undefined ? isGlobal : activeScope.value === "user";
     const scopeParam = targetGlobal ? "user" : "workspace";
@@ -219,6 +219,8 @@ export function useToolUpdates() {
   function clearUpdates() {
     updateResults.value = [];
     lastCheckedAt.value = null;
+    inFlightUpdatePromise = null;
+    inFlightKey = "";
   }
 
   return {

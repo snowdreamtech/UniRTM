@@ -160,6 +160,81 @@ export default defineConfig({
         });
 
         const remoteVersionCache = new Map<string, { versions: string[]; timestamp: number }>();
+        let cachedGitInfo: {
+          commit: string;
+          buildTime: string;
+          version: string;
+          gitTag: string;
+          timestamp: number;
+        } | null = null;
+        const getCachedGitInfo = (rootDir: string) => {
+          const now = Date.now();
+          if (cachedGitInfo && now - cachedGitInfo.timestamp < 60_000) {
+            return cachedGitInfo;
+          }
+          let version = "0.35.0";
+          let gitTag = "v0.35.0";
+          let commit = "dev";
+          let buildTime = new Date().toISOString().slice(0, 10);
+
+          try {
+            const versionFile = path.join(rootDir, "VERSION");
+            if (fs.existsSync(versionFile)) {
+              const lines = fs.readFileSync(versionFile, "utf-8").split("\n");
+              for (const l of lines) {
+                const tr = l.trim();
+                if (tr && !tr.startsWith("#")) {
+                  version = tr.replace(/^v/, "");
+                  gitTag = `v${version}`;
+                  break;
+                }
+              }
+            }
+          } catch {}
+
+          try {
+            const gitRev = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+              cwd: rootDir,
+              encoding: "utf-8",
+              timeout: 2000,
+            }).trim();
+            if (gitRev) commit = gitRev;
+          } catch {}
+
+          try {
+            const gitDate = execFileSync("git", ["log", "-1", "--format=%cs"], {
+              cwd: rootDir,
+              encoding: "utf-8",
+              timeout: 2000,
+            }).trim();
+            if (gitDate) buildTime = gitDate;
+          } catch {}
+
+          cachedGitInfo = { commit, buildTime, version, gitTag, timestamp: now };
+          return cachedGitInfo;
+        };
+
+        const dirSizeCache = new Map<string, { size: string; timestamp: number }>();
+        const getCachedDirSizeText = (dirPath: string): string => {
+          const cached = dirSizeCache.get(dirPath);
+          const now = Date.now();
+          if (cached && now - cached.timestamp < 60_000) {
+            return cached.size;
+          }
+          try {
+            if (!fs.existsSync(dirPath)) return "-";
+            const out = execFileSync("du", ["-sh", dirPath], {
+              encoding: "utf-8",
+              timeout: 3000,
+              stdio: ["ignore", "pipe", "ignore"],
+            });
+            const size = out.trim().split(/\s+/)[0] || "-";
+            dirSizeCache.set(dirPath, { size, timestamp: now });
+            return size;
+          } catch {
+            return "-";
+          }
+        };
         const queryRemoteVersions = (tool: string, rootDir: string, unirtmBin: string): string[] => {
           if (!tool || !fs.existsSync(unirtmBin)) return [];
           const cached = remoteVersionCache.get(tool);
@@ -292,43 +367,7 @@ export default defineConfig({
           };
 
           if (req.url === "/api/status" || req.url?.startsWith("/api/status?")) {
-            let version = "0.35.0";
-            let gitTag = "v0.35.0";
-            let commit = "dev";
-            let buildTime = new Date().toISOString().slice(0, 10);
-
-            try {
-              const versionFile = path.join(rootDir, "VERSION");
-              if (fs.existsSync(versionFile)) {
-                const lines = fs.readFileSync(versionFile, "utf-8").split("\n");
-                for (const l of lines) {
-                  const tr = l.trim();
-                  if (tr && !tr.startsWith("#")) {
-                    version = tr.replace(/^v/, "");
-                    gitTag = `v${version}`;
-                    break;
-                  }
-                }
-              }
-            } catch {}
-
-            try {
-              const gitRev = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
-                cwd: rootDir,
-                encoding: "utf-8",
-                timeout: 2000,
-              }).trim();
-              if (gitRev) commit = gitRev;
-            } catch {}
-
-            try {
-              const gitDate = execFileSync("git", ["log", "-1", "--format=%cs"], {
-                cwd: rootDir,
-                encoding: "utf-8",
-                timeout: 2000,
-              }).trim();
-              if (gitDate) buildTime = gitDate;
-            } catch {}
+            const { version, gitTag, commit, buildTime } = getCachedGitInfo(rootDir);
 
             let toolsCount = 0;
             let tasksCount = 0;
@@ -452,41 +491,7 @@ export default defineConfig({
 
           // ─── Doctor System Diagnostic API ───────────────────────────────
           if (req.url === "/api/doctor" || req.url?.startsWith("/api/doctor?")) {
-            let version = "0.35.0";
-            let commit = "dev";
-            let buildTime = new Date().toISOString().slice(0, 10);
-
-            try {
-              const versionFile = path.join(rootDir, "VERSION");
-              if (fs.existsSync(versionFile)) {
-                const lines = fs.readFileSync(versionFile, "utf-8").split("\n");
-                for (const l of lines) {
-                  const tr = l.trim();
-                  if (tr && !tr.startsWith("#")) {
-                    version = tr.replace(/^v/, "");
-                    break;
-                  }
-                }
-              }
-            } catch {}
-
-            try {
-              const gitRev = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
-                cwd: rootDir,
-                encoding: "utf-8",
-                timeout: 2000,
-              }).trim();
-              if (gitRev) commit = gitRev;
-            } catch {}
-
-            try {
-              const gitDate = execFileSync("git", ["log", "-1", "--format=%cs"], {
-                cwd: rootDir,
-                encoding: "utf-8",
-                timeout: 2000,
-              }).trim();
-              if (gitDate) buildTime = gitDate;
-            } catch {}
+            const { version, commit, buildTime } = getCachedGitInfo(rootDir);
 
             const home = os.homedir();
             const shimsDir = path.join(home, ".local", "share", "unirtm", "shims");
@@ -531,26 +536,11 @@ export default defineConfig({
               }
             } catch {}
 
-            // Calculate dir sizes safely
-            const getDirSizeText = (dirPath: string): string => {
-              try {
-                if (!fs.existsSync(dirPath)) return "-";
-                const out = execFileSync("du", ["-sh", dirPath], {
-                  encoding: "utf-8",
-                  timeout: 3000,
-                  stdio: ["ignore", "pipe", "ignore"],
-                });
-                return out.trim().split(/\s+/)[0] || "-";
-              } catch {
-                return "-";
-              }
-            };
-
             const dirs = [
-              { type: "cache", path: cacheDir, size: getDirSizeText(cacheDir) },
+              { type: "cache", path: cacheDir, size: getCachedDirSizeText(cacheDir) },
               { type: "config", path: configDir, size: "-" },
-              { type: "data", path: dataDir, size: getDirSizeText(dataDir) },
-              { type: "shims", path: shimsDir, size: getDirSizeText(shimsDir) },
+              { type: "data", path: dataDir, size: getCachedDirSizeText(dataDir) },
+              { type: "shims", path: shimsDir, size: getCachedDirSizeText(shimsDir) },
             ];
 
             const dbPath = path.join(dataDir, "unirtm.db");
@@ -8232,6 +8222,8 @@ print(json.dumps({
     drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
   },
   build: {
+    target: "es2022",
+    chunkSizeWarningLimit: 5000,
     outDir: fileURLToPath(new URL("./dist", import.meta.url)),
     emptyOutDir: true,
     rollupOptions: {

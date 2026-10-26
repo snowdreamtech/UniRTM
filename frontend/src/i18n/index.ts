@@ -1,4 +1,4 @@
-import { ref, computed } from "vue";
+import { ref, shallowRef, computed } from "vue";
 import type { TranslationDict } from "./types";
 export type { TranslationDict };
 
@@ -61,8 +61,8 @@ export const SUPPORTED_LANGUAGES = [
 // Vite glob import for dynamic lazy-loading of all 53 locale chunks on demand
 const localeLoaders = import.meta.glob<Record<string, any>>("./locales/*.ts");
 
-// Reactive map of loaded locale dictionaries
-export const loadedDictionaries = ref<Record<string, TranslationDict>>({});
+// Reactive shallow map of loaded locale dictionaries (shallowRef avoids proxying thousands of dictionary keys)
+export const loadedDictionaries = shallowRef<Record<string, TranslationDict>>({});
 
 const DEFAULT_LOCALE = "en-US";
 
@@ -138,7 +138,10 @@ export async function setLocale(locale: string) {
         const mod = await loader();
         const exportKey = Object.keys(mod).find((k) => k !== "default") || Object.keys(mod)[0];
         if (exportKey && mod[exportKey]) {
-          loadedDictionaries.value[targetLocale] = mod[exportKey];
+          loadedDictionaries.value = {
+            ...loadedDictionaries.value,
+            [targetLocale]: mod[exportKey],
+          };
         }
       } catch (e) {
         console.error(`Failed to load locale chunk for ${targetLocale}:`, e);
@@ -148,6 +151,33 @@ export async function setLocale(locale: string) {
 
   currentLocale.value = targetLocale;
   updateDocumentDir();
+
+  // If active locale is not the fallback locale (en-US), preload en-US during idle time
+  // so any missing translation key gracefully falls back without blocking initial load
+  if (targetLocale !== DEFAULT_LOCALE && !loadedDictionaries.value[DEFAULT_LOCALE]) {
+    const scheduleIdle =
+      typeof window !== "undefined" && "requestIdleCallback" in window
+        ? (window as any).requestIdleCallback
+        : (cb: () => void) => setTimeout(cb, 1000);
+
+    scheduleIdle(async () => {
+      if (!loadedDictionaries.value[DEFAULT_LOCALE]) {
+        const enLoader = localeLoaders[`./locales/${DEFAULT_LOCALE}.ts`];
+        if (enLoader) {
+          try {
+            const mod = await enLoader();
+            const exportKey = Object.keys(mod).find((k) => k !== "default") || Object.keys(mod)[0];
+            if (exportKey && mod[exportKey]) {
+              loadedDictionaries.value = {
+                ...loadedDictionaries.value,
+                [DEFAULT_LOCALE]: mod[exportKey],
+              };
+            }
+          } catch {}
+        }
+      }
+    });
+  }
 }
 
 export const isRtl = computed(() => {
