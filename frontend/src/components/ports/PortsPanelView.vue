@@ -795,7 +795,7 @@ onBeforeUnmount(() => {
 });
 
 async function handleRefresh() {
-  await fetchPorts();
+  await fetchPorts(true);
 }
 
 function startInlineAdd() {

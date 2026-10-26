@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { usePorts } from "./usePorts";
+import { usePorts, resetWorkspaceHintsCache } from "./usePorts";
 
 const store = new Map<string, string>();
 const localStorageMock = {
@@ -17,6 +17,7 @@ describe("usePorts composable", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     store.clear();
+    resetWorkspaceHintsCache();
   });
 
   it("fetchPorts merges auto-detected ports correctly", async () => {
@@ -283,5 +284,39 @@ describe("usePorts composable", () => {
 
     const apiRisk = assessPortRisk(8080, { label: "Spring Boot / Express API" });
     expect(apiRisk.level).toBe("standard");
+  });
+
+  it("caches workspace hints with TTL during repetitive polling and bypasses on force", async () => {
+    let hintsCallCount = 0;
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/api/ports/workspace-hints")) {
+        hintsCallCount++;
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            success: true,
+            hints: [{ port: 8080, name: "API", sourceFile: "package.json", serviceType: "web" }],
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true, listening: [] }),
+      });
+    });
+
+    const { fetchPorts } = usePorts();
+
+    // Call 1: initial fetch, invokes workspace-hints
+    await fetchPorts();
+    expect(hintsCallCount).toBe(1);
+
+    // Call 2: polling tick, should use cache and not call workspace-hints API
+    await fetchPorts();
+    expect(hintsCallCount).toBe(1);
+
+    // Call 3: manual refresh with force=true, bypasses cache
+    await fetchPorts(true);
+    expect(hintsCallCount).toBe(2);
   });
 });

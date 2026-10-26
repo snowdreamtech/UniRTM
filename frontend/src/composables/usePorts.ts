@@ -65,6 +65,15 @@ function savePersistedPorts() {
   }
 }
 
+const WORKSPACE_HINTS_TTL_MS = 60 * 1000;
+let lastWorkspaceHintsFetchTime = 0;
+let inFlightWorkspaceHintsPromise: Promise<WorkspaceServiceHint[]> | null = null;
+
+export function resetWorkspaceHintsCache(): void {
+  lastWorkspaceHintsFetchTime = 0;
+  inFlightWorkspaceHintsPromise = null;
+}
+
 export function usePorts() {
   const { showToast } = useToast();
 
@@ -114,24 +123,37 @@ export function usePorts() {
   }
 
   /**
-   * Merge system listening ports and user-defined ports into reactive ports list.
-   */
-  /**
    * Method C: Fetch workspace service hints (package.json, docker-compose, .env)
+   * Cached with TTL to eliminate redundant static file scanning during 3.5s port polling.
    */
-  async function fetchWorkspaceHints(): Promise<WorkspaceServiceHint[]> {
-    try {
-      const res = await fetch("/api/ports/workspace-hints");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && Array.isArray(data.hints)) {
-          workspaceHints.value = data.hints;
-        }
-      }
-    } catch (e) {
-      console.warn("fetchWorkspaceHints failed:", e);
+  async function fetchWorkspaceHints(force = false): Promise<WorkspaceServiceHint[]> {
+    const now = Date.now();
+    if (!force && lastWorkspaceHintsFetchTime > 0 && now - lastWorkspaceHintsFetchTime < WORKSPACE_HINTS_TTL_MS) {
+      return workspaceHints.value;
     }
-    return workspaceHints.value;
+    if (inFlightWorkspaceHintsPromise) {
+      return inFlightWorkspaceHintsPromise;
+    }
+
+    inFlightWorkspaceHintsPromise = (async () => {
+      try {
+        const res = await fetch("/api/ports/workspace-hints");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.hints)) {
+            workspaceHints.value = data.hints;
+            lastWorkspaceHintsFetchTime = Date.now();
+          }
+        }
+      } catch (e) {
+        console.warn("fetchWorkspaceHints failed:", e);
+      } finally {
+        inFlightWorkspaceHintsPromise = null;
+      }
+      return workspaceHints.value;
+    })();
+
+    return inFlightWorkspaceHintsPromise;
   }
 
   /**
@@ -264,11 +286,14 @@ export function usePorts() {
   /**
    * Fetch system listening ports and workspace hints.
    */
-  async function fetchPorts(): Promise<PortForwardItem[]> {
+  async function fetchPorts(forceWorkspaceHints = false): Promise<PortForwardItem[]> {
     isLoading.value = true;
     try {
       // Parallel fetch of workspace hints and listening ports with probe
-      const [, portsRes] = await Promise.all([fetchWorkspaceHints(), fetch("/api/ports/list?probe=true")]);
+      const [, portsRes] = await Promise.all([
+        fetchWorkspaceHints(forceWorkspaceHints),
+        fetch("/api/ports/list?probe=true"),
+      ]);
       if (portsRes.ok) {
         const data = await portsRes.json();
         if (data.success && Array.isArray(data.listening)) {
