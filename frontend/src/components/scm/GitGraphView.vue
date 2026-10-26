@@ -1274,19 +1274,34 @@ const isComparing = computed(() => {
   return !!(selectedCommit.value && compareCommit.value && activeCompare.value);
 });
 
+const commitSubjectCache = new Map<
+  string,
+  { type: string; scope: string | null; isBreaking: boolean; description: string } | null
+>();
+
 function parseCommitSubject(msg: string) {
   if (!msg || msg.startsWith("*") || msg.startsWith("Uncommitted")) return null;
+  const cached = commitSubjectCache.get(msg);
+  if (cached !== undefined) return cached;
+
   const firstLine = msg.split(/\r?\n/)[0];
   const m = firstLine.match(
     /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(([a-zA-Z0-9_.\-/]+)\))?(!)?: (.+)$/
   );
-  if (!m) return null;
-  return {
+  if (!m) {
+    if (commitSubjectCache.size > 2000) commitSubjectCache.clear();
+    commitSubjectCache.set(msg, null);
+    return null;
+  }
+  const result = {
     type: m[1],
     scope: m[3] || null,
     isBreaking: !!m[4],
     description: m[5],
   };
+  if (commitSubjectCache.size > 2000) commitSubjectCache.clear();
+  commitSubjectCache.set(msg, result);
+  return result;
 }
 
 function parseFullCommitMessage(rawMsg: string) {
@@ -1926,6 +1941,7 @@ function closeRefContextMenu() {
 }
 
 function closeAllContextMenus() {
+  if (!contextMenuVisible.value && !refContextMenuVisible.value) return;
   closeContextMenu();
   closeRefContextMenu();
 }

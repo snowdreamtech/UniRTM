@@ -84,6 +84,7 @@ const adjustedStyle = computed(() => {
 });
 
 function handleClose() {
+  if (!props.visible) return;
   emit("close");
 }
 

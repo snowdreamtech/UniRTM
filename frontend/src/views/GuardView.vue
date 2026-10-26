@@ -1232,6 +1232,7 @@ const isFixDropdownOpen = ref(false);
 const fixDropdownRef = ref<HTMLElement | null>(null);
 
 function handleDocClick(e: MouseEvent) {
+  if (!isFixDropdownOpen.value) return;
   if (fixDropdownRef.value && !fixDropdownRef.value.contains(e.target as Node)) {
     isFixDropdownOpen.value = false;
   }

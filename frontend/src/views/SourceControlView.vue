@@ -648,6 +648,7 @@ async function handleSelectBranch(branchName: string) {
 }
 
 function handleWindowClick(e: MouseEvent) {
+  if (!isBranchMenuOpen.value) return;
   if (branchSelectorRef.value && !branchSelectorRef.value.contains(e.target as Node)) {
     isBranchMenuOpen.value = false;
   }

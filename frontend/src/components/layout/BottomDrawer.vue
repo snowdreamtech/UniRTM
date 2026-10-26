@@ -1359,6 +1359,7 @@ function handleMenuKillTerminal() {
 }
 
 function handleGlobalClick() {
+  if (!isNewMenuOpen.value && !isMoreMenuOpen.value && !isTabContextMenuOpen.value) return;
   isNewMenuOpen.value = false;
   isMoreMenuOpen.value = false;
   isTabContextMenuOpen.value = false;

@@ -197,6 +197,10 @@ const isCommitting = ref<boolean>(false);
 const isSyncing = ref<boolean>(false);
 const lastError = ref<string | null>(null);
 
+let inFlightStatusPromise: Promise<GitStatusData> | null = null;
+let inFlightBranchesPromise: Promise<GitBranchItem[]> | null = null;
+let inFlightLogPromise: Promise<GitCommitItem[]> | null = null;
+
 function gitFetch(url: string, init?: RequestInit): Promise<Response> {
   if (!activeRepo.value) {
     return init !== undefined ? fetch(url, init) : fetch(url);
@@ -257,8 +261,6 @@ export function useGit() {
   /**
    * Fetches latest git status from server (in-flight deduplicated).
    */
-  let inFlightStatusPromise: Promise<GitStatusData> | null = null;
-
   async function fetchStatus(): Promise<GitStatusData> {
     if (inFlightStatusPromise) {
       return inFlightStatusPromise;
@@ -303,21 +305,29 @@ export function useGit() {
   }
 
   /**
-   * Fetches list of local and remote branches.
+   * Fetches list of local and remote branches (in-flight deduplicated).
    */
   async function fetchBranches(): Promise<GitBranchItem[]> {
-    try {
-      const res = await gitFetch("/api/git/branches");
-      if (!res.ok) {
-        throw new Error(`Git branches failed: HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      branches.value = Array.isArray(data.branches) ? data.branches : [];
-      return branches.value;
-    } catch (err: any) {
-      console.error("fetchBranches error:", err);
-      return [];
+    if (inFlightBranchesPromise) {
+      return inFlightBranchesPromise;
     }
+    inFlightBranchesPromise = (async () => {
+      try {
+        const res = await gitFetch("/api/git/branches");
+        if (!res.ok) {
+          throw new Error(`Git branches failed: HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        branches.value = Array.isArray(data.branches) ? data.branches : [];
+        return branches.value;
+      } catch (err: any) {
+        console.error("fetchBranches error:", err);
+        return [];
+      } finally {
+        inFlightBranchesPromise = null;
+      }
+    })();
+    return inFlightBranchesPromise;
   }
 
   /**
@@ -539,19 +549,27 @@ export function useGit() {
   }
 
   /**
-   * Fetch commit log history.
+   * Fetch commit log history (in-flight deduplicated).
    */
   async function fetchLog(): Promise<GitCommitItem[]> {
-    try {
-      const res = await gitFetch("/api/git/log");
-      if (!res.ok) throw new Error(`Git log failed: HTTP ${res.status}`);
-      const data = await res.json();
-      commits.value = Array.isArray(data.commits) ? data.commits : [];
-      return commits.value;
-    } catch (err: any) {
-      console.error("fetchLog error:", err);
-      return [];
+    if (inFlightLogPromise) {
+      return inFlightLogPromise;
     }
+    inFlightLogPromise = (async () => {
+      try {
+        const res = await gitFetch("/api/git/log");
+        if (!res.ok) throw new Error(`Git log failed: HTTP ${res.status}`);
+        const data = await res.json();
+        commits.value = Array.isArray(data.commits) ? data.commits : [];
+        return commits.value;
+      } catch (err: any) {
+        console.error("fetchLog error:", err);
+        return [];
+      } finally {
+        inFlightLogPromise = null;
+      }
+    })();
+    return inFlightLogPromise;
   }
 
   /**

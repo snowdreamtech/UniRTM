@@ -28,6 +28,8 @@ export interface FlatTreeNode {
   key: string;
 }
 
+const fileCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
 export function flattenVisibleTree(nodes: FSNode[], expandedPaths: Set<string>, depth: number = 0): FlatTreeNode[] {
   const result: FlatTreeNode[] = [];
   if (!nodes || nodes.length === 0) return result;
@@ -35,7 +37,7 @@ export function flattenVisibleTree(nodes: FSNode[], expandedPaths: Set<string>, 
   const sorted = [...nodes].sort((a, b) => {
     if (a.is_dir && !b.is_dir) return -1;
     if (!a.is_dir && b.is_dir) return 1;
-    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+    return fileCollator.compare(a.name, b.name);
   });
 
   for (const node of sorted) {

@@ -83,8 +83,11 @@ const customTitles = reactive<Map<string, string>>(new Map());
 export function detectProcessFromChunk(text: string): DetectedProcessInfo | null {
   if (!text) return null;
 
+  // Sample beginning and end of large chunks to bound regex processing time
+  const sample = text.length > 1024 ? text.slice(0, 512) + " " + text.slice(-512) : text;
+
   for (const rule of PROCESS_RULES) {
-    if (rule.regex.test(text)) {
+    if (rule.regex.test(sample)) {
       return {
         type: rule.type,
         name: rule.name,
@@ -105,8 +108,9 @@ export function useTerminalProcessWatcher() {
   function recordChunk(paneId: string, chunk: string): void {
     if (!paneId || !chunk) return;
 
-    // 1. If shell prompt returned, foreground process exited to interactive mode
-    if (SHELL_PROMPT_REGEX.test(chunk)) {
+    // 1. If shell prompt returned, foreground process exited to interactive mode (check last 512 chars)
+    const promptSample = chunk.length > 512 ? chunk.slice(-512) : chunk;
+    if (SHELL_PROMPT_REGEX.test(promptSample)) {
       activeProcesses.delete(paneId);
       return;
     }

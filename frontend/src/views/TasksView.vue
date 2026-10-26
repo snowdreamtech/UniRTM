@@ -490,6 +490,7 @@ function handleDeleteFromMenu(task: ProjectTask) {
 }
 
 function closeTaskMenu() {
+  if (activeMenuTask.value === null) return;
   activeMenuTask.value = null;
 }
 

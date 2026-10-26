@@ -930,6 +930,7 @@ function openContextMenu(event: MouseEvent, item: PortForwardItem) {
 }
 
 function closeContextMenu() {
+  if (!contextMenuVisible.value && !isProtocolSubmenuOpen.value) return;
   contextMenuVisible.value = false;
   isProtocolSubmenuOpen.value = false;
 }

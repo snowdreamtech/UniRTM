@@ -788,4 +788,48 @@ describe("useGit composable", () => {
     // Clean up
     (activeRepo as any).value = null;
   });
+
+  it("deduplicates concurrent in-flight requests for fetchBranches and fetchLog", async () => {
+    let branchesCallCount = 0;
+    let logCallCount = 0;
+
+    global.fetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("/api/git/branches")) {
+        branchesCallCount++;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return {
+          ok: true,
+          json: async () => ({ branches: [{ name: "main", current: true, isRemote: false }] }),
+        };
+      }
+      if (url.includes("/api/git/log")) {
+        logCallCount++;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return {
+          ok: true,
+          json: async () => ({ commits: [{ hash: "abc1234", message: "Initial commit" }] }),
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({}),
+      };
+    });
+
+    const instance1 = useGit();
+    const instance2 = useGit();
+
+    // Fire concurrent calls from two different composable instances
+    const [branches1, branches2, log1, log2] = await Promise.all([
+      instance1.fetchBranches(),
+      instance2.fetchBranches(),
+      instance1.fetchLog(),
+      instance2.fetchLog(),
+    ]);
+
+    expect(branchesCallCount).toBe(1);
+    expect(logCallCount).toBe(1);
+    expect(branches1).toEqual(branches2);
+    expect(log1).toEqual(log2);
+  });
 });

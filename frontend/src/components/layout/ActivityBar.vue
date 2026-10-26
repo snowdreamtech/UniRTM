@@ -381,6 +381,7 @@ function handleResetOrder() {
 }
 
 function handleGlobalClick() {
+  if (!isContextMenuOpen.value) return;
   isContextMenuOpen.value = false;
 }
 
