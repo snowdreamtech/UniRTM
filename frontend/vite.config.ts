@@ -598,59 +598,125 @@ export default defineConfig({
               score -= 10;
             }
 
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(
-              JSON.stringify({
-                timestamp: Math.floor(Date.now() / 1000),
-                score: Math.max(0, score),
-                status: score >= 80 ? "healthy" : "warning",
-                core: {
-                  version: `v${version}`,
-                  commit: commit,
-                  activated: isActivated,
-                  shims_on_path: shimsOnPath,
-                  shims_dir: shimsDir,
-                  trust_status: "trusted",
-                },
-                build: {
-                  target: `${process.platform}/${process.arch}`,
-                  go_version: "go1.27.0",
-                  built: buildTime,
-                  features: ["SQLITE", "OPENSSL", "GPG", "VFOX_COMPAT"],
-                },
-                context: {
-                  shell: process.env.SHELL || "/bin/bash",
-                  shell_version: "5.2.37",
-                  editor: process.env.EDITOR || "vim",
-                  editor_source: "via system default",
-                  work_dir: rootDir,
-                  active_env: "base",
-                },
-                directories: dirs,
-                configs: configs,
-                settings: [],
-                backends: ["asdf", "cargo", "gem", "github", "go", "npm", "pipx", "ubi", "vfox"],
-                tools: [],
-                env_vars: [],
-                tasks: discoveredTasks,
-                health: {
-                  database_path: dbPath,
-                  database_size: dbSize,
-                  database_ok: true,
-                  github_connected: true,
-                  github_status_code: 200,
-                  github_rate_limit: 5000,
-                  github_rate_remaining: 4950,
-                  github_rate_reset: Math.floor(Date.now() / 1000) + 1800,
-                  github_rate_reset_text: "30m",
-                  google_connected: true,
-                  google_status_code: 204,
-                  google_latency_ms: 125,
-                  proxy_configured: process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.ALL_PROXY || "",
-                },
-                suggestions: suggestions,
-              })
-            );
+            (async () => {
+              let githubConnected = false;
+              let githubStatusCode = 0;
+              let githubLimit = 60;
+              let githubRemaining = 60;
+              let githubReset = Math.floor(Date.now() / 1000) + 3600;
+              let githubResetText = "60m";
+
+              let googleConnected = false;
+              let googleStatusCode = 0;
+              let googleLatencyMs = 0;
+
+              // 1. Probe GitHub API rate limit (real request)
+              try {
+                const ghController = new AbortController();
+                const ghTimer = setTimeout(() => ghController.abort(), 3500);
+                const ghHeaders: Record<string, string> = {
+                  "User-Agent": "UniRTM-Doctor/1.0",
+                  Accept: "application/vnd.github+json",
+                };
+                const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+                if (token) {
+                  ghHeaders["Authorization"] = `token ${token}`;
+                }
+
+                const ghRes = await fetch("https://api.github.com/rate_limit", {
+                  headers: ghHeaders,
+                  signal: ghController.signal,
+                });
+                clearTimeout(ghTimer);
+
+                githubConnected = true;
+                githubStatusCode = ghRes.status;
+                const limitHeader = ghRes.headers.get("x-ratelimit-limit");
+                const remHeader = ghRes.headers.get("x-ratelimit-remaining");
+                const resetHeader = ghRes.headers.get("x-ratelimit-reset");
+
+                if (limitHeader) githubLimit = parseInt(limitHeader, 10) || githubLimit;
+                if (remHeader) githubRemaining = parseInt(remHeader, 10) || 0;
+                if (resetHeader) {
+                  const resetTs = parseInt(resetHeader, 10);
+                  if (resetTs > 0) {
+                    githubReset = resetTs;
+                    const diffMinutes = Math.max(0, Math.round((resetTs * 1000 - Date.now()) / 60000));
+                    githubResetText = `${diffMinutes}m`;
+                  }
+                }
+              } catch {}
+
+              // 2. Probe Google Connectivity (generate_204)
+              try {
+                const gController = new AbortController();
+                const gTimer = setTimeout(() => gController.abort(), 2500);
+                const start = performance.now();
+                const gRes = await fetch("https://www.google.com/generate_204", {
+                  signal: gController.signal,
+                });
+                clearTimeout(gTimer);
+                googleLatencyMs = Math.round(performance.now() - start);
+                googleStatusCode = gRes.status;
+                if (gRes.status === 204 || gRes.status === 200) {
+                  googleConnected = true;
+                }
+              } catch {}
+
+              res.writeHead(200, { "Content-Type": "application/json" });
+              res.end(
+                JSON.stringify({
+                  timestamp: Math.floor(Date.now() / 1000),
+                  score: Math.max(0, score),
+                  status: score >= 80 ? "healthy" : "warning",
+                  core: {
+                    version: `v${version}`,
+                    commit: commit,
+                    activated: isActivated,
+                    shims_on_path: shimsOnPath,
+                    shims_dir: shimsDir,
+                    trust_status: "trusted",
+                  },
+                  build: {
+                    target: `${process.platform}/${process.arch}`,
+                    go_version: "go1.27.0",
+                    built: buildTime,
+                    features: ["SQLITE", "OPENSSL", "GPG", "VFOX_COMPAT"],
+                  },
+                  context: {
+                    shell: process.env.SHELL || "/bin/bash",
+                    shell_version: "5.2.37",
+                    editor: process.env.EDITOR || "vim",
+                    editor_source: "via system default",
+                    work_dir: rootDir,
+                    active_env: "base",
+                  },
+                  directories: dirs,
+                  configs: configs,
+                  settings: [],
+                  backends: ["asdf", "cargo", "gem", "github", "go", "npm", "pipx", "ubi", "vfox"],
+                  tools: [],
+                  env_vars: [],
+                  tasks: discoveredTasks,
+                  health: {
+                    database_path: dbPath,
+                    database_size: dbSize,
+                    database_ok: true,
+                    github_connected: githubConnected,
+                    github_status_code: githubStatusCode,
+                    github_rate_limit: githubLimit,
+                    github_rate_remaining: githubRemaining,
+                    github_rate_reset: githubReset,
+                    github_rate_reset_text: githubResetText,
+                    google_connected: googleConnected,
+                    google_status_code: googleStatusCode,
+                    google_latency_ms: googleLatencyMs,
+                    proxy_configured: process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.ALL_PROXY || "",
+                  },
+                  suggestions: suggestions,
+                })
+              );
+            })();
             return;
           }
 
