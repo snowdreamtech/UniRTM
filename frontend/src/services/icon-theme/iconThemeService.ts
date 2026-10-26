@@ -71,7 +71,7 @@ class IconThemeService {
        url('${setiWoffUrl}') format('woff');
   font-weight: normal;
   font-style: normal;
-  font-display: block;
+  font-display: swap;
 }
 
 .tech-icon {

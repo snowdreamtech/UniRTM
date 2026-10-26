@@ -1,4 +1,11 @@
 /* Glassmorphism Theme CSS — UniGoDesktop Design System */
+/* Optimize font loading: prevent FOIT (Flash of Invisible Text) with font-display: swap */
+@font-face {
+  font-family: "codicon";
+  font-display: swap;
+  src: url("@vscode/codicons/dist/codicon.ttf") format("truetype");
+}
+
 :root,
 [data-theme="dark"] {
   color-scheme: dark;

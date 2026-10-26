@@ -489,6 +489,11 @@ onUnmounted(() => {
 .activity-icon {
   font-size: 1.25rem;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
 }
 
 .activity-badge {
