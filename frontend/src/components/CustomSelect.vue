@@ -56,6 +56,7 @@ function selectOption(val: string) {
 }
 
 function handleClickOutside(e: MouseEvent) {
+  if (!isOpen.value) return;
   if (containerRef.value && !containerRef.value.contains(e.target as Node)) {
     isOpen.value = false;
   }

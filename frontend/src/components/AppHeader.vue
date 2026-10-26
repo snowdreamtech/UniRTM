@@ -116,6 +116,7 @@ function selectLanguage(langVal: string) {
 }
 
 function handleGlobalClick(event: MouseEvent) {
+  if (!isLangMenuOpen.value) return;
   if (langDropdownRef.value && !langDropdownRef.value.contains(event.target as Node)) {
     isLangMenuOpen.value = false;
   }
