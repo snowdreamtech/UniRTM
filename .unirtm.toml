@@ -199,7 +199,7 @@ env = { GOTOOLCHAIN = 'auto', CGO_ENABLED = '0' }
 
 [tasks."test:frontend"]
 description = "Run Vue/Frontend Vitest unit tests"
-run = "cd frontend && npm test"
+run = "cd frontend && ([ -d node_modules ] || npm install --silent) && npm test"
 output = "interleaved"
 
 [tasks."test:shell"]
