@@ -267,8 +267,11 @@ const activeRunningTask = ref<string | undefined>(undefined);
 const currentLatencyMs = ref<number | null>(18);
 const drawerActiveTab = ref<DrawerTab>(getInitialDrawerTab());
 
+let logSeq = 0;
+
 const runtimeLogs = ref<LogItem[]>([
   {
+    id: ++logSeq,
     timestamp: new Date().toLocaleTimeString(),
     level: "INFO",
     message: "UniRTM Workbench initialised successfully",
@@ -276,6 +279,7 @@ const runtimeLogs = ref<LogItem[]>([
     category: "output",
   },
   {
+    id: ++logSeq,
     timestamp: new Date().toLocaleTimeString(),
     level: "SUCCESS",
     message: "Environment verified: Node.js 22.14, Go 1.24, Python 3.12 ready",
@@ -441,6 +445,7 @@ function addLog(
     runtimeLogs.value.splice(0, runtimeLogs.value.length - (MAX_RUNTIME_LOGS - 1));
   }
   runtimeLogs.value.push({
+    id: ++logSeq,
     timestamp: new Date().toLocaleTimeString(),
     level,
     message: msg,

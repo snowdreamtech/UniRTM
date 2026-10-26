@@ -493,7 +493,7 @@
 
       <div
         v-for="(log, idx) in displayLogs"
-        :key="idx"
+        :key="log.id ?? idx"
         class="log-row"
         :class="['level-' + log.level.toLowerCase(), { copied: copiedRowIdx === idx }]"
         @dblclick="handleCopyRow(log, idx)"
@@ -631,6 +631,7 @@ import { useTerminalProcessWatcher } from "../../composables/useTerminalProcessW
 import { isMac } from "../../utils/platform";
 
 export interface LogItem {
+  id?: number | string;
   timestamp: string;
   level: "INFO" | "SUCCESS" | "WARN" | "ERROR";
   message: string;
@@ -938,9 +939,27 @@ watch(autoScroll, (val) => {
   }
 });
 
-const outputLogs = computed(() => props.logs.filter((l) => !l.category || l.category === "output"));
-const tasksLogs = computed(() => props.logs.filter((l) => l.category === "tasks"));
-const doctorLogs = computed(() => props.logs.filter((l) => l.category === "doctor"));
+const logsByCategory = computed(() => {
+  const output: LogItem[] = [];
+  const tasks: LogItem[] = [];
+  const doctor: LogItem[] = [];
+  const logs = props.logs;
+  for (let i = 0; i < logs.length; i++) {
+    const l = logs[i];
+    if (l.category === "tasks") {
+      tasks.push(l);
+    } else if (l.category === "doctor") {
+      doctor.push(l);
+    } else {
+      output.push(l);
+    }
+  }
+  return { output, tasks, doctor };
+});
+
+const outputLogs = computed(() => logsByCategory.value.output);
+const tasksLogs = computed(() => logsByCategory.value.tasks);
+const doctorLogs = computed(() => logsByCategory.value.doctor);
 
 const DRAWER_TAB_ORDER_KEY = "unirtm_drawer_tab_order";
 const DRAWER_TAB_HIDDEN_KEY = "unirtm_drawer_tab_hidden";
@@ -2363,6 +2382,8 @@ onUnmounted(() => {
   border-radius: 4px;
   word-break: break-all;
   transition: background 0.15s ease;
+  content-visibility: auto;
+  contain-intrinsic-size: 26px;
 }
 
 .log-row:hover {
