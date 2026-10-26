@@ -9,6 +9,10 @@ const lastError = ref<string | null>(null);
 // In-memory session keyring cache
 const sessionKeyring = ref<Map<string, string>>(new Map());
 
+// Module-level singleton EventSource listener
+let eventSource: EventSource | null = null;
+let isListening = false;
+
 export function useCredentialBroker() {
   /**
    * Trigger prompt modal for credential request
@@ -127,9 +131,6 @@ export function useCredentialBroker() {
       return null;
     }
   }
-
-  let eventSource: EventSource | null = null;
-  let isListening = false;
 
   /**
    * Start live push-event listener via Server-Sent Events
