@@ -143,22 +143,11 @@ func calculateHash(path string) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func normalizePath(path string) (string, error) {
-	absPath, err := FilepathAbs(path)
-	if err != nil {
-		return "", err
-	}
-	if realPath, err := filepath.EvalSymlinks(absPath); err == nil {
-		return realPath, nil
-	}
-	return absPath, nil
-}
-
 func (m *fileTrustManager) TrustStatus(path string) TrustStatus {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	absPath, err := normalizePath(path)
+	absPath, err := FilepathAbs(path)
 	if err != nil {
 		return TrustStatusUntrusted
 	}
@@ -190,7 +179,7 @@ func (m *fileTrustManager) Trust(path string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	absPath, err := normalizePath(path)
+	absPath, err := FilepathAbs(path)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute path: %w", err)
 	}
@@ -226,7 +215,7 @@ func (m *fileTrustManager) Untrust(path string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	absPath, err := normalizePath(path)
+	absPath, err := FilepathAbs(path)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute path: %w", err)
 	}

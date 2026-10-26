@@ -70,6 +70,21 @@ EOF
 echo "unirtm version v99.9.9"
 EOF
   chmod +x "${MOCK_BIN_DIR}/unirtm"
+
+  # Mock uname on Windows environments (MINGW/MSYS/CYGWIN) so POSIX install.sh tests can execute
+  case "$(command uname -s 2>/dev/null)" in
+    MINGW*|MSYS*|CYGWIN*)
+      cat <<'EOF' >"${MOCK_BIN_DIR}/uname"
+#!/bin/sh
+case "$1" in
+  -s) echo "Linux" ;;
+  -m) echo "x86_64" ;;
+  *) command uname "$@" ;;
+esac
+EOF
+      chmod +x "${MOCK_BIN_DIR}/uname"
+      ;;
+  esac
 }
 
 teardown() {
