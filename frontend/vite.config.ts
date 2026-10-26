@@ -701,7 +701,7 @@ export default defineConfig({
                   health: {
                     database_path: dbPath,
                     database_size: dbSize,
-                    database_ok: true,
+                    database_ok: dbExists,
                     github_connected: githubConnected,
                     github_status_code: githubStatusCode,
                     github_rate_limit: githubLimit,
