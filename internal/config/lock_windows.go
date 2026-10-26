@@ -7,51 +7,29 @@ package config
 
 import (
 	"os"
-	"syscall"
-)
 
-var (
-	modkernel32      = syscall.NewLazyDLL("kernel32.dll")
-	procLockFileEx   = modkernel32.NewProc("LockFileEx")
-	procUnlockFileEx = modkernel32.NewProc("UnlockFileEx")
-)
-
-const (
-	lockfileExclusiveLock   = 0x00000002
-	lockfileFailImmediately = 0x00000001
+	"golang.org/x/sys/windows"
 )
 
 func lockFile(f *os.File) error {
-	var ol syscall.Overlapped
-	r1, _, err := procLockFileEx.Call(
-		f.Fd(),
-		uintptr(lockfileExclusiveLock|lockfileFailImmediately),
+	var ol windows.Overlapped
+	return windows.LockFileEx(
+		windows.Handle(f.Fd()),
+		windows.LOCKFILE_EXCLUSIVE_LOCK|windows.LOCKFILE_FAIL_IMMEDIATELY,
 		0,
 		1,
 		0,
-		uintptr(unsafePointer(&ol)),
+		&ol,
 	)
-	if r1 == 0 {
-		return err
-	}
-	return nil
 }
 
 func unlockFile(f *os.File) error {
-	var ol syscall.Overlapped
-	r1, _, err := procUnlockFileEx.Call(
-		f.Fd(),
+	var ol windows.Overlapped
+	return windows.UnlockFileEx(
+		windows.Handle(f.Fd()),
 		0,
 		1,
 		0,
-		uintptr(unsafePointer(&ol)),
+		&ol,
 	)
-	if r1 == 0 {
-		return err
-	}
-	return nil
-}
-
-func unsafePointer(v interface{}) uintptr {
-	return uintptr(0)
 }
