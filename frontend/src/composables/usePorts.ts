@@ -27,7 +27,15 @@ const isLoading = ref<boolean>(false);
 const searchQuery = ref<string>("");
 const autoDetectEnabled = ref<boolean>(true);
 
-// Load persisted user-defined ports from localStorage
+// Load persisted user-defined ports from localStorage once
+let persistedPortsLoaded = false;
+
+function ensurePersistedPortsLoaded() {
+  if (persistedPortsLoaded) return;
+  persistedPortsLoaded = true;
+  loadPersistedPorts();
+}
+
 function loadPersistedPorts() {
   if (typeof localStorage === "undefined") return;
   try {
@@ -60,7 +68,7 @@ function savePersistedPorts() {
 export function usePorts() {
   const { showToast } = useToast();
 
-  loadPersistedPorts();
+  ensurePersistedPortsLoaded();
 
   // Active listening ports count
   const activePortsCount = computed(() => {
