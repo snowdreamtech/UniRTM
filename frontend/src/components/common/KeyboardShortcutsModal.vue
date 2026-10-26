@@ -468,6 +468,8 @@ watch(
 
 .shortcut-row {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  content-visibility: auto;
+  contain-intrinsic-size: 0 48px;
   transition: background-color 0.15s ease;
 }
 

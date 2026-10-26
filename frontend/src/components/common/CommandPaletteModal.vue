@@ -597,6 +597,8 @@ function executeItem(item: CommandItem) {
   padding: 0.65rem 0.85rem;
   border-radius: 8px;
   cursor: pointer;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 44px;
   transition: all 0.15s ease;
   user-select: none;
   border-left: 3px solid transparent;

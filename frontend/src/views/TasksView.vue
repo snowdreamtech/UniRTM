@@ -937,6 +937,8 @@ async function executeTask(task: ProjectTask) {
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   border-radius: 10px;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 80px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   gap: 1.25rem;
 }
@@ -1401,6 +1403,8 @@ async function executeTask(task: ProjectTask) {
 
 .task-table-row {
   border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.05));
+  content-visibility: auto;
+  contain-intrinsic-size: 0 44px;
   transition: background 0.15s ease;
 }
 

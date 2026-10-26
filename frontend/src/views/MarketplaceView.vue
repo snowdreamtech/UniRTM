@@ -3047,6 +3047,8 @@ function cleanGitUrl(url: string): string {
   justify-content: space-between;
   padding: 14px;
   border-radius: 10px;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 160px;
   transition:
     transform 0.2s ease,
     border-color 0.2s ease,

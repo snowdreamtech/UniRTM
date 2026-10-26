@@ -179,12 +179,23 @@ const latencyDisplay = computed(() => {
   return t("network.untested") || "Untested";
 });
 
-async function loadNetworkStatus() {
+let cachedNetworkStatus: any = null;
+let lastNetworkStatusFetchTime = 0;
+const NETWORK_STATUS_CACHE_TTL_MS = 30_000;
+
+async function loadNetworkStatus(force = false) {
+  const now = Date.now();
+  if (!force && cachedNetworkStatus && now - lastNetworkStatusFetchTime < NETWORK_STATUS_CACHE_TTL_MS) {
+    networkStatus.value = cachedNetworkStatus;
+    return;
+  }
   try {
     const res = await fetch("/api/network/status");
     if (res.ok) {
       const data = await res.json();
-      networkStatus.value = data.status;
+      cachedNetworkStatus = data.status;
+      lastNetworkStatusFetchTime = Date.now();
+      networkStatus.value = cachedNetworkStatus;
     }
   } catch (err) {
     // ignore

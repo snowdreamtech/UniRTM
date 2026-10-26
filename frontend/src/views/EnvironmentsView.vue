@@ -1408,6 +1408,8 @@ onUnmounted(() => {
   border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
   border-radius: 10px;
   gap: 10px;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 100px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1680,6 +1682,8 @@ onUnmounted(() => {
 
 .env-table-row {
   border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.05));
+  content-visibility: auto;
+  contain-intrinsic-size: 0 44px;
   transition: background 0.15s ease;
 }
 
