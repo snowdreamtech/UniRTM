@@ -61,8 +61,14 @@ func Run(ctx context.Context, opts Options) error {
 
 	mux := SetupUIMux(distFS)
 
+	baseCtx, cancelBaseCtx := context.WithCancel(context.Background())
+	defer cancelBaseCtx()
+
 	httpServer := &http.Server{
-		Handler:           localSecurityMiddleware(mux),
+		Handler: localSecurityMiddleware(mux),
+		BaseContext: func(net.Listener) context.Context {
+			return baseCtx
+		},
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -94,14 +100,23 @@ func Run(ctx context.Context, opts Options) error {
 	go func() {
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-		<-sigChan
+		select {
+		case <-sigChan:
+		case <-ctx.Done():
+		}
 
 		pterm.Info.Println("\nShutting down UniRTM Workbench...")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+		// Cancel base context to notify all active SSE streams and request handlers to exit immediately
+		cancelBaseCtx()
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			pterm.Error.Printf("HTTP shutdown error: %v\n", err)
+			// If graceful shutdown timed out or failed (e.g. hijacked WebSocket connections),
+			// force close the server immediately without printing an alarm.
+			_ = httpServer.Close()
 		}
 		close(idleConnsClosed)
 	}()
