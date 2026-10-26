@@ -112,12 +112,17 @@ func (s *SlotRule) Execute(ctx context.Context, files []string, opts ExecuteOpti
 	var cmdArgs []string
 	hasPlaceholder := false
 
+	normalizedMatchingFiles := make([]string, len(matchingFiles))
+	for i, f := range matchingFiles {
+		normalizedMatchingFiles[i] = filepath.ToSlash(f)
+	}
+
 	for _, p := range parts[1:] {
 		if p == "{{files}}" {
-			cmdArgs = append(cmdArgs, matchingFiles...)
+			cmdArgs = append(cmdArgs, normalizedMatchingFiles...)
 			hasPlaceholder = true
 		} else if strings.Contains(p, "{{files}}") {
-			replaced := strings.ReplaceAll(p, "{{files}}", strings.Join(matchingFiles, " "))
+			replaced := strings.ReplaceAll(p, "{{files}}", strings.Join(normalizedMatchingFiles, " "))
 			cmdArgs = append(cmdArgs, replaced)
 			hasPlaceholder = true
 		} else {
@@ -125,8 +130,8 @@ func (s *SlotRule) Execute(ctx context.Context, files []string, opts ExecuteOpti
 		}
 	}
 
-	if !hasPlaceholder && len(matchingFiles) > 0 && !strings.Contains(s.slot.ID, "linter") && !strings.Contains(s.slot.ID, "secret") {
-		cmdArgs = append(cmdArgs, matchingFiles...)
+	if !hasPlaceholder && len(normalizedMatchingFiles) > 0 && !strings.Contains(s.slot.ID, "linter") && !strings.Contains(s.slot.ID, "secret") {
+		cmdArgs = append(cmdArgs, normalizedMatchingFiles...)
 	}
 
 	cmd := exec.CommandContext(ctx, toolBin, cmdArgs...)

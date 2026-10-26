@@ -59,7 +59,7 @@ for arg in "$@"; do
     TARGET_DIR="$arg"
 done
 mkdir -p "$TARGET_DIR"
-touch "$TARGET_DIR/unirtm"
+printf '#!/bin/sh\necho "unirtm version v99.9.9"\n' >"$TARGET_DIR/unirtm"
 chmod +x "$TARGET_DIR/unirtm"
 EOF
   chmod +x "${MOCK_BIN_DIR}/tar"
