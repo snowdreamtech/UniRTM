@@ -129,7 +129,8 @@ describe("i18n module", () => {
             scanDir(fullPath, fileList);
           }
         } else if (f.endsWith(".vue") || (f.endsWith(".ts") && !f.endsWith(".test.ts"))) {
-          if (!fullPath.includes("locales/zh-CN") && !fullPath.includes("locales/zh-TW")) {
+          const normalizedPath = fullPath.replace(/\\/g, "/");
+          if (!normalizedPath.includes("locales/zh-CN") && !normalizedPath.includes("locales/zh-TW")) {
             fileList.push(fullPath);
           }
         }
@@ -143,7 +144,8 @@ describe("i18n module", () => {
 
     for (const file of files) {
       // Exclude Japanese locale (which legitimately uses shared CJK Kanji)
-      if (file.includes("locales/ja-JP")) continue;
+      const normalizedFile = file.replace(/\\/g, "/");
+      if (normalizedFile.includes("locales/ja-JP")) continue;
       const content = fs.readFileSync(file, "utf-8");
       const lines = content.split("\n");
       lines.forEach((line, idx) => {
