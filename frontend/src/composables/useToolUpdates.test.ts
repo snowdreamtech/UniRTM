@@ -21,7 +21,7 @@ describe("useToolUpdates", () => {
         id: "go",
         name: "Go",
         current_version: "1.24.0",
-        latest_version: "1.27.2",
+        latest_version: "1.27.3",
         has_update: true,
         pinned: true,
         pin_reason: "Production compatibility",

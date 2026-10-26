@@ -769,7 +769,7 @@ export default defineConfig({
               }
               if (count === 0) {
                 content = upsert(content, "node", "20.18.3");
-                content = upsert(content, "go", "1.27.2");
+                content = upsert(content, "go", "1.27.3");
                 count = 2;
               }
               fs.writeFileSync(wsPath, content, "utf-8");
@@ -943,7 +943,7 @@ export default defineConfig({
                 name: "Go",
                 desc: "Go programming language (GVM superset)",
                 hp: "https://go.dev",
-                defaultVer: "1.27.2",
+                defaultVer: "1.27.3",
               },
               python: {
                 name: "Python",
@@ -1342,7 +1342,7 @@ export default defineConfig({
 
             const fallbackLatest: Record<string, string> = {
               node: "23.9.0",
-              go: "1.27.2",
+              go: "1.27.3",
               python: "3.13.2",
               rust: "1.85.0",
               java: "23.0.2",
@@ -1731,6 +1731,7 @@ export default defineConfig({
                 ];
               } else if (tool === "go" || tool === "golang") {
                 versions = [
+                  "1.27.3",
                   "1.27.2",
                   "1.27.1",
                   "1.27.0",

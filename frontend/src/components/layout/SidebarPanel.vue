@@ -706,7 +706,7 @@ const isReadyExpanded = ref(true);
 
 const rawTools = ref<any[]>([
   { id: "node", name: "Node.js", active_version: "26.8.1", global_version: "26.8.1", installed_versions: ["26.8.1"] },
-  { id: "go", name: "Go", active_version: "1.27.2", global_version: "", installed_versions: ["1.27.2"] },
+  { id: "go", name: "Go", active_version: "1.27.3", global_version: "", installed_versions: ["1.27.3"] },
   { id: "python", name: "Python", active_version: "3.14.7", global_version: "", installed_versions: ["3.14.7"] },
 ]);
 

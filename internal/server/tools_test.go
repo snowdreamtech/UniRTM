@@ -239,7 +239,7 @@ node = "22.14.0"
 	batchBody, _ := json.Marshal(map[string]interface{}{
 		"tools": []map[string]string{
 			{"tool": "node", "version": "23.9.0"},
-			{"tool": "go", "version": "1.27.2"},
+			{"tool": "go", "version": "1.27.3"},
 		},
 		"global": false,
 	})
