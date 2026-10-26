@@ -429,12 +429,17 @@ function handleClearLogs(category?: DrawerTab) {
   }
 }
 
+const MAX_RUNTIME_LOGS = 1000;
+
 function addLog(
   level: "INFO" | "SUCCESS" | "WARN" | "ERROR",
   msg: string,
   detail?: string,
   category: "output" | "tasks" | "doctor" = "output"
 ) {
+  if (runtimeLogs.value.length >= MAX_RUNTIME_LOGS) {
+    runtimeLogs.value.splice(0, runtimeLogs.value.length - (MAX_RUNTIME_LOGS - 1));
+  }
   runtimeLogs.value.push({
     timestamp: new Date().toLocaleTimeString(),
     level,
