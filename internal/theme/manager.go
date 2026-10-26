@@ -241,7 +241,7 @@ func (m *Manager) InstallVSIX(r io.Reader) ([]ThemeItem, error) {
 	// Locate and parse extension/package.json
 	var pkgJSON *VSCodePackageJSON
 	for _, f := range zipReader.File {
-		cleanName := filepath.Clean(f.Name)
+		cleanName := filepath.ToSlash(filepath.Clean(f.Name))
 		if cleanName == "extension/package.json" || cleanName == "package.json" {
 			rc, err := f.Open()
 			if err != nil {
@@ -370,23 +370,22 @@ func (m *Manager) extractExtensionFiles(files []*zip.File, targetDir string) err
 			return fmt.Errorf("illegal relative path traversal in zip: %s", f.Name)
 		}
 
-		cleanName := filepath.Clean(f.Name)
+		cleanName := filepath.ToSlash(filepath.Clean(f.Name))
 		var relPath string
-		if strings.HasPrefix(cleanName, "extension/") || strings.HasPrefix(cleanName, "extension\\") {
+		if strings.HasPrefix(cleanName, "extension/") {
 			relPath = cleanName[len("extension/"):]
-		} else if strings.HasPrefix(cleanName, "extension") {
-			relPath = strings.TrimPrefix(cleanName, "extension")
+		} else if cleanName == "extension" {
+			continue
 		} else {
 			continue // Skip manifest root files outside of extension/
 		}
 
 		relPath = strings.TrimPrefix(relPath, "/")
-		relPath = strings.TrimPrefix(relPath, "\\")
 		if relPath == "" {
 			continue
 		}
 
-		destPath := filepath.Join(targetDir, relPath)
+		destPath := filepath.Join(targetDir, filepath.FromSlash(relPath))
 		// Zip Slip safety check
 		if !strings.HasPrefix(destPath, filepath.Clean(targetDir)+string(filepath.Separator)) {
 			return fmt.Errorf("illegal file path in zip: %s", cleanName)

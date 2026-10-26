@@ -8,6 +8,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -325,6 +326,10 @@ func TestBuiltinRules_Symlinks(t *testing.T) {
 }
 
 func TestBuiltinRules_ShebangAndFix(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping POSIX file mode permissions tests on Windows")
+	}
+
 	tmpDir := t.TempDir()
 
 	// 1. Script with shebang but lacking +x
