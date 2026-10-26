@@ -2,78 +2,6 @@
 # Do not edit manually. See https://github.com/snowdreamtech/unirtm for details.
 
 [[tools."github:anchore/syft"]]
-version = "1.51.1"
-backend = "github"
-
-[tools."github:anchore/syft"."platforms.linux-amd64"]
-checksum = "sha256:8fcb33017a0dc1058298c923c436d19dfa68ae93968e0b423248542e3afb9fc3"
-url = "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_linux_amd64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.linux-amd64-musl"]
-checksum = "sha256:8fcb33017a0dc1058298c923c436d19dfa68ae93968e0b423248542e3afb9fc3"
-url = "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_linux_amd64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.linux-arm64"]
-checksum = "sha256:a7fd2b784e6664acd44719270574f6cd8c6864fc2b1700bf9099bd1cccda7d7f"
-url = "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_linux_arm64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.linux-arm64-musl"]
-checksum = "sha256:a7fd2b784e6664acd44719270574f6cd8c6864fc2b1700bf9099bd1cccda7d7f"
-url = "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_linux_arm64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.macos-amd64"]
-checksum = "sha256:0e186ce1d4351ec276126851ca3ff258ed070e93e73574ed64858d4fc2339867"
-url = "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_darwin_amd64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.macos-arm64"]
-checksum = "sha256:ac063af3b9874769deb7ea1e6d76841e68f9e3bb50cd654226fc977de65532c1"
-url = "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_darwin_arm64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.windows-amd64"]
-checksum = "sha256:5e4bc3e6b6344b4625de0f7aa5351aaa72856d11d78462972de0a101ee2c1c8f"
-url = "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_windows_amd64.zip"
-
-[tools."github:anchore/syft"."platforms.windows-arm64"]
-checksum = "sha256:fa735ee4c25b90b93d6795a15b90d6a0bae78eb5ad7d3d4591b3c10faa3463ad"
-url = "https://github.com/anchore/syft/releases/download/v1.51.1/syft_1.51.1_windows_arm64.zip"
-
-[[tools."github:anchore/syft"]]
-version = "1.52.0"
-backend = "github"
-
-[tools."github:anchore/syft"."platforms.linux-amd64"]
-checksum = "sha256:caeedb81fb0491615f1ebd1761e4145d41ee86dd2cc7bf80669f9f5ad9d6133d"
-url = "https://github.com/anchore/syft/releases/download/v1.52.0/syft_1.52.0_linux_amd64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.linux-amd64-musl"]
-checksum = "sha256:caeedb81fb0491615f1ebd1761e4145d41ee86dd2cc7bf80669f9f5ad9d6133d"
-url = "https://github.com/anchore/syft/releases/download/v1.52.0/syft_1.52.0_linux_amd64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.linux-arm64"]
-checksum = "sha256:c46d5e4c28e12aa4c5becfaa343ef1c7f89045b6b895f2c21d471c62db09c706"
-url = "https://github.com/anchore/syft/releases/download/v1.52.0/syft_1.52.0_linux_arm64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.linux-arm64-musl"]
-checksum = "sha256:c46d5e4c28e12aa4c5becfaa343ef1c7f89045b6b895f2c21d471c62db09c706"
-url = "https://github.com/anchore/syft/releases/download/v1.52.0/syft_1.52.0_linux_arm64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.macos-amd64"]
-checksum = "sha256:56975f5d7ffa9846a1eaf64330647841b878097bc7e3730cb9325f93add96917"
-url = "https://github.com/anchore/syft/releases/download/v1.52.0/syft_1.52.0_darwin_amd64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.macos-arm64"]
-checksum = "sha256:014d561b6d13059124155f74a6c5a9a99501f5e209313638dd884f39eb418ee6"
-url = "https://github.com/anchore/syft/releases/download/v1.52.0/syft_1.52.0_darwin_arm64.tar.gz"
-
-[tools."github:anchore/syft"."platforms.windows-amd64"]
-checksum = "sha256:de787a374cf961c56fd7b206b2e183295abba32d0af3cb44d9aef2357ca9eda2"
-url = "https://github.com/anchore/syft/releases/download/v1.52.0/syft_1.52.0_windows_amd64.zip"
-
-[tools."github:anchore/syft"."platforms.windows-arm64"]
-checksum = "sha256:f9c0596d79d0e99eacb3f1e3ffca37ca22e7cdc809b1463cdfec77798939bd09"
-url = "https://github.com/anchore/syft/releases/download/v1.52.0/syft_1.52.0_windows_arm64.zip"
-
-[[tools."github:anchore/syft"]]
 version = "1.54.1"
 backend = "github"
 
@@ -108,38 +36,6 @@ url = "https://github.com/anchore/syft/releases/download/v1.54.1/syft_1.54.1_win
 [tools."github:anchore/syft"."platforms.windows-arm64"]
 checksum = "sha256:440019acac7c5b3b44edb8d224aa226b52aadca66a1c3a0a8d58a9525f675e36"
 url = "https://github.com/anchore/syft/releases/download/v1.54.1/syft_1.54.1_windows_arm64.zip"
-
-[[tools."github:aquasecurity/trivy"]]
-version = "0.74.0"
-backend = "github"
-
-[tools."github:aquasecurity/trivy"."platforms.linux-amd64"]
-checksum = "sha256:2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a"
-url = "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-64bit.tar.gz"
-
-[tools."github:aquasecurity/trivy"."platforms.linux-amd64-musl"]
-checksum = "sha256:2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a"
-url = "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-64bit.tar.gz"
-
-[tools."github:aquasecurity/trivy"."platforms.linux-arm64"]
-checksum = "sha256:b94ce1976bbf3c15b514b605ee88be7c6d94a29be2302847ff01cb794d47aad5"
-url = "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-ARM64.tar.gz"
-
-[tools."github:aquasecurity/trivy"."platforms.linux-arm64-musl"]
-checksum = "sha256:b94ce1976bbf3c15b514b605ee88be7c6d94a29be2302847ff01cb794d47aad5"
-url = "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-ARM64.tar.gz"
-
-[tools."github:aquasecurity/trivy"."platforms.macos-amd64"]
-checksum = "sha256:472816f6888dda689d075c30254d4210b4d1035acf365aa72332f584c2f60485"
-url = "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_macOS-64bit.tar.gz"
-
-[tools."github:aquasecurity/trivy"."platforms.macos-arm64"]
-checksum = "sha256:1caada5e0e2091909357c7525d3aa76f4b660b13821bc143b190c7483e31cc11"
-url = "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_macOS-ARM64.tar.gz"
-
-[tools."github:aquasecurity/trivy"."platforms.windows-amd64"]
-checksum = "sha256:94c40e0696e4b907a74b7b2e1438d5d72ebaca83115817407f568a002d520842"
-url = "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_windows-64bit.zip"
 
 [[tools."github:aquasecurity/trivy"]]
 version = "0.75.0"
@@ -201,78 +97,6 @@ url = "https://github.com/astral-sh/ruff/releases/download/0.16.6/ruff-x86_64-pc
 
 [tools."github:astral-sh/ruff"."platforms.windows-arm64"]
 url = "https://github.com/astral-sh/ruff/releases/download/0.16.6/ruff-aarch64-pc-windows-msvc.zip"
-
-[[tools."github:cli/cli"]]
-version = "2.100.0"
-backend = "github"
-
-[tools."github:cli/cli"."platforms.linux-amd64"]
-checksum = "sha256:e4d4bb4498e8d007abe545b6568926793ace1b6447da598294a610018cb164be"
-url = "https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_linux_amd64.tar.gz"
-
-[tools."github:cli/cli"."platforms.linux-amd64-musl"]
-checksum = "sha256:e4d4bb4498e8d007abe545b6568926793ace1b6447da598294a610018cb164be"
-url = "https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_linux_amd64.tar.gz"
-
-[tools."github:cli/cli"."platforms.linux-arm64"]
-checksum = "sha256:ea4e7a581a32ccad6cc7923cb1576ac5859ba4b9a16ab22eb8f8a96e78e2e961"
-url = "https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_linux_arm64.tar.gz"
-
-[tools."github:cli/cli"."platforms.linux-arm64-musl"]
-checksum = "sha256:ea4e7a581a32ccad6cc7923cb1576ac5859ba4b9a16ab22eb8f8a96e78e2e961"
-url = "https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_linux_arm64.tar.gz"
-
-[tools."github:cli/cli"."platforms.macos-amd64"]
-checksum = "sha256:fcd7799e85eb575f3c7d2b1679bfbfedaefa1269d4bc7d096b51e10939b4812b"
-url = "https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_macOS_amd64.zip"
-
-[tools."github:cli/cli"."platforms.macos-arm64"]
-checksum = "sha256:45f9a62da2f6e641a7fad57e2ce39656dfd7ef331372d80a2a2aed65abb01642"
-url = "https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_macOS_arm64.zip"
-
-[tools."github:cli/cli"."platforms.windows-amd64"]
-checksum = "sha256:227e35230b25db3fa1b997bab7cf4d67df0470a3b75b99e4ee66bce1a7cd4e72"
-url = "https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_windows_amd64.zip"
-
-[tools."github:cli/cli"."platforms.windows-arm64"]
-checksum = "sha256:7beaeb4743cf255809a8e574a2724c685b566545e04eabea284fe38a56c15b02"
-url = "https://github.com/cli/cli/releases/download/v2.100.0/gh_2.100.0_windows_arm64.zip"
-
-[[tools."github:cli/cli"]]
-version = "2.101.0"
-backend = "github"
-
-[tools."github:cli/cli"."platforms.linux-amd64"]
-checksum = "sha256:9bca2d1c16825f109907a23307628a2f0698fbf99662b73a5cf0b020293072b8"
-url = "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_linux_amd64.tar.gz"
-
-[tools."github:cli/cli"."platforms.linux-amd64-musl"]
-checksum = "sha256:9bca2d1c16825f109907a23307628a2f0698fbf99662b73a5cf0b020293072b8"
-url = "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_linux_amd64.tar.gz"
-
-[tools."github:cli/cli"."platforms.linux-arm64"]
-checksum = "sha256:b57e8063f18862647c9d22727c32e9da1b963f8bf9db648fe123a6975695640f"
-url = "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_linux_arm64.tar.gz"
-
-[tools."github:cli/cli"."platforms.linux-arm64-musl"]
-checksum = "sha256:b57e8063f18862647c9d22727c32e9da1b963f8bf9db648fe123a6975695640f"
-url = "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_linux_arm64.tar.gz"
-
-[tools."github:cli/cli"."platforms.macos-amd64"]
-checksum = "sha256:a6fd66c88e2f07d6e4e058173db341d07dd74d58cf8f19ae668293d2bb614ca3"
-url = "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_macOS_amd64.zip"
-
-[tools."github:cli/cli"."platforms.macos-arm64"]
-checksum = "sha256:e4303e39d8f07141c4bad4b99b01079f05029c59b27076e8fbc825c985ecdd8b"
-url = "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_macOS_arm64.zip"
-
-[tools."github:cli/cli"."platforms.windows-amd64"]
-checksum = "sha256:bc6c814367b193cd8e713611d61e36013c0ef843b8f516458fe3eda039192794"
-url = "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_windows_amd64.zip"
-
-[tools."github:cli/cli"."platforms.windows-arm64"]
-checksum = "sha256:e6cbb2d4afdad3e70f3d38b8d1ebaa3a0870a897cfc0e4cf569826710b96b4fd"
-url = "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_windows_arm64.zip"
 
 [[tools."github:cli/cli"]]
 version = "2.102.0"
@@ -347,78 +171,6 @@ checksum = "sha256:b95f5e4f5c425cedca7ee203d9afd29597e692c4924a12ed42f970537c72c
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_arm64.zip"
 
 [[tools."github:google/osv-scanner"]]
-version = "2.5.1"
-backend = "github"
-
-[tools."github:google/osv-scanner"."platforms.linux-amd64"]
-checksum = "sha256:f9f25499a2c8cc367b3af45df2ea7eeca7fbccceab9c35079968f4b3652194be"
-url = "https://github.com/google/osv-scanner/releases/download/v2.5.1/osv-scanner_linux_amd64"
-
-[tools."github:google/osv-scanner"."platforms.linux-amd64-musl"]
-checksum = "sha256:f9f25499a2c8cc367b3af45df2ea7eeca7fbccceab9c35079968f4b3652194be"
-url = "https://github.com/google/osv-scanner/releases/download/v2.5.1/osv-scanner_linux_amd64"
-
-[tools."github:google/osv-scanner"."platforms.linux-arm64"]
-checksum = "sha256:3d0f5aa5a6baa8eb32bcef247388e149ef6030a6634ccae6fa0d62681fb27a6d"
-url = "https://github.com/google/osv-scanner/releases/download/v2.5.1/osv-scanner_linux_arm64"
-
-[tools."github:google/osv-scanner"."platforms.linux-arm64-musl"]
-checksum = "sha256:3d0f5aa5a6baa8eb32bcef247388e149ef6030a6634ccae6fa0d62681fb27a6d"
-url = "https://github.com/google/osv-scanner/releases/download/v2.5.1/osv-scanner_linux_arm64"
-
-[tools."github:google/osv-scanner"."platforms.macos-amd64"]
-checksum = "sha256:9f89beb6c3d784893cb1cae0a3d56c529bfe91075418c2f9440c45b79654198b"
-url = "https://github.com/google/osv-scanner/releases/download/v2.5.1/osv-scanner_darwin_amd64"
-
-[tools."github:google/osv-scanner"."platforms.macos-arm64"]
-checksum = "sha256:75c44d6332f892a1e56286f4105a98ed751ae28d215ca0a8b65cc00d84103054"
-url = "https://github.com/google/osv-scanner/releases/download/v2.5.1/osv-scanner_darwin_arm64"
-
-[tools."github:google/osv-scanner"."platforms.windows-amd64"]
-checksum = "sha256:25e42f5ef6711fd8c0fb45390972205891dd44c6bd02ac93f0f63e8e98d9bfb6"
-url = "https://github.com/google/osv-scanner/releases/download/v2.5.1/osv-scanner_windows_amd64.exe"
-
-[tools."github:google/osv-scanner"."platforms.windows-arm64"]
-checksum = "sha256:33feb0b210a3e5ea7b338c719defc899f8833d990cdd297bcad4ff1a2586ec8b"
-url = "https://github.com/google/osv-scanner/releases/download/v2.5.1/osv-scanner_windows_arm64.exe"
-
-[[tools."github:google/osv-scanner"]]
-version = "2.6.0"
-backend = "github"
-
-[tools."github:google/osv-scanner"."platforms.linux-amd64"]
-checksum = "sha256:ca69b3d3cd08f889a49dc0a383122f71cc528b83803671df5fd874d97485b108"
-url = "https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_linux_amd64"
-
-[tools."github:google/osv-scanner"."platforms.linux-amd64-musl"]
-checksum = "sha256:ca69b3d3cd08f889a49dc0a383122f71cc528b83803671df5fd874d97485b108"
-url = "https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_linux_amd64"
-
-[tools."github:google/osv-scanner"."platforms.linux-arm64"]
-checksum = "sha256:2c71403eb443d05891c4f268c3ad771cf4f16e5443463fd7851ef8f454d3c7e4"
-url = "https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_linux_arm64"
-
-[tools."github:google/osv-scanner"."platforms.linux-arm64-musl"]
-checksum = "sha256:2c71403eb443d05891c4f268c3ad771cf4f16e5443463fd7851ef8f454d3c7e4"
-url = "https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_linux_arm64"
-
-[tools."github:google/osv-scanner"."platforms.macos-amd64"]
-checksum = "sha256:60c5296637e977b28eeda5c7f13573e447659a632922737f94d11fa7e30ad6ca"
-url = "https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_darwin_amd64"
-
-[tools."github:google/osv-scanner"."platforms.macos-arm64"]
-checksum = "sha256:98c460dcd37de25819babd757d04542045b6243113e209edcd4d89fedb0256b4"
-url = "https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_darwin_arm64"
-
-[tools."github:google/osv-scanner"."platforms.windows-amd64"]
-checksum = "sha256:e0ed7644118b717b028c249ee9d3515024e55e8510747ca08906eb96765354d6"
-url = "https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_windows_amd64.exe"
-
-[tools."github:google/osv-scanner"."platforms.windows-arm64"]
-checksum = "sha256:ca1379da0e408279ef2c85cde0846a903495738a91c7b065a208048437c1686c"
-url = "https://github.com/google/osv-scanner/releases/download/v2.6.0/osv-scanner_windows_arm64.exe"
-
-[[tools."github:google/osv-scanner"]]
 version = "2.7.0"
 backend = "github"
 
@@ -453,42 +205,6 @@ url = "https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanne
 [tools."github:google/osv-scanner"."platforms.windows-arm64"]
 checksum = "sha256:3e630381c1f1fd3c9c4d447e6ff2ef6c737083371722773db8337eead0f97962"
 url = "https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_windows_arm64.exe"
-
-[[tools."github:goreleaser/goreleaser"]]
-version = "2.18.0"
-backend = "github"
-
-[tools."github:goreleaser/goreleaser"."platforms.linux-amd64"]
-checksum = "sha256:41cdf49b653784b03a08013dd99e382cd5d463049e915c2d818eaed182ae6197"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_x86_64.tar.gz"
-
-[tools."github:goreleaser/goreleaser"."platforms.linux-amd64-musl"]
-checksum = "sha256:41cdf49b653784b03a08013dd99e382cd5d463049e915c2d818eaed182ae6197"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_x86_64.tar.gz"
-
-[tools."github:goreleaser/goreleaser"."platforms.linux-arm64"]
-checksum = "sha256:1975566c9668e6f4247e6bb57656f21da13635c24d948ef47b1232e5c864a35b"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_arm64.tar.gz"
-
-[tools."github:goreleaser/goreleaser"."platforms.linux-arm64-musl"]
-checksum = "sha256:1975566c9668e6f4247e6bb57656f21da13635c24d948ef47b1232e5c864a35b"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_arm64.tar.gz"
-
-[tools."github:goreleaser/goreleaser"."platforms.macos-amd64"]
-checksum = "sha256:c115f9ca07163d55885ba2276c5c2efebc95d60f7f7f69fe2dd6a54e97ac6db4"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Darwin_x86_64.tar.gz"
-
-[tools."github:goreleaser/goreleaser"."platforms.macos-arm64"]
-checksum = "sha256:1c42b87cbce094a60f1a94dab0c71f640dbe4396fa5dc632b5c25bf14b1e88fc"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Darwin_arm64.tar.gz"
-
-[tools."github:goreleaser/goreleaser"."platforms.windows-amd64"]
-checksum = "sha256:cbd0aeab833806b6c07e2d156c2c9baaffa6e3d1fb870071bf3efc9d9e5b4777"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Windows_x86_64.zip"
-
-[tools."github:goreleaser/goreleaser"."platforms.windows-arm64"]
-checksum = "sha256:43647ce4e0fbc624d39dd095e0ed5bf55a11978ea58a74a91630fb26eea88511"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Windows_arm64.zip"
 
 [[tools."github:goreleaser/goreleaser"]]
 version = "2.18.2"
@@ -588,56 +304,6 @@ checksum = "sha256:cadcf7ea4efe3a68728893813643cebe1185e5b1d4be5b96245f65c9a4d5e
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_arm64.zip"
 
 [[tools."github:zizmorcore/zizmor"]]
-version = "1.30.0"
-backend = "github"
-
-[tools."github:zizmorcore/zizmor"."platforms.linux-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-x86_64-unknown-linux-gnu.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.linux-amd64-musl"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-x86_64-unknown-linux-gnu.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.linux-arm64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-aarch64-unknown-linux-gnu.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.linux-arm64-musl"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-aarch64-unknown-linux-gnu.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.macos-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-x86_64-apple-darwin.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.macos-arm64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-aarch64-apple-darwin.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.windows-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-x86_64-pc-windows-msvc.zip"
-
-[[tools."github:zizmorcore/zizmor"]]
-version = "1.30.1"
-backend = "github"
-
-[tools."github:zizmorcore/zizmor"."platforms.linux-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.linux-amd64-musl"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.linux-arm64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-aarch64-unknown-linux-gnu.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.linux-arm64-musl"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-aarch64-unknown-linux-gnu.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.macos-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-apple-darwin.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.macos-arm64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-aarch64-apple-darwin.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.windows-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.1/zizmor-x86_64-pc-windows-msvc.zip"
-
-[[tools."github:zizmorcore/zizmor"]]
 version = "1.31.1"
 backend = "github"
 
@@ -662,49 +328,8 @@ url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-aar
 [tools."github:zizmorcore/zizmor"."platforms.windows-amd64"]
 url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-pc-windows-msvc.zip"
 
-[[tools."go"]]
-version = "1.27.1"
-backend = "native"
-
-[tools."go"."platforms.linux-amd64"]
-checksum = "sha256:63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445"
-url = "https://go.dev/dl/go1.27.1.linux-amd64.tar.gz"
-gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
-
-[tools."go"."platforms.linux-amd64-musl"]
-checksum = "sha256:63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445"
-url = "https://go.dev/dl/go1.27.1.linux-amd64.tar.gz"
-gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
-
-[tools."go"."platforms.linux-arm64"]
-checksum = "sha256:3450b45a3f9ee8568792736a5c5e70a1f2e9b36c35a8f74958c03e51d7d92bec"
-url = "https://go.dev/dl/go1.27.1.linux-arm64.tar.gz"
-gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
-
-[tools."go"."platforms.linux-arm64-musl"]
-checksum = "sha256:3450b45a3f9ee8568792736a5c5e70a1f2e9b36c35a8f74958c03e51d7d92bec"
-url = "https://go.dev/dl/go1.27.1.linux-arm64.tar.gz"
-gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
-
-[tools."go"."platforms.macos-amd64"]
-checksum = "sha256:8f8f52c6649542cf027bbc9b9c68d1ec042f9f34808a40413f0b8b3f66f3caa4"
-url = "https://go.dev/dl/go1.27.1.darwin-amd64.tar.gz"
-gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
-
-[tools."go"."platforms.macos-arm64"]
-checksum = "sha256:ee215d57e0ec269c60cc9ceca68e6bda321ba9ee5afe24f4b0988703c2d87d12"
-url = "https://go.dev/dl/go1.27.1.darwin-arm64.tar.gz"
-gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
-
-[tools."go"."platforms.windows-amd64"]
-checksum = "sha256:a3911b5e0e1b1053f25ed0675f4c1c6aad1e2bfcf253df2b9be4caabd2edd95d"
-url = "https://go.dev/dl/go1.27.1.windows-amd64.zip"
-gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
-
-[tools."go"."platforms.windows-arm64"]
-checksum = "sha256:13b69b87bb0e83f96bc68560a8cace7f0343b1e03469f1110ea18d17e3234069"
-url = "https://go.dev/dl/go1.27.1.windows-arm64.zip"
-gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
+[tools."github:zizmorcore/zizmor"."platforms.windows-arm64"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-pc-windows-msvc.zip"
 
 [[tools."go"]]
 version = "1.27.2"
@@ -811,46 +436,6 @@ backend = "go"
 [tools."go:golang.org/x/tools/cmd/goimports"."platforms.windows-arm64"]
 
 [[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
-version = "v1.7.0"
-backend = "go"
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-amd64"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-amd64-musl"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-arm64"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-arm64-musl"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.macos-amd64"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.macos-arm64"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.windows-amd64"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.windows-arm64"]
-
-[[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
-version = "v1.8.0"
-backend = "go"
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-amd64"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-amd64-musl"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-arm64"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-arm64-musl"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.macos-amd64"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.macos-arm64"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.windows-amd64"]
-
-[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.windows-arm64"]
-
-[[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
 version = "v1.9.0"
 backend = "go-pkg"
 
@@ -926,6 +511,46 @@ gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 url = "https://nodejs.org/dist/v26.8.1/node-v26.8.1-win-arm64.zip"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
+[[tools."npm:@commitlint/cli"]]
+version = "21.2.4"
+backend = "npm"
+
+[tools."npm:@commitlint/cli"."platforms.linux-amd64"]
+
+[tools."npm:@commitlint/cli"."platforms.linux-amd64-musl"]
+
+[tools."npm:@commitlint/cli"."platforms.linux-arm64"]
+
+[tools."npm:@commitlint/cli"."platforms.linux-arm64-musl"]
+
+[tools."npm:@commitlint/cli"."platforms.macos-amd64"]
+
+[tools."npm:@commitlint/cli"."platforms.macos-arm64"]
+
+[tools."npm:@commitlint/cli"."platforms.windows-amd64"]
+
+[tools."npm:@commitlint/cli"."platforms.windows-arm64"]
+
+[[tools."npm:@commitlint/config-conventional"]]
+version = "21.2.4"
+backend = "npm"
+
+[tools."npm:@commitlint/config-conventional"."platforms.linux-amd64"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.linux-amd64-musl"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.linux-arm64"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.linux-arm64-musl"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.macos-amd64"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.macos-arm64"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.windows-amd64"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.windows-arm64"]
+
 [[tools."npm:@taplo/cli"]]
 version = "0.7.0"
 backend = "npm"
@@ -967,66 +592,6 @@ backend = "npm"
 [tools."npm:bats"."platforms.windows-arm64"]
 
 [[tools."npm:eslint"]]
-version = "10.10.0"
-backend = "npm"
-
-[tools."npm:eslint"."platforms.linux-amd64"]
-
-[tools."npm:eslint"."platforms.linux-amd64-musl"]
-
-[tools."npm:eslint"."platforms.linux-arm64"]
-
-[tools."npm:eslint"."platforms.linux-arm64-musl"]
-
-[tools."npm:eslint"."platforms.macos-amd64"]
-
-[tools."npm:eslint"."platforms.macos-arm64"]
-
-[tools."npm:eslint"."platforms.windows-amd64"]
-
-[tools."npm:eslint"."platforms.windows-arm64"]
-
-[[tools."npm:eslint"]]
-version = "10.11.0"
-backend = "npm"
-
-[tools."npm:eslint"."platforms.linux-amd64"]
-
-[tools."npm:eslint"."platforms.linux-amd64-musl"]
-
-[tools."npm:eslint"."platforms.linux-arm64"]
-
-[tools."npm:eslint"."platforms.linux-arm64-musl"]
-
-[tools."npm:eslint"."platforms.macos-amd64"]
-
-[tools."npm:eslint"."platforms.macos-arm64"]
-
-[tools."npm:eslint"."platforms.windows-amd64"]
-
-[tools."npm:eslint"."platforms.windows-arm64"]
-
-[[tools."npm:eslint"]]
-version = "10.12.0"
-backend = "npm"
-
-[tools."npm:eslint"."platforms.linux-amd64"]
-
-[tools."npm:eslint"."platforms.linux-amd64-musl"]
-
-[tools."npm:eslint"."platforms.linux-arm64"]
-
-[tools."npm:eslint"."platforms.linux-arm64-musl"]
-
-[tools."npm:eslint"."platforms.macos-amd64"]
-
-[tools."npm:eslint"."platforms.macos-arm64"]
-
-[tools."npm:eslint"."platforms.windows-amd64"]
-
-[tools."npm:eslint"."platforms.windows-arm64"]
-
-[[tools."npm:eslint"]]
 version = "10.13.0"
 backend = "npm"
 
@@ -1045,46 +610,6 @@ backend = "npm"
 [tools."npm:eslint"."platforms.windows-amd64"]
 
 [tools."npm:eslint"."platforms.windows-arm64"]
-
-[[tools."npm:prettier"]]
-version = "3.9.6"
-backend = "npm"
-
-[tools."npm:prettier"."platforms.linux-amd64"]
-
-[tools."npm:prettier"."platforms.linux-amd64-musl"]
-
-[tools."npm:prettier"."platforms.linux-arm64"]
-
-[tools."npm:prettier"."platforms.linux-arm64-musl"]
-
-[tools."npm:prettier"."platforms.macos-amd64"]
-
-[tools."npm:prettier"."platforms.macos-arm64"]
-
-[tools."npm:prettier"."platforms.windows-amd64"]
-
-[tools."npm:prettier"."platforms.windows-arm64"]
-
-[[tools."npm:prettier"]]
-version = "3.9.9"
-backend = "npm"
-
-[tools."npm:prettier"."platforms.linux-amd64"]
-
-[tools."npm:prettier"."platforms.linux-amd64-musl"]
-
-[tools."npm:prettier"."platforms.linux-arm64"]
-
-[tools."npm:prettier"."platforms.linux-arm64-musl"]
-
-[tools."npm:prettier"."platforms.macos-amd64"]
-
-[tools."npm:prettier"."platforms.macos-arm64"]
-
-[tools."npm:prettier"."platforms.windows-amd64"]
-
-[tools."npm:prettier"."platforms.windows-arm64"]
 
 [[tools."npm:prettier"]]
 version = "3.9.10"
@@ -1107,26 +632,6 @@ backend = "npm"
 [tools."npm:prettier"."platforms.windows-arm64"]
 
 [[tools."npm:sort-package-json"]]
-version = "4.0.0"
-backend = "npm"
-
-[tools."npm:sort-package-json"."platforms.linux-amd64"]
-
-[tools."npm:sort-package-json"."platforms.linux-amd64-musl"]
-
-[tools."npm:sort-package-json"."platforms.linux-arm64"]
-
-[tools."npm:sort-package-json"."platforms.linux-arm64-musl"]
-
-[tools."npm:sort-package-json"."platforms.macos-amd64"]
-
-[tools."npm:sort-package-json"."platforms.macos-arm64"]
-
-[tools."npm:sort-package-json"."platforms.windows-amd64"]
-
-[tools."npm:sort-package-json"."platforms.windows-arm64"]
-
-[[tools."npm:sort-package-json"]]
 version = "4.1.0"
 backend = "npm"
 
@@ -1145,26 +650,6 @@ backend = "npm"
 [tools."npm:sort-package-json"."platforms.windows-amd64"]
 
 [tools."npm:sort-package-json"."platforms.windows-arm64"]
-
-[[tools."npm:stylelint"]]
-version = "17.15.0"
-backend = "npm"
-
-[tools."npm:stylelint"."platforms.linux-amd64"]
-
-[tools."npm:stylelint"."platforms.linux-amd64-musl"]
-
-[tools."npm:stylelint"."platforms.linux-arm64"]
-
-[tools."npm:stylelint"."platforms.linux-arm64-musl"]
-
-[tools."npm:stylelint"."platforms.macos-amd64"]
-
-[tools."npm:stylelint"."platforms.macos-arm64"]
-
-[tools."npm:stylelint"."platforms.windows-amd64"]
-
-[tools."npm:stylelint"."platforms.windows-arm64"]
 
 [[tools."npm:stylelint"]]
 version = "17.16.0"
