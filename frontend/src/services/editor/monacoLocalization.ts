@@ -338,7 +338,7 @@ function ensureGlobalMenuObserver(): void {
 
   globalMenuObserver.observe(document.body, {
     childList: true,
-    subtree: true,
+    subtree: false,
   });
 
   // Watch locale changes to automatically re-localize any open context menus
