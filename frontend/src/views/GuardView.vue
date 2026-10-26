@@ -1691,6 +1691,8 @@ function getModeLabel(mode: "changed" | "staged" | "all"): string {
   }
 }
 
+let isInitialMount = true;
+
 onMounted(() => {
   document.addEventListener("click", handleDocClick);
   fetchStatus().catch(() => {});
@@ -1703,6 +1705,10 @@ onUnmounted(() => {
 });
 
 onActivated(() => {
+  if (isInitialMount) {
+    isInitialMount = false;
+    return;
+  }
   fetchStatus().catch(() => {});
   fetchSlots().catch(() => {});
   loadGuardTomlConfig().catch(() => {});
