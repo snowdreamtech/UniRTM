@@ -621,7 +621,6 @@ const handlePerformUpdate = async () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
-    clearInterval(timer);
 
     if (res.ok) {
       const data = await res.json();
@@ -642,9 +641,9 @@ const handlePerformUpdate = async () => {
       throw new Error(errData?.error || `HTTP ${res.status}`);
     }
   } catch (err: any) {
-    clearInterval(timer);
     showToast(err.message || t("about.onlineUpdateFailed", { error: "Update failed" }), "error");
   } finally {
+    clearInterval(timer);
     updating.value = false;
   }
 };
