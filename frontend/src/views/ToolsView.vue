@@ -2277,7 +2277,7 @@ async function installRemoteVersion(toolId: string, ver: string) {
 async function checkRemoteUpdates() {
   try {
     const isGlobal = currentScope.value === "user";
-    const list = await checkUpdates(isGlobal);
+    const list = await checkUpdates(isGlobal, true);
 
     const autoSelected = list
       .filter((item: ToolUpdateItem) => item.has_update && !item.pinned)

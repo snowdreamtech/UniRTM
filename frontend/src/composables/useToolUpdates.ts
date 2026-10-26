@@ -148,11 +148,22 @@ export function useToolUpdates() {
 
   let inFlightUpdatePromise: Promise<ToolUpdateItem[]> | null = null;
   let inFlightKey = "";
+  const UPDATES_CACHE_TTL_MS = 60_000;
 
-  async function checkUpdates(isGlobal?: boolean): Promise<ToolUpdateItem[]> {
+  async function checkUpdates(isGlobal?: boolean, force = false): Promise<ToolUpdateItem[]> {
     const targetGlobal = isGlobal !== undefined ? isGlobal : activeScope.value === "user";
     const scopeParam = targetGlobal ? "user" : "workspace";
     const cacheKey = `${targetGlobal}:${scopeParam}`;
+
+    const now = Date.now();
+    if (
+      !force &&
+      lastCheckedAt.value &&
+      now - lastCheckedAt.value < UPDATES_CACHE_TTL_MS &&
+      updateResults.value.length > 0
+    ) {
+      return updateResults.value;
+    }
 
     if (inFlightUpdatePromise && inFlightKey === cacheKey) {
       return inFlightUpdatePromise;
@@ -207,6 +218,7 @@ export function useToolUpdates() {
 
   function clearUpdates() {
     updateResults.value = [];
+    lastCheckedAt.value = null;
   }
 
   return {

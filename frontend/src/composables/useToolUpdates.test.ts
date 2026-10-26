@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useToolUpdates } from "./useToolUpdates";
 import { useAppScope } from "./useAppScope";
 
@@ -170,5 +170,41 @@ describe("useToolUpdates", () => {
 
     // Reset back to workspace
     setScope("workspace");
+  });
+
+  it("should respect 60s memory TTL cache unless force is true", async () => {
+    const { checkUpdates, clearUpdates } = useToolUpdates();
+    clearUpdates();
+
+    let fetchCount = 0;
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation(async () => {
+      fetchCount++;
+      return {
+        ok: true,
+        json: async () => ({
+          results: [{ id: "go", name: "Go", current_version: "1.24.0", latest_version: "1.25.0", has_update: true }],
+        }),
+      };
+    });
+
+    try {
+      // First call fetches from API
+      const res1 = await checkUpdates();
+      expect(fetchCount).toBe(1);
+      expect(res1.length).toBe(1);
+
+      // Second call within 60s TTL should return cached result without calling fetch
+      const res2 = await checkUpdates();
+      expect(fetchCount).toBe(1);
+      expect(res2).toEqual(res1);
+
+      // Call with force = true should bypass TTL and trigger fetch
+      const res3 = await checkUpdates(undefined, true);
+      expect(fetchCount).toBe(2);
+      expect(res3.length).toBe(1);
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });
