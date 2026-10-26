@@ -230,17 +230,28 @@ export function useGit() {
     return map;
   });
 
+  const gitDirCountMap = computed<Map<string, number>>(() => {
+    const map = new Map<string, number>();
+    for (const [p] of gitChangeMap.value) {
+      let current = p;
+      while (true) {
+        const slashIdx = current.lastIndexOf("/");
+        if (slashIdx === -1) break;
+        current = current.substring(0, slashIdx);
+        map.set(current, (map.get(current) || 0) + 1);
+      }
+    }
+    return map;
+  });
+
   function getGitStatus(path: string): string | undefined {
     return gitChangeMap.value.get(path);
   }
 
   function getDirGitCount(dirPath: string): number {
-    let count = 0;
-    const prefix = dirPath.endsWith("/") ? dirPath : dirPath + "/";
-    for (const [p] of gitChangeMap.value) {
-      if (p.startsWith(prefix)) count++;
-    }
-    return count;
+    const cleanPath = dirPath.endsWith("/") ? dirPath.slice(0, -1) : dirPath;
+    if (!cleanPath) return gitChangeMap.value.size;
+    return gitDirCountMap.value.get(cleanPath) || 0;
   }
 
   /**
