@@ -30,6 +30,7 @@
     "ws": "^8.22.0"
   },
   "overrides": {
-    "brace-expansion": "2.1.7"
+    "brace-expansion": "2.1.7",
+    "dompurify": "3.4.17"
   }
 }
