@@ -198,6 +198,7 @@ build/
 nbbuild/
 dist/
 !frontend/dist/.gitkeep
+!frontend/dist/placeholder.html
 nbdist/
 nbactions.xml
 nb-configuration.xml
@@ -609,6 +610,7 @@ docs/.vitepress/cache
 ### General Frontend Build ###
 dist/
 !frontend/dist/.gitkeep
+!frontend/dist/placeholder.html
 .turbo/
 .svelte-kit/
 

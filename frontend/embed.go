@@ -10,7 +10,7 @@ import (
 
 // DistFS embeds the distribution assets produced by Vite.
 //
-//go:embed dist
+//go:embed all:dist
 var DistFS embed.FS
 
 // GetFS returns an fs.FS rooted at the "dist" directory.
