@@ -120,6 +120,7 @@ const openSettings = () => {
 };
 
 const handleClickOutside = (e: MouseEvent) => {
+  if (!isOpen.value) return;
   if (wrapperRef.value && !wrapperRef.value.contains(e.target as Node)) {
     isOpen.value = false;
   }

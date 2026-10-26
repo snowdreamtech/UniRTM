@@ -129,4 +129,31 @@ describe("useGitIdentity", () => {
     expect(auditRecords.value).toHaveLength(1);
     expect(auditRecords.value[0].action).toBe("ssh_push");
   });
+
+  it("deduplicates concurrent in-flight loadProfiles across separate composable calls", async () => {
+    let callCount = 0;
+    globalThis.fetch = vi.fn().mockImplementation(() => {
+      callCount++;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({
+            ok: true,
+            json: async () => ({
+              profiles: [{ id: "prof-concurrent", name: "Concurrent" }],
+              activeProfileId: "prof-concurrent",
+            }),
+          } as unknown as Response);
+        }, 10);
+      });
+    });
+
+    const instance1 = useGitIdentity();
+    const instance2 = useGitIdentity();
+
+    await Promise.all([instance1.loadProfiles(), instance2.loadProfiles()]);
+
+    expect(callCount).toBe(1);
+    expect(instance1.profiles.value).toHaveLength(1);
+    expect(instance2.profiles.value).toHaveLength(1);
+  });
 });

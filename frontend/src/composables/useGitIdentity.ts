@@ -13,12 +13,12 @@ const auditRecords = ref<CredentialAuditRecord[]>([]);
 const isLoading = ref<boolean>(false);
 const errorMsg = ref<string | null>(null);
 
+let inFlightProfilesPromise: Promise<void> | null = null;
+
 export function useGitIdentity() {
   const activeProfile = computed<GitProfile | undefined>(() =>
     profiles.value.find((p: GitProfile) => p.id === activeProfileId.value)
   );
-
-  let inFlightProfilesPromise: Promise<void> | null = null;
 
   const loadProfiles = async (): Promise<void> => {
     if (inFlightProfilesPromise) {
