@@ -57,18 +57,20 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
+function handleResize() {
+  if (props.visible) {
+    emit("close");
+  }
+}
+
 onMounted(() => {
   window.addEventListener("keydown", handleKeydown);
-  window.addEventListener("resize", () => {
-    if (props.visible) emit("close");
-  });
+  window.addEventListener("resize", handleResize);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", handleKeydown);
-  window.removeEventListener("resize", () => {
-    if (props.visible) emit("close");
-  });
+  window.removeEventListener("resize", handleResize);
 });
 </script>
 

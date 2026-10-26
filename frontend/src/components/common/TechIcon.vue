@@ -63,6 +63,8 @@
     :style="svgStyles"
     :title="title"
     :alt="title || id"
+    loading="lazy"
+    decoding="async"
     role="img"
   />
 
