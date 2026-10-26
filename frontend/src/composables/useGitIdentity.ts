@@ -18,21 +18,30 @@ export function useGitIdentity() {
     profiles.value.find((p: GitProfile) => p.id === activeProfileId.value)
   );
 
+  let inFlightProfilesPromise: Promise<void> | null = null;
+
   const loadProfiles = async (): Promise<void> => {
-    try {
-      isLoading.value = true;
-      errorMsg.value = null;
-      const res = await fetch("/api/git/profiles", { cache: "no-store" });
-      if (res.ok) {
-        const data = await res.json();
-        profiles.value = data.profiles || [];
-        activeProfileId.value = data.activeProfileId || "";
-      }
-    } catch (err: unknown) {
-      errorMsg.value = err instanceof Error ? err.message : String(err);
-    } finally {
-      isLoading.value = false;
+    if (inFlightProfilesPromise) {
+      return inFlightProfilesPromise;
     }
+    inFlightProfilesPromise = (async () => {
+      try {
+        isLoading.value = true;
+        errorMsg.value = null;
+        const res = await fetch("/api/git/profiles", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          profiles.value = data.profiles || [];
+          activeProfileId.value = data.activeProfileId || "";
+        }
+      } catch (err: unknown) {
+        errorMsg.value = err instanceof Error ? err.message : String(err);
+      } finally {
+        isLoading.value = false;
+        inFlightProfilesPromise = null;
+      }
+    })();
+    return inFlightProfilesPromise;
   };
 
   const saveProfile = async (profile: Partial<GitProfile>): Promise<boolean> => {

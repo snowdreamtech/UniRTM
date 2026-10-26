@@ -146,37 +146,53 @@ export function useToolUpdates() {
     }
   }
 
+  let inFlightUpdatePromise: Promise<ToolUpdateItem[]> | null = null;
+  let inFlightKey = "";
+
   async function checkUpdates(isGlobal?: boolean): Promise<ToolUpdateItem[]> {
-    isChecking.value = true;
-    try {
-      const targetGlobal = isGlobal !== undefined ? isGlobal : activeScope.value === "user";
-      const scopeParam = targetGlobal ? "user" : "workspace";
-      const res = await fetch(`/api/tools/check-updates?global=${targetGlobal}&scope=${scopeParam}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const rawList = data.results || data.updates || [];
-      updateResults.value = rawList.map((item: any) => ({
-        id: item.id || item.tool || "",
-        name: item.name || item.tool || "",
-        current_version: item.current_version || "",
-        latest_version: item.latest_version || "",
-        has_update: Boolean(item.has_update),
-        pinned: Boolean(item.pinned ?? item.is_pinned ?? false),
-        pin_reason: item.pin_reason || "",
-        homepage: item.homepage,
-        error: item.error,
-        in_workspace: item.in_workspace,
-        in_user: item.in_user,
-        scope: item.scope,
-      }));
-      lastCheckedAt.value = Date.now();
-      return updateResults.value;
-    } catch (err) {
-      console.error("Failed to check tool updates:", err);
-      return [];
-    } finally {
-      isChecking.value = false;
+    const targetGlobal = isGlobal !== undefined ? isGlobal : activeScope.value === "user";
+    const scopeParam = targetGlobal ? "user" : "workspace";
+    const cacheKey = `${targetGlobal}:${scopeParam}`;
+
+    if (inFlightUpdatePromise && inFlightKey === cacheKey) {
+      return inFlightUpdatePromise;
     }
+
+    inFlightKey = cacheKey;
+    inFlightUpdatePromise = (async () => {
+      isChecking.value = true;
+      try {
+        const res = await fetch(`/api/tools/check-updates?global=${targetGlobal}&scope=${scopeParam}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const rawList = data.results || data.updates || [];
+        updateResults.value = rawList.map((item: any) => ({
+          id: item.id || item.tool || "",
+          name: item.name || item.tool || "",
+          current_version: item.current_version || "",
+          latest_version: item.latest_version || "",
+          has_update: Boolean(item.has_update),
+          pinned: Boolean(item.pinned ?? item.is_pinned ?? false),
+          pin_reason: item.pin_reason || "",
+          homepage: item.homepage,
+          error: item.error,
+          in_workspace: item.in_workspace,
+          in_user: item.in_user,
+          scope: item.scope,
+        }));
+        lastCheckedAt.value = Date.now();
+        return updateResults.value;
+      } catch (err) {
+        console.error("Failed to check tool updates:", err);
+        return [];
+      } finally {
+        isChecking.value = false;
+        inFlightUpdatePromise = null;
+        inFlightKey = "";
+      }
+    })();
+
+    return inFlightUpdatePromise;
   }
 
   function markToolUpdated(toolId: string) {

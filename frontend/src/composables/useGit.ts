@@ -255,42 +255,51 @@ export function useGit() {
   }
 
   /**
-   * Fetches latest git status from server.
+   * Fetches latest git status from server (in-flight deduplicated).
    */
+  let inFlightStatusPromise: Promise<GitStatusData> | null = null;
+
   async function fetchStatus(): Promise<GitStatusData> {
-    isLoading.value = true;
-    lastError.value = null;
-    try {
-      const res = await gitFetch("/api/git/status");
-      if (!res.ok) {
-        throw new Error(`Git status failed: HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      const stagedList = Array.isArray(data.staged) ? data.staged : [];
-      const unstagedList = Array.isArray(data.unstaged) ? [...data.unstaged] : [];
-      if (Array.isArray(data.untracked)) {
-        for (const u of data.untracked) {
-          if (!unstagedList.some((i) => i.path === u.path)) {
-            unstagedList.push(u);
+    if (inFlightStatusPromise) {
+      return inFlightStatusPromise;
+    }
+    inFlightStatusPromise = (async () => {
+      isLoading.value = true;
+      lastError.value = null;
+      try {
+        const res = await gitFetch("/api/git/status");
+        if (!res.ok) {
+          throw new Error(`Git status failed: HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        const stagedList = Array.isArray(data.staged) ? data.staged : [];
+        const unstagedList = Array.isArray(data.unstaged) ? [...data.unstaged] : [];
+        if (Array.isArray(data.untracked)) {
+          for (const u of data.untracked) {
+            if (!unstagedList.some((i) => i.path === u.path)) {
+              unstagedList.push(u);
+            }
           }
         }
+        status.value = {
+          branch: data.branch || "HEAD",
+          upstream: data.upstream || "",
+          ahead: data.ahead || 0,
+          behind: data.behind || 0,
+          staged: stagedList,
+          unstaged: unstagedList,
+          totalChanges: data.totalChanges ?? stagedList.length + unstagedList.length,
+        };
+        return status.value;
+      } catch (err: any) {
+        lastError.value = err.message || String(err);
+        return status.value;
+      } finally {
+        isLoading.value = false;
+        inFlightStatusPromise = null;
       }
-      status.value = {
-        branch: data.branch || "HEAD",
-        upstream: data.upstream || "",
-        ahead: data.ahead || 0,
-        behind: data.behind || 0,
-        staged: stagedList,
-        unstaged: unstagedList,
-        totalChanges: data.totalChanges ?? stagedList.length + unstagedList.length,
-      };
-      return status.value;
-    } catch (err: any) {
-      lastError.value = err.message || String(err);
-      return status.value;
-    } finally {
-      isLoading.value = false;
-    }
+    })();
+    return inFlightStatusPromise;
   }
 
   /**
