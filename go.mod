@@ -5,7 +5,7 @@ go 1.27.0
 require (
 	github.com/ProtonMail/go-crypto v1.5.2
 	github.com/ProtonMail/gopenpgp/v2 v2.11.1
-	github.com/bmatcuk/doublestar/v4 v4.10.2
+	github.com/bmatcuk/doublestar/v4 v4.10.3
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
 	github.com/creack/pty v1.1.24
 	github.com/dustin/go-humanize v1.1.0
@@ -14,12 +14,12 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/hashicorp/go-plugin v1.8.0
 	github.com/joho/godotenv v1.5.1
-	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/compress v1.20.3
 	github.com/lithammer/fuzzysearch v1.1.8
 	github.com/mattn/go-isatty v0.0.24
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/pierrec/lz4/v4 v4.1.33
-	github.com/pterm/pterm v0.12.83
+	github.com/pterm/pterm v0.12.84
 	github.com/rs/zerolog v1.35.1
 	github.com/sigstore/sigstore-go v1.3.0
 	github.com/spf13/cobra v1.10.2
@@ -29,10 +29,10 @@ require (
 	github.com/ulikunitz/xz v0.5.17
 	github.com/zeebo/blake3 v0.2.4
 	go.uber.org/automaxprocs v1.6.0
-	golang.org/x/crypto v0.57.0
-	golang.org/x/net v0.60.0
+	golang.org/x/crypto v0.58.0
+	golang.org/x/net v0.61.0
 	golang.org/x/sync v0.24.0
-	golang.org/x/term v0.46.0
+	golang.org/x/term v0.47.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.60.1
@@ -85,7 +85,6 @@ require (
 	github.com/google/certificate-transparency-go v1.3.3 // indirect
 	github.com/google/go-containerregistry v0.21.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gookit/color v1.6.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
@@ -112,7 +111,6 @@ require (
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/transparency-dev/formats v0.1.1 // indirect
 	github.com/transparency-dev/merkle v0.0.2 // indirect
-	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.45.0 // indirect
@@ -120,8 +118,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260807164820-c8921c73eeea // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260807164820-c8921c73eeea // indirect
 	google.golang.org/grpc v1.83.2 // indirect
