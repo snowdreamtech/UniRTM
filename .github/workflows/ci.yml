@@ -95,6 +95,13 @@ jobs:
           GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           UNIRTM_VERIFY_PROVENANCE: "0"
 
+      - name: "🔨 Build In-tree UniRTM Binary"
+        shell: sh
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/bin"
+          unirtm exec -- go build -trimpath -ldflags="-s -w" -o "$GITHUB_WORKSPACE/bin/unirtm" main.go
+          echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
+
       - name: "🔍 Inspect Code Quality (Lint)"
         shell: sh
         run: |
