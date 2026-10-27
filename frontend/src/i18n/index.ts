@@ -219,13 +219,14 @@ export function t(key: keyof TranslationDict, params?: Record<string, string | n
     return "";
   }
 
+  let formatted = text;
   if (params) {
     Object.keys(params).forEach((pKey) => {
-      text = text.replace(new RegExp(`{\\s*${pKey}\\s*}`, "g"), String(params[pKey]));
+      formatted = formatted.replace(new RegExp(`{\\s*${pKey}\\s*}`, "g"), String(params[pKey]));
     });
   }
 
-  return text;
+  return formatted;
 }
 
 export function formatDiskCapacity(formattedStr: string): string {

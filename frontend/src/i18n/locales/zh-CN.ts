@@ -2524,4 +2524,11 @@ export const zhCn: TranslationDict = {
   "git_identity.ssh_key_hint":
     "留空时，Git 将自动通过已激活的 SSH Agent 和系统 SSH 配置完成免密认证，避免重复输入私钥密码。",
   "git_identity.gpg_key_hint": "GPG Agent 会在会话有效期内将密码缓存在内存中，期间免输密码自动完成提交签名。",
+  "project.select_title": "工作区项目",
+  "project.current_tooltip": "当前项目: {name}",
+  "project.all": "工作区 (全部)",
+  "project.pinned_hint": "项目已锁定（打开文件时不会自动切换）",
+  "project.unpinned_hint": "项目自动跟随（切换文件或 Git 仓库时自动同步）",
+  "project.footer_pinned": "已锁定：点击 📌 恢复自动跟随文件",
+  "project.footer_unpinned": "自动跟随文件与 Git 变更",
 };

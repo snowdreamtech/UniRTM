@@ -2504,6 +2504,13 @@ export const zhTw: TranslationDict = {
   "git_identity.ssh_key_hint":
     "留空時，Git 將自動透過已啟用的 SSH Agent 和系統 SSH 設定完成免密認證，避免重複輸入金鑰密碼。",
   "git_identity.gpg_key_hint": "GPG Agent 會在會話有效期間將密碼快取在記憶體中，期間免輸密碼自動完成提交簽名。",
+  "project.select_title": "工作區專案",
+  "project.current_tooltip": "目前專案: {name}",
+  "project.all": "工作區 (全部)",
+  "project.pinned_hint": "專案已鎖定（開啟檔案時不會自動切換）",
+  "project.unpinned_hint": "專案自動跟隨（切換檔案或 Git 倉庫時自動同步）",
+  "project.footer_pinned": "已鎖定：點擊 📌 恢復自動跟隨檔案",
+  "project.footer_unpinned": "自動跟隨檔案與 Git 變更",
 };
 
 export default zhTw;

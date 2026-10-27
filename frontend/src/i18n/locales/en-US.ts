@@ -2581,4 +2581,11 @@ export const enUs: TranslationDict = {
     "When left empty, Git will automatically use SSH Agent and system SSH configuration for password-less authentication.",
   "git_identity.gpg_key_hint":
     "GPG Agent caches your passphrase in memory for the session duration, enabling seamless signing without repeated password prompts.",
+  "project.select_title": "Workspace Projects",
+  "project.current_tooltip": "Active Project: {name}",
+  "project.all": "Workspace (All)",
+  "project.pinned_hint": "Project locked (Will NOT switch on file open)",
+  "project.unpinned_hint": "Project auto-follows current open file & Git changes",
+  "project.footer_pinned": "Locked: click 📌 to auto-follow files",
+  "project.footer_unpinned": "Auto-follows file & Git changes",
 };

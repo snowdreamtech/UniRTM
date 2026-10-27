@@ -7,12 +7,12 @@
         :class="{ 'is-open': isOpen, 'is-single': !isMultiProject }"
         @click="isMultiProject && (isOpen = !isOpen)"
         :title="
-          tr('project.current_tooltip', { name: activeProject?.name || 'All' }) ||
+          t('project.current_tooltip', { name: activeProject?.name || 'All' }) ||
           `Active Project: ${activeProject?.name || 'Workspace'}`
         "
       >
         <span class="codicon codicon-package project-icon"></span>
-        <span class="project-label">{{ activeProject?.name || tr("project.all") || "Workspace" }}</span>
+        <span class="project-label">{{ activeProject?.name || t("project.all") || "Workspace" }}</span>
         <span v-if="isMultiProject" class="codicon codicon-chevron-down twistie" :class="{ rotated: isOpen }"></span>
       </button>
 
@@ -24,8 +24,8 @@
         @click="togglePin"
         :title="
           isPinned
-            ? tr('project.pinned_hint') || 'Project locked (Will NOT switch on file open)'
-            : tr('project.unpinned_hint') || 'Project auto-follows current open file'
+            ? t('project.pinned_hint') || 'Project locked (Will NOT switch on file open)'
+            : t('project.unpinned_hint') || 'Project auto-follows current open file'
         "
       >
         <span class="codicon" :class="isPinned ? 'codicon-pinned' : 'codicon-pin'"></span>
@@ -36,7 +36,7 @@
     <transition name="dropdown-fade">
       <div v-if="isOpen" class="project-dropdown-menu">
         <div class="dropdown-header">
-          <span>{{ tr("project.select_title") || "WORKSPACE PROJECTS" }}</span>
+          <span>{{ t("project.select_title") || "WORKSPACE PROJECTS" }}</span>
           <span class="header-count font-mono">{{ availableProjects.length }}</span>
         </div>
 
@@ -64,8 +64,8 @@
           <span class="codicon codicon-info"></span>
           <span>{{
             isPinned
-              ? tr("project.footer_pinned") || "Locked: click 📌 to auto-follow files"
-              : tr("project.footer_unpinned") || "Auto-follows file & Git changes"
+              ? t("project.footer_pinned") || "Locked: click 📌 to auto-follow files"
+              : t("project.footer_unpinned") || "Auto-follows file & Git changes"
           }}</span>
         </div>
       </div>
@@ -77,8 +77,6 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { t } from "../../i18n";
 import { useActiveProject, type ProjectItem } from "../../composables/useActiveProject";
-
-const tr = (key: string, params?: Record<string, string | number>): string => (t as any)(key, params);
 
 const { activeProject, isPinned, availableProjects, isMultiProject, loadProjects, setActiveProject, togglePin } =
   useActiveProject();
