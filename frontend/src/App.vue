@@ -47,6 +47,7 @@
             <span v-if="activeSubItem" class="bc-item sub font-mono">{{ activeSubItem }}</span>
           </div>
           <div class="breadcrumb-right">
+            <ProjectSelector />
             <ScopeSwitcher />
           </div>
         </div>
@@ -144,7 +145,10 @@ import { useAppScope } from "./composables/useAppScope";
 import { useTerminalSessions } from "./composables/useTerminalSessions";
 import { useCredentialBroker } from "./composables/useCredentialBroker";
 import ScopeSwitcher from "./components/common/ScopeSwitcher.vue";
+import ProjectSelector from "./components/common/ProjectSelector.vue";
 import { useKeyboardShortcuts } from "./composables/useKeyboardShortcuts";
+import { useActiveProject } from "./composables/useActiveProject";
+import { useEditorTabs } from "./composables/useEditorTabs";
 
 const PassphraseModal = defineAsyncComponent(() => import("./components/common/PassphraseModal.vue"));
 const CommandPaletteModal = defineAsyncComponent(() => import("./components/common/CommandPaletteModal.vue"));
@@ -154,6 +158,17 @@ const { startBrokerPolling, stopBrokerPolling } = useCredentialBroker();
 
 const { checkUpdates } = useToolUpdates();
 const { activeScope, syncFromRoute, toggleScope } = useAppScope();
+const { loadProjects, onFileFocused } = useActiveProject();
+const { activeTab } = useEditorTabs();
+
+watch(
+  () => activeTab.value?.path,
+  (path) => {
+    if (path) {
+      onFileFocused(path);
+    }
+  }
+);
 
 export interface AppConfig {
   language?: string;
@@ -639,6 +654,7 @@ const handleGlobalKeydown = createKeydownHandler({
 });
 
 onMounted(() => {
+  loadProjects();
   loadConfig().finally(() => {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("unirtm:config-ready"));

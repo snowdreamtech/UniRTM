@@ -21,12 +21,7 @@ func HandleGuardStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pwd, err := os.Getwd()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
-		return
-	}
+	pwd := ResolveProjectDir(r)
 
 	mode := r.URL.Query().Get("mode")
 	if mode == "" {
@@ -124,12 +119,7 @@ func HandleGuardRun(w http.ResponseWriter, r *http.Request) {
 		req.Fix = true
 	}
 
-	pwd, err := os.Getwd()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
-		return
-	}
+	pwd := ResolveProjectDir(r)
 
 	if req.Mode == "" {
 		req.Mode = "staged"
@@ -143,6 +133,7 @@ func HandleGuardRun(w http.ResponseWriter, r *http.Request) {
 			WorkspaceDir: pwd,
 			Mode:         req.Mode,
 		}
+		var err error
 		files, err = guard.CollectFiles(r.Context(), walkOpts)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -425,10 +416,7 @@ func HandleGuardRules(w http.ResponseWriter, r *http.Request) {
 
 func HandleGuardSlots(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	pwd, err := os.Getwd()
-	if err != nil {
-		pwd = "."
-	}
+	pwd := ResolveProjectDir(r)
 
 	switch r.Method {
 	case http.MethodGet:
@@ -502,10 +490,7 @@ func HandleGuardSlots(w http.ResponseWriter, r *http.Request) {
 
 func HandleGuardToml(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	pwd, err := os.Getwd()
-	if err != nil {
-		pwd = "."
-	}
+	pwd := ResolveProjectDir(r)
 
 	switch r.Method {
 	case http.MethodGet:

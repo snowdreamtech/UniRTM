@@ -77,8 +77,8 @@ func handleGetTasks(w http.ResponseWriter, r *http.Request) {
 			tasksMap = userCfg.Tasks
 		}
 	} else {
-		cm := config.NewConfigManager()
-		cfg, _ := cm.LoadHierarchy(r.Context())
+		projectDir := ResolveProjectDir(r)
+		cfg, _ := config.LoadHierarchy(projectDir)
 		if cfg != nil {
 			tasksMap = cfg.Tasks
 		}
@@ -304,7 +304,8 @@ func handleGetHooks(w http.ResponseWriter, r *http.Request) {
 		scope = "workspace"
 	}
 
-	targetFile := ".unirtm.toml"
+	projectDir := ResolveProjectDir(r)
+	targetFile := filepath.Join(projectDir, ".unirtm.toml")
 	if scope == "user" {
 		targetFile = config.GetGlobalConfigPath()
 	}
@@ -582,7 +583,8 @@ func handleGetEnvVars(w http.ResponseWriter, r *http.Request) {
 		scope = "workspace"
 	}
 
-	targetFile := ".unirtm.toml"
+	projectDir := ResolveProjectDir(r)
+	targetFile := filepath.Join(projectDir, ".unirtm.toml")
 	if scope == "user" {
 		targetFile = config.GetGlobalConfigPath()
 	}
@@ -692,6 +694,8 @@ func handleGetEnvVars(w http.ResponseWriter, r *http.Request) {
 		"scope":    scope,
 		"profile":  profile,
 		"profiles": profiles,
+		"project":  filepath.Base(projectDir),
+		"root":     projectDir,
 	})
 }
 
@@ -702,6 +706,8 @@ type UpsertEnvVarReq struct {
 	Scope       string `json:"scope,omitempty"`
 	Profile     string `json:"profile,omitempty"`
 	Action      string `json:"action,omitempty"`
+	Root        string `json:"root,omitempty"`
+	Project     string `json:"project,omitempty"`
 }
 
 func handleUpsertEnvVar(w http.ResponseWriter, r *http.Request) {
@@ -719,7 +725,25 @@ func handleUpsertEnvVar(w http.ResponseWriter, r *http.Request) {
 	}
 	profile := strings.TrimSpace(req.Profile)
 
-	targetFile := ".unirtm.toml"
+	projectDir := ResolveProjectDir(r)
+	targetRoot := strings.TrimSpace(req.Root)
+	if targetRoot == "" {
+		targetRoot = strings.TrimSpace(req.Project)
+	}
+	if targetRoot != "" {
+		if filepath.IsAbs(targetRoot) {
+			if fi, err := os.Stat(targetRoot); err == nil && fi.IsDir() {
+				projectDir = targetRoot
+			}
+		} else {
+			wd, _ := os.Getwd()
+			rel := filepath.Join(wd, targetRoot)
+			if fi, err := os.Stat(rel); err == nil && fi.IsDir() {
+				projectDir = rel
+			}
+		}
+	}
+	targetFile := filepath.Join(projectDir, ".unirtm.toml")
 	if scope == "user" {
 		targetFile = config.GetGlobalConfigPath()
 	}
@@ -833,7 +857,8 @@ func handleDeleteEnvVar(w http.ResponseWriter, r *http.Request) {
 	if scope == "" {
 		scope = "workspace"
 	}
-	targetFile := ".unirtm.toml"
+	projectDir := ResolveProjectDir(r)
+	targetFile := filepath.Join(projectDir, ".unirtm.toml")
 	if scope == "user" {
 		targetFile = config.GetGlobalConfigPath()
 	}

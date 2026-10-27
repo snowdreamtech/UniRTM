@@ -449,6 +449,7 @@ import { useGit, type GitRepositoryItem } from "../../composables/useGit";
 import { useEditorTabs } from "../../composables/useEditorTabs";
 import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 import { useToast } from "../../composables/useToast";
+import { useActiveProject } from "../../composables/useActiveProject";
 
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
@@ -603,11 +604,14 @@ watch(
   }
 );
 
+const { setActiveProject } = useActiveProject();
+
 async function handleSelectRepo(repo: GitRepositoryItem) {
   if (activeRepo.value?.id === repo.id || activeRepo.value?.rootPath === repo.rootPath) {
     return;
   }
   await setActiveRepo(repo);
+  setActiveProject(repo.name || repo.rootPath, false);
 }
 
 async function handleRefreshRepos() {

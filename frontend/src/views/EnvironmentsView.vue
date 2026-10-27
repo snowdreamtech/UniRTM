@@ -54,10 +54,22 @@
       </div>
       <div
         class="scope-context-config font-mono"
-        :title="activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml'"
+        :title="
+          activeScope === 'user'
+            ? '~/.config/unirtm/unirtm.toml'
+            : activeProject?.name
+              ? `${activeProject.name}/.unirtm.toml`
+              : '.unirtm.toml'
+        "
       >
         <span class="file-icon">📄</span>
-        <span>{{ activeScope === "user" ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml" }}</span>
+        <span>{{
+          activeScope === "user"
+            ? "~/.config/unirtm/unirtm.toml"
+            : activeProject?.name
+              ? `${activeProject.name}/.unirtm.toml`
+              : ".unirtm.toml"
+        }}</span>
       </div>
     </div>
 
@@ -616,6 +628,7 @@ import TechIcon from "../components/common/TechIcon.vue";
 import EnvironmentModal from "../components/EnvironmentModal.vue";
 import { useAppScope } from "../composables/useAppScope";
 import { useWorkspaceBus, type EnvActionRequest } from "../composables/useWorkspaceBus";
+import { useActiveProject } from "../composables/useActiveProject";
 
 interface EnvItem {
   name: string;
@@ -633,6 +646,7 @@ interface EnvItem {
 const route = useRoute();
 const { activeScope, syncFromRoute } = useAppScope();
 const { onEnvAction, notifyEnvsChanged } = useWorkspaceBus();
+const { activeProject } = useActiveProject();
 let unsubEnvAction: (() => void) | null = null;
 
 const envList = ref<EnvItem[]>([]);
@@ -684,13 +698,15 @@ async function executeCreateProfile() {
   const p = newProfileName.value.trim().toLowerCase();
   if (!p) return;
   try {
-    const res = await fetch("/api/env", {
+    const rootParam = activeProject.value?.path ? `?root=${encodeURIComponent(activeProject.value.path)}` : "";
+    const res = await fetch(`/api/env${rootParam}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         scope: "workspace",
         profile: p,
         action: "create_profile",
+        root: activeProject.value?.path,
       }),
     });
     if (res.ok) {
@@ -716,9 +732,13 @@ function confirmDeleteProfile(p: string) {
 
 async function executeDeleteProfile(p: string) {
   try {
-    const res = await fetch(`/api/env?scope=workspace&profile=${encodeURIComponent(p)}&action=delete_profile`, {
-      method: "DELETE",
-    });
+    const rootParam = activeProject.value?.path ? `&root=${encodeURIComponent(activeProject.value.path)}` : "";
+    const res = await fetch(
+      `/api/env?scope=workspace&profile=${encodeURIComponent(p)}&action=delete_profile${rootParam}`,
+      {
+        method: "DELETE",
+      }
+    );
     if (res.ok) {
       deleteProfileConfirm.value = "";
       showToast(
@@ -743,8 +763,9 @@ async function executeDeleteProfile(p: string) {
 async function restoreBaseValue(key: string) {
   if (!activeProfile.value) return;
   try {
+    const rootParam = activeProject.value?.path ? `&root=${encodeURIComponent(activeProject.value.path)}` : "";
     const res = await fetch(
-      `/api/env?key=${encodeURIComponent(key)}&scope=workspace&profile=${encodeURIComponent(activeProfile.value)}`,
+      `/api/env?key=${encodeURIComponent(key)}&scope=workspace&profile=${encodeURIComponent(activeProfile.value)}${rootParam}`,
       {
         method: "DELETE",
       }
@@ -806,7 +827,11 @@ async function fetchEnvVars() {
       activeScope.value === "workspace" && activeProfile.value
         ? `&profile=${encodeURIComponent(activeProfile.value)}`
         : "";
-    const res = await fetch(`/api/env?scope=${activeScope.value}${pParam}`);
+    const rootParam =
+      activeScope.value === "workspace" && activeProject.value?.path
+        ? `&root=${encodeURIComponent(activeProject.value.path)}`
+        : "";
+    const res = await fetch(`/api/env?scope=${activeScope.value}${pParam}${rootParam}`);
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data.profiles)) {
@@ -918,10 +943,17 @@ async function handleSaveEnv(payload: {
   profile?: string;
 }) {
   try {
-    const res = await fetch("/api/env", {
+    const rootParam =
+      payload.scope === "workspace" && activeProject.value?.path
+        ? `?root=${encodeURIComponent(activeProject.value.path)}`
+        : "";
+    const res = await fetch(`/api/env${rootParam}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        ...payload,
+        root: payload.scope === "workspace" ? activeProject.value?.path : undefined,
+      }),
     });
     if (res.ok) {
       isModalOpen.value = false;
@@ -957,9 +989,16 @@ async function executeDelete(name: string) {
       activeScope.value === "workspace" && activeProfile.value
         ? `&profile=${encodeURIComponent(activeProfile.value)}`
         : "";
-    const res = await fetch(`/api/env?key=${encodeURIComponent(name)}&scope=${activeScope.value}${pParam}`, {
-      method: "DELETE",
-    });
+    const rootParam =
+      activeScope.value === "workspace" && activeProject.value?.path
+        ? `&root=${encodeURIComponent(activeProject.value.path)}`
+        : "";
+    const res = await fetch(
+      `/api/env?key=${encodeURIComponent(name)}&scope=${activeScope.value}${pParam}${rootParam}`,
+      {
+        method: "DELETE",
+      }
+    );
     if (res.ok) {
       deleteConfirmKey.value = "";
       showToast(t("environments.delete_success", { key: name }) || `Successfully deleted environment variable ${name}`);
@@ -1010,6 +1049,12 @@ function handleBusEnvAction(req: EnvActionRequest) {
       break;
   }
 }
+
+watch(activeProject, () => {
+  if (activeScope.value === "workspace") {
+    fetchEnvVars();
+  }
+});
 
 onMounted(() => {
   fetchEnvVars();

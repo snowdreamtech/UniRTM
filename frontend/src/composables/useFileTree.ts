@@ -7,6 +7,7 @@ import { useEditorTabs } from "./useEditorTabs";
 import { useWorkspaceBus } from "./useWorkspaceBus";
 import { useGit } from "./useGit";
 import { useLocalHistory } from "./useLocalHistory";
+import { useActiveProject } from "./useActiveProject";
 import { t } from "../i18n";
 
 export interface FSNode {
@@ -390,6 +391,8 @@ export function useFileTree() {
 
   async function selectNode(node: FSNode): Promise<void> {
     selectedNode.value = node;
+    const { onFileFocused } = useActiveProject();
+    onFileFocused(node.path);
     if (node.is_dir) {
       toggleExpand(node.path);
     } else {

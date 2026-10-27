@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -53,17 +54,25 @@ func getBestEditorWithSource(cfg *config.Config) (string, string) {
 	return "vi", "fallback"
 }
 
-func resolveConfigFilePath(global bool) string {
+func resolveConfigFilePathForDir(dir string, global bool) string {
 	if global {
 		return env.GetGlobalConfigPath()
 	}
-	candidates := []string{"unirtm.toml", ".unirtm.toml", "unirtm.yaml", ".unirtm.yaml"}
+	if dir == "" {
+		dir = "."
+	}
+	candidates := []string{".unirtm.toml", "unirtm.toml", ".unirtm.yaml", "unirtm.yaml"}
 	for _, c := range candidates {
-		if _, err := os.Stat(c); err == nil {
-			return c
+		target := filepath.Join(dir, c)
+		if _, err := os.Stat(target); err == nil {
+			return target
 		}
 	}
-	return "unirtm.toml"
+	return filepath.Join(dir, ".unirtm.toml")
+}
+
+func resolveConfigFilePath(global bool) string {
+	return resolveConfigFilePathForDir(".", global)
 }
 
 // APIResponse represents the standard UniRTM API envelope format.

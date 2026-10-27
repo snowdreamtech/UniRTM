@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 import { ref, watch } from "vue";
+import { useActiveProject } from "./useActiveProject";
 
 export const GUARD_TAB_KEY = "unirtm_guard_active_tab";
 
@@ -170,10 +171,20 @@ const isLoading = ref(false);
 const isFixing = ref(false);
 
 export function useGuard() {
+  const { activeProject } = useActiveProject();
+
+  function getRootParam(): string {
+    return activeProject.value?.path ? `&root=${encodeURIComponent(activeProject.value.path)}` : "";
+  }
+
+  function getRootQuery(): string {
+    return activeProject.value?.path ? `?root=${encodeURIComponent(activeProject.value.path)}` : "";
+  }
+
   async function fetchStatus(mode = "staged"): Promise<GuardStatus | null> {
     isLoading.value = true;
     try {
-      const res = await fetch(`/api/guard/status?mode=${encodeURIComponent(mode)}`);
+      const res = await fetch(`/api/guard/status?mode=${encodeURIComponent(mode)}${getRootParam()}`);
       if (res.ok) {
         const data = await res.json();
         data.issues = Array.isArray(data.issues) ? data.issues : [];
@@ -238,7 +249,7 @@ export function useGuard() {
       let resolved = false;
       let sse: EventSource | null = null;
       try {
-        sse = new EventSource(`/api/guard/run-stream?mode=${mode}&fix=${fix}`);
+        sse = new EventSource(`/api/guard/run-stream?mode=${mode}&fix=${fix}${getRootParam()}`);
       } catch (_) {
         return resolve(false);
       }
@@ -382,7 +393,7 @@ export function useGuard() {
 
   async function fetchRules() {
     try {
-      const res = await fetch("/api/guard/rules");
+      const res = await fetch(`/api/guard/rules${getRootQuery()}`);
       if (res.ok) {
         const data = await res.json();
         builtinRules.value = data.builtin_rules || [];
@@ -396,7 +407,7 @@ export function useGuard() {
 
   async function fetchSlots(): Promise<ToolSlotItem[]> {
     try {
-      const res = await fetch("/api/guard/slots");
+      const res = await fetch(`/api/guard/slots${getRootQuery()}`);
       if (res.ok) {
         const data = await res.json();
         if (data.slots) {
@@ -454,7 +465,7 @@ export function useGuard() {
 
   async function fetchRawTomlConfig(): Promise<string> {
     try {
-      const res = await fetch("/api/guard/toml");
+      const res = await fetch(`/api/guard/toml${getRootQuery()}`);
       if (res.ok) {
         const data = await res.json();
         return data.content || "";
@@ -467,7 +478,7 @@ export function useGuard() {
 
   async function saveRawTomlConfig(content: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/guard/toml", {
+      const res = await fetch(`/api/guard/toml${getRootQuery()}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content }),
@@ -482,6 +493,13 @@ export function useGuard() {
     }
     return false;
   }
+
+  watch(activeProject, (newProj) => {
+    if (newProj) {
+      fetchStatus(status.value.mode).catch(() => {});
+      fetchSlots().catch(() => {});
+    }
+  });
 
   return {
     // Standard and alias properties

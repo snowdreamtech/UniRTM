@@ -161,10 +161,20 @@ func resolveGitRepoDir(r *http.Request) string {
 	}
 	repo := r.URL.Query().Get("repo")
 	if repo == "" {
+		repo = r.URL.Query().Get("root")
+	}
+	if repo == "" {
+		repo = r.URL.Query().Get("project")
+	}
+	if repo == "" {
 		repo = r.Header.Get("X-Git-Repo")
 	}
 	if repo == "" {
-		return wd
+		repo = r.Header.Get("X-Project-Root")
+	}
+	if repo == "" {
+		// Fallback to ResolveProjectDir if current wd has subrepos
+		return ResolveProjectDir(r)
 	}
 
 	// 1. Direct absolute directory

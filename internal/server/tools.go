@@ -89,7 +89,8 @@ func HandleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Load hierarchy and global configurations
-	cfg, _ := config.LoadFull()
+	projectDir := ResolveProjectDir(r)
+	cfg, _ := config.LoadHierarchy(projectDir)
 	globalCfg, _ := config.LoadGlobal()
 
 	legacyMap := make(map[string]bool)
@@ -538,7 +539,8 @@ func HandleUseTool(w http.ResponseWriter, r *http.Request) {
 	if req.Global {
 		targetFile = config.GetGlobalConfigPath()
 	} else {
-		targetFile = resolveConfigFilePath(false)
+		projectDir := ResolveProjectDir(r)
+		targetFile = resolveConfigFilePathForDir(projectDir, false)
 	}
 
 	_ = os.MkdirAll(filepath.Dir(targetFile), 0755)
@@ -590,7 +592,8 @@ func HandleRemoveTool(w http.ResponseWriter, r *http.Request) {
 	if req.Global {
 		targetFile = config.GetGlobalConfigPath()
 	} else {
-		targetFile = resolveConfigFilePath(false)
+		projectDir := ResolveProjectDir(r)
+		targetFile = resolveConfigFilePathForDir(projectDir, false)
 	}
 
 	content, _ := config.ReadFileOrEmpty(targetFile)
@@ -629,7 +632,8 @@ func HandleMigrateLegacyTool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetFile := resolveConfigFilePath(false)
+	projectDir := ResolveProjectDir(r)
+	targetFile := resolveConfigFilePathForDir(projectDir, false)
 	content, _ := config.ReadFileOrEmpty(targetFile)
 
 	migratedCount := 0
@@ -683,7 +687,8 @@ func HandlePinTool(w http.ResponseWriter, r *http.Request) {
 	if req.Global {
 		targetFile = config.GetGlobalConfigPath()
 	} else {
-		targetFile = resolveConfigFilePath(false)
+		projectDir := ResolveProjectDir(r)
+		targetFile = resolveConfigFilePathForDir(projectDir, false)
 	}
 
 	_ = os.MkdirAll(filepath.Dir(targetFile), 0755)

@@ -59,9 +59,24 @@
           }}
         </span>
       </div>
-      <div class="scope-context-config font-mono" :title="currentScope === 'user' ? '~/.unirtm' : '.unirtm.toml'">
+      <div
+        class="scope-context-config font-mono"
+        :title="
+          currentScope === 'user'
+            ? '~/.unirtm'
+            : activeProject?.name
+              ? `${activeProject.name}/.unirtm.toml`
+              : '.unirtm.toml'
+        "
+      >
         <span class="file-icon">📄</span>
-        <span>{{ currentScope === "user" ? "~/.unirtm" : ".unirtm.toml" }}</span>
+        <span>{{
+          currentScope === "user"
+            ? "~/.unirtm"
+            : activeProject?.name
+              ? `${activeProject.name}/.unirtm.toml`
+              : ".unirtm.toml"
+        }}</span>
       </div>
     </div>
 
@@ -1157,10 +1172,12 @@ import { COMMON_TOOL_PREFIXES, parseToolSpec, composeToolSpec } from "../utils/t
 
 import { useToolScope } from "../composables/useToolScope";
 import { useWorkspaceBus, type ToolActionRequest } from "../composables/useWorkspaceBus";
+import { useActiveProject } from "../composables/useActiveProject";
 
 const { showToast } = useToast();
 const { activeScope: currentScope } = useToolScope();
 const { onToolAction, notifyToolsChanged } = useWorkspaceBus();
+const { activeProject } = useActiveProject();
 const {
   updateResults,
   isChecking: checkingUpdates,
@@ -1904,7 +1921,11 @@ const {
 async function fetchStatus() {
   loading.value = true;
   try {
-    const res = await fetch("/api/tools/status");
+    const rootParam =
+      currentScope.value === "workspace" && activeProject.value?.path
+        ? `?root=${encodeURIComponent(activeProject.value.path)}`
+        : "";
+    const res = await fetch(`/api/tools/status${rootParam}`);
     if (res.ok) {
       const data = await res.json();
       const toolsList = data.tools || data.runtimes;
@@ -2444,6 +2465,12 @@ function handleGlobalKeyDown(e: KeyboardEvent) {
     }
   }
 }
+
+watch(activeProject, () => {
+  if (currentScope.value === "workspace") {
+    fetchStatus();
+  }
+});
 
 onMounted(() => {
   fetchStatus();
