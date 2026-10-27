@@ -9,8 +9,66 @@
 # =============================================================================
 
 # =============================================================================
-# AI IDE Configuration (project-specific)
+# AI IDE Proprietary Configuration & Rules (Prevent repo pollution)
 # =============================================================================
+.*rules
+.*rules/
+.adal/
+.aiassistant/
+.aide/
+.aider*
+.amazonq/
+.augment/
+.bito/
+.blackbox/
+.bob/
+.claude/
+.cline/
+.clinerules
+.codebuddy/
+.codegeex/
+.codeium/
+.codex/
+.cody/
+.commandcode/
+.continue/
+.cortex/
+.crush/
+.cursor/
+.cursorrules
+.devin/
+.factory/
+.gemini/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.melty/
+.mux/
+.neovate/
+.opencode/
+.openhands/
+.pearai/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.roo-rules
+.shai/
+.supermaven/
+.tabnine/
+.trae/
+.traerules
+.vibe/
+.void/
+.windsurf/
+.windsurfrules
+.zed/
+.zencoder/
 skills/
 .agents/skills/
 .agent/skills/
