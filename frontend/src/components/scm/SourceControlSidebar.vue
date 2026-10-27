@@ -198,7 +198,7 @@
       </div>
 
       <!-- Expandable Guard Diagnostics Dropdown (Only when there are issues) -->
-      <div v-if="isGuardDetailsOpen && guardStatus.issues.length > 0" class="guard-diagnostics-drawer">
+      <div v-if="isGuardDetailsOpen && (guardStatus.issues?.length || 0) > 0" class="guard-diagnostics-drawer">
         <div class="guard-drawer-header">
           <div class="drawer-header-left">
             <span class="guard-drawer-title">{{ t("guard.diagnostics.title") || "Quality Guard Diagnostics" }}</span>
@@ -215,7 +215,7 @@
         </div>
         <div class="guard-issues-list">
           <div
-            v-for="(iss, idx) in guardStatus.issues"
+            v-for="(iss, idx) in guardStatus.issues || []"
             :key="idx"
             class="guard-issue-item"
             :class="'severity-' + iss.severity"

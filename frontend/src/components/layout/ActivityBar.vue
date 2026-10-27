@@ -205,7 +205,9 @@ const rawTabsList = computed<ActivityTab[]>(() => [
     icon: "workbench:shield",
     label: t("nav.guard") || "Quality Guard",
     badge:
-      !guardStatus.value.clean && guardStatus.value.issues.length > 0 ? guardStatus.value.issues.length : undefined,
+      !guardStatus.value.clean && (guardStatus.value.issues?.length || 0) > 0
+        ? guardStatus.value.issues.length
+        : undefined,
   },
   {
     id: "tools",

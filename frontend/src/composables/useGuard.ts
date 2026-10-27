@@ -1,7 +1,56 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-import { ref } from "vue";
+import { ref, watch } from "vue";
+
+export const GUARD_TAB_KEY = "unirtm_guard_active_tab";
+
+export function getInitialGuardTab(): "workbench" | "reports" | "settings" {
+  if (typeof window !== "undefined") {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam === "workbench" || tabParam === "reports" || tabParam === "settings") {
+        return tabParam;
+      }
+      const saved = localStorage.getItem(GUARD_TAB_KEY);
+      if (saved === "workbench" || saved === "reports" || saved === "settings") {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return "workbench";
+}
+
+const activeGuardTab = ref<"workbench" | "reports" | "settings">(getInitialGuardTab());
+const selectedGuardCategory = ref<string>("all");
+const guardFilterKeyword = ref<string>("");
+
+export function setActiveGuardTab(tab: "workbench" | "reports" | "settings") {
+  activeGuardTab.value = tab;
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem(GUARD_TAB_KEY, tab);
+    } catch {}
+  }
+  if (typeof window !== "undefined" && window.history && window.location) {
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("tab") !== tab) {
+        url.searchParams.set("tab", tab);
+        window.history.replaceState({}, "", url.toString());
+      }
+    } catch {}
+  }
+}
+
+if (typeof window !== "undefined") {
+  watch(activeGuardTab, (newTab) => {
+    setActiveGuardTab(newTab);
+  });
+}
 
 export interface GuardIssue {
   file_path: string;
@@ -127,6 +176,9 @@ export function useGuard() {
       const res = await fetch(`/api/guard/status?mode=${encodeURIComponent(mode)}`);
       if (res.ok) {
         const data = await res.json();
+        data.issues = Array.isArray(data.issues) ? data.issues : [];
+        data.rule_reports = Array.isArray(data.rule_reports) ? data.rule_reports : [];
+        data.logs = Array.isArray(data.logs) ? data.logs : [];
         status.value = data;
         return data;
       }
@@ -141,7 +193,7 @@ export function useGuard() {
   function applyCheckResult(data: any, mode: "staged" | "changed" | "all", startTime: number) {
     const duration = data.duration_ms || Math.max(1, Date.now() - startTime);
     const scanned = data.scanned ?? (data.summary ? data.summary.total_files_scanned : 0);
-    const issues = data.issues || [];
+    const issues = Array.isArray(data.issues) ? data.issues : [];
     const clean = data.clean !== undefined ? data.clean : issues.length === 0;
 
     status.value = {
@@ -154,8 +206,8 @@ export function useGuard() {
       duration_ms: duration,
       rules_count: data.rules_count || status.value.rules_count || 38,
       issues,
-      rule_reports: data.rule_reports || status.value.rule_reports,
-      logs: data.logs || [],
+      rule_reports: Array.isArray(data.rule_reports) ? data.rule_reports : status.value.rule_reports || [],
+      logs: Array.isArray(data.logs) ? data.logs : [],
     };
 
     lastRunResult.value = {
@@ -445,6 +497,12 @@ export function useGuard() {
     isChecking: isLoading,
     isFixing,
     lastRunResult,
+    // Tab & Navigation State
+    activeGuardTab,
+    activeTab: activeGuardTab,
+    setActiveGuardTab,
+    selectedGuardCategory,
+    guardFilterKeyword,
     // Operations
     fetchStatus,
     runCheck,

@@ -77,7 +77,18 @@ func HandleGuardStatus(w http.ResponseWriter, r *http.Request) {
 		rulesCount = 38
 	}
 
+	safeIssues := res.Issues
+	if safeIssues == nil {
+		safeIssues = []guard.Issue{}
+	}
+	safeReports := res.RuleReports
+	if safeReports == nil {
+		safeReports = []guard.RuleReport{}
+	}
 	cliLogs := buildStandardCliLogs(mode, files, res, rulesCount)
+	if cliLogs == nil {
+		cliLogs = []string{}
+	}
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"mode":           mode,
@@ -88,8 +99,8 @@ func HandleGuardStatus(w http.ResponseWriter, r *http.Request) {
 		"fixable_count":  fixableCount,
 		"duration_ms":    durationMs,
 		"rules_count":    rulesCount,
-		"issues":         res.Issues,
-		"rule_reports":   res.RuleReports,
+		"issues":         safeIssues,
+		"rule_reports":   safeReports,
 		"logs":           cliLogs,
 	})
 }
@@ -168,6 +179,18 @@ func HandleGuardRun(w http.ResponseWriter, r *http.Request) {
 
 	cliLogs := buildStandardCliLogs(req.Mode, files, res, rulesCount)
 
+	safeIssues := res.Issues
+	if safeIssues == nil {
+		safeIssues = []guard.Issue{}
+	}
+	safeReports := res.RuleReports
+	if safeReports == nil {
+		safeReports = []guard.RuleReport{}
+	}
+	if cliLogs == nil {
+		cliLogs = []string{}
+	}
+
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":      true,
 		"mode":         req.Mode,
@@ -176,8 +199,8 @@ func HandleGuardRun(w http.ResponseWriter, r *http.Request) {
 		"duration_ms":  durationMs,
 		"rules_count":  rulesCount,
 		"summary":      res.Summary,
-		"issues":       res.Issues,
-		"rule_reports": res.RuleReports,
+		"issues":       safeIssues,
+		"rule_reports": safeReports,
 		"logs":         cliLogs,
 	})
 }

@@ -22,8 +22,11 @@
           <span class="stat-label">{{ t("guard.rules.total") || "Rules" }}</span>
         </div>
         <div class="meta-stat">
-          <span class="stat-value font-mono" :class="guardStatus.issues.length > 0 ? 'text-amber' : 'text-green'">
-            {{ guardStatus.issues.length }}
+          <span
+            class="stat-value font-mono"
+            :class="(guardStatus.issues?.length || 0) > 0 ? 'text-amber' : 'text-green'"
+          >
+            {{ guardStatus.issues?.length || 0 }}
           </span>
           <span class="stat-label">{{ t("guard.diagnostics.issues") || "Issues" }}</span>
         </div>
@@ -164,26 +167,68 @@
           :key="cat.id"
           class="cat-nav-item"
           :class="{ active: selectedCategory === cat.id }"
-          @click="selectedCategory = cat.id"
+          @click="selectCategory(cat.id)"
         >
           <span class="codicon" :class="cat.icon"></span>
           <span class="cat-label">{{ cat.label }}</span>
         </button>
       </div>
     </div>
+
+    <!-- Rules List in Sidebar -->
+    <div class="sidebar-section">
+      <div class="section-header">
+        <span class="section-title">{{ t("guard.tabs.reports") || "RULES LIST" }}</span>
+        <span class="section-badge font-mono">{{ filteredRules.length }}</span>
+      </div>
+      <div class="sidebar-rules-list">
+        <button
+          v-for="rule in filteredRules"
+          :key="rule.id"
+          class="sidebar-rule-item"
+          :class="{ active: selectedRuleId === rule.id }"
+          @click="handleSelectRule(rule)"
+          :title="rule.description || rule.displayName"
+        >
+          <span class="rule-status-dot" :class="rule.statusClass"></span>
+          <div class="rule-item-content">
+            <span class="rule-item-name">{{ rule.displayName }}</span>
+            <span class="rule-item-meta">{{ rule.categoryLabel }}</span>
+          </div>
+          <span v-if="rule.issuesCount > 0" class="rule-item-issues-badge">{{ rule.issuesCount }}</span>
+        </button>
+        <div v-if="filteredRules.length === 0" class="sidebar-empty-rules">
+          <span>{{ t("common.no_results") || "No matching rules found" }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { t } from "../../i18n";
 import { useGuard } from "../../composables/useGuard";
 import { useToast } from "../../composables/useToast";
+import { ALL_38_GUARD_RULES, getGuardRuleName } from "../../utils/guardRulesMeta";
 
-const { guardStatus, isChecking, isFixing, lastRunResult, runCheck, runFix } = useGuard();
+const props = defineProps<{ searchQuery?: string }>();
+
+const {
+  guardStatus,
+  isChecking,
+  isFixing,
+  lastRunResult,
+  runCheck,
+  runFix,
+  setActiveGuardTab,
+  selectedGuardCategory,
+  guardFilterKeyword,
+} = useGuard();
 const { showToast } = useToast();
 
-const selectedCategory = ref("all");
+const selectedCategory = ref(selectedGuardCategory.value || "all");
+const selectedRuleId = ref<string>("");
 const checkingMode = ref<"changed" | "staged" | "all">("staged");
 
 // Fix dropdown state
@@ -242,6 +287,89 @@ const categories = computed(() => [
   { id: "lint", label: t("guard.cat.lint") || "Static Analysis", icon: "codicon-search" },
   { id: "secret", label: t("guard.cat.secret") || "Secret Leak Prevention", icon: "codicon-lock" },
 ]);
+
+function selectCategory(catId: string) {
+  selectedCategory.value = catId;
+  selectedGuardCategory.value = catId;
+  setActiveGuardTab("reports");
+}
+
+function handleSelectRule(rule: any) {
+  selectedRuleId.value = rule.id;
+  selectedGuardCategory.value = rule.category;
+  guardFilterKeyword.value = rule.displayName || rule.name;
+  setActiveGuardTab("reports");
+}
+
+watch(
+  () => props.searchQuery,
+  (val) => {
+    guardFilterKeyword.value = val || "";
+  }
+);
+
+watch(selectedGuardCategory, (val) => {
+  if (val && val !== selectedCategory.value) {
+    selectedCategory.value = val;
+  }
+});
+
+const reportsMap = computed(() => {
+  const map = new Map<string, { status: string; issuesCount: number }>();
+  const reports = guardStatus.value.rule_reports || [];
+  for (const r of reports) {
+    const rawStatus = (r.status || "").toLowerCase();
+    const issues = r.issues_count || (r.errors_count || 0) + (r.warnings_count || 0);
+    const item = { status: rawStatus, issuesCount: issues };
+    if (r.rule_id) map.set(r.rule_id, item);
+    if (r.rule_name) map.set(r.rule_name, item);
+  }
+  return map;
+});
+
+const filteredRules = computed(() => {
+  const query = (props.searchQuery || "").trim().toLowerCase();
+  const cat = selectedCategory.value;
+
+  return ALL_38_GUARD_RULES.map((rule) => {
+    const rep = reportsMap.value.get(rule.id) || reportsMap.value.get(rule.name);
+    let statusClass = "status-idle";
+    let issuesCount = 0;
+    if (rep) {
+      issuesCount = rep.issuesCount;
+      if (rep.status === "passed" || rep.status === "pass" || rep.status === "clean") {
+        statusClass = "status-passed";
+      } else if (rep.status === "fixed") {
+        statusClass = "status-fixed";
+      } else if (rep.status === "fail" || rep.status === "error") {
+        statusClass = "status-fail";
+      } else if (rep.status === "warn") {
+        statusClass = "status-warn";
+      }
+    }
+    return {
+      ...rule,
+      displayName: getGuardRuleName(rule),
+      statusClass,
+      issuesCount,
+    };
+  }).filter((rule) => {
+    if (cat !== "all") {
+      const ruleCat = rule.category;
+      if (cat === "hygiene" && ruleCat !== "hygiene") return false;
+      if (cat === "format" && ruleCat !== "formatting") return false;
+      if (cat === "lint" && ruleCat !== "linter") return false;
+      if (cat === "secret" && ruleCat !== "security") return false;
+    }
+    if (query) {
+      const matchName = rule.displayName.toLowerCase().includes(query) || rule.name.toLowerCase().includes(query);
+      const matchId = rule.id.toLowerCase().includes(query);
+      const matchDesc = (rule.description || "").toLowerCase().includes(query);
+      if (!matchName && !matchId && !matchDesc) return false;
+    }
+    return true;
+  });
+});
 
 async function handleRunCheck(mode: "changed" | "staged" | "all") {
   checkingMode.value = mode;
@@ -628,5 +756,119 @@ async function handleRunFix(overrideMode?: "staged" | "changed" | "all") {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* Sidebar Rules List */
+.sidebar-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+}
+
+.sidebar-rule-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.sidebar-rule-item:hover {
+  background-color: rgba(128, 128, 128, 0.12);
+  color: var(--text-main);
+}
+
+.sidebar-rule-item.active {
+  background: rgba(2, 132, 199, 0.15);
+  color: var(--accent-cyan, #388bfd);
+  font-weight: 600;
+}
+
+.rule-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: #8b949e;
+}
+
+.rule-status-dot.status-passed {
+  background-color: #3fb950;
+  box-shadow: 0 0 4px rgba(63, 185, 80, 0.5);
+}
+
+.rule-status-dot.status-fixed {
+  background-color: #58a6ff;
+}
+
+.rule-status-dot.status-warn {
+  background-color: #d29922;
+}
+
+.rule-status-dot.status-fail {
+  background-color: #f85149;
+  box-shadow: 0 0 4px rgba(248, 81, 73, 0.5);
+}
+
+.rule-item-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.rule-item-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.75rem;
+}
+
+.rule-item-meta {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rule-item-issues-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 9999px;
+  background: rgba(210, 153, 34, 0.2);
+  color: #d29922;
+  flex-shrink: 0;
+}
+
+.section-badge {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  background: var(--card-bg, rgba(255, 255, 255, 0.05));
+  padding: 0.1rem 0.4rem;
+  border-radius: 9999px;
+  border: 1px solid var(--card-border, #333);
+}
+
+.sidebar-empty-rules {
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  font-style: italic;
 }
 </style>

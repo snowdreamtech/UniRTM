@@ -126,4 +126,56 @@ describe("useGuard", () => {
     expect(ok).toBe(true);
     expect(guardSlots.value.length).toBe(0);
   });
+
+  it("sanitizes null issues from backend response to prevent TypeError", async () => {
+    const mockNullIssues = {
+      mode: "staged",
+      scanned: 0,
+      clean: true,
+      errors_count: 0,
+      warnings_count: 0,
+      fixable_count: 0,
+      issues: null,
+      rule_reports: null,
+      logs: null,
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(mockNullIssues),
+    });
+
+    const { status, fetchStatus } = useGuard();
+    await fetchStatus("staged");
+
+    expect(Array.isArray(status.value.issues)).toBe(true);
+    expect(status.value.issues.length).toBe(0);
+    expect(Array.isArray(status.value.rule_reports)).toBe(true);
+    expect(Array.isArray(status.value.logs)).toBe(true);
+  });
+
+  it("updates and persists active guard tab", () => {
+    const storage: Record<string, string> = {};
+    (global as any).localStorage = {
+      getItem: (k: string) => storage[k] || null,
+      setItem: (k: string, v: string) => {
+        storage[k] = v;
+      },
+      removeItem: (k: string) => {
+        delete storage[k];
+      },
+      clear: () => {},
+      length: 0,
+      key: () => null,
+    };
+
+    const { activeGuardTab, setActiveGuardTab } = useGuard();
+    setActiveGuardTab("reports");
+    expect(activeGuardTab.value).toBe("reports");
+    expect(global.localStorage.getItem("unirtm_guard_active_tab")).toBe("reports");
+
+    setActiveGuardTab("workbench");
+    expect(activeGuardTab.value).toBe("workbench");
+    expect(global.localStorage.getItem("unirtm_guard_active_tab")).toBe("workbench");
+  });
 });

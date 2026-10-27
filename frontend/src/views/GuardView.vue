@@ -11,7 +11,7 @@
             <span>{{
               guardStatus.clean
                 ? t("guard.status.healthy") || "All Rules Healthy"
-                : `${guardStatus.issues.length} Issues Found`
+                : `${guardStatus.issues?.length || 0} Issues Found`
             }}</span>
           </span>
 
@@ -227,7 +227,7 @@
         </div>
         <div class="metric-info">
           <span class="metric-val font-mono" :class="guardStatus.clean ? 'text-green' : 'text-amber'">
-            {{ guardStatus.clean ? "100%" : `${guardStatus.issues.length} Issues` }}
+            {{ guardStatus.clean ? "100%" : `${guardStatus.issues?.length || 0} Issues` }}
           </span>
           <span class="metric-label">{{ t("guard.metrics.quality_health") || "Quality Health" }}</span>
         </div>
@@ -358,16 +358,20 @@
     <div class="guard-view-tabs-bar">
       <div class="tabs-group">
         <!-- 1. Primary Default Tab: Logs Workbench -->
-        <button class="view-tab-btn" :class="{ active: activeTab === 'workbench' }" @click="activeTab = 'workbench'">
+        <button
+          class="view-tab-btn"
+          :class="{ active: activeTab === 'workbench' }"
+          @click="setActiveGuardTab('workbench')"
+        >
           <span class="codicon codicon-terminal"></span>
           <span>{{ t("guard.tabs.workbench") || "Logs" }}</span>
           <span class="tab-badge-pulse" :class="guardStatus.clean ? 'badge-clean' : 'badge-warn'">
-            {{ guardStatus.clean ? "CLEAN" : `${guardStatus.issues.length} ISSUES` }}
+            {{ guardStatus.clean ? "CLEAN" : `${guardStatus.issues?.length || 0} ISSUES` }}
           </span>
         </button>
 
         <!-- 2. Rule Checklist -->
-        <button class="view-tab-btn" :class="{ active: activeTab === 'reports' }" @click="activeTab = 'reports'">
+        <button class="view-tab-btn" :class="{ active: activeTab === 'reports' }" @click="setActiveGuardTab('reports')">
           <span class="codicon codicon-checklist"></span>
           <span>{{ t("guard.tabs.reports") || "Checklist" }}</span>
           <span v-if="guardStatus.rule_reports && guardStatus.rule_reports.length > 0" class="tab-badge font-mono">
@@ -379,7 +383,7 @@
         <button
           class="view-tab-btn tab-settings"
           :class="{ active: activeTab === 'settings' }"
-          @click="activeTab = 'settings'"
+          @click="setActiveGuardTab('settings')"
         >
           <span class="codicon codicon-settings-gear"></span>
           <span>{{ t("guard.tabs.settings") || "Settings" }}</span>
@@ -480,8 +484,8 @@
                       currentScanningTarget ||
                       (guardStatus.clean
                         ? t("guard.radar.clean_status") || "All 38 quality rules healthy · Real-time inspection idle"
-                        : t("guard.radar.issues_status", { count: guardStatus.issues.length }) ||
-                          `${guardStatus.issues.length} quality alerts detected · Ready to inspect or fix`)
+                        : t("guard.radar.issues_status", { count: guardStatus.issues?.length || 0 }) ||
+                          `${guardStatus.issues?.length || 0} quality alerts detected · Ready to inspect or fix`)
                     }}
                   </span>
                 </div>
@@ -581,12 +585,14 @@
           </div>
 
           <!-- Issues & Diagnostics Card (Visible if issues exist) -->
-          <div v-if="guardStatus.issues && guardStatus.issues.length > 0" class="workbench-issues-card">
+          <div v-if="(guardStatus.issues?.length || 0) > 0" class="workbench-issues-card">
             <div class="issues-card-header">
               <div class="issues-title-group">
                 <span class="codicon codicon-warning text-amber"></span>
                 <h3 class="issues-title">
-                  {{ t("guard.diagnostics.issues") || "Quality Violations Detected" }} ({{ guardStatus.issues.length }})
+                  {{ t("guard.diagnostics.issues") || "Quality Violations Detected" }} ({{
+                    guardStatus.issues?.length || 0
+                  }})
                 </h3>
               </div>
               <button
@@ -601,7 +607,7 @@
             </div>
 
             <div class="issues-list">
-              <div v-for="(issue, idx) in guardStatus.issues" :key="idx" class="issue-item">
+              <div v-for="(issue, idx) in guardStatus.issues || []" :key="idx" class="issue-item">
                 <div class="issue-item-header">
                   <span class="issue-file font-mono">{{ issue.file_path }}:{{ issue.line }}:{{ issue.column }}</span>
                   <span class="issue-rule font-mono">{{ issue.rule_id }}</span>
@@ -1205,6 +1211,10 @@ const {
   isChecking,
   isFixing,
   lastRunResult,
+  activeGuardTab,
+  setActiveGuardTab,
+  selectedGuardCategory,
+  guardFilterKeyword,
   fetchStatus,
   fetchSlots,
   runCheck,
@@ -1268,14 +1278,14 @@ function selectFixScope(mode: "staged" | "changed" | "all") {
   handleFix(mode);
 }
 
-// Default primary tab is now the transparent Live Guard & Logs Workbench!
-const activeTab = ref<"workbench" | "reports" | "settings">("workbench");
+// Persistent primary activeTab state shared across views
+const activeTab = activeGuardTab;
 const settingsSubTab = ref<"matrix" | "builtin" | "slots">("matrix");
 const searchKeyword = ref("");
 
 // Rich Rule Checklist Reactive State & Filtering
-const selectedRuleCategory = ref<"all" | "hygiene" | "formatting" | "linter" | "security">("all");
-const ruleSearchKeyword = ref("");
+const selectedRuleCategory = selectedGuardCategory;
+const ruleSearchKeyword = guardFilterKeyword;
 
 export interface RichGuardRuleItem extends DetailedGuardRule {
   status: "passed" | "fixed" | "fail" | "error" | "warn" | "idle";
@@ -1778,7 +1788,7 @@ async function handleCheck(mode: "changed" | "staged" | "all") {
     mode,
     scanned: guardStatus.value.scanned,
     clean: guardStatus.value.clean,
-    issuesCount: guardStatus.value.issues.length,
+    issuesCount: guardStatus.value.issues?.length || 0,
     fixedCount: 0,
     durationMs: guardStatus.value.duration_ms || 15,
     logs: guardStatus.value.logs || [],

@@ -53,7 +53,7 @@
 
       <!-- GUARD Navigation Items -->
       <template v-if="currentTab === 'guard'">
-        <GuardSidebar />
+        <GuardSidebar :searchQuery="searchQuery" />
       </template>
 
       <!-- TOOLS Navigation Items -->
