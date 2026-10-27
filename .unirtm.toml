@@ -49,6 +49,10 @@ enabled = true
 tool = "go"
 command = "go vet ./..."
 
+[guard.slots."web.i18n-linter"]
+tool = "npm"
+command = "npm --prefix frontend test -- src/i18n/i18n.test.ts"
+
 [tasks]
 [tasks.audit]
 description = "Run comprehensive security audit sequentially"
