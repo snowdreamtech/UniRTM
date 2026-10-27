@@ -52,3 +52,16 @@ func TestUICmdFlagsAndAliases(t *testing.T) {
 		t.Errorf("Expected shorthand 'b' for browser flag, got '%s'", browserFlag.Shorthand)
 	}
 }
+
+func TestUICmdPathArgs(t *testing.T) {
+	// Verify args acceptance
+	if err := uiCmd.Args(uiCmd, []string{}); err != nil {
+		t.Errorf("Expected 0 args to be accepted, got error: %v", err)
+	}
+	if err := uiCmd.Args(uiCmd, []string{"/tmp"}); err != nil {
+		t.Errorf("Expected 1 arg to be accepted, got error: %v", err)
+	}
+	if err := uiCmd.Args(uiCmd, []string{"/tmp", "/tmp2"}); err == nil {
+		t.Error("Expected 2 args to be rejected by MaximumNArgs(1)")
+	}
+}

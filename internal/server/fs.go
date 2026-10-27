@@ -216,6 +216,44 @@ func getWorkspaceConfigFile(rootDir string) string {
 	return filepath.Join(rootDir, ".unirtm", "workspaces.json")
 }
 
+// discoverSubRepositories scans immediate subdirectories of rootDir for nested git repositories or unirtm projects.
+func discoverSubRepositories(rootDir string) []string {
+	entries, err := os.ReadDir(rootDir)
+	if err != nil {
+		return nil
+	}
+
+	var subRepos []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if strings.HasPrefix(name, ".") || isCommonIgnored(name) {
+			continue
+		}
+		subPath := filepath.Join(rootDir, name)
+		hasGit := false
+		if _, err := os.Stat(filepath.Join(subPath, ".git")); err == nil {
+			hasGit = true
+		}
+		hasUniRTM := false
+		if _, err := os.Stat(filepath.Join(subPath, ".unirtm.toml")); err == nil {
+			hasUniRTM = true
+		}
+
+		if hasGit || hasUniRTM {
+			subRepos = append(subRepos, name)
+		}
+	}
+
+	sort.Slice(subRepos, func(i, j int) bool {
+		return strings.ToLower(subRepos[i]) < strings.ToLower(subRepos[j])
+	})
+
+	return subRepos
+}
+
 func loadWorkspaceRoots(rootDir string) []WorkspaceRootItem {
 	conf := getWorkspaceConfigFile(rootDir)
 	data, err := os.ReadFile(conf)
@@ -231,6 +269,40 @@ func loadWorkspaceRoots(rootDir string) []WorkspaceRootItem {
 	if name == "" || name == "." || name == "/" {
 		name = "workspace"
 	}
+
+	// Auto-discover sub-repositories if no explicit workspaces.json is configured.
+	subRepos := discoverSubRepositories(rootDir)
+	if len(subRepos) > 0 {
+		var roots []WorkspaceRootItem
+		hasGitRoot := false
+		if _, err := os.Stat(filepath.Join(rootDir, ".git")); err == nil {
+			hasGitRoot = true
+		}
+		hasUniRTMRoot := false
+		if _, err := os.Stat(filepath.Join(rootDir, ".unirtm.toml")); err == nil {
+			hasUniRTMRoot = true
+		}
+
+		if hasGitRoot || hasUniRTMRoot {
+			roots = append(roots, WorkspaceRootItem{
+				ID:   "root-primary",
+				Name: name,
+				Path: "",
+			})
+		}
+
+		for _, sub := range subRepos {
+			roots = append(roots, WorkspaceRootItem{
+				ID:   fmt.Sprintf("root-%s", sub),
+				Name: sub,
+				Path: sub,
+			})
+		}
+		if len(roots) > 0 {
+			return roots
+		}
+	}
+
 	return []WorkspaceRootItem{
 		{
 			ID:   "root-primary",

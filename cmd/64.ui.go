@@ -4,7 +4,9 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pterm/pterm"
@@ -53,7 +55,7 @@ func init() {
 
 // uiCmd starts the embedded interactive graphical workbench.
 var uiCmd = &cobra.Command{
-	Use:     "ui",
+	Use:     "ui [path]",
 	Aliases: []string{"dashboard", "web"},
 	Short:   "Launch the interactive graphical workbench",
 	Long: `Launch the interactive graphical workbench in your default browser.
@@ -62,8 +64,14 @@ Starts an embedded local web server serving the UniRTM visual workspace to
 manage tools, run tasks, inspect doctor health, and manage extensions.
 
 Examples:
-  # Start UI and open browser automatically
+  # Start UI and open browser for current directory
   unirtm ui
+
+  # Open a specific project directory
+  unirtm ui ./my-project
+
+  # Open a parent directory containing multiple git repositories (multi-root workspace)
+  unirtm ui /path/to/workspace
 
   # Start UI on a custom port without opening browser
   unirtm ui --port 8080 --no-open
@@ -71,11 +79,29 @@ Examples:
   # Use alias
   unirtm dashboard
   unirtm web`,
-	Args: cobra.NoArgs,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runUI,
 }
 
 func runUI(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 && strings.TrimSpace(args[0]) != "" {
+		targetDir := strings.TrimSpace(args[0])
+		absDir, err := filepath.Abs(targetDir)
+		if err != nil {
+			return fmt.Errorf("failed to resolve directory path %q: %w", targetDir, err)
+		}
+		st, err := os.Stat(absDir)
+		if err != nil {
+			return fmt.Errorf("directory not found: %s", targetDir)
+		}
+		if !st.IsDir() {
+			return fmt.Errorf("path is not a directory: %s", targetDir)
+		}
+		if err := os.Chdir(absDir); err != nil {
+			return fmt.Errorf("failed to change working directory to %s: %w", absDir, err)
+		}
+	}
+
 	targetBrowser := strings.TrimSpace(uiBrowser)
 	if targetBrowser == "" {
 		if envBrowser := os.Getenv("BROWSER"); envBrowser != "" {

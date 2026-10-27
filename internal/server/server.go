@@ -76,8 +76,10 @@ func Run(ctx context.Context, opts Options) error {
 	}
 
 	// Banner output
+	cwd, _ := os.Getwd()
 	pterm.DefaultSection.Println("UniRTM Workbench")
 	pterm.Info.Printf("Local Server : %s\n", pterm.Cyan(serverURL))
+	pterm.Info.Printf("Workspace    : %s\n", pterm.Cyan(cwd))
 	pterm.Info.Printf("Process PID  : %d\n", os.Getpid())
 	if opts.Browser != "" {
 		pterm.Info.Printf("Browser      : %s\n", pterm.Green(opts.Browser))

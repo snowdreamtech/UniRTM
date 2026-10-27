@@ -104,3 +104,50 @@ func TestUIWorkspaceRoots(t *testing.T) {
 		t.Fatalf("Expected 400 Bad Request when removing only root, got %d", failRr.Code)
 	}
 }
+
+func TestAutoDiscoverSubRepositories(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "unirtm-multi-repo-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// 1. Initially no sub-repos
+	roots := loadWorkspaceRoots(tempDir)
+	if len(roots) != 1 || roots[0].Path != "" {
+		t.Fatalf("Expected 1 default root, got %+v", roots)
+	}
+
+	// 2. Create sub-projects:
+	// - repo-a with .git
+	// - repo-b with .unirtm.toml
+	// - normal-dir (not a project)
+	repoA := filepath.Join(tempDir, "repo-a")
+	_ = os.MkdirAll(filepath.Join(repoA, ".git"), 0755)
+
+	repoB := filepath.Join(tempDir, "repo-b")
+	_ = os.MkdirAll(repoB, 0755)
+	_ = os.WriteFile(filepath.Join(repoB, ".unirtm.toml"), []byte(""), 0644)
+
+	normalDir := filepath.Join(tempDir, "normal-dir")
+	_ = os.MkdirAll(normalDir, 0755)
+
+	// Sub-repositories should be auto-discovered
+	roots = loadWorkspaceRoots(tempDir)
+	if len(roots) != 2 {
+		t.Fatalf("Expected 2 auto-discovered roots, got %d: %+v", len(roots), roots)
+	}
+	if roots[0].Path != "repo-a" || roots[1].Path != "repo-b" {
+		t.Fatalf("Expected repo-a and repo-b, got %+v", roots)
+	}
+
+	// 3. If parent folder itself has .git, it should be included as primary root
+	_ = os.MkdirAll(filepath.Join(tempDir, ".git"), 0755)
+	roots = loadWorkspaceRoots(tempDir)
+	if len(roots) != 3 {
+		t.Fatalf("Expected 3 roots when root has .git, got %d: %+v", len(roots), roots)
+	}
+	if roots[0].ID != "root-primary" || roots[0].Path != "" {
+		t.Fatalf("Expected primary root first, got %+v", roots[0])
+	}
+}
