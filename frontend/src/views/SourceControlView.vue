@@ -1870,20 +1870,21 @@ onBeforeUnmount(() => {
   flex-direction: column;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  min-height: 320px;
 }
 
 .box-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
+  padding: 10px 16px;
   background: var(--section-bg);
   border-bottom: 1px solid var(--card-border);
   color: var(--text-main);
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .box-header-left {
@@ -1969,7 +1970,32 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  max-height: 380px;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 276px;
+  max-height: 540px;
+  scrollbar-gutter: stable;
+}
+
+.box-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.box-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.box-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+:root[data-theme="light"] .box-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.box-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.5);
 }
 
 .box-file-item {
@@ -2127,15 +2153,18 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 36px 16px;
-  gap: 8px;
+  flex: 1;
+  min-height: 240px;
+  padding: 48px 24px;
+  gap: 12px;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .empty-state .codicon {
-  font-size: 24px;
-  opacity: 0.5;
+  font-size: 38px;
+  opacity: 0.4;
+  margin-bottom: 4px;
 }
 
 /* Commits History Card */
