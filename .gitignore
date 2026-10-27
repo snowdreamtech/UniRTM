@@ -70,9 +70,9 @@
 .zed/
 .zencoder/
 skills/
-.agents/skills/
-.agent/skills/
-.agent/brain/
+.agents/
+.agent/
+.specify/
 
 
 # =============================================================================

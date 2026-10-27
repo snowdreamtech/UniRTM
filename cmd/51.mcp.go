@@ -555,10 +555,15 @@ func readMCPRule(ruleName string) (string, error) {
 	ruleName = filepath.Base(ruleName)
 
 	wsDir := findWorkspaceDir()
+	homeDir, _ := os.UserHomeDir()
 
 	candidates := []string{
 		filepath.Join(wsDir, ".agent", "rules", ruleName+".md"),
 		filepath.Join(wsDir, ".agent", "rules", ruleName),
+		filepath.Join(homeDir, ".unirtm", "rules", ruleName+".md"),
+		filepath.Join(homeDir, ".unirtm", "rules", ruleName),
+		filepath.Join(homeDir, ".config", "unirtm", "rules", ruleName+".md"),
+		filepath.Join(homeDir, ".config", "unirtm", "rules", ruleName),
 		filepath.Join(wsDir, ruleName+".md"),
 		filepath.Join(wsDir, ruleName),
 	}
@@ -587,9 +592,13 @@ func handleMCPPromptGet(id interface{}, name string, args map[string]string) mcp
 	}
 
 	wsDir := findWorkspaceDir()
+	homeDir, _ := os.UserHomeDir()
+
 	candidates := []string{
 		filepath.Join(wsDir, ".specify", "commands", targetFile),
 		filepath.Join(wsDir, ".agent", "workflows", name+".md"),
+		filepath.Join(homeDir, ".unirtm", "specify", "commands", targetFile),
+		filepath.Join(homeDir, ".unirtm", "workflows", name+".md"),
 	}
 
 	var promptContent string
@@ -627,6 +636,7 @@ func handleMCPPromptGet(id interface{}, name string, args map[string]string) mcp
 
 func handleMCPResourceRead(id interface{}, uri string) mcpResponse {
 	wsDir := findWorkspaceDir()
+	homeDir, _ := os.UserHomeDir()
 	var filePath string
 	var mimeType string
 
@@ -636,14 +646,23 @@ func handleMCPResourceRead(id interface{}, uri string) mcpResponse {
 		mimeType = "text/toml"
 	case "unirtm://conventions":
 		filePath = filepath.Join(wsDir, "CONVENTIONS.md")
+		if _, err := os.Stat(filePath); err != nil && homeDir != "" {
+			filePath = filepath.Join(homeDir, ".unirtm", "rules", "00-index.md")
+		}
 		mimeType = "text/markdown"
 	case "unirtm://rules/index":
 		filePath = filepath.Join(wsDir, ".agent", "rules", "00-index.md")
+		if _, err := os.Stat(filePath); err != nil && homeDir != "" {
+			filePath = filepath.Join(homeDir, ".unirtm", "rules", "00-index.md")
+		}
 		mimeType = "text/markdown"
 	default:
 		if strings.HasPrefix(uri, "unirtm://rules/") {
 			rule := strings.TrimPrefix(uri, "unirtm://rules/")
 			filePath = filepath.Join(wsDir, ".agent", "rules", rule+".md")
+			if _, err := os.Stat(filePath); err != nil && homeDir != "" {
+				filePath = filepath.Join(homeDir, ".unirtm", "rules", rule+".md")
+			}
 			mimeType = "text/markdown"
 		} else {
 			return mcpErr(id, -32602, "unknown resource URI: "+uri)
@@ -652,7 +671,11 @@ func handleMCPResourceRead(id interface{}, uri string) mcpResponse {
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return mcpErr(id, -32000, "failed to read resource: "+err.Error())
+		if uri == "unirtm://conventions" {
+			data = []byte("# Project Conventions\n\nFollow standard SnowdreamTech engineering conventions and clean code guidelines.\n")
+		} else {
+			return mcpErr(id, -32000, "failed to read resource: "+err.Error())
+		}
 	}
 
 	return mcpOK(id, map[string]interface{}{

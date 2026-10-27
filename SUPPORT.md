@@ -6,7 +6,7 @@ Thank you for using the **Snowdream Tech AI IDE Template**! Here's how to get he
 
 Please check the following resources first:
 
-1. **Documentation**: Review the [README](./README.md) and [CONVENTIONS.md](./CONVENTIONS.md).
+1. **Documentation**: Review the [README](./README.md) and [CONTRIBUTING.md](./CONTRIBUTING.md).
 2. **Existing Issues**: Search [open and closed issues](https://github.com/snowdreamtech/template/issues) — your question may already be answered.
 3. **Discussions**: Browse [GitHub Discussions](https://github.com/snowdreamtech/template/discussions) for community Q&A.
 
