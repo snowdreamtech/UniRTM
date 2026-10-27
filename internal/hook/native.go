@@ -64,6 +64,11 @@ func (n NativeRunner) RunInDir(ctx context.Context, dir string, hookName string,
 	hookCmd, ok := cfg.Hooks[targetHook]
 	if (!ok || hookCmd == "") && targetHook == "pre-commit" {
 		hookCmd = "unirtm check --staged --profile=pre-commit"
+	} else if (!ok || hookCmd == "") && targetHook == "commit-msg" {
+		if len(args) == 0 {
+			return nil
+		}
+		hookCmd = "unirtm check"
 	} else if !ok || hookCmd == "" {
 		return nil // No hook defined for this event — silent success
 	}

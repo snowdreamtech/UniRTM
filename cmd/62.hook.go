@@ -48,7 +48,13 @@ Use the -a/--all flag to install the bridge script to all non-sample hooks in .g
 		}
 
 		if len(args) == 0 {
-			return fmt.Errorf("requires at least 1 arg(s), only received 0")
+			for _, h := range []string{"pre-commit", "commit-msg"} {
+				if err := hook.InstallBridgeScript(cmd.Context(), pwd, h); err != nil {
+					return fmt.Errorf("failed to install hook %s: %w", h, err)
+				}
+			}
+			fmt.Println("✨ Successfully installed standard UniRTM hooks (pre-commit, commit-msg).")
+			return nil
 		}
 
 		hookName := args[0]

@@ -50,7 +50,7 @@ func readExistingHook(path string) (content string, hasShebang bool, err error) 
 }
 
 // injectOrUpdateBlock replaces the managed block if it exists, or inserts it.
-func injectOrUpdateBlock(content string, hasShebang bool) string {
+func injectOrUpdateBlock(content string, hasShebang bool, hookName ...string) string {
 	managedBlock := fmt.Sprintf("%s\n%s\n%s\n", managedBlockStart, bridgeScriptPayload, managedBlockEnd)
 
 	// If block exists, replace it
@@ -72,7 +72,18 @@ func injectOrUpdateBlock(content string, hasShebang bool) string {
 	// Block doesn't exist, inject it
 	if !hasShebang {
 		if content == "" {
-			return "#!/bin/sh\n" + managedBlock + "\n# Execute UniRTM Quality Guard to scan staged files before commit\nexec unirtm check --staged \"$@\"\n"
+			name := ""
+			if len(hookName) > 0 {
+				name = hookName[0]
+			}
+			var defaultExec string
+			switch name {
+			case "commit-msg":
+				defaultExec = "# Execute UniRTM Quality Guard to validate commit message\nexec unirtm check \"$@\"\n"
+			default:
+				defaultExec = "# Execute UniRTM Quality Guard to scan staged files before commit\nexec unirtm check --staged \"$@\"\n"
+			}
+			return "#!/bin/sh\n" + managedBlock + "\n" + defaultExec
 		}
 		// Prepend shebang and block if no shebang is present but content exists
 		return "#!/bin/sh\n" + managedBlock + content
@@ -114,7 +125,7 @@ func InstallBridgeScript(ctx context.Context, dir string, hookName string) error
 		return fmt.Errorf("failed to read existing hook: %w", err)
 	}
 
-	newContent := injectOrUpdateBlock(content, hasShebang)
+	newContent := injectOrUpdateBlock(content, hasShebang, hookName)
 
 	// Create or overwrite the hook
 	err = os.WriteFile(hookPath, []byte(newContent), 0755)
@@ -166,6 +177,16 @@ func InstallAllBridgeScripts(ctx context.Context, dir string) ([]string, error) 
 			return updatedHooks, fmt.Errorf("failed to install hook %s: %w", name, err)
 		}
 		updatedHooks = append(updatedHooks, name)
+	}
+
+	// If no active hooks were found, install standard ones (pre-commit, commit-msg)
+	if len(updatedHooks) == 0 {
+		for _, h := range []string{"pre-commit", "commit-msg"} {
+			if err := InstallBridgeScript(ctx, dir, h); err != nil {
+				return updatedHooks, fmt.Errorf("failed to install hook %s: %w", h, err)
+			}
+			updatedHooks = append(updatedHooks, h)
+		}
 	}
 
 	return updatedHooks, nil

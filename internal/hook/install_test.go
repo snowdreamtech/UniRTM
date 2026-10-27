@@ -32,6 +32,13 @@ func TestInjectOrUpdateBlock_EmptyFile(t *testing.T) {
 	}
 }
 
+func TestInjectOrUpdateBlock_CommitMsg(t *testing.T) {
+	newContent := injectOrUpdateBlock("", false, "commit-msg")
+	if !strings.Contains(newContent, "exec unirtm check \"$@\"") {
+		t.Errorf("Expected commit-msg bridge script to execute 'unirtm check \"$@\"', got: %s", newContent)
+	}
+}
+
 func TestInjectOrUpdateBlock_ExistingShebang(t *testing.T) {
 	origContent := "#!/usr/bin/env bash\n# Some comment\nexit 0"
 	newContent := injectOrUpdateBlock(origContent, true)
