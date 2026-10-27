@@ -202,7 +202,7 @@ func TestProbeURL_DeduplicationAndCache(t *testing.T) {
 
 func TestFetchAndParseChecksumFile(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/checksums.txt" {
+		if r.URL.Path == "/test_fetch_parse_checksums.txt" {
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("abcd  file1.txt\nefgh *file2.txt\n"))
 		} else {
@@ -211,7 +211,15 @@ func TestFetchAndParseChecksumFile(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	checksums, err := FetchAndParseChecksumFile(context.Background(), ts.Client(), ts.URL+"/checksums.txt")
+	testURL := ts.URL + "/test_fetch_parse_checksums.txt"
+	checksumCache.Delete(testURL)
+	_ = os.Remove(getChecksumDiskCachePath(testURL))
+	defer func() {
+		checksumCache.Delete(testURL)
+		_ = os.Remove(getChecksumDiskCachePath(testURL))
+	}()
+
+	checksums, err := FetchAndParseChecksumFile(context.Background(), ts.Client(), testURL)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -226,7 +234,7 @@ func TestFetchAndParseChecksumFile(t *testing.T) {
 
 func TestFindChecksumForAsset(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/checksums.txt", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/test_find_checksums.txt", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("deadbeef  app-darwin-amd64\n123456  app-linux-amd64\n"))
 	})
 	mux.HandleFunc("/checksums_error.txt", func(w http.ResponseWriter, r *http.Request) {
@@ -239,7 +247,7 @@ func TestFindChecksumForAsset(t *testing.T) {
 
 	assets := []CommonAsset{
 		{Name: "app-darwin-amd64", URL: "http://example.com/app"},
-		{Name: "checksums.txt", URL: server.URL + "/checksums.txt"},
+		{Name: "checksums.txt", URL: server.URL + "/test_find_checksums.txt"},
 	}
 
 	target := &CommonAsset{Name: "app-darwin-amd64", URL: "http://example.com/app"}

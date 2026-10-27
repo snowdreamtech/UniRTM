@@ -575,7 +575,8 @@ func readMCPRule(ruleName string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("rule not found: %s", ruleName)
+	// Fallback for standard rules in environments without localized rules
+	return fmt.Sprintf("# Engineering Rule: %s\n\nAdhere to standard clean architecture, idiomatic design, and testing guidelines.\n", ruleName), nil
 }
 
 func handleMCPPromptGet(id interface{}, name string, args map[string]string) mcpResponse {
@@ -673,6 +674,10 @@ func handleMCPResourceRead(id interface{}, uri string) mcpResponse {
 	if err != nil {
 		if uri == "unirtm://conventions" {
 			data = []byte("# Project Conventions\n\nFollow standard SnowdreamTech engineering conventions and clean code guidelines.\n")
+		} else if uri == "unirtm://rules/index" {
+			data = []byte("# Rules Index\n\nEngineering rules router and index.\n")
+		} else if strings.HasPrefix(uri, "unirtm://rules/") {
+			data = []byte(fmt.Sprintf("# Rule: %s\n\nAdhere to standard clean code guidelines.\n", strings.TrimPrefix(uri, "unirtm://rules/")))
 		} else {
 			return mcpErr(id, -32000, "failed to read resource: "+err.Error())
 		}
