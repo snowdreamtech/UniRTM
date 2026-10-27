@@ -87,7 +87,7 @@ jobs:
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@663cc55933eafea30cd63f43e837cecd4a587f45 # v0.7.0
         with:
-          unirtm-version: "0.35.0"
+          unirtm-version: "0.36.0"
           install: true
           trust: true
         env:
@@ -95,22 +95,22 @@ jobs:
           GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           UNIRTM_VERIFY_PROVENANCE: "0"
 
-      - name: "🔨 Build In-tree UniRTM Binary"
-        shell: sh
-        run: |
-          mkdir -p "$GITHUB_WORKSPACE/bin"
-          TARGET="$GITHUB_WORKSPACE/bin/unirtm"
-          if command -v cygpath >/dev/null 2>&1 || [ "${{ runner.os }}" = "Windows" ]; then
-            TARGET="$TARGET.exe"
-          fi
-          unirtm exec -- go build -trimpath -ldflags="-s -w" -o "$TARGET" main.go
-          cp "$TARGET" "$GITHUB_WORKSPACE/bin/unirtm" 2>/dev/null || true
-          cp "$TARGET" "$GITHUB_WORKSPACE/bin/unirtm.exe" 2>/dev/null || true
-          BIN_PATH="$GITHUB_WORKSPACE/bin"
-          if command -v cygpath >/dev/null 2>&1; then
-            BIN_PATH=$(cygpath -w "$BIN_PATH")
-          fi
-          echo "$BIN_PATH" >> "$GITHUB_PATH"
+      # - name: "🔨 Build In-tree UniRTM Binary"
+      #   shell: sh
+      #   run: |
+      #     mkdir -p "$GITHUB_WORKSPACE/bin"
+      #     TARGET="$GITHUB_WORKSPACE/bin/unirtm"
+      #     if command -v cygpath >/dev/null 2>&1 || [ "${{ runner.os }}" = "Windows" ]; then
+      #       TARGET="$TARGET.exe"
+      #     fi
+      #     unirtm exec -- go build -trimpath -ldflags="-s -w" -o "$TARGET" main.go
+      #     cp "$TARGET" "$GITHUB_WORKSPACE/bin/unirtm" 2>/dev/null || true
+      #     cp "$TARGET" "$GITHUB_WORKSPACE/bin/unirtm.exe" 2>/dev/null || true
+      #     BIN_PATH="$GITHUB_WORKSPACE/bin"
+      #     if command -v cygpath >/dev/null 2>&1; then
+      #       BIN_PATH=$(cygpath -w "$BIN_PATH")
+      #     fi
+      #     echo "$BIN_PATH" >> "$GITHUB_PATH"
 
       - name: "🔍 Inspect Code Quality (Lint)"
         shell: sh
@@ -163,7 +163,7 @@ jobs:
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@663cc55933eafea30cd63f43e837cecd4a587f45 # v0.7.0
         with:
-          unirtm-version: "0.35.0"
+          unirtm-version: "0.36.0"
           install: true
           trust: true
         env:
@@ -254,7 +254,7 @@ jobs:
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@663cc55933eafea30cd63f43e837cecd4a587f45 # v0.7.0
         with:
-          unirtm-version: "0.35.0"
+          unirtm-version: "0.36.0"
           install: true
           trust: true
         env:
