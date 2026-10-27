@@ -329,7 +329,6 @@
                   <span class="file-dir">{{ getDirName(item.path) }}</span>
                 </div>
                 <div class="file-item-right">
-                  <span class="status-tag" :class="'tag-' + item.status">{{ item.status }}</span>
                   <div class="item-hover-actions" @click.stop>
                     <button
                       class="file-action-icon-btn"
@@ -353,6 +352,7 @@
                       <span class="codicon codicon-remove"></span>
                     </button>
                   </div>
+                  <span class="status-tag" :class="'tag-' + item.status">{{ item.status }}</span>
                 </div>
               </div>
               <div v-if="status.staged.length === 0" class="empty-state">
@@ -398,7 +398,6 @@
                   <span class="file-dir">{{ getDirName(item.path) }}</span>
                 </div>
                 <div class="file-item-right">
-                  <span class="status-tag" :class="'tag-' + item.status">{{ item.status }}</span>
                   <div class="item-hover-actions" @click.stop>
                     <button
                       class="file-action-icon-btn"
@@ -429,6 +428,7 @@
                       <span class="codicon codicon-add"></span>
                     </button>
                   </div>
+                  <span class="status-tag" :class="'tag-' + item.status">{{ item.status }}</span>
                 </div>
               </div>
               <div v-if="status.unstaged.length === 0" class="empty-state">
@@ -1977,10 +1977,15 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 7px 14px;
+  padding: 0 14px;
+  height: 38px;
+  min-height: 38px;
+  max-height: 38px;
+  box-sizing: border-box;
   cursor: pointer;
   border-bottom: 1px solid var(--card-border);
-  transition: background 0.15s ease;
+  position: relative;
+  transition: background 0.12s ease;
 }
 
 .box-file-item:hover {
@@ -1993,22 +1998,36 @@ onBeforeUnmount(() => {
   gap: 8px;
   flex: 1;
   min-width: 0;
+  padding-right: 140px; /* Reserves dedicated space for right actions + badge so text never shifts */
 }
 
 .file-item-right {
   display: flex;
   align-items: center;
   gap: 8px;
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
 }
 
 .item-hover-actions {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 3px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.12s ease,
+    visibility 0.12s ease;
 }
 
 .box-file-item:hover .item-hover-actions {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .file-action-icon-btn {

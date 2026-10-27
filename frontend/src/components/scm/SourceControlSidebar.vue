@@ -1535,6 +1535,7 @@ async function handleModalConfirm(payload: {
   flex: 1;
   overflow: hidden;
   white-space: nowrap;
+  padding-right: 50px;
 }
 
 .change-filename {
@@ -1593,17 +1594,25 @@ async function handleModalConfirm(payload: {
 }
 
 .change-item-actions {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 2px;
   position: absolute;
   right: 8px;
-  background: var(--card-bg);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: inherit;
   padding-left: 4px;
+  transition:
+    opacity 0.12s ease,
+    visibility 0.12s ease;
 }
 
 .change-item:hover .change-item-actions {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .item-action-btn {
