@@ -13,7 +13,7 @@ UNIRTM_NODE_FLAVOR = "{% if env.ALPINE_VERSION is defined %}musl{% endif %}"
 UNIRTM_HOOK_ALLOW_MISSING = "1"
 
 [tools]
-"github:anchore/syft" = "1.54.1"
+"github:anchore/syft" = "1.55.0"
 "github:aquasecurity/trivy" = "0.75.0"
 "github:astral-sh/ruff" = "0.16.6"
 "github:cli/cli" = "2.102.0"
@@ -195,7 +195,7 @@ description = "Run Go unit tests for all packages recursively"
 # CGO_ENABLED=0: force pure-Go build — all test files must use modernc.org/sqlite, not mattn/go-sqlite3
 run = "unirtm exec -- go test -cover -v -timeout 10m -p 4 ./..."
 output = "interleaved"
-env = { GOTOOLCHAIN = 'auto', CGO_ENABLED = '0' }
+env = { GOTOOLCHAIN = "auto", CGO_ENABLED = "0" }
 
 [tasks."test:frontend"]
 description = "Run Vue/Frontend Vitest unit tests"
