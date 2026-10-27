@@ -2606,6 +2606,12 @@ export const nlNl: TranslationDict = {
     "Als je dit veld leeg laat, zal Git automatisch de wachtwoordvrije authenticatie voltooien via de geactiveerde SSH Agent en de SSH-systeemconfiguratie om te voorkomen dat je herhaaldelijk het privésleutelwachtwoord invoert.",
   "git_identity.gpg_key_hint":
     "GPG Agent slaat het wachtwoord in het geheugen op tijdens de geldigheidsperiode van de sessie en voltooit automatisch de indiening van de handtekening zonder dat u tijdens deze periode het wachtwoord hoeft in te voeren.",
-};
 
-export default nlNl;
+  "project.select_title": "Werkruimteprojecten",
+  "project.current_tooltip": "Actief project: {name}",
+  "project.all": "Werkruimte (Alles)",
+  "project.pinned_hint": "Project vergrendeld (wisselt niet bij openen van bestanden)",
+  "project.unpinned_hint": "Project volgt automatisch geopende bestanden en Git-wijzigingen",
+  "project.footer_pinned": "Vergrendeld: klik op 📌 om bestanden automatisch te volgen",
+  "project.footer_unpinned": "Volgt automatisch bestanden en Git-wijzigingen",
+};

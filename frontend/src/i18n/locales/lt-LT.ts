@@ -2605,6 +2605,12 @@ export const ltLt: TranslationDict = {
     "Kai paliksite tuščią, „Git“ automatiškai užbaigs autentifikavimą be slaptažodžio per suaktyvintą SSH agentą ir sistemos SSH konfigūraciją, kad būtų išvengta pakartotinio privataus rakto slaptažodžio įvedimo.",
   "git_identity.gpg_key_hint":
     "GPG agentas saugo slaptažodį atmintyje per seanso galiojimo laikotarpį ir automatiškai užbaigs parašo pateikimą neįvesdamas slaptažodžio per šį laikotarpį.",
-};
 
-export default ltLt;
+  "project.select_title": "Darbo srities projektai",
+  "project.current_tooltip": "Aktyvus projektas: {name}",
+  "project.all": "Darbo sritis (Visi)",
+  "project.pinned_hint": "Projektas užrakintas (neperjungiamas atidarius failus)",
+  "project.unpinned_hint": "Projektas automatiškai seka atidarytus failus ir Git pakeitimus",
+  "project.footer_pinned": "Užrakinta: spustelėkite 📌, kad automatiškai sektumėte failus",
+  "project.footer_unpinned": "Automatiškai seka failus ir Git pakeitimus",
+};

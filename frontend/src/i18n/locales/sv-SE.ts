@@ -2582,6 +2582,12 @@ export const svSe: TranslationDict = {
     "När det lämnas tomt kommer Git automatiskt att slutföra lösenordsfri autentisering genom den aktiverade SSH Agenten och systemets SSH-konfiguration för att undvika att upprepade gånger ange lösenordet för den privata nyckeln.",
   "git_identity.gpg_key_hint":
     "GPG Agent kommer att cacha lösenordet i minnet under sessionens giltighetstid och automatiskt slutföra signaturinlämningen utan att behöva ange lösenordet under denna period.",
-};
 
-export default svSe;
+  "project.select_title": "Arbetsytans projekt",
+  "project.current_tooltip": "Aktivt projekt: {name}",
+  "project.all": "Arbetsyta (Alla)",
+  "project.pinned_hint": "Projekt låst (växlar inte när filer öppnas)",
+  "project.unpinned_hint": "Projektet följer automatiskt öppna filer och Git-ändringar",
+  "project.footer_pinned": "Låst: klicka på 📌 för att följa filer automatiskt",
+  "project.footer_unpinned": "Följer filer och Git-ändringar automatiskt",
+};

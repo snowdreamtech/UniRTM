@@ -2589,6 +2589,12 @@ export const srLatn: TranslationDict = {
     "Када оставите празно, Гит ће аутоматски довршити аутентификацију без лозинке преко активираног ССХ агента и системске ССХ конфигурације како би се избегао узастопно уношење лозинке приватног кључа.",
   "git_identity.gpg_key_hint":
     "ГПГ Агент ће кеширати лозинку у меморију током периода важења сесије и аутоматски завршити подношење потписа без потребе да унесе лозинку током овог периода.",
-};
 
-export default srLatn;
+  "project.select_title": "Projekti radnog prostora",
+  "project.current_tooltip": "Aktivni projekat: {name}",
+  "project.all": "Radni prostor (Sve)",
+  "project.pinned_hint": "Projekat je zaključan (neće se menjati pri otvaranju datoteka)",
+  "project.unpinned_hint": "Projekat automatski prati otvorene datoteke i Git izmene",
+  "project.footer_pinned": "Zaključano: kliknite na 📌 za automatsko praćenje datoteka",
+  "project.footer_unpinned": "Automatski prati datoteke i Git izmene",
+};

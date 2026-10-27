@@ -2584,6 +2584,12 @@ export const etEe: TranslationDict = {
     "Kui see jääb tühjaks, viib Git automaatselt lõpule paroolivaba autentimise aktiveeritud SSH agendi ja süsteemi SSH konfiguratsiooni kaudu, et vältida privaatvõtme parooli korduvat sisestamist.",
   "git_identity.gpg_key_hint":
     "GPG Agent salvestab seansi kehtivusaja jooksul parooli mällu ja viib automaatselt allkirja esitamise lõpule, ilma et peaks selle aja jooksul parooli sisestama.",
-};
 
-export default etEe;
+  "project.select_title": "Tööruumi projektid",
+  "project.current_tooltip": "Aktiivne projekt: {name}",
+  "project.all": "Tööruum (Kõik)",
+  "project.pinned_hint": "Projekt on lukustatud (ei lülitu failide avamisel ümber)",
+  "project.unpinned_hint": "Projekt jälgib automaatselt avatud faile ja Giti muudatusi",
+  "project.footer_pinned": "Lukustatud: failide automaatseks jälgimiseks klõpsake 📌",
+  "project.footer_unpinned": "Jälgib automaatselt faile ja Giti muudatusi",
+};

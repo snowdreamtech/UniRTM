@@ -2619,6 +2619,12 @@ export const huHu: TranslationDict = {
     "Ha üresen hagyja, a Git automatikusan befejezi a jelszó nélküli hitelesítést az aktivált SSH-ügynökön és a rendszer SSH-konfigurációján keresztül, hogy elkerülje a privát kulcs jelszavának ismételt megadását.",
   "git_identity.gpg_key_hint":
     "A GPG Agent a munkamenet érvényességi ideje alatt gyorsítótárazza a jelszót a memóriában, és automatikusan befejezi az aláírás beküldését anélkül, hogy ez alatt az időszak alatt meg kellene adnia a jelszót.",
-};
 
-export default huHu;
+  "project.select_title": "Munkaterület-projektek",
+  "project.current_tooltip": "Aktív projekt: {name}",
+  "project.all": "Munkaterület (Összes)",
+  "project.pinned_hint": "Projekt rögzítve (nem vált át fájlok megnyitásakor)",
+  "project.unpinned_hint": "A projekt automatikusan követi a megnyitott fájlokat és a Git változásait",
+  "project.footer_pinned": "Rögzítve: kattintson a 📌 gombra az automatikus követéshez",
+  "project.footer_unpinned": "Automatikusan követi a fájlokat és a Git változásait",
+};

@@ -2589,6 +2589,12 @@ export const csCz: TranslationDict = {
     "Když je ponecháno prázdné, Git automaticky dokončí autentizaci bez hesla prostřednictvím aktivovaného agenta SSH a systémové konfigurace SSH, aby se zabránilo opakovanému zadávání hesla soukromého klíče.",
   "git_identity.gpg_key_hint":
     "GPG Agent uloží heslo do paměti během doby platnosti relace a automaticky dokončí odeslání podpisu, aniž by bylo nutné během této doby heslo zadávat.",
-};
 
-export default csCz;
+  "project.select_title": "Projekty pracovního prostoru",
+  "project.current_tooltip": "Aktivní projekt: {name}",
+  "project.all": "Pracovní prostor (Vše)",
+  "project.pinned_hint": "Projekt uzamčen (nepřepne se při otevření souboru)",
+  "project.unpinned_hint": "Projekt automaticky sleduje otevřené soubory a změny Git",
+  "project.footer_pinned": "Uzamčeno: kliknutím na 📌 obnovíte sledování souborů",
+  "project.footer_unpinned": "Automaticky sleduje soubory a změny Git",
+};

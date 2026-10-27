@@ -2592,6 +2592,12 @@ export const hrHr: TranslationDict = {
     "Kada ostane prazno, Git će automatski dovršiti autentifikaciju bez lozinke putem aktiviranog SSH agenta i SSH konfiguracije sustava kako bi se izbjeglo ponovno unošenje lozinke privatnog ključa.",
   "git_identity.gpg_key_hint":
     "GPG Agent će pohraniti lozinku u memoriju tijekom razdoblja valjanosti sesije i automatski dovršiti podnošenje potpisa bez potrebe za unosom lozinke tijekom tog razdoblja.",
-};
 
-export default hrHr;
+  "project.select_title": "Projekti radnog prostora",
+  "project.current_tooltip": "Aktivni projekt: {name}",
+  "project.all": "Radni prostor (Sve)",
+  "project.pinned_hint": "Projekt zaključan (neće se promijeniti pri otvaranju datoteka)",
+  "project.unpinned_hint": "Projekt automatski prati otvorene datoteke i promjene u Gitu",
+  "project.footer_pinned": "Zaključano: kliknite 📌 za automatsko praćenje datoteka",
+  "project.footer_unpinned": "Automatski prati datoteke i promjene u Gitu",
+};

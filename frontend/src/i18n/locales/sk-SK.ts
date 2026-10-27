@@ -2600,6 +2600,12 @@ export const skSk: TranslationDict = {
     "Ak ho ponecháte prázdne, Git automaticky dokončí autentifikáciu bez hesla prostredníctvom aktivovaného agenta SSH a systémovej konfigurácie SSH, aby sa zabránilo opakovanému zadávaniu hesla súkromného kľúča.",
   "git_identity.gpg_key_hint":
     "GPG Agent uloží heslo do vyrovnávacej pamäte počas doby platnosti relácie a automaticky dokončí odoslanie podpisu bez toho, aby počas tejto doby musel zadávať heslo.",
-};
 
-export default skSk;
+  "project.select_title": "Projekty pracovného priestoru",
+  "project.current_tooltip": "Aktívny projekt: {name}",
+  "project.all": "Pracovný priestor (Všetko)",
+  "project.pinned_hint": "Projekt uzamknutý (neprepne sa pri otvorení súboru)",
+  "project.unpinned_hint": "Projekt automaticky sleduje otvorené súbory a zmeny Git",
+  "project.footer_pinned": "Uzamknuté: kliknutím na 📌 obnovíte sledovanie súborov",
+  "project.footer_unpinned": "Automaticky sleduje súbory a zmeny Git",
+};

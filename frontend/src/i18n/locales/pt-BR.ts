@@ -2607,6 +2607,12 @@ export const ptBr: TranslationDict = {
     "Quando deixado em branco, o Git concluirá automaticamente a autenticação sem senha por meio do Agente SSH ativado e da configuração SSH do sistema para evitar inserir repetidamente a senha da chave privada.",
   "git_identity.gpg_key_hint":
     "O Agente GPG armazenará a senha em cache na memória durante o período de validade da sessão e concluirá automaticamente o envio da assinatura sem a necessidade de inserir a senha durante esse período.",
-};
 
-export default ptBr;
+  "project.select_title": "Projetos do Espaço de Trabalho",
+  "project.current_tooltip": "Projeto ativo: {name}",
+  "project.all": "Espaço de trabalho (Todos)",
+  "project.pinned_hint": "Projeto fixado (não alternará ao abrir arquivos)",
+  "project.unpinned_hint": "O projeto segue automaticamente arquivos abertos e Git",
+  "project.footer_pinned": "Fixado: clique em 📌 para seguir arquivos automaticamente",
+  "project.footer_unpinned": "Segue arquivos e alterações do Git automaticamente",
+};

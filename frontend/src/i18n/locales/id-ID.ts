@@ -2580,6 +2580,12 @@ export const idId: TranslationDict = {
     "Jika dibiarkan kosong, Git akan secara otomatis menyelesaikan autentikasi bebas kata sandi melalui Agen SSH yang diaktifkan dan konfigurasi SSH sistem untuk menghindari memasukkan kata sandi kunci pribadi berulang kali.",
   "git_identity.gpg_key_hint":
     "Agen GPG akan menyimpan kata sandi dalam memori selama masa berlaku sesi, dan secara otomatis menyelesaikan pengiriman tanda tangan tanpa harus memasukkan kata sandi selama periode ini.",
-};
 
-export default idId;
+  "project.select_title": "Proyek Ruang Kerja",
+  "project.current_tooltip": "Proyek Aktif: {name}",
+  "project.all": "Ruang Kerja (Semua)",
+  "project.pinned_hint": "Proyek terkunci (tidak akan beralih saat membuka file)",
+  "project.unpinned_hint": "Proyek otomatis mengikuti file yang dibuka dan perubahan Git",
+  "project.footer_pinned": "Terkunci: klik 📌 untuk otomatis mengikuti file",
+  "project.footer_unpinned": "Otomatis mengikuti file & perubahan Git",
+};

@@ -2627,6 +2627,12 @@ export const itIt: TranslationDict = {
     "Se lasciato vuoto, Git completerà automaticamente l'autenticazione senza password tramite l'agente SSH attivato e la configurazione SSH del sistema per evitare di inserire ripetutamente la password della chiave privata.",
   "git_identity.gpg_key_hint":
     "GPG Agent memorizzerà nella cache la password in memoria durante il periodo di validità della sessione e completerà automaticamente l'invio della firma senza dover inserire la password durante questo periodo.",
-};
 
-export default itIt;
+  "project.select_title": "Progetti dell'area di lavoro",
+  "project.current_tooltip": "Progetto attivo: {name}",
+  "project.all": "Area di lavoro (Tutti)",
+  "project.pinned_hint": "Progetto bloccato (non cambierà all'apertura dei file)",
+  "project.unpinned_hint": "Il progetto segue automaticamente i file aperti e Git",
+  "project.footer_pinned": "Bloccato: fai clic su 📌 per seguire i file automaticamente",
+  "project.footer_unpinned": "Segue automaticamente i file e le modifiche Git",
+};

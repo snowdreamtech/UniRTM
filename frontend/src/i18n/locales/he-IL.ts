@@ -2531,6 +2531,12 @@ export const heIl: TranslationDict = {
     "כאשר נותר ריק, Git ישלים אוטומטית אימות ללא סיסמה באמצעות תצורת סוכן SSH ומערכת SSH המופעלת כדי למנוע הזנה חוזרת של סיסמת המפתח הפרטי.",
   "git_identity.gpg_key_hint":
     "סוכן GPG ישמור את הסיסמה בזיכרון במהלך תקופת התוקף של הפגישה, וישלים אוטומטית את הגשת החתימה ללא צורך להזין את הסיסמה במהלך תקופה זו.",
-};
 
-export default heIl;
+  "project.select_title": "פרויקטי סביבת העבודה",
+  "project.current_tooltip": "פרויקט פעיל: {name}",
+  "project.all": "סביבת עבודה (הכל)",
+  "project.pinned_hint": "הפרויקט נעול (לא יוחלף בעת פתיחת קבצים)",
+  "project.unpinned_hint": "הפרויקט עוקב אוטומטית אחר קבצים פתוחים ושינויי Git",
+  "project.footer_pinned": "נעול: לחץ על 📌 למעקב אוטומטי אחר קבצים",
+  "project.footer_unpinned": "עוקב אוטומטית אחר קבצים ושינויי Git",
+};

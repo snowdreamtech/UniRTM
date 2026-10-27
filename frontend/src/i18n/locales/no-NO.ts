@@ -2575,6 +2575,12 @@ export const noNo: TranslationDict = {
     "Når det står tomt, vil Git automatisk fullføre passordfri autentisering gjennom den aktiverte SSH Agent og system SSH-konfigurasjonen for å unngå gjentatt inntasting av privatnøkkelpassordet.",
   "git_identity.gpg_key_hint":
     "GPG Agent vil hurtigbufre passordet i minnet i løpet av øktens gyldighetsperiode, og automatisk fullføre signaturinnsendingen uten å måtte angi passordet i løpet av denne perioden.",
-};
 
-export default noNo;
+  "project.select_title": "Arbeidsområdeprosjekter",
+  "project.current_tooltip": "Aktivt prosjekt: {name}",
+  "project.all": "Arbeidsområde (Alle)",
+  "project.pinned_hint": "Prosjekt låst (bytter ikke ved åpning av filer)",
+  "project.unpinned_hint": "Prosjektet følger automatisk åpne filer og Git-endringer",
+  "project.footer_pinned": "Låst: klikk 📌 for å følge filer automatisk",
+  "project.footer_unpinned": "Følger filer og Git-endringer automatisk",
+};

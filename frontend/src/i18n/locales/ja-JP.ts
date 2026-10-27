@@ -2585,6 +2585,12 @@ export const jaJp: TranslationDict = {
     "空白のままにすると、Git は、秘密キーのパスワードを繰り返し入力することを避けるために、アクティブ化された SSH エージェントとシステム SSH 構成を通じてパスワードなしの認証を自動的に完了します。",
   "git_identity.gpg_key_hint":
     "GPG エージェントはセッションの有効期間中にパスワードをメモリにキャッシュし、この期間中にパスワードを入力しなくても署名の送信を自動的に完了します。",
-};
 
-export default jaJp;
+  "project.select_title": "ワークスペースプロジェクト",
+  "project.current_tooltip": "アクティブなプロジェクト: {name}",
+  "project.all": "ワークスペース (すべて)",
+  "project.pinned_hint": "プロジェクト固定中（ファイルを開いても自動切替しません）",
+  "project.unpinned_hint": "プロジェクト自動追従中（ファイルやGit変更に合わせて自動同期）",
+  "project.footer_pinned": "固定中: 📌 をクリックして自動追従に戻す",
+  "project.footer_unpinned": "ファイルとGit変更に自動追従",
+};

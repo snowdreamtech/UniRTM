@@ -2643,6 +2643,12 @@ export const frFr: TranslationDict = {
     "Lorsqu'il est laissé vide, Git effectuera automatiquement une authentification sans mot de passe via l'agent SSH activé et la configuration SSH du système pour éviter de saisir à plusieurs reprises le mot de passe de la clé privée.",
   "git_identity.gpg_key_hint":
     "GPG Agent mettra en cache le mot de passe en mémoire pendant la période de validité de la session et terminera automatiquement la soumission de la signature sans avoir à saisir le mot de passe pendant cette période.",
-};
 
-export default frFr;
+  "project.select_title": "Projets de l'espace de travail",
+  "project.current_tooltip": "Projet actif : {name}",
+  "project.all": "Espace de travail (Tous)",
+  "project.pinned_hint": "Projet verrouillé (ne changera pas à l'ouverture de fichier)",
+  "project.unpinned_hint": "Le projet suit automatiquement les fichiers ouverts et Git",
+  "project.footer_pinned": "Verrouillé : cliquez sur 📌 pour suivre les fichiers",
+  "project.footer_unpinned": "Suit automatiquement les fichiers et Git",
+};

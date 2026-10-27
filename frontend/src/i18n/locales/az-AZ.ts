@@ -2611,6 +2611,12 @@ export const azAz: TranslationDict = {
     "Boş qaldıqda, Git şəxsi açar parolunu təkrar daxil etməmək üçün aktivləşdirilmiş SSH Agenti və sistem SSH konfiqurasiyası vasitəsilə avtomatik parolsuz autentifikasiyanı tamamlayacaq.",
   "git_identity.gpg_key_hint":
     "GPG Agent sessiyanın etibarlılıq müddəti ərzində parolu yaddaşda saxlayacaq və bu müddət ərzində parol daxil etmədən imza təqdimini avtomatik tamamlayacaq.",
-};
 
-export default azAz;
+  "project.select_title": "İş Sahəsi Layihələri",
+  "project.current_tooltip": "Aktiv Layihə: {name}",
+  "project.all": "İş Sahəsi (Hamısı)",
+  "project.pinned_hint": "Layihə kilidləndi (fayl açıldıqda dəyişməyəcək)",
+  "project.unpinned_hint": "Layihə açıq faylları və Git dəyişikliklərini avtomatik izləyir",
+  "project.footer_pinned": "Kilidli: faylları avtomatik izləmək üçün 📌 vurun",
+  "project.footer_unpinned": "Faylları və Git dəyişikliklərini avtomatik izləyir",
+};

@@ -2596,6 +2596,12 @@ export const viVn: TranslationDict = {
     "Khi để trống, Git sẽ tự động hoàn tất xác thực không cần mật khẩu thông qua Tác nhân SSH được kích hoạt và cấu hình SSH hệ thống để tránh nhập mật khẩu khóa riêng tư nhiều lần.",
   "git_identity.gpg_key_hint":
     "GPG Agent sẽ lưu mật khẩu vào bộ nhớ trong thời gian hiệu lực của phiên và tự động hoàn tất việc gửi chữ ký mà không cần phải nhập mật khẩu trong khoảng thời gian này.",
-};
 
-export default viVn;
+  "project.select_title": "Dự án Không gian làm việc",
+  "project.current_tooltip": "Dự án hiện tại: {name}",
+  "project.all": "Không gian làm việc (Tất cả)",
+  "project.pinned_hint": "Dự án đã khóa (không tự đổi khi mở tệp)",
+  "project.unpinned_hint": "Dự án tự động theo dõi tệp đang mở và thay đổi Git",
+  "project.footer_pinned": "Đã khóa: nhấp vào 📌 để tự động theo dõi tệp",
+  "project.footer_unpinned": "Tự động theo dõi tệp và thay đổi Git",
+};

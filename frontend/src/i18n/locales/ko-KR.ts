@@ -2547,6 +2547,12 @@ export const koKr: TranslationDict = {
     "비워 두면 Git은 개인 키 비밀번호를 반복적으로 입력하지 않도록 활성화된 SSH 에이전트 및 시스템 SSH 구성을 통해 비밀번호 없는 인증을 자동으로 완료합니다.",
   "git_identity.gpg_key_hint":
     "GPG 에이전트는 세션 유효 기간 동안 비밀번호를 메모리에 캐시하고, 이 기간 동안 비밀번호를 입력할 필요 없이 자동으로 서명 제출을 완료합니다.",
-};
 
-export default koKr;
+  "project.select_title": "워크스페이스 프로젝트",
+  "project.current_tooltip": "현재 프로젝트: {name}",
+  "project.all": "워크스페이스 (전체)",
+  "project.pinned_hint": "프로젝트 고정됨 (파일 열기 시 자동 전환되지 않음)",
+  "project.unpinned_hint": "프로젝트 자동 추적 (파일 및 Git 변경 시 자동 동기화)",
+  "project.footer_pinned": "고정됨: 📌 클릭 시 파일 자동 추적으로 복원",
+  "project.footer_unpinned": "파일 및 Git 변경 사항 자동 추적",
+};

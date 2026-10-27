@@ -2627,6 +2627,12 @@ export const ocFr: TranslationDict = {
     "Quand es daissat void, Git completarà automaticament l'autentificacion sens senhal a travèrs l'agent SSH activat e la configuracion SSH del sistèma per evitar d'introduire repetidament lo senhal de la clau privada.",
   "git_identity.gpg_key_hint":
     "L'agent GPG cacherà lo senhal dins la memòria pendent lo periòde de validitat de la sesilha, e completarà automaticament la somission de la signatura sens aver d'introduire lo senhal pendent aqueste periòde.",
-};
 
-export default ocFr;
+  "project.select_title": "Projèctes de l'espaci de trabalh",
+  "project.current_tooltip": "Projècte actiu : {name}",
+  "project.all": "Espaci de trabalh (Totes)",
+  "project.pinned_hint": "Projècte blocat (cambiarà pas a la dobertura de fichièr)",
+  "project.unpinned_hint": "Lo projècte seguís automaticament los fichièrs dobèrts e Git",
+  "project.footer_pinned": "Blocat : clicatz sus 📌 per seguir los fichièrs",
+  "project.footer_unpinned": "Seguís automaticament los fichièrs e Git",
+};

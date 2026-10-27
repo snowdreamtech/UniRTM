@@ -2620,6 +2620,12 @@ export const caEs: TranslationDict = {
     "Quan es deixa en blanc, Git completarà automàticament l'autenticació sense contrasenya mitjançant l'agent SSH activat i la configuració SSH del sistema per evitar introduir repetidament la contrasenya de la clau privada.",
   "git_identity.gpg_key_hint":
     "GPG Agent guardarà la contrasenya a la memòria cau durant el període de validesa de la sessió i completarà automàticament l'enviament de la signatura sense haver d'introduir la contrasenya durant aquest període.",
-};
 
-export default caEs;
+  "project.select_title": "Projectes de l'espai de treball",
+  "project.current_tooltip": "Projecte actiu: {name}",
+  "project.all": "Espai de treball (Tots)",
+  "project.pinned_hint": "Projecte bloquejat (no canviarà en obrir fitxers)",
+  "project.unpinned_hint": "El projecte segueix automàticament els fitxers i canvis de Git",
+  "project.footer_pinned": "Bloquejat: feu clic a 📌 per seguir fitxers automàticament",
+  "project.footer_unpinned": "Segueix automàticament fitxers i canvis de Git",
+};

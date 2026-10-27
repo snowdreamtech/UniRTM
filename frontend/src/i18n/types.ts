@@ -2430,11 +2430,11 @@ export interface TranslationDict {
   "git_identity.ssh_key_placeholder": string;
   "git_identity.ssh_key_hint": string;
   "git_identity.gpg_key_hint": string;
-  "project.select_title"?: string;
-  "project.current_tooltip"?: string;
-  "project.all"?: string;
-  "project.pinned_hint"?: string;
-  "project.unpinned_hint"?: string;
-  "project.footer_pinned"?: string;
-  "project.footer_unpinned"?: string;
+  "project.select_title": string;
+  "project.current_tooltip": string;
+  "project.all": string;
+  "project.pinned_hint": string;
+  "project.unpinned_hint": string;
+  "project.footer_pinned": string;
+  "project.footer_unpinned": string;
 }

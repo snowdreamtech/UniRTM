@@ -2605,6 +2605,12 @@ export const plPl: TranslationDict = {
     "Jeśli pozostawisz to pole puste, Git automatycznie zakończy uwierzytelnianie bez hasła poprzez aktywowanego agenta SSH i systemową konfigurację SSH, aby uniknąć wielokrotnego wprowadzania hasła klucza prywatnego.",
   "git_identity.gpg_key_hint":
     "Agent GPG będzie buforował hasło w pamięci przez okres ważności sesji i automatycznie dokończy składanie podpisu bez konieczności wprowadzania hasła w tym okresie.",
-};
 
-export default plPl;
+  "project.select_title": "Projekty obszaru roboczego",
+  "project.current_tooltip": "Aktywny projekt: {name}",
+  "project.all": "Obszar roboczy (Wszystkie)",
+  "project.pinned_hint": "Projekt zablokowany (nie przełącza się przy otwarciu pliku)",
+  "project.unpinned_hint": "Projekt automatycznie śledzi otwarte pliki i zmiany Git",
+  "project.footer_pinned": "Zablokowany: kliknij 📌, aby śledzić pliki",
+  "project.footer_unpinned": "Automatycznie śledzi pliki i zmiany w Git",
+};

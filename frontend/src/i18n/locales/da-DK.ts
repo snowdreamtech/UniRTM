@@ -2578,6 +2578,12 @@ export const daDk: TranslationDict = {
     "Når det er tomt, vil Git automatisk fuldføre adgangskodefri godkendelse gennem den aktiverede SSH Agent og system SSH-konfiguration for at undgå gentagne gange at indtaste adgangskoden til den private nøgle.",
   "git_identity.gpg_key_hint":
     "GPG Agent vil cache adgangskoden i hukommelsen under sessionens gyldighedsperiode og fuldføre automatisk signaturindsendelsen uden at skulle indtaste adgangskoden i denne periode.",
-};
 
-export default daDk;
+  "project.select_title": "Arbejdsområde-projekter",
+  "project.current_tooltip": "Aktivt projekt: {name}",
+  "project.all": "Arbejdsområde (Alle)",
+  "project.pinned_hint": "Projekt låst (skifter ikke ved åbning af filer)",
+  "project.unpinned_hint": "Projekt følger automatisk åbne filer og Git-ændringer",
+  "project.footer_pinned": "Låst: klik på 📌 for at følge filer automatisk",
+  "project.footer_unpinned": "Følger automatisk filer og Git-ændringer",
+};

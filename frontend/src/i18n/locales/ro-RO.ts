@@ -2613,6 +2613,12 @@ export const roRo: TranslationDict = {
     "Când este lăsat necompletat, Git va finaliza automat autentificarea fără parolă prin agentul SSH activat și configurația SSH a sistemului pentru a evita introducerea repetă a parolei cheii private.",
   "git_identity.gpg_key_hint":
     "Agentul GPG va stoca parola în memoria cache în perioada de valabilitate a sesiunii și va finaliza automat trimiterea semnăturii fără a fi nevoie să introduceți parola în această perioadă.",
-};
 
-export default roRo;
+  "project.select_title": "Proiecte spațiu de lucru",
+  "project.current_tooltip": "Proiect activ: {name}",
+  "project.all": "Spațiu de lucru (Toate)",
+  "project.pinned_hint": "Proiect blocat (nu se comută la deschiderea fișierelor)",
+  "project.unpinned_hint": "Proiectul urmărește automat fișierele deschise și modificările Git",
+  "project.footer_pinned": "Blocat: clic pe 📌 pentru urmărirea automată a fișierelor",
+  "project.footer_unpinned": "Urmărește automat fișierele și modificările Git",
+};

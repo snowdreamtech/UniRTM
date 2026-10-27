@@ -2586,6 +2586,12 @@ export const fiFi: TranslationDict = {
     "Kun jätetään tyhjäksi, Git suorittaa automaattisesti salasanattoman todennuksen aktivoidun SSH-agentin ja järjestelmän SSH-määrityksen kautta välttääkseen yksityisen avaimen salasanan toistuvan syöttämisen.",
   "git_identity.gpg_key_hint":
     "GPG Agent tallentaa salasanan välimuistiin istunnon voimassaoloaikana ja suorittaa allekirjoituksen lähettämisen automaattisesti loppuun ilman salasanan syöttämistä tänä aikana.",
-};
 
-export default fiFi;
+  "project.select_title": "Työtilan projektit",
+  "project.current_tooltip": "Aktiivinen projekti: {name}",
+  "project.all": "Työtila (Kaikki)",
+  "project.pinned_hint": "Projekti lukittu (ei vaihdu tiedostoja avattaessa)",
+  "project.unpinned_hint": "Projekti seuraa automaattisesti avattuja tiedostoja ja Git-muutoksia",
+  "project.footer_pinned": "Lukittu: napsauta 📌 seurataksesi tiedostoja automaattisesti",
+  "project.footer_unpinned": "Seuraa automaattisesti tiedostoja ja Git-muutoksia",
+};

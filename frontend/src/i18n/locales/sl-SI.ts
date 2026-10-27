@@ -2586,6 +2586,12 @@ export const slSi: TranslationDict = {
     "Ko pustite prazno, bo Git samodejno dokončal preverjanje pristnosti brez gesla prek aktiviranega agenta SSH in sistemske konfiguracije SSH, da se izognete večkratnemu vnašanju gesla zasebnega ključa.",
   "git_identity.gpg_key_hint":
     "Agent GPG bo med obdobjem veljavnosti seje predpomnil geslo v pomnilnik in samodejno dokončal oddajo podpisa, ne da bi bilo treba v tem obdobju vnesti geslo.",
-};
 
-export default slSi;
+  "project.select_title": "Projekti delovnega prostora",
+  "project.current_tooltip": "Aktivni projekt: {name}",
+  "project.all": "Delovni prostor (Vsi)",
+  "project.pinned_hint": "Projekt zaklenjen (ne preklopi ob odprtju datoteke)",
+  "project.unpinned_hint": "Projekt samodejno sledi odprtim datotekam in spremembam Git",
+  "project.footer_pinned": "Zaklenjeno: kliknite 📌 za samodejno sledenje datotekam",
+  "project.footer_unpinned": "Samodejno sledi datotekam in spremembam Git",
+};

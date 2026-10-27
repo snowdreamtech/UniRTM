@@ -2615,6 +2615,12 @@ export const glEs: TranslationDict = {
     "Cando se deixa en branco, Git completará automaticamente a autenticación sen contrasinal a través do axente SSH activado e da configuración SSH do sistema para evitar que se introduza repetidamente o contrasinal da clave privada.",
   "git_identity.gpg_key_hint":
     "GPG Agent almacenará o contrasinal na memoria caché durante o período de validez da sesión e completará automaticamente o envío da sinatura sen ter que introducir o contrasinal durante este período.",
-};
 
-export default glEs;
+  "project.select_title": "Proxectos do espazo de traballo",
+  "project.current_tooltip": "Proxecto activo: {name}",
+  "project.all": "Espazo de traballo (Todos)",
+  "project.pinned_hint": "Proxecto bloqueado (non cambiará ao abrir ficheiros)",
+  "project.unpinned_hint": "O proxecto segue automaticamente ficheiros e cambios de Git",
+  "project.footer_pinned": "Bloqueado: prema en 📌 para seguir ficheiros automaticamente",
+  "project.footer_unpinned": "Segue automaticamente ficheiros e cambios de Git",
+};

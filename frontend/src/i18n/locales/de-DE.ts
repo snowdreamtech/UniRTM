@@ -2654,6 +2654,12 @@ export const deDe: TranslationDict = {
     "Wenn das Feld leer gelassen wird, führt Git die kennwortlose Authentifizierung automatisch über den aktivierten SSH-Agenten und die System-SSH-Konfiguration durch, um eine wiederholte Eingabe des Kennworts für den privaten Schlüssel zu vermeiden.",
   "git_identity.gpg_key_hint":
     "GPG Agent speichert das Passwort während der Gültigkeitsdauer der Sitzung im Speicher und schließt die Signaturübermittlung automatisch ab, ohne dass in diesem Zeitraum das Passwort eingegeben werden muss.",
-};
 
-export default deDe;
+  "project.select_title": "Workspace-Projekte",
+  "project.current_tooltip": "Aktives Projekt: {name}",
+  "project.all": "Workspace (Alle)",
+  "project.pinned_hint": "Projekt gesperrt (wechselt nicht beim Öffnen von Dateien)",
+  "project.unpinned_hint": "Projekt folgt automatisch geöffneten Dateien und Git-Änderungen",
+  "project.footer_pinned": "Gesperrt: 📌 klicken, um Dateien automatisch zu folgen",
+  "project.footer_unpinned": "Folgt Dateien und Git-Änderungen automatisch",
+};

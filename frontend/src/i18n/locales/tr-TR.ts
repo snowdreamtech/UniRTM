@@ -2595,6 +2595,12 @@ export const trTr: TranslationDict = {
     "Boş bırakıldığında Git, özel anahtar parolasının tekrar tekrar girilmesini önlemek için etkinleştirilmiş SSH Aracısı ve sistem SSH yapılandırması aracılığıyla parolasız kimlik doğrulamasını otomatik olarak tamamlayacaktır.",
   "git_identity.gpg_key_hint":
     "GPG Agent, oturumun geçerlilik süresi boyunca şifreyi hafızada önbelleğe alacak ve bu süre zarfında şifre girmeye gerek kalmadan imza gönderimini otomatik olarak tamamlayacaktır.",
-};
 
-export default trTr;
+  "project.select_title": "Çalışma Alanı Projeleri",
+  "project.current_tooltip": "Aktif Proje: {name}",
+  "project.all": "Çalışma Alanı (Tümü)",
+  "project.pinned_hint": "Proje sabitlendi (dosya açıldığında değişmez)",
+  "project.unpinned_hint": "Proje açık dosyaları ve Git değişikliklerini otomatik izler",
+  "project.footer_pinned": "Sabitlendi: dosyaları otomatik izlemek için 📌 simgesine tıklayın",
+  "project.footer_unpinned": "Dosyaları ve Git değişikliklerini otomatik izler",
+};
