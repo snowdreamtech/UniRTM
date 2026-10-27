@@ -11,7 +11,7 @@
           `Active Project: ${activeProject?.name || 'Workspace'}`
         "
       >
-        <span class="codicon codicon-package"></span>
+        <span class="codicon codicon-package project-icon"></span>
         <span class="project-label">{{ activeProject?.name || tr("project.all") || "Workspace" }}</span>
         <span v-if="isMultiProject" class="codicon codicon-chevron-down twistie" :class="{ rotated: isOpen }"></span>
       </button>
@@ -118,38 +118,88 @@ onUnmounted(() => {
 .project-pill-group {
   display: inline-flex;
   align-items: center;
-  background: var(--card-bg, rgba(255, 255, 255, 0.04));
-  border: 1px solid var(--card-border, rgba(128, 128, 128, 0.25));
+  background: var(--input-bg, rgba(0, 0, 0, 0.15));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
   border-radius: 9999px;
-  overflow: hidden;
-  transition: all 0.2s ease;
+  padding: 1px 2px;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root[data-theme="light"] .project-pill-group,
+[data-theme="light"] .project-pill-group {
+  background: var(--input-bg, #f8fafc);
+  border-color: var(--card-border, #cbd5e1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .project-pill-group:hover {
   border-color: var(--accent-cyan, #0284c7);
-  background: rgba(2, 132, 199, 0.08);
 }
 
 .project-selector-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.5rem 0.2rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-main, #e0e0e0);
+  gap: 5px;
   background: transparent;
   border: none;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted, #94a3b8);
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+:root[data-theme="light"] .project-selector-btn,
+[data-theme="light"] .project-selector-btn {
+  color: var(--text-muted, #475569);
 }
 
 .project-selector-btn:hover {
-  color: #fff;
+  color: var(--text-main, #f8fafc);
+  background: var(--hover-bg, rgba(255, 255, 255, 0.06));
+}
+
+:root[data-theme="light"] .project-selector-btn:hover,
+[data-theme="light"] .project-selector-btn:hover {
+  color: var(--text-main, #0f172a);
+  background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+}
+
+.project-selector-btn.is-open {
+  background: var(--card-bg, #1e1e1e);
+  color: var(--accent-cyan, #00e5ff);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+:root[data-theme="light"] .project-selector-btn.is-open,
+[data-theme="light"] .project-selector-btn.is-open {
+  background: #ffffff;
+  color: var(--accent-cyan, #0284c7);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.project-icon {
+  font-size: 0.8125rem;
+  color: var(--accent-cyan, #00e5ff);
+  opacity: 0.9;
+}
+
+:root[data-theme="light"] .project-icon,
+[data-theme="light"] .project-icon {
+  color: var(--accent-cyan, #0284c7);
 }
 
 .project-label {
-  font-weight: 600;
+  letter-spacing: 0.2px;
   max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -157,9 +207,9 @@ onUnmounted(() => {
 }
 
 .twistie {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   transition: transform 0.2s ease;
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 .twistie.rotated {
@@ -170,41 +220,71 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.2rem 0.45rem;
+  width: 22px;
+  height: 20px;
+  border-radius: 9999px;
   font-size: 0.6875rem;
-  color: var(--text-muted, #888);
+  color: var(--text-muted, #94a3b8);
   background: transparent;
   border: none;
-  border-left: 1px solid var(--card-border, rgba(128, 128, 128, 0.2));
   cursor: pointer;
   transition: all 0.15s ease;
+  margin-right: 1px;
+}
+
+:root[data-theme="light"] .project-pin-btn,
+[data-theme="light"] .project-pin-btn {
+  color: var(--text-muted, #64748b);
 }
 
 .project-pin-btn:hover {
-  color: var(--text-main, #fff);
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main, #f8fafc);
+  background: var(--hover-bg, rgba(255, 255, 255, 0.08));
+}
+
+:root[data-theme="light"] .project-pin-btn:hover,
+[data-theme="light"] .project-pin-btn:hover {
+  color: var(--text-main, #0f172a);
+  background: var(--hover-bg, rgba(0, 0, 0, 0.06));
 }
 
 .project-pin-btn.pinned {
-  color: #58a6ff;
-  background: rgba(56, 139, 253, 0.15);
+  color: var(--accent-cyan, #00e5ff);
+  background: rgba(0, 229, 255, 0.15);
 }
 
-/* Dropdown Menu */
+:root[data-theme="light"] .project-pin-btn.pinned,
+[data-theme="light"] .project-pin-btn.pinned {
+  color: var(--accent-cyan, #0284c7);
+  background: #e0f2fe;
+}
+
+/* Dropdown Popover */
 .project-dropdown-menu {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  width: 240px;
-  background: var(--bg-dropdown, #1e1e1e);
-  border: 1px solid var(--card-border, #333);
+  width: 250px;
+  background: var(--modal-bg, #0d1626);
+  border: 1px solid var(--card-border, rgba(0, 229, 255, 0.2));
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.25);
   z-index: 1000;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+}
+
+:root[data-theme="light"] .project-dropdown-menu,
+[data-theme="light"] .project-dropdown-menu {
+  background: #ffffff;
+  border-color: var(--card-border, #cbd5e1);
+  box-shadow:
+    0 12px 30px rgba(15, 23, 42, 0.12),
+    0 4px 10px rgba(15, 23, 42, 0.06);
 }
 
 .dropdown-header {
@@ -215,16 +295,30 @@ onUnmounted(() => {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  color: var(--text-muted, #888);
-  border-bottom: 1px solid var(--card-border, #2a2a2a);
-  background: rgba(0, 0, 0, 0.15);
+  color: var(--text-muted, #94a3b8);
+  border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  background: var(--header-bg, rgba(255, 255, 255, 0.03));
+}
+
+:root[data-theme="light"] .dropdown-header,
+[data-theme="light"] .dropdown-header {
+  color: var(--text-muted, #64748b);
+  border-bottom-color: var(--card-border, #e2e8f0);
+  background: var(--header-bg, #f8fafc);
 }
 
 .header-count {
   background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, #94a3b8);
   padding: 1px 6px;
   border-radius: 9999px;
   font-size: 0.625rem;
+}
+
+:root[data-theme="light"] .header-count,
+[data-theme="light"] .header-count {
+  background: var(--btn-secondary-bg, #e2e8f0);
+  color: var(--text-muted, #475569);
 }
 
 .dropdown-list {
@@ -238,30 +332,59 @@ onUnmounted(() => {
 .dropdown-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.75rem;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
   background: transparent;
   border: none;
-  color: var(--text-muted, #aaa);
+  color: var(--text-main, #f8fafc);
   cursor: pointer;
   text-align: left;
   transition: all 0.15s ease;
   width: 100%;
 }
 
+:root[data-theme="light"] .dropdown-item,
+[data-theme="light"] .dropdown-item {
+  color: var(--text-main, #0f172a);
+}
+
 .dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-main, #fff);
+  background: var(--hover-bg, rgba(255, 255, 255, 0.06));
+}
+
+:root[data-theme="light"] .dropdown-item:hover,
+[data-theme="light"] .dropdown-item:hover {
+  background: var(--hover-bg, #f1f5f9);
 }
 
 .dropdown-item.active {
-  background: rgba(2, 132, 199, 0.15);
-  color: var(--accent-cyan, #388bfd);
+  background: var(--vscode-menu-selectionBackground, rgba(0, 229, 255, 0.15));
+  color: var(--accent-cyan, #00e5ff);
+}
+
+:root[data-theme="light"] .dropdown-item.active,
+[data-theme="light"] .dropdown-item.active {
+  background: var(--vscode-menu-selectionBackground, #e0f2fe);
+  color: var(--accent-cyan, #0284c7);
 }
 
 .item-icon {
   font-size: 0.9375rem;
   flex-shrink: 0;
+  color: var(--text-muted, #94a3b8);
+}
+
+:root[data-theme="light"] .item-icon,
+[data-theme="light"] .item-icon {
+  color: var(--text-muted, #64748b);
+}
+
+.dropdown-item.active .item-icon {
+  color: var(--accent-cyan, #00e5ff);
+}
+
+:root[data-theme="light"] .dropdown-item.active .item-icon {
+  color: var(--accent-cyan, #0284c7);
 }
 
 .item-details {
@@ -277,31 +400,59 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: inherit;
 }
 
 .item-sub {
   font-size: 0.625rem;
-  opacity: 0.7;
+  color: var(--text-muted, #64748b);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+:root[data-theme="light"] .item-sub,
+[data-theme="light"] .item-sub {
+  color: var(--text-muted, #64748b);
+}
+
+.dropdown-item.active .item-sub {
+  color: var(--accent-cyan, #00e5ff);
+  opacity: 0.85;
+}
+
+:root[data-theme="light"] .dropdown-item.active .item-sub {
+  color: #0369a1;
+  opacity: 1;
+}
+
 .active-check {
   font-size: 0.8125rem;
-  color: var(--accent-cyan, #388bfd);
+  color: var(--accent-cyan, #00e5ff);
   flex-shrink: 0;
+}
+
+:root[data-theme="light"] .active-check,
+[data-theme="light"] .active-check {
+  color: var(--accent-cyan, #0284c7);
 }
 
 .dropdown-footer {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.4rem 0.75rem;
+  padding: 0.45rem 0.75rem;
   font-size: 0.6875rem;
-  color: var(--text-muted, #777);
-  background: rgba(0, 0, 0, 0.2);
-  border-top: 1px solid var(--card-border, #2a2a2a);
+  color: var(--text-muted, #94a3b8);
+  background: var(--header-bg, rgba(0, 0, 0, 0.2));
+  border-top: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+}
+
+:root[data-theme="light"] .dropdown-footer,
+[data-theme="light"] .dropdown-footer {
+  color: var(--text-muted, #64748b);
+  background: var(--header-bg, #f8fafc);
+  border-top-color: var(--card-border, #e2e8f0);
 }
 
 .dropdown-fade-enter-active,
