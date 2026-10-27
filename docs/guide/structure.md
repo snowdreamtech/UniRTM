@@ -1,100 +1,44 @@
 # Project Structure
 
-A map of every directory and file in the template and what it does.
+A clean overview of the UniRTM repository layout and key components.
 
 ## Top-Level Overview
 
 ```text
-project-root/
-├── .agent/                   # 🤖 The Brain — Canonical AI configuration
-│   ├── rules/                # 📏 80+ unified AI behavioral rules (SSoT)
-│   └── workflows/            # 🛠️ SpecKit workflow definitions
+unirtm/
+├── cmd/                      # 🚀 CLI Commands (Cobra command hierarchy & subcommands)
+├── internal/                 # ⚙️ Core internal implementation
+│   ├── config/               # Configuration parsing and schema validation
+│   ├── database/             # SQLite state persistence and migrations
+│   ├── guard/                # Quality Guard harness & built-in verification rules
+│   ├── hook/                 # Git hook integration & hybrid runner
+│   ├── provider/             # Multi-language tool providers (Go, Node, Python, etc.)
+│   ├── repository/           # Data access repositories
+│   └── server/               # Embedded REST / WebSocket API server
+├── frontend/                 # 🖥️ Web Workbench GUI (Vue 3, TypeScript, Tailwind)
+├── specs/                    # 📋 Specification & architecture deliverables (001–056)
+├── docs/                     # 📖 VitePress documentation site
 │
-├── .github/                  # 🐙 GitHub integration
-│   ├── workflows/            # ⚙️  CI/CD pipelines
-│   ├── ISSUE_TEMPLATE/       # 📋 Bug report, feature request templates
-│   ├── DISCUSSION_TEMPLATE/  # 💬 Community discussion templates
-│   ├── instructions/         # 🧠 GitHub Copilot custom instructions
-│   ├── prompts/              # ✍️  GitHub Copilot reusable prompts
-│   └── agents/               # 🧩 GitHub Copilot agent definitions
-│
+├── .github/                  # 🐙 GitHub integration & CI/CD workflows
 ├── .devcontainer/            # 🐳 DevContainer configuration
-│   ├── Dockerfile            # Container image definition
-│   ├── devcontainer.json     # VS Code DevContainer settings
-│   └── docker-compose.yaml  # Multi-service configuration
-│
 ├── .vscode/                  # 💻 VS Code workspace settings
-│   ├── tasks.json            # Make command shortcuts
-│   └── launch.json           # Debug configurations (Go, Python, Node, Vue, React)
 │
-├── .cursor/                  # AI IDE directories (50+ total)
-├── .cline/                   # Each mirrors .agent/rules/ and .agent/workflows/
-├── .windsurf/
-├── .aide/
-├── ... (50+ more)
+├── .unirtm.toml              # 🔧 Repository toolchain and quality guard contract
+├── unirtm.lock               # 🔒 Pinned tool versions and integrity hashes
+├── go.mod                    # 📦 Go module dependencies
+├── Makefile                  # 🛠️ Build and development automation
 │
-├── scripts/
-│
-├── docs/                     # 📖 VitePress documentation site (this site)
-│
-├── AGENTS.md                 # AI agent entry point (OpenAI Codex / AGENTS-spec)
-├── CLAUDE.md                 # Claude Code entry point
-├── CONVENTIONS.md            # Human-readable project conventions
-├── CHANGELOG.md              # Version history
+├── README.md                 # Project overview and quickstart
 ├── CONTRIBUTING.md           # Contributor guide
 ├── CODE_OF_CONDUCT.md        # Community standards
-├── SECURITY.md               # Security policy and disclosure
-├── SUPPORT.md                # Support channels
-├── ROADMAP.md                # Future plans
-├── LICENSE                   # MIT License
-│
-├── .unirtm.toml                  # 🔧 Unified task runner
-├── .editorconfig             # Editor-agnostic formatting rules
-├── .pre-commit-config.yaml   # Pre-commit hook definitions (40+ hooks)
-├── commitlint.config.js      # Conventional Commits enforcement
-├── eslint.config.mjs         # JavaScript/TypeScript linting
-├── .stylelintrc.json         # CSS/SCSS linting
-├── .yamllint.yml             # YAML linting
-├── ruff.toml                 # Python linting and formatting
-└── sweep.yaml                # Automated code maintenance
+├── SECURITY.md               # Security policy
+└── LICENSE                   # MIT License
 ```
 
-## The `.agent/` Directory
+## AI Agent Integration: Zero Repository Pollution
 
-This is the heart of the template, the Single Source of Truth for all AI behavior:
+UniRTM employs a **Zero-Footprint Architecture** for AI IDEs and agents:
 
-### `.agent/rules/`
-
-Contains 80+ Markdown rule files that govern how AI assistants should behave in this project. Structured in two tiers:
-
-**Core Rules** (apply to all projects):
-
-| File                   | Coverage                                             |
-| ---------------------- | ---------------------------------------------------- |
-| `01-general.md`        | Language, communication, idempotency, cross-platform |
-| `02-coding-style.md`   | Commit messages, code quality, naming conventions    |
-| `03-architecture.md`   | Project structure, AI IDE integration                |
-| `04-security.md`       | Credentials, access control, scanning                |
-| `05-dependencies.md`   | Locking, auditing, release process                   |
-| `06-ci-testing.md`     | Test types, CI pipeline, quality gates               |
-| `07-git.md`            | Commits, branching, pull requests                    |
-| `08-dev-env.md`        | DevContainer, scripts, pre-commit hooks              |
-| `09-ai-interaction.md` | Safety, code generation, communication               |
-| `10-ui-ux.md`          | Frontend: styling, accessibility, i18n               |
-| `11-deployment.md`     | Containerization, secrets, IaC                       |
-
-**Language/Framework Rules** (loaded dynamically based on project stack):
-`go.md`, `python.md`, `typescript.md`, `react.md`, `vue.md`, `docker.md`, `kubernetes.md`, and 70+ more.
-
-### `.agent/workflows/`
-
-Contains SpecKit workflow definitions — step-by-step AI agent instructions for managing the feature development lifecycle.
-
-## The AI IDE Directories
-
-Every supported AI IDE has its own directory that contains:
-
-- `rules/` — Redirect/mirror of `.agent/rules/`
-- `commands/` or `workflows/` — Shortcuts to `.agent/workflows/`
-
-This follows each IDE's own naming convention while maintaining a unified source.
+- **Model Context Protocol (MCP)**: Instead of polluting project roots with 50+ proprietary dot-directories (`.cursor/`, `.windsurf/`, `.cline/`), UniRTM provides a built-in standard MCP server via `unirtm mcp`.
+- **Global Rules & Workflows**: AI coding rules and Spec Kit workflows are provided dynamically to AI agents through standard MCP prompts, resources (`unirtm://config`, `unirtm://conventions`), and tools (`quality_check`, `get_rule`).
+- **Clean Repositories**: Any AI IDE or agent (Cursor, Windsurf, Claude Desktop, Zed, UniAgent) connects via standard MCP over stdio without committing any tool-specific proxy files.

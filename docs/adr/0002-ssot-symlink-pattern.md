@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by Model Context Protocol (MCP) Architecture (`unirtm mcp`)
 
 ## Context
 

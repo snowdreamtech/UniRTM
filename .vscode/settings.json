@@ -13,22 +13,6 @@
   // Set the icon theme to vscode-icons for better file type recognition
   "workbench.iconTheme": "vscode-icons",
   // ------------------------------------------------------------
-  // AI Assistant & Terminal Configuration
-  // ------------------------------------------------------------
-  // Configure recommended files for SpecKit to improve context matching in chat
-  "chat.promptFilesRecommendations": {
-    "speckit.constitution": true, // Recommend project constitution
-    "speckit.specify": true, // Recommend requirements specification
-    "speckit.plan": true, // Recommend execution plan
-    "speckit.tasks": true, // Recommend task list
-    "speckit.implement": true // Recommend implementation details
-  },
-  // Terminal auto-approval: Grant silent execution rights for specific script paths
-  "chat.tools.terminal.autoApprove": {
-    ".specify/scripts/bash/": true, // Allow auto-running Bash scripts in .specify
-    ".specify/scripts/powershell/": true // Allow auto-running PowerShell scripts in .specify
-  },
-  // ------------------------------------------------------------
   // 2. Editor Behavior & Formatting
   // ------------------------------------------------------------
   // Disable the minimap to maximize horizontal editing space
@@ -488,33 +472,8 @@
     "*.liquid": "liquid",
     "*.njk": "nunjucks",
     "*.hbs": "handlebars",
-    // --- Project Specific: AI Tools & Frameworks ---
-    ".agent/workflows/*.md": "markdown", // Antigravity workflow docs
-    ".agent/instructions/**/*.md": "markdown", // AI instruction sets
-    ".agents/**/*.md": "markdown", // Agent configuration docs
-    ".specify/memory/*.md": "markdown", // SpecKit memory files
-    ".specify/scripts/**/*.sh": "shellscript", // SpecKit Bash scripts
-    ".specify/scripts/**/*.ps1": "powershell", // SpecKit PowerShell scripts
-    ".specify/templates/*.{md,html,txt}": "markdown", // SpecKit templates
-    ".gemini/antigravity/brain/*.md": "markdown", // Gemini core thinking chains
-    ".gemini/antigravity/logs/*.log": "plaintext", // Gemini logs
-    ".roo/commands/*.{sh,bash}": "shellscript", // Roo Code command scripts
-    ".claude/commands/*.{sh,bash}": "shellscript", // Claude specific scripts
-    ".qwen/commands/*.{sh,bash}": "shellscript", // Qwen specific scripts
-    ".amazonq/**/*.md": "markdown", // Amazon Q mapping docs
-    ".augment/**/*.md": "markdown", // Augment mapping docs
-    ".bob/**/*.md": "markdown", // Bob mapping docs
-    ".codebuddy/**/*.md": "markdown", // CodeBuddy docs
-    ".codex/**/*.md": "markdown", // Codex docs
-    ".kilocode/**/*.md": "markdown", // KiloCode docs
-    ".opencode/**/*.md": "markdown", // OpenCode docs
-    ".qoder/**/*.md": "markdown", // Qoder docs
-    ".shai/**/*.md": "markdown", // SHAI docs
-    ".cursor/rules/*.md": "markdown", // Cursor rules definition
-    ".windsurf/rules/*.md": "markdown", // Windsurf rules definition
     ".github/workflows/*.yml": "yaml", // GitHub Actions workflows
-    ".vscode/*.json": "jsonc", // VS Code local configs (support comments)
-    "*.agent-flow": "json" // Agent Flow resource files
+    ".vscode/*.json": "jsonc" // VS Code local configs (support comments)
   },
   // ------------------------------------------------------------
   // UniRTM Schema Associations for IDE IntelliSense & Validation
