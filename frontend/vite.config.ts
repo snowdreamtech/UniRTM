@@ -669,7 +669,7 @@ export default defineConfig({
                   },
                   build: {
                     target: `${process.platform}/${process.arch}`,
-                    go_version: "go1.27.0",
+                    go_version: "go1.27.3",
                     built: buildTime,
                     features: ["SQLITE", "OPENSSL", "GPG", "VFOX_COMPAT"],
                   },
