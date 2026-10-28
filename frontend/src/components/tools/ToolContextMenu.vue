@@ -4,7 +4,7 @@
 <template>
   <Teleport to="body">
     <div v-if="visible && tool" class="context-menu-backdrop" @click="handleClose" @contextmenu.prevent="handleClose">
-      <div ref="menuRef" class="tool-context-menu" :style="adjustedStyle" @click.stop>
+      <div class="tool-context-menu" :style="adjustedStyle" @click.stop>
         <!-- 1. Switch -->
         <div class="menu-item" @click="handleAction('switch')">
           <span class="menu-icon codicon codicon-arrow-swap"></span>
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from "vue";
+import { computed, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../../i18n";
 
 export type ToolMenuActionType = "switch" | "install" | "toggle-pin" | "delete";
@@ -53,8 +53,6 @@ const emit = defineEmits<{
   (e: "close"): void;
   (e: "action", action: ToolMenuActionType, tool: any): void;
 }>();
-
-const menuRef = ref<HTMLElement | null>(null);
 
 const isPinned = computed(() => {
   if (!props.tool) return false;

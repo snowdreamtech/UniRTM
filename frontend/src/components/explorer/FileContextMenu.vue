@@ -6,7 +6,7 @@
       @click="closeContextMenu"
       @contextmenu.prevent="closeContextMenu"
     >
-      <div ref="menuRef" class="file-context-menu" :style="adjustedStyle" @click.stop>
+      <div class="file-context-menu" :style="adjustedStyle" @click.stop>
         <!-- New File / New Folder (if directory, create inside; if file, create in parent directory) -->
         <div class="menu-item" @click="handleNewFile">
           <span class="menu-icon codicon codicon-new-file"></span>
@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useFileTree } from "../../composables/useFileTree";
 import { useGit } from "../../composables/useGit";
@@ -228,8 +228,6 @@ async function handleDiscardFile() {
     notifyGitStatusChanged();
   }
 }
-
-const menuRef = ref<HTMLElement | null>(null);
 
 function getTargetParent(): string {
   const node = contextMenu.value.node;

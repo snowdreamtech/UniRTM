@@ -4,7 +4,7 @@
 <template>
   <Teleport to="body">
     <div v-if="visible && task" class="context-menu-backdrop" @click="handleClose" @contextmenu.prevent="handleClose">
-      <div ref="menuRef" class="task-context-menu" :style="adjustedStyle" @click.stop>
+      <div class="task-context-menu" :style="adjustedStyle" @click.stop>
         <!-- 1. Run -->
         <div class="menu-item" @click="handleAction('run')">
           <span class="menu-icon codicon codicon-play"></span>
@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from "vue";
+import { computed, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../../i18n";
 
 export type TaskMenuActionType = "run" | "edit" | "delete";
@@ -45,8 +45,6 @@ const emit = defineEmits<{
   (e: "close"): void;
   (e: "action", action: TaskMenuActionType, task: any): void;
 }>();
-
-const menuRef = ref<HTMLElement | null>(null);
 
 const MENU_WIDTH = 130;
 const MENU_HEIGHT = 115;

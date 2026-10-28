@@ -1,7 +1,7 @@
 <!-- Copyright (c) 2026 SnowdreamTech. All rights reserved. -->
 <!-- Licensed under the MIT License. See LICENSE file in the project root for full license information. -->
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { computed, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../../i18n";
 
 const props = defineProps<{
@@ -22,8 +22,6 @@ const emit = defineEmits<{
   (e: "find"): void;
   (e: "restart"): void;
 }>();
-
-const menuRef = ref<HTMLElement | null>(null);
 
 const adjustedStyle = computed(() => {
   const menuWidth = 190;
@@ -78,7 +76,6 @@ onBeforeUnmount(() => {
   <Teleport to="body">
     <div v-if="visible" class="context-menu-backdrop" @click="emit('close')" @contextmenu.prevent="emit('close')">
       <div
-        ref="menuRef"
         class="terminal-context-menu"
         :style="adjustedStyle"
         role="menu"

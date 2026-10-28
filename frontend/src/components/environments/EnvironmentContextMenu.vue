@@ -4,7 +4,7 @@
 <template>
   <Teleport to="body">
     <div v-if="visible && env" class="context-menu-backdrop" @click="handleClose" @contextmenu.prevent="handleClose">
-      <div ref="menuRef" class="env-context-menu" :style="adjustedStyle" @click.stop>
+      <div class="env-context-menu" :style="adjustedStyle" @click.stop>
         <!-- 1. Edit -->
         <div class="menu-item" @click="handleAction('edit')">
           <span class="menu-icon codicon codicon-edit"></span>
@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from "vue";
+import { computed, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../../i18n";
 
 export type EnvMenuActionType = "edit" | "copy-value" | "copy-name" | "restore-base" | "delete";
@@ -57,8 +57,6 @@ const emit = defineEmits<{
   (e: "close"): void;
   (e: "action", action: EnvMenuActionType, env: any): void;
 }>();
-
-const menuRef = ref<HTMLElement | null>(null);
 
 const MENU_WIDTH = 145;
 const MENU_HEIGHT = 165;
