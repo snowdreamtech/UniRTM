@@ -672,7 +672,7 @@ func TestBuiltinRules_DebugStatements(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	goodJs := filepath.Join(tmpDir, "index.js")
-	_ = os.WriteFile(goodJs, []byte("console.log('hello');\n// debugger;\n"), 0644)
+	_ = os.WriteFile(goodJs, []byte("console.log('hello');\n// debugger;\nconst config = [\"console\", \"debugger\"];\nconst msg = 'remove debugger';\n"), 0644)
 
 	badJs := filepath.Join(tmpDir, "app.ts")
 	_ = os.WriteFile(badJs, []byte("function test() {\n  debugger;\n}\n"), 0644)
@@ -683,10 +683,14 @@ func TestBuiltinRules_DebugStatements(t *testing.T) {
 	testJs := filepath.Join(tmpDir, "app.test.ts")
 	_ = os.WriteFile(testJs, []byte("debugger;\n"), 0644)
 
+	_ = os.MkdirAll(filepath.Join(tmpDir, "locales"), 0755)
+	localeJs := filepath.Join(tmpDir, "locales", "en.ts")
+	_ = os.WriteFile(localeJs, []byte("export default { desc: 'debugger statement' };\n"), 0644)
+
 	rule := guard.NewDebugStatementsRule()
 	ctx := context.Background()
 
-	issues, err := rule.Execute(ctx, []string{"index.js", "app.ts", "main.py", "app.test.ts"}, guard.ExecuteOptions{
+	issues, err := rule.Execute(ctx, []string{"index.js", "app.ts", "main.py", "app.test.ts", "locales/en.ts"}, guard.ExecuteOptions{
 		WorkspaceDir: tmpDir,
 	})
 	if err != nil {

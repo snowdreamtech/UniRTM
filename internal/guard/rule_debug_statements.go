@@ -48,6 +48,19 @@ func (r *DebugStatementsRule) DefaultExtensions() []string {
 	return []string{".js", ".ts", ".jsx", ".tsx", ".vue", ".py", ".rb", ".php"}
 }
 
+var (
+	reDoubleQuote = regexp.MustCompile(`"([^"\\]|\\.)*"`)
+	reSingleQuote = regexp.MustCompile(`'([^'\\]|\\.)*'`)
+	reBacktick    = regexp.MustCompile("`([^`\\\\]|\\\\.)*`")
+)
+
+func stripStringLiterals(s string) string {
+	s = reDoubleQuote.ReplaceAllString(s, `""`)
+	s = reSingleQuote.ReplaceAllString(s, `""`)
+	s = reBacktick.ReplaceAllString(s, `""`)
+	return s
+}
+
 func (r *DebugStatementsRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
 	var issues []Issue
 
@@ -68,11 +81,12 @@ func (r *DebugStatementsRule) Execute(ctx context.Context, files []string, opts 
 			continue
 		}
 
-		// Skip test files, mocks, vendor
+		// Skip test files, mocks, vendor, locales/i18n
 		norm := filepath.ToSlash(rel)
 		if strings.Contains(norm, "/tests/") || strings.Contains(norm, "/test/") ||
 			strings.Contains(norm, ".test.") || strings.Contains(norm, ".spec.") ||
 			strings.Contains(norm, "/mock/") || strings.Contains(norm, "/mocks/") ||
+			strings.Contains(norm, "/locales/") || strings.Contains(norm, "/i18n/") ||
 			strings.HasSuffix(norm, "/logger.ts") || strings.HasSuffix(norm, "/logger.js") {
 			continue
 		}
@@ -106,8 +120,11 @@ func (r *DebugStatementsRule) Execute(ctx context.Context, files []string, opts 
 				continue
 			}
 
+			// Strip string literals to avoid false positives on strings like ["console", "debugger"] or i18n descriptions
+			codeLine := stripStringLiterals(line)
+
 			for _, pattern := range r.patterns {
-				if match := pattern.FindString(line); match != "" {
+				if match := pattern.FindString(codeLine); match != "" {
 					issues = append(issues, Issue{
 						FilePath: rel,
 						Line:     lineNum,
