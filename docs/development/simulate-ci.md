@@ -79,7 +79,7 @@ env CI=true GITHUB_ACTIONS=true unirtm run audit
 
 **本地模式**:
 
-- 缺失的工具会被优雅跳过（`⏭️ Skipped`）
+- 缺失的工具会被优雅跳过（`↷ Skipped`）
 - 不会因为工具缺失而失败
 
 **CI 模式**:

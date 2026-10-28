@@ -119,7 +119,7 @@ if [ -f "package.json" ]; then
         unirtm exec -- npm audit --registry=https://registry.npmjs.org
     fi
 else
-    echo "⏭️  Skipped (no package.json)"
+    echo "↷  Skipped (no package.json)"
 fi
 '''
 output = "interleaved"
@@ -134,7 +134,7 @@ if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
         unirtm exec -- pip-audit
     fi
 else
-    echo "⏭️  Skipped (no python requirements)"
+    echo "↷  Skipped (no python requirements)"
 fi
 '''
 output = "interleaved"
@@ -145,7 +145,7 @@ run = '''
 if [ -f "go.mod" ]; then
     unirtm exec -- govulncheck ./...
 else
-    echo "⏭️  Skipped (no go.mod)"
+    echo "↷  Skipped (no go.mod)"
 fi
 '''
 output = "interleaved"
@@ -155,7 +155,7 @@ description = "Generate and scan SBOM using Trivy"
 run = '''
 # In local development, skip heavy Trivy vulnerability database downloads unless explicitly requested.
 if [ "${CI:-}" != "true" ] && [ "${GITHUB_ACTIONS:-}" != "true" ] && [ "${RUN_TRIVY_LOCAL:-}" != "1" ]; then
-    echo "⏭️  Skipped Trivy heavy vulnerability DB scan locally (deferred to CI runner)."
+    echo "↷  Skipped Trivy heavy vulnerability DB scan locally (deferred to CI runner)."
     exit 0
 fi
 
