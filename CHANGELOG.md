@@ -6,6 +6,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.37.0](https://github.com/snowdreamtech/UniRTM/compare/v0.36.0...v0.37.0) (2026-10-28)
+
+
+### 🚀 Features
+
+* **hook:** add native commit-msg hook support and default hook installation ([90eccde](https://github.com/snowdreamtech/UniRTM/commit/90eccde44c1ea44905b19e65514dfee0e42c8a62))
+* **i18n:** localize project selector strings across languages ([a349b95](https://github.com/snowdreamtech/UniRTM/commit/a349b95fb14dffc9a8179c5c9714001441ad1b9c))
+* **i18n:** sync project selector keys across all 53 languages and make keys strictly required ([330d1aa](https://github.com/snowdreamtech/UniRTM/commit/330d1aa97b2e530742d20e59ae67f5b5f993d5ac))
+* **mcp:** upgrade unirtm mcp server to standard 2024-11-05 protocol with quality guards, prompts, and resources ([4021c0e](https://github.com/snowdreamtech/UniRTM/commit/4021c0efbc80f9e1562ba98bb4cc5a9d48a0622b))
+* **ui:** support path argument and auto-discover multi-project workspace ([23d14ce](https://github.com/snowdreamtech/UniRTM/commit/23d14ce756b8bd0a3128337128ec163bf0a47c5d))
+* **workspace:** implement global active project synchronization ([537877c](https://github.com/snowdreamtech/UniRTM/commit/537877c788e5e097666f258fa0ce9ea4ace029cf))
+
+
+### 🐛 Bug Fixes
+
+* **guard:** ignore string literals and locales in debug statements rule ([26bfd08](https://github.com/snowdreamtech/UniRTM/commit/26bfd0837f746432bdf6676d7a440fbf21660ee7))
+* **guard:** prevent sidebar crash on null issues and persist checklist tab across navigation ([c0d7d07](https://github.com/snowdreamtech/UniRTM/commit/c0d7d07afb17fa7b87629f72b4cc1a97ddb163f3))
+* **mcp,backend:** provide default fallbacks for clean CI runners and isolate checksum tests ([34f3d04](https://github.com/snowdreamtech/UniRTM/commit/34f3d0411c82775af38393de4114e14a59c8f393))
+* **sec:** upgrade golang.org/x/net to v0.62.0 to resolve GO-2026-6860 and GO-2026-6866 ([6f8e5e4](https://github.com/snowdreamtech/UniRTM/commit/6f8e5e4569b444bdefada3050570d46776b95a1c))
+* **theme:** optimize ProjectSelector for light and dark modes ([839e2fb](https://github.com/snowdreamtech/UniRTM/commit/839e2fb00613a5e44351e7570b2d5c2da86bfdc6))
+* **ui:** eliminate layout jitter and visual shifting on file hover in SCM changes list ([193dc46](https://github.com/snowdreamtech/UniRTM/commit/193dc46c3be7098cc667348493ec6a8eb1f51ee0))
+
+
+### ⚡️ Performance Improvements
+
+* **audit:** defer osv-scanner online vulnerability scan to ci ([4530669](https://github.com/snowdreamtech/UniRTM/commit/45306699f148d483fa770e9d12f082dc5d3bf7f4))
+* **audit:** optimize local audit for gitleaks and defer govulncheck to ci ([15ee559](https://github.com/snowdreamtech/UniRTM/commit/15ee5596283af170e51b296244933e3b0d4994db))
+* **audit:** skip heavy trivy vulnerability db scan in local environment ([65eeeb5](https://github.com/snowdreamtech/UniRTM/commit/65eeeb5aea4ac7ac732764352827d132639f1cf3))
+* **verify:** use incremental lint locally and full-coverage lint in ci ([53f3fe3](https://github.com/snowdreamtech/UniRTM/commit/53f3fe3444867101e82f701943f1885698dd3217))
+
+
+### ♻️ Miscellaneous Chores
+
+* **ai:** remove 56 proprietary AI IDE config folders and enforce gitignore exclusion ([c740493](https://github.com/snowdreamtech/UniRTM/commit/c740493e402a01e6714eff5e5c33b1d9d5371141))
+* **ai:** remove external AI bot configs, purge orphaned rules docs, and clean vscode settings ([b4b072b](https://github.com/snowdreamtech/UniRTM/commit/b4b072bb1fa07df90689e5a32fc8f8a79b82f800))
+* **deps:** bump the all-dependencies group in /frontend with 7 updates ([7c2fe9d](https://github.com/snowdreamtech/UniRTM/commit/7c2fe9d78c86cc1cb74ef832901004b555907a8f))
+* **deps:** sync dependabot config and unirtm toolchain ([ea4dabe](https://github.com/snowdreamtech/UniRTM/commit/ea4dabe0e3e3c80cd3e1293c42c6ff1ce6e691ed))
+* remove redundant and unused linter configuration files from root ([a1441e1](https://github.com/snowdreamtech/UniRTM/commit/a1441e1edb5580df9dfedda44697c11e1ddb6211))
+* **repo:** purge .agent, .specify, .github/agents, and legacy AI pointer files ([44bdd3c](https://github.com/snowdreamtech/UniRTM/commit/44bdd3ca3804315b3cab6e8cafa13b3fb63b1ff3))
+
 ## [0.36.0](https://github.com/snowdreamtech/UniRTM/compare/v0.35.0...v0.36.0) (2026-10-26)
 
 
