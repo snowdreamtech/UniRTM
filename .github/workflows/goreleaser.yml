@@ -464,8 +464,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
         run: |
           echo "⚠️ Release process failed for ${GITHUB_REF_NAME}. Rolling back partial release..."
-          # Delete the partial GitHub release and the associated tag to allow for a clean retry.
-          gh release delete "${GITHUB_REF_NAME}" --yes --cleanup-tag
+          # Delete the partial GitHub release if it exists, along with the associated tag to allow for a clean retry.
+          gh release delete "${GITHUB_REF_NAME}" --yes --cleanup-tag 2>/dev/null || true
+          git push origin --delete "${GITHUB_REF_NAME}" 2>/dev/null || true
 
   verify:
     name: "🔍 Verify Release Signature"

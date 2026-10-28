@@ -26,7 +26,7 @@ before:
     # You may remove this if you don't use go modules.
     - go mod tidy
     # Build frontend production assets for embedded workbench
-    - sh -c "cd frontend && npm install && npm run build"
+    - sh -c "cd frontend && npm install --registry=https://registry.npmjs.org && npm run build"
     # Generate shell completion scripts dynamically before building packages
     - go run ./main.go completion -d ./completions --all
     # Generate manpages
