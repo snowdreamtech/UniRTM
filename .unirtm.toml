@@ -252,8 +252,18 @@ depends = ["test", "test:frontend", "test:shell"]
 output = "interleaved"
 
 [tasks.verify]
-description = "Run full local verification sequentially (lint-all, test:all, audit) to prevent CI OOM"
-depends = ["lint-all", "test:all", "audit"]
+description = "Run verification sequentially: incremental on local, full-coverage on CI"
+run = '''
+if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+    echo "🔍 CI Environment detected: Running full repository lint..."
+    unirtm run lint-all
+else
+    echo "⚡ Local Environment detected: Running fast incremental lint on changed files..."
+    unirtm run lint
+fi
+unirtm run test:all
+unirtm run audit
+'''
 output = "interleaved"
 
 [tasks."audit:trivy-update"]
