@@ -23,8 +23,8 @@
   "devDependencies": {
     "@types/ws": "^8.18.2",
     "@vitejs/plugin-vue": "^6.0.10",
-    "typescript": "~5.8.2",
-    "vite": "^8.3.4",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.5",
     "vitest": "^5.0.5",
     "vue-tsc": "^3.3.13",
     "ws": "^8.22.0"
