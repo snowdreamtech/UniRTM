@@ -153,6 +153,12 @@ output = "interleaved"
 [tasks."audit:trivy"]
 description = "Generate and scan SBOM using Trivy"
 run = '''
+# In local development, skip heavy Trivy vulnerability database downloads unless explicitly requested.
+if [ "${CI:-}" != "true" ] && [ "${GITHUB_ACTIONS:-}" != "true" ] && [ "${RUN_TRIVY_LOCAL:-}" != "1" ]; then
+    echo "⏭️  Skipped Trivy heavy vulnerability DB scan locally (deferred to CI runner)."
+    exit 0
+fi
+
 export TRIVY_SKIP_VERSION_CHECK="true"
 export TRIVY_DB_REPOSITORY="${TRIVY_DB_REPOSITORY:-ghcr.io/aquasecurity/trivy-db:2,public.ecr.aws/aquasecurity/trivy-db:2}"
 export TRIVY_JAVA_DB_REPOSITORY="${TRIVY_JAVA_DB_REPOSITORY:-ghcr.io/aquasecurity/trivy-java-db:1,public.ecr.aws/aquasecurity/trivy-java-db:1}"
