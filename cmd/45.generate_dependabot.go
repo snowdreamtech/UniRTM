@@ -103,7 +103,11 @@ updates:{{range .}}
     commit-message:
       prefix: "{{.Prefix}}"
     labels:{{range .Labels}}
-      - "{{.}}"{{end}}{{if and (eq .Ecosystem "docker") (ne .Directory "/")}}
+      - "{{.}}"{{end}}{{if and (eq .Ecosystem "npm") (eq .Directory "/frontend")}}
+    ignore:
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"{{end}}{{if and (eq .Ecosystem "docker") (ne .Directory "/")}}
     ignore:
       - dependency-name: "*"
         update-types:
