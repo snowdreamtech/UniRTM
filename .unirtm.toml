@@ -75,7 +75,15 @@ env = { UNIRTM_FIX = "1" }
 
 [tasks."audit:gitleaks"]
 description = "Scan for hardcoded secrets"
-run = "unirtm exec -- gitleaks detect --source . --no-banner"
+run = '''
+# In CI environments, perform a full deep-history scan across all Git commits.
+# In local development, scan only the workspace directory to keep feedback instant.
+if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ] || [ "${RUN_GITLEAKS_FULL_HISTORY:-}" = "1" ]; then
+    unirtm exec -- gitleaks detect --source . --no-banner
+else
+    unirtm exec -- gitleaks detect --source . --no-git --no-banner
+fi
+'''
 output = "interleaved"
 env = { GIT_CONFIG_COUNT = "1", GIT_CONFIG_KEY_0 = "diff.renameLimit", GIT_CONFIG_VALUE_0 = "0" }
 
@@ -149,6 +157,11 @@ output = "interleaved"
 description = "Go dependency audit"
 run = '''
 if [ -f "go.mod" ]; then
+    # In local development, skip external Go vulnerability network scan unless explicitly requested.
+    if [ "${CI:-}" != "true" ] && [ "${GITHUB_ACTIONS:-}" != "true" ] && [ "${RUN_GOVULNCHECK_LOCAL:-}" != "1" ]; then
+        echo "↷  Skipped govulncheck online vulnerability scan locally (deferred to CI runner)."
+        exit 0
+    fi
     unirtm exec -- govulncheck ./...
 else
     echo "↷  Skipped (no go.mod)"
