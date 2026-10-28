@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	// conventionalCommitRegex validates standard Conventional Commits header: <type>(<scope>): <subject>
-	conventionalCommitRegex = regexp.MustCompile(`^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_\-\.\/ ]+\))?(!)?: (.+)$`)
+	// conventionalCommitHeaderRegex matches: <type>(<scope>)!: <subject> or <type>: <subject>
+	conventionalCommitHeaderRegex = regexp.MustCompile(`^([a-zA-Z0-9_\-]+)(\(([a-zA-Z0-9_\-\.\/ ]+)\))?(!)?: (.+)$`)
 	// allowedSpecialCommitRegex allows standard git merges, reverts, and interactive fixup commits
 	allowedSpecialCommitRegex = regexp.MustCompile(`^(Merge |Revert |fixup! |squash! |amend! )`)
 )
@@ -32,8 +32,33 @@ const (
 	SubjectMaxLength = 120
 )
 
-// ValidateCommitMessage validates raw commit message string against Conventional Commits specification
+// CommitMsgOptions contains configuration settings for Conventional Commits validation
+type CommitMsgOptions struct {
+	AllowedTypes     []string
+	AllowedScopes    []string
+	RequireScope     bool
+	HeaderMaxLength  int
+	SubjectMaxLength int
+}
+
+// DefaultCommitMsgOptions returns standard Conventional Commits default validation options
+func DefaultCommitMsgOptions() CommitMsgOptions {
+	return CommitMsgOptions{
+		AllowedTypes:     AllowedCommitTypes,
+		AllowedScopes:    nil,
+		RequireScope:     false,
+		HeaderMaxLength:  HeaderMaxLength,
+		SubjectMaxLength: SubjectMaxLength,
+	}
+}
+
+// ValidateCommitMessage validates raw commit message string against default Conventional Commits specification
 func ValidateCommitMessage(msg string) (bool, string) {
+	return ValidateCommitMessageWithOptions(msg, DefaultCommitMsgOptions())
+}
+
+// ValidateCommitMessageWithOptions validates raw commit message string against configured options
+func ValidateCommitMessageWithOptions(msg string, opts CommitMsgOptions) (bool, string) {
 	lines := strings.Split(strings.ReplaceAll(msg, "\r\n", "\n"), "\n")
 	if len(lines) == 0 {
 		return false, "Commit message cannot be empty"
@@ -59,27 +84,75 @@ func ValidateCommitMessage(msg string) (bool, string) {
 		return true, ""
 	}
 
-	// Enforce header-max-length: [2, "always", 120]
-	if len([]rune(header)) > HeaderMaxLength {
-		return false, fmt.Sprintf("Commit header line exceeds %d characters (current: %d)", HeaderMaxLength, len([]rune(header)))
+	maxHeader := opts.HeaderMaxLength
+	if maxHeader <= 0 {
+		maxHeader = HeaderMaxLength
+	}
+	if len([]rune(header)) > maxHeader {
+		return false, fmt.Sprintf("Commit header line exceeds %d characters (current: %d)", maxHeader, len([]rune(header)))
 	}
 
-	matches := conventionalCommitRegex.FindStringSubmatch(header)
+	matches := conventionalCommitHeaderRegex.FindStringSubmatch(header)
+	allowedTypes := opts.AllowedTypes
+	if len(allowedTypes) == 0 {
+		allowedTypes = AllowedCommitTypes
+	}
+
 	if len(matches) == 0 {
 		return false, fmt.Sprintf(
 			"Invalid commit header format %q. Expected: <type>(<scope>): <subject> (valid types: %s)",
-			header, strings.Join(AllowedCommitTypes, ", "),
+			header, strings.Join(allowedTypes, ", "),
 		)
 	}
 
-	subject := strings.TrimSpace(matches[4])
+	commitType := matches[1]
+	hasScope := matches[2] != ""
+	scope := matches[3]
+	subject := strings.TrimSpace(matches[5])
+
+	// Validate commit type
+	typeValid := false
+	for _, t := range allowedTypes {
+		if commitType == t {
+			typeValid = true
+			break
+		}
+	}
+	if !typeValid {
+		return false, fmt.Sprintf(
+			"Invalid commit header format %q. Expected: <type>(<scope>): <subject> (valid types: %s)",
+			header, strings.Join(allowedTypes, ", "),
+		)
+	}
+
+	// Validate scope requirement and allowed values
+	if opts.RequireScope && !hasScope {
+		return false, "Commit scope is required. Expected: <type>(<scope>): <subject>"
+	}
+	if len(opts.AllowedScopes) > 0 && hasScope {
+		scopeValid := false
+		for _, s := range opts.AllowedScopes {
+			if scope == s {
+				scopeValid = true
+				break
+			}
+		}
+		if !scopeValid {
+			return false, fmt.Sprintf("Invalid commit scope %q. Expected one of: %s", scope, strings.Join(opts.AllowedScopes, ", "))
+		}
+	}
+
+	// Validate subject
 	if subject == "" {
 		return false, "Commit message subject cannot be empty"
 	}
 
-	// Enforce subject-max-length: [2, "always", 120]
-	if len([]rune(subject)) > SubjectMaxLength {
-		return false, fmt.Sprintf("Commit subject exceeds %d characters (current: %d)", SubjectMaxLength, len([]rune(subject)))
+	maxSubject := opts.SubjectMaxLength
+	if maxSubject <= 0 {
+		maxSubject = SubjectMaxLength
+	}
+	if len([]rune(subject)) > maxSubject {
+		return false, fmt.Sprintf("Commit subject exceeds %d characters (current: %d)", maxSubject, len([]rune(subject)))
 	}
 
 	if strings.HasSuffix(subject, ".") {
@@ -98,10 +171,14 @@ func ValidateCommitMessage(msg string) (bool, string) {
 }
 
 // CommitMsgRule validates git commit messages against Conventional Commits specification
-type CommitMsgRule struct{}
+type CommitMsgRule struct {
+	opts CommitMsgOptions
+}
 
 func NewCommitMsgRule() Rule {
-	return &CommitMsgRule{}
+	return &CommitMsgRule{
+		opts: DefaultCommitMsgOptions(),
+	}
 }
 
 func (r *CommitMsgRule) ID() string {
@@ -118,6 +195,23 @@ func (r *CommitMsgRule) Phase() Phase {
 
 func (r *CommitMsgRule) DefaultExtensions() []string {
 	return []string{"COMMIT_EDITMSG"}
+}
+
+// Configure configures custom rules from [guard.rules."builtin:commit-msg"] in .unirtm.toml
+func (r *CommitMsgRule) Configure(cfg RuleConfig) {
+	if len(cfg.Types) > 0 {
+		r.opts.AllowedTypes = cfg.Types
+	}
+	if len(cfg.Scopes) > 0 {
+		r.opts.AllowedScopes = cfg.Scopes
+	}
+	r.opts.RequireScope = cfg.RequireScope
+	if cfg.HeaderMaxLength > 0 {
+		r.opts.HeaderMaxLength = cfg.HeaderMaxLength
+	}
+	if cfg.SubjectMaxLength > 0 {
+		r.opts.SubjectMaxLength = cfg.SubjectMaxLength
+	}
 }
 
 func (r *CommitMsgRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
@@ -145,7 +239,7 @@ func (r *CommitMsgRule) Execute(ctx context.Context, files []string, opts Execut
 			continue
 		}
 
-		ok, reason := ValidateCommitMessage(string(content))
+		ok, reason := ValidateCommitMessageWithOptions(string(content), r.opts)
 		if !ok {
 			issues = append(issues, Issue{
 				FilePath: rel,

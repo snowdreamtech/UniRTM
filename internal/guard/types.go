@@ -70,6 +70,11 @@ type Rule interface {
 	Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error)
 }
 
+// ConfigurableRule is an optional interface that guard rules can implement to receive custom rule configuration
+type ConfigurableRule interface {
+	Configure(cfg RuleConfig)
+}
+
 // RuleConfig provides user configuration for a specific rule from .unirtm.toml
 type RuleConfig struct {
 	Enabled      *bool    `toml:"enabled" json:"enabled"`
@@ -78,6 +83,13 @@ type RuleConfig struct {
 	ExcludeDirs  []string `toml:"exclude_dirs" json:"exclude_dirs"`
 	ExcludeFiles []string `toml:"exclude_files" json:"exclude_files"`
 	MaxFileSize  int64    `toml:"max_file_size" json:"max_file_size"`
+
+	// Commit-msg customization fields
+	Types            []string `toml:"types" json:"types"`
+	Scopes           []string `toml:"scopes" json:"scopes"`
+	RequireScope     bool     `toml:"require_scope" json:"require_scope"`
+	HeaderMaxLength  int      `toml:"header_max_length" json:"header_max_length"`
+	SubjectMaxLength int      `toml:"subject_max_length" json:"subject_max_length"`
 }
 
 // ProfileConfig represents execution presets (e.g. pre-commit, ci)

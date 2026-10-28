@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -59,6 +60,18 @@ func NewPipeline(workspaceDir string, cfg GuardConfig) *Pipeline {
 		rules = append(rules, NewSlotRule(slot))
 	}
 
+	for _, r := range rules {
+		if cr, ok := r.(ConfigurableRule); ok {
+			if rCfg, ok := cfg.Rules[r.ID()]; ok {
+				cr.Configure(rCfg)
+			} else if shortID := strings.TrimPrefix(r.ID(), "builtin:"); shortID != "" {
+				if rCfg, ok := cfg.Rules[shortID]; ok {
+					cr.Configure(rCfg)
+				}
+			}
+		}
+	}
+
 	return &Pipeline{
 		WorkspaceDir: workspaceDir,
 		Config:       cfg,
@@ -102,6 +115,10 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 		// Check if rule is disabled in config
 		if rCfg, ok := p.Config.Rules[r.ID()]; ok && rCfg.Enabled != nil && !*rCfg.Enabled {
 			continue
+		} else if shortID := strings.TrimPrefix(r.ID(), "builtin:"); shortID != "" {
+			if rCfg, ok := p.Config.Rules[shortID]; ok && rCfg.Enabled != nil && !*rCfg.Enabled {
+				continue
+			}
 		}
 
 		switch r.Phase() {

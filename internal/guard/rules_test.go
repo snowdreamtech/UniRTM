@@ -639,6 +639,97 @@ func TestBuiltinRules_CommitMsg(t *testing.T) {
 	}
 }
 
+func TestBuiltinRules_CommitMsg_CustomOptions(t *testing.T) {
+	// 1. Custom Types
+	optsTypes := guard.DefaultCommitMsgOptions()
+	optsTypes.AllowedTypes = []string{"feature", "hotfix", "release"}
+
+	ok, _ := guard.ValidateCommitMessageWithOptions("feature(auth): add login", optsTypes)
+	if !ok {
+		t.Errorf("Expected custom type 'feature' to pass")
+	}
+
+	okOldType, _ := guard.ValidateCommitMessageWithOptions("feat(auth): add login", optsTypes)
+	if okOldType {
+		t.Errorf("Expected standard type 'feat' to fail when custom types are defined")
+	}
+
+	// 2. Custom Scopes
+	optsScopes := guard.DefaultCommitMsgOptions()
+	optsScopes.AllowedScopes = []string{"alpine", "debian", "rocky"}
+
+	okScope, _ := guard.ValidateCommitMessageWithOptions("feat(alpine): update package", optsScopes)
+	if !okScope {
+		t.Errorf("Expected allowed scope 'alpine' to pass")
+	}
+
+	okInvalidScope, reasonScope := guard.ValidateCommitMessageWithOptions("feat(ubuntu): update package", optsScopes)
+	if okInvalidScope {
+		t.Errorf("Expected disallowed scope 'ubuntu' to fail")
+	}
+	if !strings.Contains(reasonScope, "Invalid commit scope") {
+		t.Errorf("Expected error reason to mention invalid scope, got: %s", reasonScope)
+	}
+
+	// 3. RequireScope
+	optsReqScope := guard.DefaultCommitMsgOptions()
+	optsReqScope.RequireScope = true
+
+	okNoScope, reasonNoScope := guard.ValidateCommitMessageWithOptions("feat: update package without scope", optsReqScope)
+	if okNoScope {
+		t.Errorf("Expected commit without scope to fail when require_scope is true")
+	}
+	if !strings.Contains(reasonNoScope, "Commit scope is required") {
+		t.Errorf("Expected error reason to mention scope is required, got: %s", reasonNoScope)
+	}
+
+	// 4. Custom HeaderMaxLength
+	optsShortHeader := guard.DefaultCommitMsgOptions()
+	optsShortHeader.HeaderMaxLength = 50
+
+	okTooLongHeader, _ := guard.ValidateCommitMessageWithOptions("feat(very-long-scope-name): this header exceeds fifty characters limit", optsShortHeader)
+	if okTooLongHeader {
+		t.Errorf("Expected header exceeding custom max length 50 to fail")
+	}
+
+	// 5. ConfigurableRule interface via Pipeline
+	cfg := guard.GuardConfig{
+		Enabled: true,
+		Rules: map[string]guard.RuleConfig{
+			"builtin:commit-msg": {
+				Scopes:       []string{"alpine", "debian", "rocky"},
+				RequireScope: true,
+			},
+		},
+	}
+
+	pipeline := guard.NewPipeline(t.TempDir(), cfg)
+	var commitRule guard.Rule
+	for _, r := range pipeline.Rules {
+		if r.ID() == "builtin:commit-msg" {
+			commitRule = r
+			break
+		}
+	}
+	if commitRule == nil {
+		t.Fatalf("Expected builtin:commit-msg rule in pipeline")
+	}
+
+	tmpDir := t.TempDir()
+	msgFile := filepath.Join(tmpDir, "COMMIT_EDITMSG")
+	_ = os.WriteFile(msgFile, []byte("feat(windows): unsupported scope\n"), 0644)
+
+	issues, err := commitRule.Execute(context.Background(), []string{"COMMIT_EDITMSG"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 1 || !strings.Contains(issues[0].Message, "Invalid commit scope") {
+		t.Fatalf("Expected 1 issue for invalid scope from configured pipeline rule, got: %v", issues)
+	}
+}
+
 func TestBuiltinRules_Yaml(t *testing.T) {
 	tmpDir := t.TempDir()
 
