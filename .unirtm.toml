@@ -98,6 +98,12 @@ output = "interleaved"
 [tasks."audit:osv"]
 description = "Generic vulnerability scan across lockfiles"
 run = '''
+# In local development, skip external Google OSV network scan unless explicitly requested.
+if [ "${CI:-}" != "true" ] && [ "${GITHUB_ACTIONS:-}" != "true" ] && [ "${RUN_OSV_LOCAL:-}" != "1" ]; then
+    echo "↷  Skipped osv-scanner online vulnerability scan locally (deferred to CI runner)."
+    exit 0
+fi
+
 for i in 1 2 3; do
     if unirtm exec -- osv-scanner scan -r . --config .osv-scanner.toml --allow-no-lockfiles --no-call-analysis=go; then
         exit 0
