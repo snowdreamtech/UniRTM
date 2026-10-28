@@ -6,6 +6,7 @@ package guard
 import (
 	"bytes"
 	"context"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -94,6 +95,19 @@ func (s *SlotRule) Execute(ctx context.Context, files []string, opts ExecuteOpti
 	toolBin, err := exec.LookPath(toolName)
 	if err != nil {
 		return nil, nil
+	}
+
+	if strings.Contains(s.slot.ID, "web.i18n") {
+		frontendDir := filepath.Join(opts.WorkspaceDir, "frontend")
+		pkgJson := filepath.Join(frontendDir, "package.json")
+		nodeModules := filepath.Join(frontendDir, "node_modules")
+		if _, err := os.Stat(pkgJson); err == nil {
+			if _, err := os.Stat(nodeModules); os.IsNotExist(err) {
+				installCmd := exec.CommandContext(ctx, toolBin, "--prefix", "frontend", "install", "--silent")
+				installCmd.Dir = opts.WorkspaceDir
+				_ = installCmd.Run()
+			}
+		}
 	}
 
 	cmdStr := s.slot.DefaultCommand
