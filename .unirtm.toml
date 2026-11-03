@@ -239,8 +239,8 @@ description = "Run Pester tests for install.ps1"
 # Encoded equivalent of:
 #    = New-PesterConfiguration
 #   .Run.Path = 'tests/install.Tests.ps1'
-#   .Run.Exit = 
-#   Invoke-Pester -Configuration 
+#   .Run.Exit =
+#   Invoke-Pester -Configuration
 run = "pwsh -NoProfile -EncodedCommand JABjACAAPQAgAE4AZQB3AC0AUABlAHMAdABlAHIAQwBvAG4AZgBpAGcAdQByAGEAdABpAG8AbgA7ACAAJABjAC4AUgB1AG4ALgBQAGEAdABoACAAPQAgACcAdABlAHMAdABzAC8AaQBuAHMAdABhAGwAbAAuAFQAZQBzAHQAcwAuAHAAcwAxACcAOwAgACQAYwAuAFIAdQBuAC4ARQB4AGkAdAAgAD0AIAAkAHQAcgB1AGUAOwAgAEkAbgB2AG8AawBlAC0AUABlAHMAdABlAHIAIAAtAEMAbwBuAGYAaQBnAHUAcgBhAHQAaQBvAG4AIAAkAGMA"
 output = "interleaved"
 

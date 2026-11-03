@@ -7,10 +7,16 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestShouldBypassProxy(t *testing.T) {
+	t.Setenv("no_proxy", "company.internal,custom-mirror.net")
 	t.Setenv("NO_PROXY", "company.internal,custom-mirror.net")
+	t.Setenv("UNIRTM_NO_PROXY", "company.internal,custom-mirror.net")
+	t.Setenv("MISE_NO_PROXY", "company.internal,custom-mirror.net")
+	env.ResetCache()
 
 	tests := []struct {
 		host     string
