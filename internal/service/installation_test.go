@@ -1,0 +1,737 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package service
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/backend"
+	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/lockfile"
+	"github.com/snowdreamtech/unirtm/internal/pkg/download"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	unirtmhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"github.com/snowdreamtech/unirtm/internal/provider"
+	"github.com/snowdreamtech/unirtm/internal/repository"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+type mockRoundTripper struct {
+	roundTripFunc func(req *http.Request) (*http.Response, error)
+}
+
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if m.roundTripFunc != nil {
+		return m.roundTripFunc(req)
+	}
+	return &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(bytes.NewBufferString("mocked response")),
+		Header:     make(http.Header),
+	}, nil
+}
+
+func TestInstallationManager_Install_WithLockfileStrict(t *testing.T) {
+	// Set up global MockTransport to avoid hanging network calls
+	oldMock := unirtmhttp.MockTransport
+	defer func() { unirtmhttp.MockTransport = oldMock }()
+	unirtmhttp.MockTransport = &mockRoundTripper{}
+
+	// Create a temporary directory for our lockfile
+	tempDir := t.TempDir()
+	lockfilePath := filepath.Join(tempDir, "unirtm.lock")
+
+	// We create a lockfile with the "github:foo/bar" key.
+	// The current platform will determine which platform key is checked.
+	// We'll add the current platform to ensure it finds it.
+	currentPlatform := backend.CurrentPlatform()
+	platKey := lockfile.PlatformKey(string(currentPlatform.OS), string(currentPlatform.Arch), false)
+
+	lockContent := `
+[[tools."github:foo/bar"]]
+version = "1.0.0"
+backend = "github"
+
+[tools."github:foo/bar"."platforms.` + platKey + `"]
+url = "https://example.com/foo-` + platKey + `"
+checksum = "123"
+`
+	err := os.WriteFile(lockfilePath, []byte(lockContent), 0644)
+	require.NoError(t, err)
+
+	// Create LockService with strict mode
+	ls, err := NewLockService(LockServiceOptions{
+		LockfilePath: lockfilePath,
+		StrictMode:   true,
+	})
+	require.NoError(t, err)
+
+	// Register a mock backend so it doesn't fail on backend lookup
+	backendRegistry := backend.NewRegistry()
+	mockBackend := &mockUpdateBackend{
+		name: "github",
+		versions: map[string]*backend.VersionInfo{
+			"1.0.0": {Version: "1.0.0"},
+		},
+	}
+	backendRegistry.Register(mockBackend)
+
+	providerRegistry := provider.NewRegistry()
+	downloadManager := download.NewManager()
+
+	// Create mock installation repo and tx manager
+	installRepo := &mockInstallationRepo{
+		installations: make(map[string]*repository.Installation),
+	}
+	txManager := &mockTransactionManager{
+		tx: &mockTransaction{
+			installationRepo: installRepo,
+			auditRepo:        &mockAuditRepo{},
+		},
+	}
+
+	im := NewInstallationManagerWithLock(
+		backendRegistry,
+		providerRegistry,
+		downloadManager,
+		installRepo,
+		txManager,
+		ls,
+		&config.Settings{},
+	)
+
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+
+	// Scenario 1: Using the stripped tool name (simulating the old bug).
+	// CheckStrict should fail because it won't find "foo/bar" in the lockfile.
+	err = im.Install(ctx, "foo/bar", "foo/bar", "1.0.0", "github")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no locked entry")
+
+	// Scenario 2: Using the full tool key (simulating the fix).
+	// CheckStrict should pass, and it will fail later in the installation process
+	// (e.g. downloading or finding a provider), which proves it passed the lockfile check.
+	err = im.Install(ctx, "github:foo/bar", "foo/bar", "1.0.0", "github")
+	// Since we don't have a registered provider for "foo/bar", or the downloader is not fully mocked,
+	// it will fail at a subsequent step.
+	// As long as it doesn't fail with "no locked platform", the fix is verified.
+	if err != nil {
+		assert.NotContains(t, err.Error(), "no locked platform", "Should have passed strict lockfile validation")
+	}
+}
+
+func TestTryVerifyProvenance(t *testing.T) {
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+
+	t.Run("skipped via env", func(t *testing.T) {
+		t.Setenv("UNIRTM_VERIFY_PROVENANCE", "0")
+		status, err := tryVerifyProvenance(ctx, "github", "foo/bar", "dummy.tar.gz")
+		assert.NoError(t, err)
+		assert.Equal(t, "skipped", status)
+	})
+
+	t.Run("not applicable - invalid tool format", func(t *testing.T) {
+		t.Setenv("UNIRTM_VERIFY_PROVENANCE", "1")
+		status, err := tryVerifyProvenance(ctx, "github", "invalid-tool", "dummy.tar.gz")
+		assert.NoError(t, err)
+		assert.Equal(t, "not_applicable", status)
+	})
+
+	t.Run("failed - github missing file", func(t *testing.T) {
+		t.Setenv("UNIRTM_VERIFY_PROVENANCE", "1")
+		status, err := tryVerifyProvenance(ctx, "github", "foo/bar", "nonexistent.tar.gz")
+		assert.Error(t, err)
+		assert.Equal(t, "failed", status)
+	})
+
+	t.Run("failed - gitlab missing file", func(t *testing.T) {
+		t.Setenv("UNIRTM_VERIFY_PROVENANCE", "1")
+		status, err := tryVerifyProvenance(ctx, "gitlab", "foo/bar", "nonexistent.tar.gz")
+		assert.Error(t, err)
+		assert.Equal(t, "failed", status)
+	})
+}
+
+func TestIsExecutableFile(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// 1. Directory
+	assert.False(t, isExecutableFile(tempDir))
+
+	// 2. Archive extensions
+	archiveFile := filepath.Join(tempDir, "test.tar.gz")
+	os.WriteFile(archiveFile, []byte("data"), 0644)
+	assert.False(t, isExecutableFile(archiveFile))
+
+	bz2File := filepath.Join(tempDir, "test.tar.bz2")
+	os.WriteFile(bz2File, []byte("data"), 0644)
+	assert.False(t, isExecutableFile(bz2File))
+
+	debFile := filepath.Join(tempDir, "test.deb")
+	os.WriteFile(debFile, []byte("data"), 0644)
+	assert.False(t, isExecutableFile(debFile))
+
+	// 3. Non-existent
+	assert.False(t, isExecutableFile(filepath.Join(tempDir, "does-not-exist")))
+
+	// 4. Executable
+	execFile := filepath.Join(tempDir, "my-exec")
+	os.WriteFile(execFile, []byte("echo hi"), 0755)
+	// On Unix, this should be true. (Windows may be different based on GOOS logic).
+	if env.RuntimeGOOS != "windows" {
+		assert.True(t, isExecutableFile(execFile))
+	}
+
+	// 5. Non-executable regular file
+	nonExecFile := filepath.Join(tempDir, "my-file.txt")
+	os.WriteFile(nonExecFile, []byte("hello"), 0644)
+	if env.RuntimeGOOS != "windows" {
+		assert.False(t, isExecutableFile(nonExecFile))
+	}
+}
+
+func TestSortTools(t *testing.T) {
+	backendRegistry := backend.NewRegistry()
+	mockBackend := &mockUpdateBackend{
+		name: "test-backend",
+		versions: map[string]*backend.VersionInfo{
+			"1.0.0": {Version: "1.0.0"},
+		},
+	}
+	backendRegistry.Register(mockBackend)
+
+	im := NewInstallationManager(backendRegistry, nil, nil, nil, nil, nil)
+
+	tools := map[string]config.ToolConfig{
+		"go:golang.org/x/tools/cmd/goimports": {Version: "latest"},
+		"node":                                {Version: "20", Backend: "native"},
+		"github:foo/bar":                      {Version: "1.0.0"},
+	}
+
+	sorted := im.SortTools(tools)
+	assert.Len(t, sorted, 3)
+
+	// Since we don't have deep dependency chains in mock backends, they should just all be returned.
+	names := make([]string, 0, 3)
+	for _, t := range sorted {
+		names = append(names, t.ToolName)
+	}
+	assert.Contains(t, names, "node")
+	assert.Contains(t, names, "foo/bar")
+	assert.Contains(t, names, "golang.org/x/tools/cmd/goimports")
+}
+
+func TestInstall_Errors(t *testing.T) {
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+	backendRegistry := backend.NewRegistry()
+	mockBackend := &mockUpdateBackend{
+		name: "test-backend",
+		versions: map[string]*backend.VersionInfo{
+			"1.0.0": {Version: "1.0.0"},
+		},
+	}
+	backendRegistry.Register(mockBackend)
+
+	installRepo := &mockInstallationRepo{
+		installations: make(map[string]*repository.Installation),
+	}
+	installRepo.installations["tool-1.0.0"] = &repository.Installation{
+		Tool:    "tool",
+		Version: "1.0.0",
+		Backend: "test-backend",
+	}
+
+	downloadManager := download.NewManager()
+	mockDl := &mockDownloader{}
+	downloadManager.Register("https", mockDl)
+	downloadManager.Register("http", mockDl)
+
+	auditRepo := &mockAuditRepo{}
+	txManager := &mockTransactionManager{
+		tx: &mockTransaction{
+			installationRepo: installRepo,
+			auditRepo:        auditRepo,
+		},
+	}
+
+	providerRegistry := provider.NewRegistry()
+	im := NewInstallationManager(backendRegistry, providerRegistry, downloadManager, installRepo, txManager, nil)
+
+	// 1. Backend not found
+	err := im.Install(ctx, "tool", "tool", "1.0.0", "nonexistent")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "backend not found")
+
+	// 2. Provider Install error
+	providerRegistry.Register("tool", &mockProvider{
+		name:       "tool",
+		installErr: errors.New("mock install error"),
+	})
+
+	err = im.Install(ctx, "tool", "tool", "1.0.0", "test-backend")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "mock install error")
+}
+
+func TestSelectVersionInteractive(t *testing.T) {
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+	backendRegistry := backend.NewRegistry()
+	mockBackend := &mockUpdateBackend{
+		name: "test-backend",
+		versions: map[string]*backend.VersionInfo{
+			"1.0.0": {Version: "1.0.0"},
+		},
+	}
+	backendRegistry.Register(mockBackend)
+
+	im := NewInstallationManager(backendRegistry, nil, nil, nil, nil, nil)
+
+	// 1. Backend not found
+	_, err := im.SelectVersionInteractive(ctx, "tool", "nonexistent")
+	assert.Error(t, err)
+
+	// 2. Empty versions
+	emptyBackend := &mockUpdateBackend{name: "empty"}
+	backendRegistry.Register(emptyBackend)
+	_, err = im.SelectVersionInteractive(ctx, "tool", "empty")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no versions found")
+
+	// The interactive prompt blocks if we give it versions, so we skip the success path.
+}
+
+func TestInstall_Success(t *testing.T) {
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+	backendRegistry := backend.NewRegistry()
+	mockBackend := &mockUpdateBackend{
+		name: "test-backend",
+		versions: map[string]*backend.VersionInfo{
+			"1.0.0": {Version: "1.0.0"},
+		},
+	}
+	backendRegistry.Register(mockBackend)
+
+	installRepo := &mockInstallationRepo{
+		installations: make(map[string]*repository.Installation),
+	}
+
+	providerRegistry := provider.NewRegistry()
+	mockProviderInstance := &mockProvider{
+		name: "tool",
+	}
+	providerRegistry.Register("tool", mockProviderInstance)
+
+	downloadManager := download.NewManager()
+	mockDl := &mockDownloader{}
+	downloadManager.Register("https", mockDl)
+	downloadManager.Register("http", mockDl)
+
+	auditRepo := &mockAuditRepo{}
+	txManager := &mockTransactionManager{
+		tx: &mockTransaction{
+			installationRepo: installRepo,
+			auditRepo:        auditRepo,
+		},
+	}
+
+	im := NewInstallationManager(backendRegistry, providerRegistry, downloadManager, installRepo, txManager, nil)
+
+	// Disable verification to avoid git network calls
+	t.Setenv("UNIRTM_VERIFY_PROVENANCE", "0")
+
+	tempDataDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tempDataDir)
+
+	err := im.Install(ctx, "tool", "tool", "1.0.0", "test-backend")
+	assert.NoError(t, err)
+}
+
+func TestInstall_Uninstall(t *testing.T) {
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+	installPath := filepath.Join(t.TempDir(), "tool", "1.0.0")
+	os.MkdirAll(installPath, 0755)
+	installRepo := &mockInstallationRepo{
+		installations: map[string]*repository.Installation{
+			"tool-1.0.0": {
+				Tool:        "tool",
+				Version:     "1.0.0",
+				Backend:     "test-backend",
+				InstallPath: installPath,
+			},
+		},
+	}
+
+	providerRegistry := provider.NewRegistry()
+	mockProviderInstance := &mockProvider{name: "tool"}
+	providerRegistry.Register("tool", mockProviderInstance)
+
+	txManager := &mockTransactionManager{
+		tx: &mockTransaction{
+			installationRepo: installRepo,
+			auditRepo:        &mockAuditRepo{},
+		},
+	}
+
+	im := NewInstallationManager(nil, providerRegistry, nil, installRepo, txManager, nil)
+
+	// Test uninstall error not found
+	err := im.Uninstall(ctx, "tool", "2.0.0")
+	assert.Error(t, err)
+
+	// Test uninstall success
+	err = im.Uninstall(ctx, "tool", "1.0.0")
+	assert.NoError(t, err)
+
+	// Verify it was removed
+	_, err = installRepo.FindByToolAndVersion(ctx, "tool", "1.0.0")
+	assert.Error(t, err)
+}
+
+func TestInstallationManager_executeHook(t *testing.T) {
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+	im := NewInstallationManager(nil, nil, nil, nil, nil, nil)
+
+	// 1. Empty command
+	err := im.executeHook(ctx, "", "tool", "1.0.0")
+	assert.NoError(t, err)
+
+	// 2. Valid command
+	err = im.executeHook(ctx, "echo test", "tool", "1.0.0")
+	assert.NoError(t, err)
+
+	// 3. Invalid command
+	err = im.executeHook(ctx, "invalid-command-that-does-not-exist", "tool", "1.0.0")
+	assert.Error(t, err)
+}
+
+func TestInstallationManager_removeEmptyDirs(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create a nested structure: root/a/b/c
+	nestedDir := filepath.Join(tempDir, "a", "b", "c")
+	err := os.MkdirAll(nestedDir, 0755)
+	require.NoError(t, err)
+
+	// Put a file in "a" so "a" won't be empty
+	fileInA := filepath.Join(tempDir, "a", "file.txt")
+	os.WriteFile(fileInA, []byte("test"), 0644)
+
+	im := NewInstallationManager(nil, nil, nil, nil, nil, nil)
+
+	// remove from "c" up to tempDir
+	// "c" and "b" should be removed, "a" should remain because it has a file
+	im.removeEmptyDirs(filepath.Join(nestedDir, "dummy"), tempDir)
+
+	_, err = os.Stat(nestedDir)
+	assert.True(t, os.IsNotExist(err), "c should be removed")
+
+	_, err = os.Stat(filepath.Join(tempDir, "a", "b"))
+	assert.True(t, os.IsNotExist(err), "b should be removed")
+
+	_, err = os.Stat(filepath.Join(tempDir, "a"))
+	assert.NoError(t, err, "a should NOT be removed because it is not empty")
+}
+
+func TestInstallationManager_SetAliases(t *testing.T) {
+	im := NewInstallationManager(nil, nil, nil, nil, nil, &config.Settings{})
+	im.SetAliases(map[string]map[string]string{})
+}
+
+func TestInstallationManager_SetToolConfigs(t *testing.T) {
+	im := NewInstallationManager(nil, nil, nil, nil, nil, &config.Settings{})
+	im.SetToolConfigs(map[string]config.ToolConfig{})
+}
+
+func TestInstallationManager_SortToolsFromSpecs(t *testing.T) {
+	im := NewInstallationManager(nil, nil, nil, nil, nil, &config.Settings{})
+
+	// Empty case
+	res := im.SortToolsFromSpecs(nil)
+	if len(res) != 0 {
+		t.Errorf("expected empty result, got %v", res)
+	}
+
+	type mockSortBackend struct {
+		backend.Backend
+		name string
+		deps []string
+	}
+
+	// Normal case with dependencies
+	backendRegistry := backend.NewRegistry()
+
+	backendRegistry.Register(&mockUpdateBackend{name: "b1"})
+
+	// We need something that implements Dependencies
+	backendRegistry.Register(&mockSortDepsBackend{name: "b2", deps: []string{"tool1"}})
+
+	im.backendRegistry = backendRegistry
+
+	specs := map[string]ToolSpec{
+		"tool1": {Name: "tool1", BackendName: "b1", Version: "1.0"},
+		"tool2": {Name: "tool2", BackendName: "b2", Version: "1.0"},
+	}
+
+	sorted := im.SortToolsFromSpecs(specs)
+	if len(sorted) != 2 {
+		t.Errorf("expected 2 tools, got %v", len(sorted))
+	}
+	if sorted[0].ToolName != "tool1" {
+		t.Errorf("expected tool1 to be first, got %s", sorted[0].ToolName)
+	}
+}
+
+type mockSortDepsBackend struct {
+	backend.Backend // Panics if other methods are called
+	name            string
+	deps            []string
+}
+
+func (m *mockSortDepsBackend) Name() string           { return m.name }
+func (m *mockSortDepsBackend) Dependencies() []string { return m.deps }
+
+func TestInstallationManager_EnsureInstalled(t *testing.T) {
+	ctx := context.Background()
+	installRepo := &mockInstallationRepo{
+		installations: map[string]*repository.Installation{
+			"tool1-1.0.0": {
+				Tool:    "tool1",
+				Version: "1.0.0",
+				Backend: "test-backend",
+			},
+		},
+	}
+
+	backendRegistry := backend.NewRegistry()
+	mockBackend := &mockUpdateBackend{
+		name: "test-backend",
+		versions: map[string]*backend.VersionInfo{
+			"1.0.0": {Version: "1.0.0"},
+		},
+	}
+	backendRegistry.Register(mockBackend)
+
+	providerRegistry := provider.NewRegistry()
+	mockProviderInstance := &mockProvider{name: "tool1"}
+	providerRegistry.Register("tool1", mockProviderInstance)
+
+	txManager := &mockTransactionManager{
+		tx: &mockTransaction{
+			installationRepo: installRepo,
+			auditRepo:        &mockAuditRepo{},
+		},
+	}
+
+	im := NewInstallationManager(backendRegistry, providerRegistry, download.NewManager(), installRepo, txManager, &config.Settings{})
+
+	tools := map[string]config.ToolConfig{
+		"tool1@1.0.0": {Backend: "test-backend", Version: "1.0.0"},
+	}
+
+	err := im.EnsureInstalled(ctx, tools)
+	assert.NoError(t, err)
+}
+
+func TestInstallationManager_ResolveToolEnvBySpec(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tempDir)
+
+	providerRegistry := provider.NewRegistry()
+	mockProv := &mockProvider{
+		name: "envtool",
+	}
+	providerRegistry.Register("envtool", mockProv)
+
+	im := NewInstallationManager(nil, providerRegistry, nil, nil, nil, &config.Settings{})
+
+	// Tool not installed
+	envMap := im.ResolveToolEnvBySpec("envtool", "1.0.0", "hashicorp")
+	if len(envMap) != 0 {
+		t.Errorf("expected empty env for not installed tool")
+	}
+
+	// Tool installed
+	toolName := "envtool"
+	version := "1.0.0"
+	backendName := "hashicorp"
+
+	fsName := env.GetFSToolName(toolName, backendName)
+	installPath := filepath.Join(env.GetInstallsDir(), fsName, version)
+	err := os.MkdirAll(filepath.Join(installPath, "bin"), 0755)
+	require.NoError(t, err)
+
+	res := im.ResolveToolEnvBySpec(toolName, version, backendName)
+	if res["UNIRTM_ENVTOOL_VERSION"] != version {
+		t.Errorf("expected UNIRTM_ENVTOOL_VERSION=%s, got %s", version, res["UNIRTM_ENVTOOL_VERSION"])
+	}
+	if res["PATH"] == "" {
+		t.Errorf("expected PATH to be set")
+	}
+}
+
+func TestInstallationManager_ResolveExecutable(t *testing.T) {
+	ctx := context.Background()
+	installRepo := &mockInstallationRepo{
+		installations: map[string]*repository.Installation{
+			"tool1-1.0.0": {
+				Tool:        "tool1",
+				Version:     "1.0.0",
+				Backend:     "test-backend",
+				InstallPath: filepath.Join(t.TempDir(), "tool1"),
+			},
+		},
+	}
+
+	providerRegistry := provider.NewRegistry()
+	mockProviderInstance := &mockProvider{name: "tool1"}
+	providerRegistry.Register("tool1", mockProviderInstance)
+
+	im := NewInstallationManager(nil, providerRegistry, nil, installRepo, nil, &config.Settings{})
+
+	// Create mock dir
+	err := os.MkdirAll(filepath.Join(t.TempDir(), "tool1", "bin"), 0755)
+	require.NoError(t, err)
+
+	_, _, err = im.ResolveExecutable(ctx, "nonexistent", backend.Platform{OS: "linux", Arch: "amd64"})
+	if err == nil {
+		t.Error("expected error for not found executable")
+	}
+}
+
+func TestInstallationManager_Install_AutoRepairLockfile(t *testing.T) {
+	oldMock := unirtmhttp.MockTransport
+	defer func() { unirtmhttp.MockTransport = oldMock }()
+	unirtmhttp.MockTransport = &mockRoundTripper{}
+
+	tempDir := t.TempDir()
+	lockfilePath := filepath.Join(tempDir, "unirtm.lock")
+	err := os.WriteFile(lockfilePath, []byte(""), 0644)
+	require.NoError(t, err)
+
+	ls, err := NewLockService(LockServiceOptions{
+		LockfilePath: lockfilePath,
+		StrictMode:   true,
+	})
+	require.NoError(t, err)
+
+	backendRegistry := backend.NewRegistry()
+	mockBackend := &mockUpdateBackend{
+		name: "github",
+		versions: map[string]*backend.VersionInfo{
+			"1.0.0": {Version: "1.0.0", DownloadURL: "https://example.com/foo.tar.gz"},
+		},
+	}
+	backendRegistry.Register(mockBackend)
+
+	providerRegistry := provider.NewRegistry()
+	downloadManager := download.NewManager()
+
+	installRepo := &mockInstallationRepo{
+		installations: make(map[string]*repository.Installation),
+	}
+	txManager := &mockTransactionManager{
+		tx: &mockTransaction{
+			installationRepo: installRepo,
+			auditRepo:        &mockAuditRepo{},
+		},
+	}
+
+	im := NewInstallationManagerWithLock(
+		backendRegistry,
+		providerRegistry,
+		downloadManager,
+		installRepo,
+		txManager,
+		ls,
+		&config.Settings{},
+	)
+	im.SetAutoRepairLockfile(true)
+
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+	// Install tool that is missing from lockfile
+	err = im.Install(ctx, "github:foo/bar", "foo/bar", "1.0.0", "github")
+	// It should NOT fail with strict mode validation error because auto-repair succeeded
+	if err != nil {
+		assert.NotContains(t, err.Error(), "strict mode: no locked entry")
+	}
+
+	// Verify the entry was actually written to the lockfile during auto-repair
+	currentPlatform := backend.CurrentPlatform()
+	platKey := lockfile.PlatformKey(string(currentPlatform.OS), string(currentPlatform.Arch), false)
+	pe := ls.lf.GetPlatform("github:foo/bar", "1.0.0", platKey)
+	require.NotNil(t, pe, "expected lockfile entry to be repaired and present")
+	assert.Equal(t, "https://example.com/foo.tar.gz", pe.URL)
+}
+
+func TestInstallationManager_PrefetchGitHubReleases(t *testing.T) {
+	backendRegistry := backend.NewRegistry()
+	ghBackend := backend.NewGitHubBackend()
+	backendRegistry.Register(ghBackend)
+
+	im := NewInstallationManager(backendRegistry, nil, nil, nil, nil, &config.Settings{})
+
+	tools := []ToolToInstall{
+		{ToolName: "astral-sh/ruff", BackendName: "github", Version: "0.16.6"},
+		{ToolName: "go", BackendName: "golang", Version: "1.22.0"},
+	}
+
+	ctx := context.Background()
+	// Should execute gracefully without panic
+	im.PrefetchGitHubReleases(ctx, tools)
+}
+
+func TestInstallationManager_PrefetchGitLabReleases(t *testing.T) {
+	backendRegistry := backend.NewRegistry()
+	glBackend := backend.NewGitlabBackend()
+	backendRegistry.Register(glBackend)
+
+	im := NewInstallationManager(backendRegistry, nil, nil, nil, nil, &config.Settings{})
+
+	tools := []ToolToInstall{
+		{ToolName: "group/project", BackendName: "gitlab", Version: "1.0.0"},
+		{ToolName: "go", BackendName: "golang", Version: "1.22.0"},
+	}
+
+	ctx := context.Background()
+	// Should execute gracefully without panic
+	im.PrefetchGitLabReleases(ctx, tools)
+}
+
+func TestInstallationManager_DownloadCache(t *testing.T) {
+	tempDir := t.TempDir()
+	sourceFile := filepath.Join(tempDir, "source.tar.gz")
+	cacheFile := filepath.Join(tempDir, "cache.tar.gz")
+	targetFile := filepath.Join(tempDir, "target.tar.gz")
+
+	content := "test archive binary payload 12345"
+	if err := os.WriteFile(sourceFile, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write source file: %v", err)
+	}
+
+	// 1. Save to cache
+	saveToDownloadCache(sourceFile, cacheFile)
+	if _, err := os.Stat(cacheFile); err != nil {
+		t.Fatalf("expected cache file to exist: %v", err)
+	}
+
+	// 2. Try use download cache
+	ctx := context.Background()
+	ok := tryUseDownloadCache(ctx, nil, cacheFile, targetFile, "")
+	if !ok {
+		t.Fatal("expected tryUseDownloadCache to succeed")
+	}
+
+	data, err := os.ReadFile(targetFile)
+	if err != nil || string(data) != content {
+		t.Fatalf("target file content mismatch: expected %q, got %q", content, string(data))
+	}
+}

@@ -1,0 +1,644 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package logger
+
+import (
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"regexp"
+	"runtime/debug"
+	"strings"
+	"time"
+
+	"github.com/rs/zerolog"
+	zlog "github.com/rs/zerolog/log"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"gopkg.in/natefinch/lumberjack.v2"
+)
+
+var (
+	defaultWriter      io.Writer = os.Stdout
+	defaultErrorWriter io.Writer = os.Stderr
+
+	urlCredRegex    = regexp.MustCompile(`(?i)(https?://[^:]+:)[^@]+(@)`)
+	authHeaderRegex = regexp.MustCompile(`(?i)(bearer|basic)\s+\S+`)
+	kvPairRegex     = regexp.MustCompile(`(?i)\b(password|passwd|pass|pwd|pin|code|secret|token|apikey|api_key|access_key|secret_key|private_key|key|auth|credential|credentials|session|cookie|sig|signature|gpg|ssh|rsa|dsa|ecdsa|ed25519)=[^&\s,;]+`)
+	pemKeyRegex     = regexp.MustCompile(`(?s)-----BEGIN [A-Z ]*(PRIVATE KEY|PGP PRIVATE KEY BLOCK|RSA PRIVATE KEY|DSA PRIVATE KEY|EC PRIVATE KEY|OPENSSH PRIVATE KEY)-----.*?-----END [A-Z ]*(PRIVATE KEY|PGP PRIVATE KEY BLOCK|RSA PRIVATE KEY|DSA PRIVATE KEY|EC PRIVATE KEY|OPENSSH PRIVATE KEY)-----`)
+)
+
+// isSensitiveKey checks if a log argument key represents a sensitive credential/secret/key.
+func isSensitiveKey(keyStr string) bool {
+	k := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(keyStr), "_", ""), "-", ""))
+	if k == "" {
+		return false
+	}
+	// 1. Exact match for short keywords
+	exactKeys := []string{
+		"key", "pass", "pwd", "cred", "creds", "sig", "auth",
+		"pin", "code", "token", "secret", "cookie", "sid", "cert", "pem",
+		"gpg", "ssh", "rsa", "dsa", "ecdsa", "ed25519", "idrsa", "ided25519",
+	}
+	for _, e := range exactKeys {
+		if k == e {
+			return true
+		}
+	}
+	// 2. Substring match for explicit security term keywords
+	substringKeys := []string{
+		"password", "passwd", "passcode", "secret", "token", "credential", "authorization",
+		"privatekey", "private", "apikey", "accesskey", "secretkey", "publickey", "authkey",
+		"clientkey", "userkey", "sshkey", "gpgkey", "rsakey", "dsakey", "ecdsakey", "ed25519key",
+		"masterkey", "appsecret", "clientsecret", "gpg", "ssh", "rsa", "dsa", "ecdsa", "ed25519", "pgp",
+		"session", "sessionid", "cookie", "accesstoken", "refreshtoken", "idtoken",
+		"bearer", "signature", "certificate", "keystore", "passphrase", "proxyauth",
+		"proxypassword", "verificationcode", "otp", "2fa",
+	}
+	for _, s := range substringKeys {
+		if strings.Contains(k, s) {
+			return true
+		}
+	}
+	return false
+}
+
+// sanitizeString masks embedded credentials, tokens, bearer headers and query parameters inside plain text strings.
+func sanitizeString(str string) string {
+	if str == "" {
+		return str
+	}
+	str = pemKeyRegex.ReplaceAllString(str, "[REDACTED PRIVATE KEY]")
+	str = urlCredRegex.ReplaceAllString(str, "${1}******${2}")
+	str = authHeaderRegex.ReplaceAllString(str, "${1} ******")
+	str = kvPairRegex.ReplaceAllString(str, "${1}=******")
+	return str
+}
+
+// sanitizeFields masks sensitive keys and values in context fields.
+func sanitizeFields(fields map[string]interface{}) map[string]interface{} {
+	if len(fields) == 0 {
+		return fields
+	}
+	res := make(map[string]interface{}, len(fields))
+	for k, v := range fields {
+		if isSensitiveKey(k) {
+			res[k] = "******"
+		} else if s, ok := v.(string); ok {
+			res[k] = sanitizeString(s)
+		} else {
+			res[k] = v
+		}
+	}
+	return res
+}
+
+// ANSI color codes
+const (
+	colorBlack = iota + 30
+	colorRed
+	colorGreen
+	colorYellow
+	colorBlue
+	colorMagenta
+	colorCyan
+	colorWhite
+
+	colorBold     = 1
+	colorDarkGray = 90
+
+	unknownLevel = "???"
+)
+
+var (
+	// Logger is the global logger with a human-friendly console writer by default.
+	Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).With().Timestamp().Logger()
+
+	// NoColor disables the colorized output.
+	NoColor bool
+
+	// operationLogWriter is the writer for operation logs (unirtm.log)
+	operationLogWriter io.Writer
+
+	// errorLogWriter is the writer for error logs (error.log)
+	errorLogWriter io.Writer
+
+	// Global pointers to lumberjack loggers for closing
+	operationLumberjack *lumberjack.Logger
+	errorLumberjack     *lumberjack.Logger
+)
+
+// InitLogger initializes the logger with the specified error and operation log paths.
+// It returns the error and operation writers.
+//
+// Parameters:
+//   - errorLogPath: The path to the error log file.
+//   - opLogPath: The path to the operation log file.
+//
+// Returns:
+//   - errorWriter: The error writer.
+//   - opWriter: The operation writer.
+func InitLogger(errorLogPath, opLogPath string) (errorWriter io.Writer, opWriter io.Writer) {
+
+	// Set error.log
+	errorWriter = initErrorLogger(errorLogPath)
+
+	// Set unirtm.log
+	opWriter = initOpLogger(opLogPath)
+
+	// Set zerologger as the default logger
+	initZeroLogger(opWriter)
+
+	return errorWriter, opWriter
+}
+
+// InitUniRTMLogger initializes the logger for UniRTM with rotating file writers
+// for both operation logs (unirtm.log) and error logs (error.log).
+//
+// This function configures:
+//   - Rotating file writer for unirtm.log (operations, max 500MB, 10 backups, 30 days retention)
+//   - Rotating file writer for error.log (errors only, max 500MB, 10 backups, 30 days retention)
+//   - Console output with color-coded log levels
+//   - Structured logging with context fields
+//   - Stack trace capture for errors
+//
+// Parameters:
+//   - operationLogPath: The path to the operation log file (default: "unirtm.log")
+//   - errorLogPath: The path to the error log file (default: "error.log")
+//
+// Returns:
+//   - operationWriter: The operation log writer
+//   - errorWriter: The error log writer
+func InitUniRTMLogger(operationLogPath, errorLogPath string) (operationWriter io.Writer, errorWriter io.Writer) {
+	// Set default paths if not provided
+	if operationLogPath == "" {
+		operationLogPath = "unirtm.log"
+	}
+	if errorLogPath == "" {
+		errorLogPath = "error.log"
+	}
+
+	// Initialize operation log with rotating file writer
+	operationLog := &lumberjack.Logger{
+		Filename:   operationLogPath,
+		MaxSize:    500, // megabytes
+		MaxBackups: 10,
+		MaxAge:     30,   // days
+		Compress:   true, // compress rotated files
+	}
+	operationLumberjack = operationLog
+
+	// Initialize error log with rotating file writer
+	errorLog := &lumberjack.Logger{
+		Filename:   errorLogPath,
+		MaxSize:    500, // megabytes
+		MaxBackups: 10,
+		MaxAge:     30,   // days
+		Compress:   true, // compress rotated files
+	}
+	errorLumberjack = errorLog
+
+	// Create multi-writers for operation logs (file + stderr)
+	operationWriter = io.MultiWriter(operationLog, os.Stderr)
+	operationLogWriter = operationWriter
+
+	// Create multi-writers for error logs (file + stderr)
+	errorWriter = io.MultiWriter(errorLog, os.Stderr)
+	errorLogWriter = errorWriter
+
+	// Configure zerolog with console writer for colored output
+	consoleWriter := zerolog.ConsoleWriter{
+		Out:        operationWriter,
+		NoColor:    NoColor,
+		TimeFormat: time.RFC3339,
+	}
+
+	// Create the main logger with console writer and error hook
+	Logger = zerolog.New(consoleWriter).
+		With().
+		Timestamp().
+		Caller(). // Add caller information for better debugging
+		Logger().
+		Hook(UniRTMErrorHook{})
+
+	// Set as default logger
+	zlog.Logger = Logger
+
+	// Configure standard log to use zerolog
+	log.SetOutput(Logger)
+	log.SetFlags(0) // zerolog handles timestamps and formatting
+
+	return operationWriter, errorWriter
+}
+
+// initErrorLogger initializes the error logger with the specified error log path.
+// It returns the error writer.
+//
+// Parameters:
+//   - filepath: The path to the error log file.
+//
+// Returns:
+//   - errorWriter: The error writer.
+func initErrorLogger(filepath string) io.Writer {
+	if filepath == "" {
+		filepath = "error.log"
+	}
+
+	// Set error.log
+	errorlog := &lumberjack.Logger{
+		Filename:   filepath,
+		MaxSize:    500, // megabytes
+		MaxBackups: 10,
+		MaxAge:     30,   //days
+		Compress:   true, // disabled by default
+	}
+
+	errorWriter := io.MultiWriter(errorlog, os.Stderr)
+	defaultErrorWriter = errorWriter
+
+	return errorWriter
+}
+
+// initOpLogger initializes the logger with the specified log path.
+// It returns the operation writer.
+//
+// Parameters:
+//   - filepath: The path to the operation log file.
+//
+// Returns:
+//   - opWriter: The operation writer.
+func initOpLogger(filepath string) io.Writer {
+	if filepath == "" {
+		filepath = "unirtm.log"
+	}
+
+	oplog := &lumberjack.Logger{
+		Filename:   filepath,
+		MaxSize:    500, // megabytes
+		MaxBackups: 10,
+		MaxAge:     30,   //days
+		Compress:   true, // disabled by default
+	}
+
+	opWriter := io.MultiWriter(oplog, os.Stderr)
+	defaultWriter = opWriter
+
+	return opWriter
+}
+
+// ErrorHook is a hook for logging errors.
+type ErrorHook struct{}
+
+// Run executes the ErrorHook, logging the event at the specified level with the given message.
+// It writes the log output to the default error writer.
+//
+// Parameters:
+//   - e: The zerolog event to be logged.
+//   - level: The logging level of the event.
+//   - msg: The message to be logged.
+func (h ErrorHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+	// Write the log output to the default error writer.
+	if zerolog.GlobalLevel() != zerolog.Disabled && level >= zerolog.ErrorLevel && level <= zerolog.PanicLevel {
+		t := colorize(time.Now().Format(time.RFC3339), colorDarkGray, NoColor)
+		l := colorize(zerolog.FormattedLevels[level], zerolog.LevelColors[level], NoColor)
+		s := colorize(fmt.Sprintf("[ERROR] %s\n", msg), colorBold, NoColor)
+
+		fmt.Fprintf(defaultErrorWriter, "%s %s %s\n", t, l, s)
+	}
+}
+
+// UniRTMErrorHook is a hook for logging errors in UniRTM.
+// It captures stack traces for errors and writes them to the error log file.
+type UniRTMErrorHook struct{}
+
+// Run executes the UniRTMErrorHook, capturing stack traces for error-level logs
+// and writing them to the error log file.
+//
+// Parameters:
+//   - e: The zerolog event to be logged.
+//   - level: The logging level of the event.
+//   - msg: The message to be logged.
+func (h UniRTMErrorHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+	// Only process error-level and above logs
+	if level < zerolog.ErrorLevel {
+		return
+	}
+
+	// Capture stack trace for errors
+	stackTrace := string(debug.Stack())
+
+	// Add stack trace to the event
+	e.Str("stack_trace", stackTrace)
+
+	// Write error logs to the error log file if configured
+	if errorLogWriter != nil && level >= zerolog.ErrorLevel && level <= zerolog.PanicLevel {
+		// Create a separate logger for error file output
+		errorLogger := zerolog.New(errorLogWriter).
+			With().
+			Timestamp().
+			Caller().
+			Logger()
+
+		// Log to error file with stack trace
+		errorLogger.WithLevel(level).
+			Str("stack_trace", stackTrace).
+			Msg(msg)
+	}
+}
+
+// initZeroLogger initializes the zerolog logger with the specified output writer.
+// It sets the time field format to UNIX timestamp and the logger as the default logger.
+//
+// Parameters:
+//   - out: The output writer for the logger.
+func initZeroLogger(out io.Writer) {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix // UNIX timestamp
+	zerologger := zerolog.New(zerolog.ConsoleWriter{Out: out, NoColor: NoColor, TimeFormat: time.RFC3339}).With().Timestamp().Logger().Hook(ErrorHook{})
+
+	// Set zerologger as the default logger
+	log.SetOutput(zerologger)
+	log.SetPrefix("[UNIRTM] ")
+	log.SetFlags(log.LUTC)
+
+	zlog.Logger = zerologger
+	Logger = zerologger
+}
+
+// colorize returns the string s wrapped in ANSI code c, unless disabled is true or c is 0.
+func colorize(s interface{}, c int, disabled bool) string {
+	e := env.Get("NO_COLOR")
+	if e != "" || c == 0 {
+		disabled = true
+	}
+
+	if disabled {
+		return fmt.Sprintf("%s", s)
+	}
+	return fmt.Sprintf("\x1b[%dm%v\x1b[0m", c, s)
+}
+
+// WithContext returns a logger with the specified context fields.
+// This enables structured logging with key-value pairs.
+//
+// Example:
+//
+//	logger.WithContext(map[string]interface{}{
+//	    "user_id": 123,
+//	    "operation": "install",
+//	    "tool": "node",
+//	    "version": "20.0.0",
+//	}).Info("Installing tool")
+func WithContext(fields map[string]interface{}) *zerolog.Logger {
+	ctx := Logger.With()
+	for key, value := range sanitizeFields(fields) {
+		ctx = ctx.Interface(key, value)
+	}
+	logger := ctx.Logger()
+	return &logger
+}
+
+// WithError returns a logger with the error field set.
+// This is a convenience function for logging errors with context.
+//
+// Example:
+//
+//	logger.WithError(err).Error("Failed to install tool")
+func WithError(err error) *zerolog.Logger {
+	logger := Logger.With().Err(err).Logger()
+	return &logger
+}
+
+// WithFields returns a logger with multiple fields set.
+// This is a convenience function for structured logging.
+//
+// Example:
+//
+//	logger.WithFields(
+//	    "user_id", 123,
+//	    "operation", "install",
+//	).Info("Starting operation")
+func WithFields(keysAndValues ...interface{}) *zerolog.Logger {
+	if len(keysAndValues)%2 != 0 {
+		Logger.Error().Msg("WithFields called with odd number of arguments")
+		return &Logger
+	}
+
+	ctx := Logger.With()
+	for i := 0; i < len(keysAndValues); i += 2 {
+		key, ok := keysAndValues[i].(string)
+		if !ok {
+			Logger.Error().Msgf("WithFields key at index %d is not a string", i)
+			continue
+		}
+		val := keysAndValues[i+1]
+		if isSensitiveKey(key) {
+			val = "******"
+		} else if s, ok := val.(string); ok {
+			val = sanitizeString(s)
+		}
+		ctx = ctx.Interface(key, val)
+	}
+	logger := ctx.Logger()
+	return &logger
+}
+
+// Logf logs a formatted message at the specified log level.
+// The log message includes a timestamp, the log level, and the formatted message.
+//
+// Parameters:
+//   - level: The log level (e.g., "INF", "ERR").
+//
+// TraceLevel: "TRC",
+// DebugLevel: "DBG",
+// InfoLevel:  "INF",
+// WarnLevel:  "WRN",
+// ErrorLevel: "ERR",
+// FatalLevel: "FTL",
+// PanicLevel: "PNC",
+//
+//   - format: The format string for the log message.
+//   - v: The values to be formatted according to the format string.
+//
+// Deprecated: Use Zerolog instead.
+func Logf(level zerolog.Level, format string, v ...interface{}) {
+	if should(level) {
+		t := colorize(time.Now().Format(time.RFC3339), colorDarkGray, NoColor)
+		l := colorize(zerolog.FormattedLevels[level], zerolog.LevelColors[level], NoColor)
+		s := colorize(sanitizeString(fmt.Sprintf(format, v...)), colorBold, NoColor)
+
+		fmt.Fprintf(defaultWriter, "%s %s %s\n", t, l, s)
+	}
+}
+
+// Log logs a message at the specified log level.
+// The log message is formatted with the current time, log level, and the provided arguments.
+//
+// Parameters:
+//   - level: The log level as a string (e.g., "INF", "ERR").
+//
+// TraceLevel: "TRC",
+// DebugLevel: "DBG",
+// InfoLevel:  "INF",
+// WarnLevel:  "WRN",
+// ErrorLevel: "ERR",
+// FatalLevel: "FTL",
+// PanicLevel: "PNC",
+//
+//   - v: Variadic arguments to be included in the log message.
+//
+// Deprecated: Use Zerolog instead.
+func Log(level zerolog.Level, v ...interface{}) {
+	if should(level) {
+		t := colorize(time.Now().Format(time.RFC3339), colorDarkGray, NoColor)
+		l := colorize(zerolog.FormattedLevels[level], zerolog.LevelColors[level], NoColor)
+		s := colorize(sanitizeString(fmt.Sprint(v...)), colorBold, NoColor)
+
+		fmt.Fprintf(defaultWriter, "%s %s %s\n", t, l, s)
+	}
+}
+
+// should returns true if the log should be logged.
+func should(level zerolog.Level) bool {
+	if zerolog.GlobalLevel() == zerolog.Disabled {
+		return false
+	}
+
+	if level < zerolog.GlobalLevel() {
+		return false
+	}
+
+	return true
+}
+
+// Trace logs a message at trace level with optional context fields.
+func Trace(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
+	if len(fields) > 0 {
+		logger := WithContext(fields[0])
+		logger.Trace().Msg(sMsg)
+	} else {
+		Logger.Trace().Msg(sMsg)
+	}
+}
+
+// Debug logs a message at debug level with optional context fields.
+func Debug(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
+	if len(fields) > 0 {
+		logger := WithContext(fields[0])
+		logger.Debug().Msg(sMsg)
+	} else {
+		Logger.Debug().Msg(sMsg)
+	}
+}
+
+// Info logs a message at info level with optional context fields.
+func Info(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
+	if len(fields) > 0 {
+		logger := WithContext(fields[0])
+		logger.Info().Msg(sMsg)
+	} else {
+		Logger.Info().Msg(sMsg)
+	}
+}
+
+// Warn logs a message at warn level with optional context fields.
+func Warn(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
+	if len(fields) > 0 {
+		logger := WithContext(fields[0])
+		logger.Warn().Msg(sMsg)
+	} else {
+		Logger.Warn().Msg(sMsg)
+	}
+}
+
+// Error logs a message at error level with optional context fields.
+// Stack traces are automatically captured for error-level logs.
+func Error(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
+	if len(fields) > 0 {
+		logger := WithContext(fields[0])
+		logger.Error().Msg(sMsg)
+	} else {
+		Logger.Error().Msg(sMsg)
+	}
+}
+
+// Fatal logs a message at fatal level with optional context fields and exits.
+// Stack traces are automatically captured for fatal-level logs.
+func Fatal(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
+	if len(fields) > 0 {
+		logger := WithContext(fields[0])
+		logger.Fatal().Msg(sMsg)
+	} else {
+		Logger.Fatal().Msg(sMsg)
+	}
+}
+
+// Panic logs a message at panic level with optional context fields and panics.
+// Stack traces are automatically captured for panic-level logs.
+func Panic(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
+	if len(fields) > 0 {
+		logger := WithContext(fields[0])
+		logger.Panic().Msg(sMsg)
+	} else {
+		Logger.Panic().Msg(sMsg)
+	}
+}
+
+// ErrorWithErr logs an error with its message and optional context fields.
+// This is a convenience function for logging errors with automatic error field extraction.
+func ErrorWithErr(err error, msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
+	if len(fields) > 0 {
+		ctx := Logger.With().Err(err)
+		for key, value := range sanitizeFields(fields[0]) {
+			ctx = ctx.Interface(key, value)
+		}
+		logger := ctx.Logger()
+		logger.Error().Msg(sMsg)
+	} else {
+		Logger.Error().Err(err).Msg(sMsg)
+	}
+}
+
+// FatalWithErr logs an error with its message and optional context fields, then exits.
+func FatalWithErr(err error, msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
+	if len(fields) > 0 {
+		ctx := Logger.With().Err(err)
+		for key, value := range sanitizeFields(fields[0]) {
+			ctx = ctx.Interface(key, value)
+		}
+		logger := ctx.Logger()
+		logger.Fatal().Msg(sMsg)
+	} else {
+		Logger.Fatal().Err(err).Msg(sMsg)
+	}
+}
+
+// Close closes any open log files.
+func Close() error {
+	var errs []error
+	if operationLumberjack != nil {
+		if err := operationLumberjack.Close(); err != nil {
+			errs = append(errs, err)
+		}
+		operationLumberjack = nil
+	}
+	if errorLumberjack != nil {
+		if err := errorLumberjack.Close(); err != nil {
+			errs = append(errs, err)
+		}
+		errorLumberjack = nil
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to close log files: %v", errs)
+	}
+	return nil
+}

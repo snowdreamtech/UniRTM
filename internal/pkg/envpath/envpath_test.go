@@ -1,0 +1,105 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package envpath
+
+import (
+	"os"
+	"runtime"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestJoinForOS(t *testing.T) {
+	paths := []string{"dir1", "dir2"}
+	result := JoinForOS(paths)
+	expected := "dir1" + string(os.PathListSeparator) + "dir2"
+	assert.Equal(t, expected, result)
+}
+
+func TestJoinForPosix(t *testing.T) {
+	paths := []string{"C:\\foo\\bin", "D:\\bar\\bin"}
+	result := JoinForPosix(paths)
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, "/c/foo/bin:/d/bar/bin", result)
+	} else {
+		assert.Equal(t, "C:\\foo\\bin:D:\\bar\\bin", result)
+	}
+}
+
+func TestFormatDirForPosix(t *testing.T) {
+	dir := "C:\\Users\\test\\shims"
+	result := FormatDirForPosix(dir)
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, "/c/Users/test/shims", result)
+	} else {
+		assert.Equal(t, dir, result)
+	}
+}
+
+func TestJoinForPowerShell(t *testing.T) {
+	paths := []string{"dir1", "dir2"}
+	result := JoinForPowerShell(paths)
+	expected := "dir1" + string(os.PathListSeparator) + "dir2"
+	assert.Equal(t, expected, result)
+}
+
+func TestDeduplicateOSPaths(t *testing.T) {
+	// 1. Empty string
+	assert.Equal(t, "", DeduplicateOSPaths(""))
+
+	sep := string(os.PathListSeparator)
+
+	// 2. No duplicates
+	input := "dir1" + sep + "dir2"
+	assert.Equal(t, "dir1"+sep+"dir2", DeduplicateOSPaths(input))
+
+	// 3. Exact duplicates
+	input = "dir1" + sep + "dir2" + sep + "dir1"
+	assert.Equal(t, "dir1"+sep+"dir2", DeduplicateOSPaths(input))
+
+	// 4. Consecutive separators / empty parts
+	input = "dir1" + sep + sep + "dir2"
+	assert.Equal(t, "dir1"+sep+"dir2", DeduplicateOSPaths(input))
+
+	// 5. Case sensitivity testing
+	if runtime.GOOS == "windows" {
+		// On Windows, case-insensitive
+		input = "C:\\dir1" + sep + "c:\\DIR1" + sep + "D:\\dir2"
+		assert.Equal(t, "C:\\dir1"+sep+"D:\\dir2", DeduplicateOSPaths(input))
+	} else {
+		// On POSIX, case-sensitive
+		input = "/dir1" + sep + "/DIR1" + sep + "/dir2"
+		assert.Equal(t, "/dir1"+sep+"/DIR1"+sep+"/dir2", DeduplicateOSPaths(input))
+	}
+}
+
+func TestWindowsMode(t *testing.T) {
+	orig := isWindowsMode
+	isWindowsMode = true
+	defer func() { isWindowsMode = orig }()
+
+	// Test FormatDirForPosix without prefix
+	assert.Equal(t, "/c/foo/bar", FormatDirForPosix("C:\\foo\\bar"))
+
+	// Test FormatDirForPosix with CYGDRIVE_PREFIX
+	os.Setenv("UNIRTM_CYGDRIVE_PREFIX", "/cygdrive/")
+	assert.Equal(t, "/cygdrive/c/foo/bar", FormatDirForPosix("C:\\foo\\bar"))
+	os.Unsetenv("UNIRTM_CYGDRIVE_PREFIX")
+
+	// Test DeduplicateOSPaths
+	sep := string(os.PathListSeparator)
+	input := "C:\\dir1" + sep + "c:\\DIR1" + sep + "D:\\dir2"
+	assert.Equal(t, "C:\\dir1"+sep+"D:\\dir2", DeduplicateOSPaths(input))
+
+	// Test FormatExeForPosix
+	assert.Equal(t, "/c/Users/ansible/bin/unirtm.exe", FormatExeForPosix("C:\\Users\\ansible\\bin\\unirtm.exe"))
+	assert.Equal(t, `"/c/Program Files/unirtm/unirtm.exe"`, FormatExeForPosix("C:\\Program Files\\unirtm\\unirtm.exe"))
+	assert.Equal(t, "unirtm", FormatExeForPosix("unirtm"))
+
+	// Test FormatExeForPowerShell
+	assert.Equal(t, `& "C:\Users\ansible\bin\unirtm.exe"`, FormatExeForPowerShell("C:\\Users\\ansible\\bin\\unirtm.exe"))
+	assert.Equal(t, `& "C:\Program Files\unirtm\unirtm.exe"`, FormatExeForPowerShell("C:\\Program Files\\unirtm\\unirtm.exe"))
+	assert.Equal(t, "unirtm", FormatExeForPowerShell("unirtm"))
+}

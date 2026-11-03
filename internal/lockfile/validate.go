@@ -1,0 +1,270 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package lockfile
+
+import (
+	"encoding/hex"
+	"fmt"
+	"strings"
+)
+
+// ValidationError accumulates multiple lockfile validation issues.
+type ValidationError struct {
+	Errors []string
+}
+
+func (e *ValidationError) Error() string {
+	return fmt.Sprintf("lockfile validation failed (%d issue(s)):\n  - %s",
+		len(e.Errors), strings.Join(e.Errors, "\n  - "))
+}
+
+func (e *ValidationError) add(msg string, args ...any) {
+	e.Errors = append(e.Errors, fmt.Sprintf(msg, args...))
+}
+
+func (e *ValidationError) ok() bool { return len(e.Errors) == 0 }
+
+// Validate checks the LockFile for structural and semantic correctness.
+// It returns *ValidationError (with all discovered issues) or nil.
+func (lf *LockFile) Validate() error {
+	ve := &ValidationError{}
+
+	for key, entries := range lf.Tools {
+		if len(entries) == 0 {
+			ve.add("tool %q: empty entry list", key)
+			continue
+		}
+
+		// Check for duplicate versions within the same tool key.
+		seen := make(map[string]bool)
+		for _, e := range entries {
+			if e.Version == "" {
+				ve.add("tool %q: entry has empty version", key)
+			}
+			if seen[e.Version] {
+				ve.add("tool %q: duplicate version %q", key, e.Version)
+			}
+			seen[e.Version] = true
+
+			// Validate platform entries.
+			for pk, pe := range e.Platforms {
+				if !IsValidPlatformKey(pk) {
+					ve.add("tool %q version %q: unknown platform key %q", key, e.Version, pk)
+				}
+				if pe == nil {
+					ve.add("tool %q version %q platform %q: nil entry", key, e.Version, pk)
+					continue
+				}
+				if err := validatePlatformEntry(key, e.Version, pk, pe, e.Backend); err != nil {
+					ve.add("%s", err)
+				}
+			}
+		}
+	}
+
+	if !ve.ok() {
+		return ve
+	}
+	return nil
+}
+
+// IsEcosystemBackend reports whether the backend is a package manager, language
+// ecosystem, container runtime, or plugin system that manages its own downloads,
+// resolution, and integrity, and therefore does not require a direct binary download URL
+// or lockfile checksum.
+func IsEcosystemBackend(backend string) bool {
+	normalized := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(backend)), "-", "_")
+	switch normalized {
+	case "npm", "pipx", "pypi", "asdf", "cargo", "go", "go_pkg", "vfox", "gem",
+		"composer", "cran", "spm", "pub", "luarocks", "lua", "maven", "conda",
+		"deno", "cabal", "dotnet", "zig",
+		"docker", "podman", "nerdctl", "container", "oci":
+		return true
+	default:
+		return false
+	}
+}
+
+// BackendNeedsURL determines if a tool backend requires explicit binary download URLs.
+// Package manager ecosystems (e.g. npm, go, pipx, cargo, gem, composer) and container runtimes
+// manage their own installation and package registries, so they do NOT need binary URLs or checksums.
+func BackendNeedsURL(toolKey, backend string) bool {
+	toolKey = strings.TrimSpace(toolKey)
+	var prefix string
+	if idx := strings.Index(toolKey, ":"); idx != -1 {
+		prefix = toolKey[:idx]
+	}
+
+	// 1. If toolKey has an explicit ecosystem prefix (e.g., "npm:prettier", "composer:foo/bar"),
+	// no URL or checksum is needed.
+	if prefix != "" && IsEcosystemBackend(prefix) {
+		return false
+	}
+
+	// 2. If backend was explicitly provided:
+	if backend != "" {
+		if IsEcosystemBackend(backend) {
+			return false
+		}
+		return true
+	}
+
+	// 3. backend == "": infer from toolKey prefix or format
+	if prefix != "" {
+		if IsEcosystemBackend(prefix) {
+			return false
+		}
+		if prefix == "github" || prefix == "gitlab" || prefix == "forgejo" || prefix == "http" || prefix == "https" || prefix == "s3" || prefix == "aqua" {
+			return true
+		}
+	}
+
+	// If no prefix, shorthand like "cli/cli" or "astral-sh/ruff" indicates GitHub
+	if strings.Contains(toolKey, "/") {
+		return true
+	}
+
+	return true
+}
+
+// BackendNeedsChecksum determines if a tool backend requires explicit lockfile checksums.
+// Package managers, language ecosystems, and container runtimes do not require checksums in unirtm.lock.
+func BackendNeedsChecksum(toolKey, backend string) bool {
+	return BackendNeedsURL(toolKey, backend)
+}
+
+// validatePlatformEntry validates a single PlatformEntry.
+func validatePlatformEntry(toolKey, version, platformKey string, pe *PlatformEntry, backend string) error {
+	ve := &ValidationError{}
+	ctx := fmt.Sprintf("tool %q version %q platform %q", toolKey, version, platformKey)
+
+	if BackendNeedsURL(toolKey, backend) && pe.URL == "" {
+		ve.add("%s: URL is empty for binary download backend %q", ctx, backend)
+	}
+	if pe.Checksum != "" && !isValidChecksumFormat(pe.Checksum) {
+		ve.add("%s: checksum %q must be a valid hex string or start with a supported algorithm prefix (e.g., sha256:)", ctx, pe.Checksum)
+	}
+	if pe.Size < 0 {
+		ve.add("%s: size must be ≥ 0, got %d", ctx, pe.Size)
+	}
+	if pe.URL != "" && !strings.HasPrefix(pe.URL, "http") {
+		ve.add("%s: url %q does not look like a valid HTTP URL", ctx, pe.URL)
+	}
+
+	if !ve.ok() {
+		return ve
+	}
+	return nil
+}
+
+// isValidChecksumFormat verifies that s begins with a known algorithm prefix
+// or is a valid naked hex hash of standard lengths.
+func isValidChecksumFormat(s string) bool {
+	// Naked hash fallback logic (no prefix)
+	if !strings.Contains(s, ":") {
+		l := len(s)
+		if l == 32 || l == 40 || l == 56 || l == 64 || l == 96 || l == 128 {
+			// Strictly ensure it is a valid hex string (0-9, a-f, A-F)
+			_, err := hex.DecodeString(s)
+			return err == nil
+		}
+		return false
+	}
+
+	return strings.HasPrefix(s, "md5:") ||
+		strings.HasPrefix(s, "sha1:") ||
+		strings.HasPrefix(s, "sha224:") ||
+		strings.HasPrefix(s, "sha256:") ||
+		strings.HasPrefix(s, "sha384:") ||
+		strings.HasPrefix(s, "sha512:") ||
+		strings.HasPrefix(s, "sha3-224:") ||
+		strings.HasPrefix(s, "sha3-256:") ||
+		strings.HasPrefix(s, "sha3-384:") ||
+		strings.HasPrefix(s, "sha3-512:") ||
+		strings.HasPrefix(s, "blake2s:") ||
+		strings.HasPrefix(s, "blake2b:") ||
+		strings.HasPrefix(s, "blake3:")
+}
+
+// NormalizeChecksum infers the algorithm prefix for a naked hex hash
+// based on its length, and returns the prefixed string (e.g. "sha256:<hash>").
+// If the string already has a prefix or is not valid hex, it is returned as is.
+func NormalizeChecksum(s string) string {
+	if s == "" || strings.Contains(s, ":") {
+		return s
+	}
+
+	// Ensure it is a valid hex string
+	if _, err := hex.DecodeString(s); err != nil {
+		return s
+	}
+
+	switch len(s) {
+	case 32:
+		return "md5:" + s
+	case 40:
+		return "sha1:" + s
+	case 56:
+		return "sha224:" + s
+	case 64:
+		return "sha256:" + s
+	case 96:
+		return "sha384:" + s
+	case 128:
+		return "sha512:" + s
+	default:
+		return s
+	}
+}
+
+// CheckStrict verifies that the lockfile contains a valid entry for each tool/platform
+// pair in the required set. For URL-based backends, it ensures a URL is present.
+// Used to enforce UNIRTM_LOCKED=1 / settings.locked=true.
+//
+// required is a slice of (toolKey, version, platformKey) tuples.
+func (lf *LockFile) CheckStrict(required []LockRequirement) error {
+	ve := &ValidationError{}
+
+	for _, r := range required {
+		entry := lf.GetEntry(r.ToolKey, r.Version)
+		if entry == nil {
+			ve.add(
+				"strict mode: no locked entry for tool=%q version=%q — run `unirtm lock` first",
+				r.ToolKey, r.Version,
+			)
+			continue
+		}
+
+		pe := lf.GetPlatform(r.ToolKey, r.Version, r.PlatformKey)
+		if pe == nil {
+			ve.add(
+				"strict mode: no locked platform %q for tool=%q version=%q — run `unirtm lock` first",
+				r.PlatformKey, r.ToolKey, r.Version,
+			)
+			continue
+		}
+
+		needsURL := BackendNeedsURL(r.ToolKey, entry.Backend)
+
+		if needsURL && pe.URL == "" {
+			ve.add(
+				"strict mode: no locked URL for tool=%q version=%q platform=%q — run `unirtm lock` first",
+				r.ToolKey, r.Version, r.PlatformKey,
+			)
+		}
+	}
+
+	if !ve.ok() {
+		return ve
+	}
+	return nil
+}
+
+// LockRequirement describes a (tool, version, platform) combination that must
+// be present in the lockfile under strict mode.
+type LockRequirement struct {
+	ToolKey     string // e.g. "github:cli/cli"
+	Version     string // e.g. "2.72.0"
+	PlatformKey string // e.g. "linux-amd64"
+}

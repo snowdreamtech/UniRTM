@@ -5,7 +5,6 @@
 After cloning from the template, run the hydration script to replace all placeholder values:
 
 ```bash
-bash scripts/init-project.sh
 ```
 
 The script walks you through:
@@ -67,7 +66,4 @@ aqua.minisign = false
 asdf_compat = true
 ```
 
-For detailed unirtm configuration guidelines, see:
-
-- [UniRTM Configuration Best Practices](../reference/unirtm-configuration.md)
-- [UniRTM Attestation Error Troubleshooting](../troubleshooting/unirtm-attestation-error.md)
+For detailed mise configuration guidelines, see:

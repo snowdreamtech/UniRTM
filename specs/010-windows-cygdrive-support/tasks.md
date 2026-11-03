@@ -1,0 +1,4 @@
+- [x] 1. 检查 `internal/pkg/envpath/envpath.go` 中的 `FormatDirForPosix`。
+- [x] 2. 引入 `UNIRTM_CYGDRIVE_PREFIX` 环境变量读取及路径转换逻辑。
+- [x] 3. 更新 `internal/pkg/envpath/envpath_test.go`，增加 Windows 盘符路径转 cygdrive 的断言。
+- [x] 4. 运行 `go test ./internal/pkg/envpath` 确保测试通过。

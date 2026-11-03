@@ -1,0 +1,2520 @@
+<template>
+  <div class="scm-view-container" id="view-scm" @contextmenu.prevent>
+    <!-- Top Diff Toolbar (When viewing a specific file diff) -->
+    <div v-if="activeDiffFile" class="diff-header-bar" @contextmenu.prevent>
+      <div class="diff-title-group">
+        <span class="codicon codicon-diff"></span>
+        <span class="diff-file-path font-mono">{{ activeDiffFile }}</span>
+        <span
+          v-if="isCommitDiff"
+          class="diff-status-pill pill-commit"
+          :title="`${t('scm.diff.commit_badge')}: ${commitHash}\n${commitSubject}`"
+        >
+          <span class="commit-pill-hash"
+            >{{ commitHash.slice(0, 7) }}{{ parentHash ? " vs " + parentHash.slice(0, 7) : "" }}</span
+          >
+          <span v-if="parsedCommitSubject" class="commit-pill-type" :class="'cc-' + parsedCommitSubject.type">
+            {{ parsedCommitSubject.type
+            }}<span v-if="parsedCommitSubject.scope">({{ parsedCommitSubject.scope }})</span>
+          </span>
+          <span v-if="parsedCommitSubject?.description || commitSubject" class="commit-pill-msg">
+            {{ parsedCommitSubject?.description || commitSubject }}
+          </span>
+        </span>
+        <span v-else class="diff-status-pill" :class="isStaged ? 'pill-staged' : 'pill-unstaged'">
+          {{ isStaged ? t("scm.diff.staged_badge") : t("scm.diff.unstaged_badge") }}
+        </span>
+      </div>
+
+      <div class="diff-actions">
+        <!-- Toggle Inline vs Side-by-Side Diff -->
+        <button
+          class="diff-btn"
+          :title="isInlineDiff ? t('scm.diff.toggle_side_by_side') : t('scm.diff.toggle_inline')"
+          @click="toggleInlineDiff"
+        >
+          <span class="codicon" :class="isInlineDiff ? 'codicon-split-horizontal' : 'codicon-list-flat'"></span>
+          <span>{{ isInlineDiff ? t("scm.diff.side_by_side") : t("scm.diff.inline") }}</span>
+        </button>
+
+        <!-- Working Tree Stage / Unstage / Discard Actions (only when not commit diff) -->
+        <template v-if="!isCommitDiff">
+          <!-- Stage / Unstage Action -->
+          <button
+            v-if="!isStaged"
+            class="diff-btn primary"
+            :title="t('scm.diff.stage_file')"
+            @click="handleStageActiveFile"
+          >
+            <span class="codicon codicon-add"></span>
+            <span>{{ t("scm.diff.stage_file") }}</span>
+          </button>
+          <button v-else class="diff-btn" :title="t('scm.diff.unstage_file')" @click="handleUnstageActiveFile">
+            <span class="codicon codicon-remove"></span>
+            <span>{{ t("scm.diff.unstage_file") }}</span>
+          </button>
+
+          <!-- Discard Action (unstaged only) -->
+          <button
+            v-if="!isStaged"
+            class="diff-btn danger"
+            :title="t('scm.diff.discard_file')"
+            @click="handleDiscardActiveFile"
+          >
+            <span class="codicon codicon-discard"></span>
+            <span>{{ t("scm.diff.discard_file") }}</span>
+          </button>
+        </template>
+
+        <!-- Open File in Editor -->
+        <button class="diff-btn" :title="t('scm.diff.open_file')" @click="handleOpenFileInEditor">
+          <span class="codicon codicon-go-to-file"></span>
+          <span>{{ t("scm.diff.open_file") }}</span>
+        </button>
+
+        <!-- Reveal File in Explorer -->
+        <button
+          class="diff-btn"
+          :title="t('scm.reveal_in_explorer') || 'Reveal in Explorer'"
+          @click="handleRevealFileInExplorer(activeDiffFile)"
+        >
+          <span class="codicon codicon-folder-opened"></span>
+          <span>{{ t("scm.locate") || "Locate" }}</span>
+        </button>
+
+        <!-- Close Diff / Back to Overview or Graph -->
+        <button class="diff-btn close-btn" :title="t('scm.diff.close')" @click="closeDiffView">
+          <span class="codicon codicon-close"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 1. Active Monaco Diff Editor Container -->
+    <div v-show="activeDiffFile" ref="diffEditorContainer" class="monaco-diff-container"></div>
+
+    <!-- 2. SCM Overview Hub (When no diff file is selected) -->
+    <div v-if="!activeDiffFile" class="scm-overview-hub">
+      <div class="overview-header" @contextmenu.prevent>
+        <div class="overview-title-row">
+          <div class="title-with-icon">
+            <span class="codicon codicon-source-control scm-icon-large"></span>
+            <div>
+              <h2 class="repo-title">{{ t("scm.title") }}</h2>
+              <p class="repo-subtitle">{{ t("scm.subtitle") }}</p>
+            </div>
+          </div>
+
+          <div class="header-right-group">
+            <!-- Segmented Mode Tabs Switcher -->
+            <div class="view-mode-tabs">
+              <button class="mode-tab-btn" :class="{ active: currentTab === 'changes' }" @click="switchTab('changes')">
+                <span class="codicon codicon-diff-modified"></span>
+                <span>{{ t("scm.tabs.changes") }} ({{ totalChanges }})</span>
+              </button>
+              <button class="mode-tab-btn" :class="{ active: currentTab === 'graph' }" @click="switchTab('graph')">
+                <span
+                  class="codicon"
+                  :class="
+                    currentTab === 'graph' && isLoadingGraph
+                      ? 'codicon-sync codicon-modifier-spin'
+                      : 'codicon-git-commit'
+                  "
+                ></span>
+                <span>{{ t("scm.tabs.graph") }}</span>
+              </button>
+            </div>
+
+            <div class="header-branch-wrapper" ref="branchSelectorRef">
+              <div
+                class="header-branch-pill"
+                :class="{ active: isBranchMenuOpen }"
+                :title="`${t('scm.branch.current') || 'Current Branch'}: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''}`"
+                @click="toggleBranchMenu"
+              >
+                <span class="codicon codicon-git-branch"></span>
+                <span class="branch-name">{{ currentBranch }}</span>
+                <span v-if="status.ahead > 0 || status.behind > 0" class="branch-sync-badge">
+                  <span v-if="status.behind > 0">↓ {{ status.behind }}</span>
+                  <span v-if="status.ahead > 0">↑ {{ status.ahead }}</span>
+                </span>
+                <span class="codicon codicon-chevron-down twistie" :class="{ 'is-expanded': isBranchMenuOpen }"></span>
+              </div>
+
+              <!-- Branch Switcher Dropdown Popover -->
+              <div v-if="isBranchMenuOpen" class="header-branch-dropdown" @click.stop>
+                <div class="branch-dropdown-header">
+                  <span class="dropdown-title">{{ t("scm.branch.switch") || "Switch Branch" }}</span>
+                  <div class="dropdown-header-actions">
+                    <button
+                      class="branch-action-icon-btn"
+                      :title="t('scm.actions.refresh') || 'Refresh Status'"
+                      @click.stop="handleRefreshBranches"
+                    >
+                      <span
+                        class="codicon codicon-refresh"
+                        :class="{ 'codicon-modifier-spin': isSwitchingBranch }"
+                      ></span>
+                    </button>
+                    <button class="branch-close-btn" @click.stop="isBranchMenuOpen = false">×</button>
+                  </div>
+                </div>
+
+                <!-- Quick Search Input -->
+                <div class="branch-search-box">
+                  <span class="codicon codicon-search search-icon"></span>
+                  <input
+                    v-model="branchSearchQuery"
+                    type="text"
+                    class="branch-search-input"
+                    :placeholder="t('scm.branch.filter') || 'Filter branches...'"
+                    ref="branchSearchInputRef"
+                    @keydown.esc="isBranchMenuOpen = false"
+                  />
+                  <span
+                    v-if="branchSearchQuery"
+                    class="codicon codicon-close clear-icon"
+                    @click="branchSearchQuery = ''"
+                  ></span>
+                </div>
+
+                <!-- Branches List -->
+                <div class="branch-list-scroll">
+                  <div v-if="filteredBranches.length === 0" class="branch-empty-hint">
+                    <span>{{ t("scm.branch.no_match") || "No matching branches" }}</span>
+                  </div>
+                  <div
+                    v-for="b in filteredBranches"
+                    :key="b.name"
+                    class="header-branch-item"
+                    :class="{ 'is-current': b.current }"
+                    @click="handleSelectBranch(b.name)"
+                  >
+                    <span
+                      class="codicon"
+                      :class="b.current ? 'codicon-check current-check' : 'codicon-git-branch'"
+                    ></span>
+                    <span class="branch-item-name font-mono">{{ b.name }}</span>
+                    <span v-if="b.remote" class="branch-remote-tag">{{ t("scm.branch.remote") || "Remote" }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode 1: Working Tree Changes & Metrics -->
+      <template v-if="currentTab === 'changes'">
+        <!-- Quick Metrics Cards -->
+        <div class="scm-stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon-wrapper blue">
+              <span class="codicon codicon-git-branch"></span>
+            </div>
+            <div class="stat-details">
+              <span class="stat-value">{{ currentBranch }}</span>
+              <span class="stat-label">{{ t("scm.branch.active") }}</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-wrapper green">
+              <span class="codicon codicon-check-all"></span>
+            </div>
+            <div class="stat-details">
+              <span class="stat-value">{{ status.staged.length }}</span>
+              <span class="stat-label">{{ t("scm.changes.staged") }}</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-wrapper amber">
+              <span class="codicon codicon-diff-modified"></span>
+            </div>
+            <div class="stat-details">
+              <span class="stat-value">{{ status.unstaged.length }}</span>
+              <span class="stat-label">{{ t("scm.changes.unstaged") }}</span>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon-wrapper purple">
+              <span class="codicon codicon-history"></span>
+            </div>
+            <div class="stat-details">
+              <span class="stat-value">{{ totalChanges }}</span>
+              <span class="stat-label">{{ t("scm.changes.total") }}</span>
+            </div>
+          </div>
+
+          <div class="stat-card clickable-guard-card" :title="guardTooltip" @click="navigateToGuard">
+            <div class="stat-icon-wrapper" :class="guardCardIconColor">
+              <span class="codicon" :class="guardCardIcon"></span>
+            </div>
+            <div class="stat-details">
+              <div class="stat-value-with-link">
+                <span class="stat-value">{{ guardCardValue }}</span>
+                <span
+                  class="codicon codicon-link-external guard-link-icon"
+                  :title="t('guard.open_guard_hub') || 'Open Quality Guard Hub'"
+                ></span>
+              </div>
+              <span class="stat-label">{{ t("guard.title") || "Quality Guard" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions Bar -->
+        <div class="overview-actions-card">
+          <div class="actions-group">
+            <button
+              v-if="guardStatus.fixable_count > 0"
+              class="action-pill warning"
+              :disabled="isGuardFixing"
+              @click="handleRunGuardFix"
+            >
+              <span
+                class="codicon"
+                :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"
+              ></span>
+              <span>{{ t("guard.actions.auto_fix") || "Auto Fix" }} ({{ guardStatus.fixable_count }})</span>
+            </button>
+            <button class="action-pill primary" :disabled="status.unstaged.length === 0" @click="stage([])">
+              <span class="codicon codicon-add"></span>
+              <span>{{ t("scm.actions.stage_all") }}</span>
+            </button>
+            <button class="action-pill" :disabled="status.staged.length === 0" @click="unstage([])">
+              <span class="codicon codicon-remove"></span>
+              <span>{{ t("scm.actions.unstage_all") }}</span>
+            </button>
+            <button class="action-pill" @click="handleManualRefresh">
+              <span class="codicon codicon-refresh"></span>
+              <span>{{ t("scm.actions.refresh") }}</span>
+            </button>
+            <button class="action-pill" :title="t('scm.actions.more')" @click.stop="toggleMoreMenu">
+              <span class="codicon codicon-ellipsis"></span>
+              <span>{{ t("scm.actions.more") }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Split Columns: Staged and Unstaged Files -->
+        <div class="changes-split-view">
+          <!-- Staged Box -->
+          <div class="changes-box">
+            <div class="box-header">
+              <div class="box-header-left">
+                <span class="box-title">{{ t("scm.staged.title") }} ({{ status.staged.length }})</span>
+                <span v-if="status.staged.length > 0" class="box-badge green">{{ t("scm.diff.staged_badge") }}</span>
+              </div>
+              <div v-if="status.staged.length > 0" class="box-header-actions" @click.stop>
+                <button class="box-header-btn" :title="t('scm.actions.unstage_all')" @click="unstage([])">
+                  <span class="codicon codicon-remove"></span>
+                  <span>{{ t("scm.actions.unstage_all") }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="box-content">
+              <div
+                v-for="item in status.staged"
+                :key="'staged:' + item.path"
+                class="box-file-item"
+                :title="item.path"
+                @click="openDiff(item.path, true)"
+                @contextmenu.prevent="openFileContextMenu($event, item, true)"
+              >
+                <div class="file-item-main">
+                  <TechIcon :id="getFileName(item.path)" :size="16" />
+                  <span class="file-name">{{ getFileName(item.path) }}</span>
+                  <span class="file-dir">{{ getDirName(item.path) }}</span>
+                </div>
+                <div class="file-item-right">
+                  <div class="item-hover-actions" @click.stop>
+                    <button
+                      class="file-action-icon-btn"
+                      :title="t('scm.reveal_in_explorer') || 'Reveal in Explorer'"
+                      @click="handleRevealFileInExplorer(item.path)"
+                    >
+                      <span class="codicon codicon-folder-opened"></span>
+                    </button>
+                    <button
+                      class="file-action-icon-btn"
+                      :title="t('scm.diff.open_file')"
+                      @click="handleOpenFile(item.path)"
+                    >
+                      <span class="codicon codicon-go-to-file"></span>
+                    </button>
+                    <button
+                      class="file-action-icon-btn"
+                      :title="t('scm.diff.unstage_file')"
+                      @click="handleUnstageSingleFile(item.path)"
+                    >
+                      <span class="codicon codicon-remove"></span>
+                    </button>
+                  </div>
+                  <span class="status-tag" :class="'tag-' + item.status">{{ item.status }}</span>
+                </div>
+              </div>
+              <div v-if="status.staged.length === 0" class="empty-state">
+                <span class="codicon codicon-inbox"></span>
+                <span>{{ t("scm.staged.empty") }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Unstaged Box -->
+          <div class="changes-box">
+            <div class="box-header">
+              <div class="box-header-left">
+                <span class="box-title">{{ t("scm.unstaged.title") }} ({{ status.unstaged.length }})</span>
+              </div>
+              <div v-if="status.unstaged.length > 0" class="box-header-actions" @click.stop>
+                <button
+                  class="box-header-btn danger"
+                  :title="t('scm.actions.discard_all')"
+                  @click="handleDiscardAllUnstaged"
+                >
+                  <span class="codicon codicon-discard"></span>
+                  <span>{{ t("scm.actions.discard_all") }}</span>
+                </button>
+                <button class="box-header-btn primary" :title="t('scm.actions.stage_all')" @click="stage([])">
+                  <span class="codicon codicon-add"></span>
+                  <span>{{ t("scm.actions.stage_all") }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="box-content">
+              <div
+                v-for="item in status.unstaged"
+                :key="'unstaged:' + item.path"
+                class="box-file-item"
+                :title="item.path"
+                @click="openDiff(item.path, false)"
+                @contextmenu.prevent="openFileContextMenu($event, item, false)"
+              >
+                <div class="file-item-main">
+                  <TechIcon :id="getFileName(item.path)" :size="16" />
+                  <span class="file-name">{{ getFileName(item.path) }}</span>
+                  <span class="file-dir">{{ getDirName(item.path) }}</span>
+                </div>
+                <div class="file-item-right">
+                  <div class="item-hover-actions" @click.stop>
+                    <button
+                      class="file-action-icon-btn"
+                      :title="t('scm.reveal_in_explorer') || 'Reveal in Explorer'"
+                      @click="handleRevealFileInExplorer(item.path)"
+                    >
+                      <span class="codicon codicon-folder-opened"></span>
+                    </button>
+                    <button
+                      class="file-action-icon-btn"
+                      :title="t('scm.diff.open_file')"
+                      @click="handleOpenFile(item.path)"
+                    >
+                      <span class="codicon codicon-go-to-file"></span>
+                    </button>
+                    <button
+                      class="file-action-icon-btn danger"
+                      :title="t('scm.diff.discard_file')"
+                      @click="handleDiscardSingleFile(item.path)"
+                    >
+                      <span class="codicon codicon-discard"></span>
+                    </button>
+                    <button
+                      class="file-action-icon-btn primary"
+                      :title="t('scm.diff.stage_file')"
+                      @click="handleStageSingleFile(item.path)"
+                    >
+                      <span class="codicon codicon-add"></span>
+                    </button>
+                  </div>
+                  <span class="status-tag" :class="'tag-' + item.status">{{ item.status }}</span>
+                </div>
+              </div>
+              <div v-if="status.unstaged.length === 0" class="empty-state">
+                <span class="codicon codicon-pass"></span>
+                <span>{{ t("scm.unstaged.empty") }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Commits Section -->
+        <div class="commits-history-card">
+          <div class="box-header">
+            <div class="title-with-icon">
+              <span class="codicon codicon-history"></span>
+              <span class="box-title">{{ t("scm.history.title") }}</span>
+              <span v-if="commits.length > 0" class="history-count-badge font-mono">{{ commits.length }}</span>
+            </div>
+            <div class="history-header-actions">
+              <button class="action-pill small" :title="t('common.refresh')" @click="fetchLog">
+                <span class="codicon codicon-refresh"></span>
+                <span>{{ t("common.refresh") }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="commits-list">
+            <div v-for="c in commits" :key="c.hash" class="commit-item">
+              <span class="commit-hash font-mono">{{ c.shortHash }}</span>
+              <span
+                v-if="c.gpg && c.gpg.status !== 'none'"
+                class="gpg-mini-badge"
+                :class="'gpg-' + c.gpg.status"
+                :title="
+                  c.gpg.status === 'verified'
+                    ? t('scm.gpg.verified') + ' • ' + (c.gpg.signer || c.gpg.keyId || '')
+                    : t('scm.gpg.unverified') + ': ' + c.gpg.status
+                "
+              >
+                <span
+                  class="codicon"
+                  :class="c.gpg.status === 'verified' ? 'codicon-verified' : 'codicon-shield'"
+                ></span>
+                <span>{{ c.gpg.status === "verified" ? t("scm.gpg.verified") : c.gpg.status }}</span>
+              </span>
+              <span class="commit-message">{{ c.message }}</span>
+              <div class="commit-meta">
+                <span class="commit-author">{{ c.author }}</span>
+                <span class="commit-time">{{ formatTime(c.timestamp) }}</span>
+              </div>
+            </div>
+            <div v-if="commits.length === 0" class="empty-state">
+              <span class="codicon codicon-history"></span>
+              <span>{{ t("scm.history.empty") }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Mode 2: Interactive Git Graph View (Aligned with vscode-git-graph) -->
+      <GitGraphView
+        v-else-if="currentTab === 'graph'"
+        class="git-graph-embedded"
+        @open-commit-diff="handleOpenCommitDiff"
+        @open-file="handleOpenFileFromGraph"
+        @open-diff="handleOpenDiffFromGraph"
+        @switch-tab="switchTab"
+      />
+    </div>
+
+    <!-- Repository More Actions Menu (Teleported) -->
+    <GitMoreActionsMenu
+      :visible="isMoreMenuOpen"
+      :position="moreMenuPos"
+      @close="isMoreMenuOpen = false"
+      @action="handleMoreAction"
+    />
+
+    <!-- File Context Menu (Teleported) -->
+    <GitFileContextMenu
+      :visible="isFileContextMenuOpen"
+      :position="fileContextMenuPos"
+      :file="fileContextMenuTarget"
+      @close="isFileContextMenuOpen = false"
+      @action="handleFileMenuAction"
+    />
+
+    <!-- Git Action Modal Dialog -->
+    <GitActionModal
+      :visible="modalVisible"
+      :action-type="activeModalType"
+      :target-commit="null"
+      :target-ref-name="modalTargetRefName"
+      :current-branch-name="currentBranch"
+      @cancel="modalVisible = false"
+      @confirm="handleModalConfirm"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, defineAsyncComponent } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useGit } from "../composables/useGit";
+import { useEditorTabs } from "../composables/useEditorTabs";
+import { useWorkspaceBus } from "../composables/useWorkspaceBus";
+import { useTheme } from "../composables/useTheme";
+
+import { loadMonaco, getLanguageForFile } from "../services/editor/monacoLoader";
+import TechIcon from "../components/common/TechIcon.vue";
+const GitGraphView = defineAsyncComponent(() => import("../components/scm/GitGraphView.vue"));
+import GitMoreActionsMenu from "../components/scm/GitMoreActionsMenu.vue";
+import { useGuard } from "../composables/useGuard";
+import GitFileContextMenu, {
+  type ContextMenuTargetFile,
+  type FileMenuActionType,
+} from "../components/scm/GitFileContextMenu.vue";
+import type { GitModalActionType } from "../components/scm/GitActionModal.vue";
+const GitActionModal = defineAsyncComponent(() => import("../components/scm/GitActionModal.vue"));
+import { useToast } from "../composables/useToast";
+import { t } from "../i18n";
+
+defineEmits<{
+  (
+    e: "log-event",
+    level: "INFO" | "SUCCESS" | "WARN" | "ERROR",
+    msg: string,
+    detail?: string,
+    category?: "output" | "tasks" | "doctor"
+  ): void;
+  (e: "open-drawer", tab?: "terminal" | "output" | "tasks" | "doctor" | "ports"): void;
+}>();
+
+const route = useRoute();
+const router = useRouter();
+const { isDarkTheme } = useTheme();
+const { showToast } = useToast();
+
+const {
+  status,
+  currentBranch,
+  branches,
+  checkout,
+  totalChanges,
+  commits,
+  fetchStatus,
+  fetchBranches,
+  fetchDiff,
+  fetchCommitDiff,
+  fetchCommitDetail,
+  fetchLog,
+  stage,
+  unstage,
+  discard,
+  commit,
+  pull,
+  fetchRemote,
+  sync,
+  createBranchFromCommit,
+  renameBranch,
+  deleteBranch,
+  mergeBranch,
+  rebaseBranch,
+  pushBranch,
+  createTag,
+  deleteTag,
+  pushTag,
+  stashUncommitted,
+  resetUncommitted,
+  cleanUntracked,
+  isLoadingGraph,
+} = useGit();
+
+const isBranchMenuOpen = ref(false);
+const branchSearchQuery = ref("");
+const branchSearchInputRef = ref<HTMLInputElement | null>(null);
+const branchSelectorRef = ref<HTMLElement | null>(null);
+const isSwitchingBranch = ref(false);
+
+const filteredBranches = computed(() => {
+  const query = branchSearchQuery.value.trim().toLowerCase();
+  if (!query) return branches.value;
+  return branches.value.filter((b) => b.name.toLowerCase().includes(query));
+});
+
+function toggleBranchMenu(e: MouseEvent) {
+  e.stopPropagation();
+  isBranchMenuOpen.value = !isBranchMenuOpen.value;
+  if (isBranchMenuOpen.value) {
+    branchSearchQuery.value = "";
+    fetchBranches().catch(() => {});
+    nextTick(() => {
+      branchSearchInputRef.value?.focus();
+    });
+  }
+}
+
+async function handleRefreshBranches() {
+  await fetchBranches();
+}
+
+async function handleSelectBranch(branchName: string) {
+  if (branchName === currentBranch.value) {
+    isBranchMenuOpen.value = false;
+    return;
+  }
+  isSwitchingBranch.value = true;
+  try {
+    await checkout(branchName);
+    showToast(t("scm.branch.switched", { branch: branchName }) || `Switched to branch: ${branchName}`, "success");
+    isBranchMenuOpen.value = false;
+    await Promise.all([fetchStatus(), fetchBranches(), fetchLog()]);
+  } catch (err: any) {
+    showToast(err.message || t("scm.branch_switch_failed") || "Failed to switch branch", "error");
+  } finally {
+    isSwitchingBranch.value = false;
+  }
+}
+
+function handleWindowClick(e: MouseEvent) {
+  if (!isBranchMenuOpen.value) return;
+  if (branchSelectorRef.value && !branchSelectorRef.value.contains(e.target as Node)) {
+    isBranchMenuOpen.value = false;
+  }
+}
+
+const currentTab = ref<"changes" | "graph">(route.query.tab === "graph" ? "graph" : "changes");
+
+const {
+  status: guardStatus,
+  isLoading: isGuardLoading,
+  isFixing: isGuardFixing,
+  fetchStatus: fetchGuardStatus,
+  runFix: runGuardFix,
+} = useGuard();
+
+function navigateToGuard() {
+  router.push({
+    path: "/guard",
+    query: {
+      scope: (route.query.scope as string) || "workspace",
+    },
+  });
+}
+
+const guardCardValue = computed(() => {
+  if (isGuardLoading.value) return "...";
+  if (guardStatus.value.errors_count > 0)
+    return (
+      t("scm.guard_status_blockers", { count: guardStatus.value.errors_count }) ||
+      `${guardStatus.value.errors_count} Blockers`
+    );
+  if (guardStatus.value.fixable_count > 0)
+    return (
+      t("scm.guard_status_fixable", { count: guardStatus.value.fixable_count }) ||
+      `${guardStatus.value.fixable_count} Fixable`
+    );
+  return t("scm.guard_status_ready") || "Ready";
+});
+
+const guardCardIcon = computed(() => {
+  if (isGuardLoading.value || isGuardFixing.value) return "codicon-loading codicon-modifier-spin";
+  if (guardStatus.value.errors_count > 0) return "codicon-error";
+  if (guardStatus.value.warnings_count > 0) return "codicon-warning";
+  return "codicon-verified";
+});
+
+const guardCardIconColor = computed(() => {
+  if (guardStatus.value.errors_count > 0) return "red";
+  if (guardStatus.value.warnings_count > 0) return "amber";
+  return "green";
+});
+
+const guardTooltip = computed(() => {
+  if (guardStatus.value.errors_count > 0) {
+    return (
+      t("scm.guard_tip_blockers", { count: guardStatus.value.errors_count }) ||
+      `Quality Guard detected ${guardStatus.value.errors_count} blocker violation(s). Click to open Quality Guard Hub.`
+    );
+  }
+  if (guardStatus.value.fixable_count > 0) {
+    return (
+      t("scm.guard_tip_fixable", { count: guardStatus.value.fixable_count }) ||
+      `Quality Guard detected ${guardStatus.value.fixable_count} fixable issue(s). Click to open Quality Guard Hub.`
+    );
+  }
+  return t("scm.guard_tip_ready") || "Quality Guard is ready. Click to open Quality Guard Hub.";
+});
+
+async function handleRunGuardFix() {
+  const ok = await runGuardFix("staged");
+  if (ok) {
+    showToast(t("guard.toast.fixed") || "✨ Auto-fixed formatting and hygiene issues", "success");
+    await fetchStatus();
+  }
+}
+
+const isMoreMenuOpen = ref(false);
+const moreMenuPos = ref({ x: 0, y: 0 });
+
+const isFileContextMenuOpen = ref(false);
+const fileContextMenuPos = ref({ x: 0, y: 0 });
+const fileContextMenuTarget = ref<ContextMenuTargetFile | null>(null);
+
+const modalVisible = ref(false);
+const activeModalType = ref<GitModalActionType | null>(null);
+const modalTargetRefName = ref<string | undefined>(undefined);
+
+function toggleMoreMenu(event: MouseEvent) {
+  if (isMoreMenuOpen.value) {
+    isMoreMenuOpen.value = false;
+    return;
+  }
+  const btn = event.currentTarget as HTMLElement | null;
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    moreMenuPos.value = {
+      x: rect.left,
+      y: rect.bottom + 4,
+    };
+  } else {
+    moreMenuPos.value = { x: event.clientX, y: event.clientY };
+  }
+  isMoreMenuOpen.value = true;
+}
+
+function openModal(action: GitModalActionType, targetRefName?: string) {
+  activeModalType.value = action;
+  modalTargetRefName.value = targetRefName || currentBranch.value;
+  modalVisible.value = true;
+}
+
+async function handleMoreAction(action: string) {
+  isMoreMenuOpen.value = false;
+
+  if (action === "view-graph") {
+    switchTab("graph");
+    return;
+  }
+
+  if (action === "pull") {
+    await pull(false);
+    return;
+  }
+
+  if (action === "pull-rebase") {
+    await pull(true);
+    return;
+  }
+
+  if (action === "push") {
+    await pushBranch(currentBranch.value, false, false);
+    return;
+  }
+
+  if (action === "push-force") {
+    await pushBranch(currentBranch.value, false, true);
+    return;
+  }
+
+  if (action === "clone") {
+    showToast(t("scm.actions.more") + ": Clone", "info");
+    return;
+  }
+
+  if (action === "checkout") {
+    switchTab("changes");
+    return;
+  }
+
+  if (action === "fetch") {
+    await fetchRemote();
+    return;
+  }
+
+  if (action === "commit") {
+    await commit();
+    return;
+  }
+
+  if (action === "commit-amend") {
+    await commit(undefined, true);
+    return;
+  }
+
+  if (action === "commit-staged") {
+    await commit();
+    return;
+  }
+
+  if (action === "commit-all") {
+    await stage([]);
+    await commit();
+    return;
+  }
+
+  if (action === "stage-all") {
+    await stage([]);
+    return;
+  }
+
+  if (action === "unstage-all") {
+    await unstage([]);
+    return;
+  }
+
+  if (action === "discard-all") {
+    const allPaths = status.value.unstaged.map((i) => i.path);
+    if (confirm(t("scm.diff.discard_confirm", { path: "*" }))) {
+      await discard(allPaths);
+    }
+    return;
+  }
+
+  if (action === "sync") {
+    await sync();
+    return;
+  }
+
+  if (action === "create-branch") {
+    openModal("create-branch");
+    return;
+  }
+
+  if (action === "rename-branch") {
+    openModal("rename-branch");
+    return;
+  }
+
+  if (action === "delete-branch") {
+    openModal("delete-branch");
+    return;
+  }
+
+  if (action === "merge-branch") {
+    openModal("merge-branch");
+    return;
+  }
+
+  if (action === "rebase-branch") {
+    openModal("rebase-branch");
+    return;
+  }
+
+  if (action === "stash") {
+    openModal("stash-uncommitted");
+    return;
+  }
+
+  if (action === "stash-untracked") {
+    openModal("stash-uncommitted");
+    return;
+  }
+
+  if (action === "reset-uncommitted") {
+    openModal("reset-uncommitted");
+    return;
+  }
+
+  if (action === "clean-untracked") {
+    openModal("clean-uncommitted");
+    return;
+  }
+
+  if (action === "create-tag") {
+    openModal("create-tag");
+    return;
+  }
+
+  if (action === "push-tags") {
+    await pushTag("", false);
+    return;
+  }
+
+  if (action === "push-tags-force") {
+    await pushTag("", true);
+    return;
+  }
+
+  if (action === "delete-tag") {
+    openModal("delete-tag");
+    return;
+  }
+
+  if (action === "show-output") {
+    router.push({ name: "terminal" }).catch(() => {});
+    return;
+  }
+}
+
+async function handleModalConfirm(payload: {
+  action: GitModalActionType;
+  commit?: any;
+  targetRefName?: string;
+  data?: any;
+}) {
+  modalVisible.value = false;
+  const { action, data } = payload;
+  try {
+    if (action === "create-tag") {
+      await createTag(data.name, "", data.message);
+    } else if (action === "create-branch") {
+      await createBranchFromCommit(data.name, "", data.checkout);
+    } else if (action === "rename-branch") {
+      await renameBranch(data.oldName, data.newName);
+    } else if (action === "delete-branch") {
+      await deleteBranch(data.name, data.force);
+    } else if (action === "merge-branch") {
+      await mergeBranch(data.branch, data.noFf, data.squash);
+    } else if (action === "rebase-branch") {
+      await rebaseBranch(data.branch);
+    } else if (action === "delete-tag") {
+      await deleteTag(data.name);
+    } else if (action === "stash-uncommitted") {
+      await stashUncommitted(data?.message, data?.includeUntracked);
+    } else if (action === "reset-uncommitted") {
+      await resetUncommitted();
+    } else if (action === "clean-uncommitted") {
+      await cleanUntracked();
+    }
+    await fetchBranches();
+    await fetchStatus();
+  } catch (err: any) {
+    showToast(err.message || t("scm.graph.action_failed"), "error");
+  }
+}
+
+function switchTab(tab: "changes" | "graph") {
+  currentTab.value = tab;
+  router.replace({
+    query: {
+      ...route.query,
+      tab,
+    },
+  });
+}
+
+function formatTime(ts: number): string {
+  if (!ts) return "";
+  const d = new Date(ts * 1000);
+  return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+const { openTab } = useEditorTabs();
+const { revealInExplorer } = useWorkspaceBus();
+
+const diffEditorContainer = ref<HTMLElement | null>(null);
+let monacoDiffEditor: any = null;
+let originalModel: any = null;
+let modifiedModel: any = null;
+
+const isInlineDiff = ref(false);
+
+const activeDiffFile = computed(() => {
+  return (route.query.path as string) || "";
+});
+
+const isStaged = computed(() => {
+  return route.query.staged === "true";
+});
+
+const commitHash = computed(() => {
+  return (route.query.commit as string) || "";
+});
+
+const parentHash = computed(() => {
+  return (route.query.parent as string) || "";
+});
+
+const isCommitDiff = computed(() => {
+  return !!commitHash.value;
+});
+
+const currentCommitDetail = ref<any | null>(null);
+
+const commitSubject = computed(() => {
+  if (!currentCommitDetail.value?.message) return "";
+  return currentCommitDetail.value.message.split(/\r?\n/)[0];
+});
+
+const parsedCommitSubject = computed(() => {
+  if (!commitSubject.value) return null;
+  const m = commitSubject.value.match(
+    /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(([a-zA-Z0-9_.\-/]+)\))?(!)?: (.+)$/
+  );
+  if (!m) return null;
+  return {
+    type: m[1],
+    scope: m[3] || null,
+    isBreaking: !!m[4],
+    description: m[5],
+  };
+});
+
+function getFileName(filePath: string): string {
+  const parts = filePath.split("/");
+  return parts[parts.length - 1] || filePath;
+}
+
+function getDirName(filePath: string): string {
+  const parts = filePath.split("/");
+  if (parts.length <= 1) return "";
+  return parts.slice(0, parts.length - 1).join("/");
+}
+
+async function renderDiff(filePath: string, staged: boolean) {
+  if (!filePath) return;
+
+  let diff: any = null;
+  if (isCommitDiff.value) {
+    diff = await fetchCommitDiff(commitHash.value, filePath, parentHash.value || undefined);
+    fetchCommitDetail(commitHash.value)
+      .then((d) => {
+        currentCommitDetail.value = d;
+      })
+      .catch(() => {});
+  } else {
+    currentCommitDetail.value = null;
+    diff = await fetchDiff(filePath, staged);
+  }
+  if (!diff) return;
+
+  await nextTick();
+  if (!diffEditorContainer.value) return;
+
+  const monaco = await loadMonaco();
+
+  const lang = getLanguageForFile(getFileName(filePath));
+
+  // Dispose previous models and editor if already present
+  if (originalModel) {
+    originalModel.dispose();
+    originalModel = null;
+  }
+  if (modifiedModel) {
+    modifiedModel.dispose();
+    modifiedModel = null;
+  }
+
+  originalModel = monaco.editor.createModel(diff.original || "", lang);
+  modifiedModel = monaco.editor.createModel(diff.modified || "", lang);
+
+  if (!monacoDiffEditor) {
+    monacoDiffEditor = monaco.editor.createDiffEditor(diffEditorContainer.value, {
+      renderSideBySide: !isInlineDiff.value,
+      readOnly: true,
+      automaticLayout: true,
+      theme: isDarkTheme.value ? "vs-dark" : "vs",
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      lineNumbers: "on",
+      fontSize: 13,
+      fontFamily: "'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace",
+    });
+  } else {
+    monacoDiffEditor.updateOptions({
+      renderSideBySide: !isInlineDiff.value,
+    });
+  }
+
+  monacoDiffEditor.setModel({
+    original: originalModel,
+    modified: modifiedModel,
+  });
+}
+
+function toggleInlineDiff() {
+  isInlineDiff.value = !isInlineDiff.value;
+  if (monacoDiffEditor) {
+    monacoDiffEditor.updateOptions({
+      renderSideBySide: !isInlineDiff.value,
+    });
+  }
+}
+
+watch(isDarkTheme, (dark) => {
+  if (monacoDiffEditor) {
+    loadMonaco().then((monaco) => {
+      monaco.editor.setTheme(dark ? "vs-dark" : "vs");
+    });
+  }
+});
+
+async function handleStageActiveFile() {
+  if (!activeDiffFile.value) return;
+  await stage([activeDiffFile.value]);
+  // update route to staged
+  router.replace({
+    name: "scm",
+    query: {
+      path: activeDiffFile.value,
+      staged: "true",
+    },
+  });
+}
+
+async function handleUnstageActiveFile() {
+  if (!activeDiffFile.value) return;
+  await unstage([activeDiffFile.value]);
+  // update route to unstaged
+  router.replace({
+    name: "scm",
+    query: {
+      path: activeDiffFile.value,
+      staged: "false",
+    },
+  });
+}
+
+async function handleDiscardActiveFile() {
+  if (!activeDiffFile.value) return;
+  if (confirm(t("scm.diff.discard_confirm", { path: activeDiffFile.value }))) {
+    await discard([activeDiffFile.value]);
+    closeDiffView();
+  }
+}
+
+function handleOpenFile(targetPath?: string) {
+  const p = targetPath || activeDiffFile.value;
+  if (!p) return;
+  const fileName = getFileName(p);
+  openTab({ path: p, name: fileName });
+  router.push({ name: "explorer" }).catch(() => {});
+}
+
+function handleRevealFileInExplorer(targetPath?: string) {
+  const p = targetPath || activeDiffFile.value;
+  if (!p) return;
+  revealInExplorer(p);
+  router.push({ name: "explorer" }).catch(() => {});
+}
+
+function handleOpenFileInEditor() {
+  handleOpenFile();
+}
+
+async function handleStageSingleFile(path: string) {
+  await stage([path]);
+}
+
+async function handleUnstageSingleFile(path: string) {
+  await unstage([path]);
+}
+
+async function handleDiscardSingleFile(path: string) {
+  if (confirm(t("scm.diff.discard_confirm", { path }))) {
+    await discard([path]);
+  }
+}
+
+function openFileContextMenu(event: MouseEvent, item: { path: string; status?: string }, isStaged: boolean) {
+  fileContextMenuTarget.value = {
+    path: item.path,
+    status: item.status,
+    isStaged,
+  };
+  fileContextMenuPos.value = { x: event.clientX, y: event.clientY };
+  isFileContextMenuOpen.value = true;
+}
+
+async function handleFileMenuAction(action: FileMenuActionType, file: ContextMenuTargetFile) {
+  isFileContextMenuOpen.value = false;
+  switch (action) {
+    case "open-changes":
+      openDiff(file.path, file.isStaged);
+      break;
+    case "open-file":
+      handleOpenFile(file.path);
+      break;
+    case "stage":
+      await handleStageSingleFile(file.path);
+      break;
+    case "unstage":
+      await handleUnstageSingleFile(file.path);
+      break;
+    case "discard":
+      await handleDiscardSingleFile(file.path);
+      break;
+    case "reveal-explorer":
+      handleRevealFileInExplorer(file.path);
+      break;
+
+    case "copy-path":
+      try {
+        const fullPath = file.path.startsWith("/") ? file.path : `/${file.path}`;
+        await navigator.clipboard.writeText(fullPath);
+        showToast(t("scm.file_menu.copied_path"), "info");
+      } catch {
+        showToast("Copy failed", "error");
+      }
+      break;
+    case "copy-relative-path":
+      try {
+        await navigator.clipboard.writeText(file.path);
+        showToast(t("scm.file_menu.copied_relative_path"), "info");
+      } catch {
+        showToast("Copy failed", "error");
+      }
+      break;
+  }
+}
+
+async function handleDiscardAllUnstaged() {
+  if (confirm(t("scm.diff.discard_confirm", { path: "*" }))) {
+    const allPaths = status.value.unstaged.map((i) => i.path);
+    await discard(allPaths);
+  }
+}
+
+function closeDiffView() {
+  if (isCommitDiff.value) {
+    router.replace({
+      name: "scm",
+      query: {
+        scope: route.query.scope || "workspace",
+        tab: "graph",
+      },
+    });
+  } else {
+    router.replace({
+      name: "scm",
+      query: {
+        scope: route.query.scope || "workspace",
+        tab: currentTab.value,
+      },
+    });
+  }
+}
+
+function handleOpenCommitDiff(payload: { path: string; hash: string; parentHash?: string }) {
+  router.push({
+    name: "scm",
+    query: {
+      scope: route.query.scope || "workspace",
+      tab: "graph",
+      path: payload.path,
+      commit: payload.hash,
+      parent: payload.parentHash || "",
+    },
+  });
+}
+
+function handleOpenFileFromGraph(path: string) {
+  const fileName = getFileName(path);
+  openTab({ path, name: fileName });
+  router.push({ name: "explorer" }).catch(() => {});
+}
+
+function handleOpenDiffFromGraph(payload: { path: string; staged: boolean }) {
+  openDiff(payload.path, payload.staged);
+}
+
+function openDiff(path: string, staged: boolean) {
+  router.push({
+    name: "scm",
+    query: {
+      path,
+      staged: String(staged),
+    },
+  });
+}
+
+function handleManualRefresh() {
+  fetchStatus().catch(() => {});
+  fetchLog().catch(() => {});
+  fetchGuardStatus("staged").catch(() => {});
+}
+
+watch(
+  () => [route.query.path, route.query.staged, route.query.commit, route.query.parent],
+  ([newPath, newStaged]) => {
+    if (newPath && typeof newPath === "string") {
+      renderDiff(newPath, newStaged === "true");
+    } else {
+      if (monacoDiffEditor) {
+        monacoDiffEditor.dispose();
+        monacoDiffEditor = null;
+      }
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (tab === "guard") {
+      router.replace({
+        path: "/guard",
+        query: {
+          scope: (route.query.scope as string) || "workspace",
+        },
+      });
+      return;
+    }
+    if (tab === "graph" || tab === "changes") {
+      currentTab.value = tab;
+    }
+  },
+  { immediate: true }
+);
+
+onMounted(() => {
+  fetchStatus().catch(() => {});
+  fetchBranches().catch(() => {});
+  fetchLog().catch(() => {});
+  fetchGuardStatus("staged").catch(() => {});
+  window.addEventListener("click", handleWindowClick);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("click", handleWindowClick);
+  if (monacoDiffEditor) {
+    monacoDiffEditor.dispose();
+    monacoDiffEditor = null;
+  }
+  if (originalModel) {
+    originalModel.dispose();
+    originalModel = null;
+  }
+  if (modifiedModel) {
+    modifiedModel.dispose();
+    modifiedModel = null;
+  }
+});
+</script>
+
+<style scoped>
+.scm-view-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* Diff Header Bar */
+.diff-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
+  gap: 12px;
+}
+
+.diff-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.diff-file-path {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diff-status-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.pill-staged {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success, #10b981);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.pill-unstaged {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+:root[data-theme="light"] .pill-staged {
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
+  border-color: rgba(5, 150, 105, 0.3);
+}
+
+:root[data-theme="light"] .pill-unstaged {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.3);
+}
+
+.diff-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diff-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.diff-btn:hover {
+  background: var(--section-bg);
+}
+
+.diff-btn.primary {
+  background: var(--accent-cyan);
+  color: #ffffff !important;
+  border-color: var(--accent-cyan);
+}
+
+.diff-btn.primary:hover {
+  filter: brightness(1.1);
+}
+
+.diff-btn.danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.diff-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+:root[data-theme="light"] .diff-btn.danger {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+.diff-btn.close-btn {
+  padding: 4px 8px;
+}
+
+/* Monaco Container */
+.monaco-diff-container {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* SCM Overview Hub */
+.scm-overview-hub {
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.overview-header {
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 16px;
+}
+
+.overview-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.scm-icon-large {
+  font-size: 36px;
+  color: var(--accent-cyan);
+}
+
+.repo-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-main);
+}
+
+.repo-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 4px 0 0 0;
+}
+
+.header-branch-wrapper {
+  position: relative;
+}
+
+.header-branch-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.header-branch-pill:hover,
+.header-branch-pill.active {
+  border-color: var(--accent-blue, #3b82f6);
+  background: var(--section-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.header-branch-pill .twistie {
+  font-size: 11px;
+  transition: transform 0.2s ease;
+  color: var(--text-muted);
+}
+
+.header-branch-pill .twistie.is-expanded {
+  transform: rotate(180deg);
+}
+
+.header-branch-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 280px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.15),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: branchFadeIn 0.15s ease-out;
+}
+
+@keyframes branchFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.branch-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--card-border);
+  background: var(--section-bg);
+}
+
+.dropdown-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dropdown-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.branch-action-icon-btn,
+.branch-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.branch-action-icon-btn:hover,
+.branch-close-btn:hover {
+  color: var(--text-main);
+  background: var(--card-border);
+}
+
+.branch-search-box {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--card-border);
+  gap: 6px;
+  background: var(--card-bg);
+}
+
+.branch-search-box .search-icon {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.branch-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.branch-search-box .clear-icon {
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.branch-list-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.branch-empty-hint {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.header-branch-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s ease;
+  color: var(--text-main);
+}
+
+.header-branch-item:hover {
+  background: var(--section-bg);
+}
+
+.header-branch-item.is-current {
+  background: var(--accent-subtle, rgba(59, 130, 246, 0.08));
+  color: var(--accent-blue, #3b82f6);
+  font-weight: 500;
+}
+
+.header-branch-item .current-check {
+  color: var(--accent-blue, #3b82f6);
+  font-weight: bold;
+}
+
+.branch-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-branch-item .branch-remote-tag {
+  font-size: 10px;
+  padding: 1px 4px;
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 3px;
+  color: var(--text-muted);
+}
+
+.branch-sync-badge {
+  font-size: 11px;
+  background: var(--accent-cyan);
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* Stats Grid */
+.scm-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 20px;
+}
+
+.stat-icon-wrapper.blue {
+  background: rgba(2, 132, 199, 0.15);
+  color: var(--accent-cyan);
+}
+
+.stat-icon-wrapper.green {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success, #10b981);
+}
+
+.stat-icon-wrapper.amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning, #f59e0b);
+}
+
+.stat-icon-wrapper.purple {
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--accent-purple, #a855f7);
+}
+
+.stat-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Actions Card */
+.overview-actions-card {
+  display: flex;
+  align-items: center;
+}
+
+.actions-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.action-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-pill:hover:not(:disabled) {
+  background: var(--section-bg);
+}
+
+.action-pill.primary {
+  background: var(--accent-cyan);
+  color: #ffffff !important;
+  border-color: var(--accent-cyan);
+}
+
+.action-pill.primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.action-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Split Changes Boxes */
+.changes-split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.changes-box {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  min-height: 320px;
+}
+
+.box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--section-bg);
+  border-bottom: 1px solid var(--card-border);
+  color: var(--text-main);
+  min-height: 44px;
+}
+
+.box-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.box-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.box-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.box-header-btn:hover {
+  color: var(--text-main);
+  background: var(--card-bg-hover, rgba(255, 255, 255, 0.08));
+  border-color: var(--border-hover, rgba(255, 255, 255, 0.2));
+}
+
+.box-header-btn.primary:hover {
+  color: #ffffff;
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.box-header-btn.danger:hover {
+  color: #ffffff;
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+.box-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.box-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.box-badge.green {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success, #10b981);
+}
+
+.box-badge.amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning, #f59e0b);
+}
+
+:root[data-theme="light"] .box-badge.green {
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
+}
+
+:root[data-theme="light"] .box-badge.amber {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.box-content {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 276px;
+  max-height: 540px;
+  scrollbar-gutter: stable;
+}
+
+.box-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.box-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.box-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+:root[data-theme="light"] .box-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.box-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.5);
+}
+
+.box-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  height: 38px;
+  min-height: 38px;
+  max-height: 38px;
+  box-sizing: border-box;
+  cursor: pointer;
+  border-bottom: 1px solid var(--card-border);
+  position: relative;
+  transition: background 0.12s ease;
+}
+
+.box-file-item:hover {
+  background: var(--section-bg);
+}
+
+.file-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding-right: 140px; /* Reserves dedicated space for right actions + badge so text never shifts */
+}
+
+.file-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.item-hover-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.12s ease,
+    visibility 0.12s ease;
+}
+
+.box-file-item:hover .item-hover-actions {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.file-action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 13px;
+}
+
+.file-action-icon-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.file-action-icon-btn.primary:hover {
+  color: #ffffff;
+  background: var(--accent-cyan);
+}
+
+.file-action-icon-btn.danger:hover {
+  color: #ffffff;
+  background: #ef4444;
+}
+
+:root[data-theme="light"] .file-action-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="light"] .file-action-icon-btn.primary:hover {
+  color: #ffffff;
+  background: var(--accent-cyan);
+}
+
+:root[data-theme="light"] .file-action-icon-btn.danger:hover {
+  color: #ffffff;
+  background: #dc2626;
+}
+
+.file-name {
+  font-weight: 500;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.file-dir {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-tag {
+  font-size: 11px;
+  font-weight: 700;
+  width: 16px;
+  text-align: center;
+}
+
+.status-tag.tag-M {
+  color: #f59e0b;
+}
+
+.status-tag.tag-A,
+.status-tag.tag-\? {
+  color: #10b981;
+}
+
+.status-tag.tag-D {
+  color: #ef4444;
+}
+
+:root[data-theme="light"] .status-tag.tag-M {
+  color: #b45309;
+}
+
+:root[data-theme="light"] .status-tag.tag-A,
+:root[data-theme="light"] .status-tag.tag-\? {
+  color: #059669;
+}
+
+:root[data-theme="light"] .status-tag.tag-D {
+  color: #dc2626;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 240px;
+  padding: 48px 24px;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.empty-state .codicon {
+  font-size: 38px;
+  opacity: 0.4;
+  margin-bottom: 4px;
+}
+
+/* Commits History Card */
+.commits-history-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.action-pill.small {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.history-count-badge {
+  font-size: 11px;
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--accent-cyan);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+:root[data-theme="light"] .history-count-badge {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.history-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.commits-list {
+  display: flex;
+  flex-direction: column;
+  height: 380px;
+  min-height: 380px;
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  flex-shrink: 0;
+}
+
+.commits-list .empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.commits-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.commits-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.commits-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+:root[data-theme="light"] .commits-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.commits-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.5);
+}
+
+.commit-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  height: 38px;
+  min-height: 38px;
+  max-height: 38px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 12px;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.commit-item:hover {
+  background: var(--section-bg);
+}
+
+.commit-hash {
+  color: var(--accent-cyan);
+  font-weight: 600;
+  min-width: 65px;
+  flex-shrink: 0;
+}
+
+.gpg-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.gpg-mini-badge .codicon {
+  font-size: 11px;
+}
+
+.gpg-mini-badge.gpg-verified {
+  background: rgba(46, 160, 67, 0.15);
+  color: #3fb950;
+  border: 1px solid rgba(46, 160, 67, 0.4);
+}
+
+:root[data-theme="light"] .gpg-mini-badge.gpg-verified {
+  background: rgba(46, 160, 67, 0.12);
+  color: #1a7f37;
+  border-color: rgba(26, 127, 55, 0.35);
+}
+
+.gpg-mini-badge.gpg-unverified {
+  background: rgba(210, 153, 34, 0.15);
+  color: #e3b341;
+  border: 1px solid rgba(210, 153, 34, 0.4);
+}
+
+:root[data-theme="light"] .gpg-mini-badge.gpg-unverified {
+  background: rgba(154, 103, 0, 0.12);
+  color: #9a6700;
+  border-color: rgba(154, 103, 0, 0.35);
+}
+
+.gpg-mini-badge.gpg-bad,
+.gpg-mini-badge.gpg-revoked {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+  border: 1px solid rgba(248, 81, 73, 0.4);
+}
+
+.commit-message {
+  flex: 1;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.commit-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.commit-author {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.commit-time {
+  white-space: nowrap;
+}
+
+.header-right-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.view-mode-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.mode-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-tab-btn:hover {
+  color: var(--text-main);
+}
+
+.mode-tab-btn.active {
+  background: var(--card-bg);
+  color: var(--accent-cyan);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="light"] .mode-tab-btn.active {
+  background: #ffffff;
+  color: #0284c7;
+}
+
+.diff-status-pill.pill-commit {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 460px;
+}
+
+.commit-pill-hash {
+  font-family: var(--font-family-mono, monospace);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.commit-pill-type {
+  font-size: 10px;
+  font-family: var(--font-family-mono, monospace);
+  padding: 0 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.commit-pill-type.cc-feat {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.commit-pill-type.cc-fix {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.commit-pill-type.cc-docs {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.commit-pill-type.cc-refactor {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+}
+
+.commit-pill-type.cc-chore {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+
+.commit-pill-msg {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .diff-status-pill.pill-commit {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+  border-color: rgba(124, 58, 237, 0.25);
+}
+
+.git-graph-embedded {
+  flex: 1;
+  height: calc(100vh - 120px);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+}
+
+.clickable-guard-card {
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.clickable-guard-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-cyan);
+}
+
+.tab-count-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  line-height: 1.2;
+}
+
+.tab-count-pill.pill-error {
+  background: rgba(248, 81, 73, 0.2);
+  color: #f85149;
+}
+
+.tab-count-pill.pill-warning {
+  background: rgba(210, 153, 34, 0.2);
+  color: #d29922;
+}
+
+.stat-value-with-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.guard-link-icon {
+  font-size: 13px;
+  color: var(--text-muted, #94a3b8);
+  opacity: 0.7;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    color 0.15s ease;
+}
+
+.clickable-guard-card:hover .guard-link-icon {
+  opacity: 1;
+  color: var(--accent-cyan, #00d2ff);
+  transform: translate(1px, -1px);
+}
+</style>

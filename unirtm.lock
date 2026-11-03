@@ -658,3 +658,24 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 
 [tools."python"."platforms.windows-arm64"]
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260825/cpython-3.14.7%2B20260825-aarch64-pc-windows-msvc-install_only.tar.gz"
+
+[[tools."npm:bats"]]
+version = "1.13.0"
+backend = "npm"
+
+[tools."npm:bats"."platforms.linux-amd64"]
+
+[tools."npm:bats"."platforms.linux-amd64-musl"]
+
+[tools."npm:bats"."platforms.linux-arm64"]
+
+[tools."npm:bats"."platforms.linux-arm64-musl"]
+
+[tools."npm:bats"."platforms.macos-amd64"]
+
+[tools."npm:bats"."platforms.macos-arm64"]
+
+[tools."npm:bats"."platforms.windows-amd64"]
+
+[tools."npm:bats"."platforms.windows-arm64"]
+

@@ -1,0 +1,181 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { useGuard } from "./useGuard";
+
+describe("useGuard", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("fetches guard status successfully", async () => {
+    const mockStatus = {
+      mode: "staged",
+      scanned: 3,
+      clean: false,
+      errors_count: 0,
+      warnings_count: 2,
+      fixable_count: 2,
+      issues: [
+        {
+          file_path: "src/dirty.ts",
+          line: 1,
+          column: 0,
+          rule_id: "builtin:trailing-whitespace",
+          category: "hygiene",
+          phase: "fixer",
+          severity: "warning",
+          message: "Contains trailing whitespace",
+          fixable: true,
+        },
+      ],
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(mockStatus),
+    });
+
+    const { status, fetchStatus } = useGuard();
+    const res = await fetchStatus("staged");
+
+    expect(res).toEqual(mockStatus);
+    expect(status.value.scanned).toBe(3);
+    expect(status.value.fixable_count).toBe(2);
+    expect(status.value.issues.length).toBe(1);
+  });
+
+  it("executes runFix and re-fetches status", async () => {
+    const mockPostRes = { success: true };
+    const mockCleanStatus = {
+      mode: "staged",
+      scanned: 3,
+      clean: true,
+      errors_count: 0,
+      warnings_count: 0,
+      fixable_count: 0,
+      issues: [],
+    };
+
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue(mockPostRes),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue(mockCleanStatus),
+      });
+
+    const { status, runFix } = useGuard();
+    const ok = await runFix("staged");
+
+    expect(ok).toBe(true);
+    expect(status.value.clean).toBe(true);
+    expect(status.value.fixable_count).toBe(0);
+  });
+
+  it("saves slot config via POST /api/guard/slots", async () => {
+    const mockSlots = [
+      {
+        id: "web.formatter",
+        default_tool_name: "biome",
+        description: "Biome formatter",
+        category: "format",
+        phase: "formatter",
+        default_command: "biome format",
+      },
+    ];
+
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ success: true, slots: mockSlots }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ builtin_rules: [], slots: mockSlots, config_files: [] }),
+      });
+
+    const { saveSlotConfig, guardSlots } = useGuard();
+    const ok = await saveSlotConfig({ id: "web.formatter", tool: "biome" });
+
+    expect(ok).toBe(true);
+    expect(guardSlots.value.length).toBe(1);
+    expect(guardSlots.value[0].default_tool_name).toBe("biome");
+  });
+
+  it("deletes slot config via DELETE /api/guard/slots", async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ success: true, slots: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ builtin_rules: [], slots: [], config_files: [] }),
+      });
+
+    const { deleteSlotConfig, guardSlots } = useGuard();
+    const ok = await deleteSlotConfig("custom.slot");
+
+    expect(ok).toBe(true);
+    expect(guardSlots.value.length).toBe(0);
+  });
+
+  it("sanitizes null issues from backend response to prevent TypeError", async () => {
+    const mockNullIssues = {
+      mode: "staged",
+      scanned: 0,
+      clean: true,
+      errors_count: 0,
+      warnings_count: 0,
+      fixable_count: 0,
+      issues: null,
+      rule_reports: null,
+      logs: null,
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(mockNullIssues),
+    });
+
+    const { status, fetchStatus } = useGuard();
+    await fetchStatus("staged");
+
+    expect(Array.isArray(status.value.issues)).toBe(true);
+    expect(status.value.issues.length).toBe(0);
+    expect(Array.isArray(status.value.rule_reports)).toBe(true);
+    expect(Array.isArray(status.value.logs)).toBe(true);
+  });
+
+  it("updates and persists active guard tab", () => {
+    const storage: Record<string, string> = {};
+    (global as any).localStorage = {
+      getItem: (k: string) => storage[k] || null,
+      setItem: (k: string, v: string) => {
+        storage[k] = v;
+      },
+      removeItem: (k: string) => {
+        delete storage[k];
+      },
+      clear: () => {},
+      length: 0,
+      key: () => null,
+    };
+
+    const { activeGuardTab, setActiveGuardTab } = useGuard();
+    setActiveGuardTab("reports");
+    expect(activeGuardTab.value).toBe("reports");
+    expect(global.localStorage.getItem("unirtm_guard_active_tab")).toBe("reports");
+
+    setActiveGuardTab("workbench");
+    expect(activeGuardTab.value).toBe("workbench");
+    expect(global.localStorage.getItem("unirtm_guard_active_tab")).toBe("workbench");
+  });
+});

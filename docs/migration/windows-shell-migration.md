@@ -44,8 +44,7 @@ Git Bash is included with [Git for Windows](https://git-scm.com/download/win) an
 ```bash
 # All scripts work directly
 ./scripts/setup.sh
-./scripts/test.sh
-unirtm run lint
+make lint
 ```
 
 #### Option 2: WSL (Windows Subsystem for Linux)
@@ -92,10 +91,7 @@ Windows Terminal provides a modern terminal experience.
 | ---------------------------- | -------------------------- |
 | `.\scripts\setup.ps1`        | `./scripts/setup.sh`       |
 | `scripts\setup.bat`          | `./scripts/setup.sh`       |
-| `.\scripts\test.ps1`         | `./scripts/test.sh`        |
 | `scripts\test.bat`           | `./scripts/test.sh`        |
-| `.\scripts\docs.ps1`         | `./scripts/docs.sh`        |
-| `scripts\docs.bat`           | `./scripts/docs.sh`        |
 
 **Pattern**: Replace `.\scripts\<name>.ps1` or `scripts\<name>.bat` with `./scripts/<name>.sh`
 

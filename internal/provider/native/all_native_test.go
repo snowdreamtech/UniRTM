@@ -1,0 +1,41 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package native
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestAllNativeProviders_Name(t *testing.T) {
+	tests := []struct {
+		handler interface{ Name() string }
+		want    string
+	}{
+		{&GolangHandler{}, "golang"},
+		{&JavaHandler{}, "java"},
+		{&PythonHandler{}, "python_standalone"},
+		{&RustHandler{}, "rust"},
+		{&NodeJSHandler{}, "nodejs"},
+		{&CMakeHandler{}, "cmake"},
+		{&ElixirHandler{}, "elixir"},
+		{&ErlangHandler{}, "erlang"},
+		{&FlutterHandler{}, "flutter"},
+		{&HelmHandler{}, "helm"},
+		{&JuliaHandler{}, "julia"},
+		{&KubectlHandler{}, "kubectl"},
+		{&NinjaHandler{}, "ninja"},
+		{&RubyHandler{}, "ruby"},
+		{&ZigHandler{}, "zig"},
+		{&DartHandler{}, "dart"},
+		{&HaskellHandler{}, "haskell"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.handler.Name())
+		})
+	}
+}

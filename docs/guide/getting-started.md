@@ -1,0 +1,113 @@
+# Getting Started
+
+Welcome to UniRTM! UniRTM is a universal runtime manager written in pure Go. It serves as a polyglot tool manager, an environment variable loader, and a task runner.
+
+If you have used tools like `asdf`, `mise`, `nvm`, `pyenv`, or `rbenv`, you will feel right at home—but with significantly better performance and built-in security features.
+
+## Why UniRTM?
+
+1. **100% Native (Lightning Fast)**: Written purely in Go. No external bash plugins, no python dependencies. It avoids the slow startup times and brittleness of Bash/Ruby-based tools.
+2. **Zero Shell Pollution**: Keep your `.bashrc` and `.zshrc` clean. UniRTM can dynamically inject environments without running arbitrary shell scripts on every directory change.
+3. **Security via Ecosystem Integrations**: UniRTM connects with industry-standard external tools like Trivy, Syft, and Gitleaks. While UniRTM manages your environments, you can easily plug in these external scanners to secure your supply chain without bloating the core runtime manager.
+4. **Cross-Platform**: Windows, macOS, and Linux are all treated as first-class citizens with pre-compiled native binaries.
+5. **All-in-One**: Replaces your tool manager, `.env` loaders (like `direnv`), and task runners (like `make`), while exposing a built-in MCP server for AI Agents.
+
+## 1. Install UniRTM
+
+The easiest way to install UniRTM is via our installation scripts:
+
+**Linux / macOS**:
+
+```bash
+curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | bash
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex
+```
+
+**Windows (Git Bash)**:
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
+```
+
+*For more installation methods (Homebrew, Winget, Scoop, APT), see [Installing UniRTM](./installing-unirtm.md).*
+
+## 2. Hook into your Shell
+
+For UniRTM to magically switch your tools and environments when you `cd` into a directory, it needs to hook into your shell.
+
+```bash
+# For Zsh
+echo 'eval "$(unirtm env --shell zsh)"' >> ~/.zshrc
+
+# For Bash (Linux/macOS or Windows Git Bash)
+echo 'eval "$(unirtm env --shell bash)"' >> ~/.bashrc
+
+# For Fish
+echo 'unirtm env --shell fish | source' >> ~/.config/fish/config.fish
+```
+
+For **PowerShell** (Windows), add the following to your `$PROFILE`:
+
+```powershell
+unirtm env --shell powershell | Out-String | Invoke-Expression
+```
+
+Restart your terminal for the changes to take effect.
+
+## 3. Install your first tools
+
+Navigate to your project directory and declare the tools you need.
+
+```bash
+$ unirtm use node@20 python@3.11 go@1.22
+✓ wrote .unirtm.toml
+
+$ unirtm install
+✓ installed 3 tools
+```
+
+You can verify they are active:
+
+```bash
+$ node -v
+v20.x.x
+$ go version
+go version go1.22.x
+```
+
+## 4. Setup Environment Variables
+
+Create a `.env` file in your project:
+
+```bash
+echo "DATABASE_URL=postgres://localhost:5432/mydb" > .env
+```
+
+UniRTM automatically loads these variables when you enter the directory and unloads them when you leave.
+
+## 5. Define Tasks
+
+Open your `.unirtm.toml` and add a task:
+
+```toml
+[tasks.test]
+description = "Run the test suite"
+run = "go test ./..."
+```
+
+Run it with:
+
+```bash
+unirtm run test
+```
+
+## Next Steps
+
+- Take the [Full Walkthrough](./walkthrough.md) to explore advanced features.
+- Learn about [The `.unirtm.toml` File](../configuration/unirtm-toml.md).
+- Dive into [Tasks](../tasks/overview.md).

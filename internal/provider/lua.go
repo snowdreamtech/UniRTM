@@ -1,0 +1,469 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package provider
+
+import (
+	"archive/tar"
+	"archive/zip"
+	"compress/gzip"
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
+)
+
+var (
+	luaHTTPClient     = pkgHttp.NewClientWithTimeout(30 * time.Second)
+	luaDownloadFlight singleflight.Group
+)
+
+// LuaProvider implements the Provider interface for Lua via LuaBinaries.
+type LuaProvider struct{}
+
+// NewLuaProvider creates a new LuaProvider instance.
+func NewLuaProvider() Provider {
+	return &LuaProvider{}
+}
+
+// Name returns the provider name.
+func (p *LuaProvider) Name() string {
+	return "lua"
+}
+
+// EnsureInstalled is removed as it's not in the new Provider interface
+
+// Install installs the tool.
+func (p *LuaProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
+	// 1. Download and Install Lua
+	if runtime.GOOS == "windows" {
+		url, err := resolveLuaBinariesURL(version, runtime.GOARCH)
+		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(installPath, 0755); err != nil {
+			return fmt.Errorf("failed to create install directory: %w", err)
+		}
+		if err := downloadAndExtract(ctx, url, installPath); err != nil {
+			return err
+		}
+	} else {
+		if err := downloadAndCompileSource(ctx, version, installPath); err != nil {
+			return err
+		}
+	}
+
+	// 2. Bootstrap LuaRocks natively
+	// We use the same installPath so luarocks is inside the lua directory
+	if err := bootstrapLuaRocks(ctx, installPath, version); err != nil {
+		return fmt.Errorf("failed to bootstrap LuaRocks: %w", err)
+	}
+
+	return nil
+}
+
+// PostInstall performs any post-installation steps.
+func (p *LuaProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
+	if env.RuntimeGOOS == "windows" {
+		// On Windows, LuaBinaries extracts files like lua54.exe and luac54.exe.
+		// Ensure standard canonical lua.exe and luac.exe exist.
+		copyIfMissing := func(src, dst string) {
+			if _, err := os.Stat(dst); os.IsNotExist(err) {
+				if srcInfo, err := os.Stat(src); err == nil && !srcInfo.IsDir() {
+					if linkErr := os.Link(src, dst); linkErr != nil {
+						if data, readErr := os.ReadFile(src); readErr == nil {
+							_ = os.WriteFile(dst, data, 0755)
+						}
+					}
+				}
+			}
+		}
+
+		luaExe := filepath.Join(installPath, "lua.exe")
+		luacExe := filepath.Join(installPath, "luac.exe")
+
+		if _, err := os.Stat(luaExe); os.IsNotExist(err) {
+			entries, _ := os.ReadDir(installPath)
+			for _, e := range entries {
+				lower := strings.ToLower(e.Name())
+				if strings.HasPrefix(lower, "lua5") && strings.HasSuffix(lower, ".exe") && !strings.Contains(lower, "luac") {
+					copyIfMissing(filepath.Join(installPath, e.Name()), luaExe)
+					break
+				}
+			}
+		}
+
+		if _, err := os.Stat(luacExe); os.IsNotExist(err) {
+			entries, _ := os.ReadDir(installPath)
+			for _, e := range entries {
+				lower := strings.ToLower(e.Name())
+				if strings.HasPrefix(lower, "luac5") && strings.HasSuffix(lower, ".exe") {
+					copyIfMissing(filepath.Join(installPath, e.Name()), luacExe)
+					break
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// GenerateShims generates shim scripts for the tool's executables.
+func (p *LuaProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	return nil, nil // let generic shim generator handle it
+}
+
+// DetectVersion detects the version of an installed tool.
+func (p *LuaProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
+	return "", nil // default generic detection
+}
+
+// Uninstall uninstalls the tool.
+func (p *LuaProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
+	return os.RemoveAll(installPath)
+}
+
+// GetBinPaths returns the binary paths for the tool.
+func (p *LuaProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
+	// For LuaBinaries, binaries are in the root of the extracted archive.
+	// For LuaRocks, binaries are in the 'bin' subdirectory (or root depending on install.bat).
+	return []string{installPath, filepath.Join(installPath, "bin")}, nil
+}
+
+// ListExecutables lists the executables provided by the tool.
+func (p *LuaProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
+	return []string{"lua", "luac", "luarocks", "luarocks-admin"}, nil
+}
+
+// GetEnvVars returns a map of environment variables.
+func (p *LuaProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
+	return map[string]string{}, nil
+}
+
+// resolveLuaBinariesURL resolves the download URL for LuaBinaries (Windows only)
+func resolveLuaBinariesURL(version, goarch string) (string, error) {
+	var osSuffix string
+	if goarch == "amd64" {
+		osSuffix = "Win64"
+	} else {
+		osSuffix = "Win32"
+	}
+
+	return fmt.Sprintf("https://sourceforge.net/projects/luabinaries/files/%s/Tools%%20Executables/lua-%s_%s_bin.zip/download", version, version, osSuffix), nil
+}
+
+// downloadLuaArchive downloads an archive to the downloads cache directory with singleflight deduplication.
+func downloadLuaArchive(ctx context.Context, url, filename string) (string, error) {
+	destDir := env.GetDownloadsDir()
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return "", err
+	}
+	destPath := filepath.Join(destDir, filename)
+
+	if fi, err := os.Stat(destPath); err == nil && fi.Size() > 0 {
+		return destPath, nil
+	}
+
+	_, err, _ := luaDownloadFlight.Do(url, func() (interface{}, error) {
+		// Re-check after acquiring singleflight
+		if fi, err := os.Stat(destPath); err == nil && fi.Size() > 0 {
+			return destPath, nil
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := luaHTTPClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("failed to download from %s: HTTP %d", url, resp.StatusCode)
+		}
+
+		tmpFile := destPath + ".tmp"
+		f, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := io.Copy(f, resp.Body); err != nil {
+			f.Close()
+			_ = os.Remove(tmpFile)
+			return nil, err
+		}
+		f.Close()
+
+		if err := os.Rename(tmpFile, destPath); err != nil {
+			return nil, err
+		}
+		return destPath, nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+	return destPath, nil
+}
+
+// downloadAndCompileSource downloads Lua source from lua.org and compiles it
+func downloadAndCompileSource(ctx context.Context, version, installPath string) error {
+	tmpDir, err := os.MkdirTemp("", "lua-src-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	url := fmt.Sprintf("https://www.lua.org/ftp/lua-%s.tar.gz", version)
+	archiveName := fmt.Sprintf("lua-%s.tar.gz", version)
+	archivePath, err := downloadLuaArchive(ctx, url, archiveName)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Open(archivePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if err := extractTarGz(f, tmpDir); err != nil {
+		return err
+	}
+
+	srcDir := filepath.Join(tmpDir, fmt.Sprintf("lua-%s", version))
+
+	target := "linux"
+	if runtime.GOOS == "darwin" {
+		target = "macosx"
+	}
+
+	makeCmd := exec.CommandContext(ctx, "make", target, "install", "INSTALL_TOP="+installPath)
+	makeCmd.Dir = srcDir
+	out, err := makeCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("make install failed: %v\nOutput: %s", err, string(out))
+	}
+
+	return nil
+}
+
+// downloadAndExtract downloads and extracts the archive
+func downloadAndExtract(ctx context.Context, url, dest string) error {
+	archiveName := filepath.Base(url)
+	if idx := strings.Index(archiveName, "?"); idx != -1 {
+		archiveName = archiveName[:idx]
+	}
+	if !strings.HasSuffix(archiveName, ".zip") && !strings.HasSuffix(archiveName, ".tar.gz") {
+		archiveName = fmt.Sprintf("lua-bin-%d.archive", time.Now().UnixNano())
+	}
+
+	archivePath, err := downloadLuaArchive(ctx, url, archiveName)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Open(archivePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if strings.HasSuffix(archivePath, ".zip") || strings.Contains(url, "zip") {
+		return extractZip(f, dest)
+	}
+	return extractTarGz(f, dest)
+}
+
+func extractZip(r io.Reader, dest string) error {
+	tmpFile, err := os.CreateTemp("", "lua-*.zip")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	if _, err := io.Copy(tmpFile, r); err != nil {
+		return err
+	}
+
+	archive, err := zip.OpenReader(tmpFile.Name())
+	if err != nil {
+		return err
+	}
+	defer archive.Close()
+
+	for _, f := range archive.File {
+		fpath := filepath.Join(dest, f.Name)
+		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
+			return fmt.Errorf("illegal file path: %s", fpath) // zip slip mitigation
+		}
+
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(fpath, os.ModePerm)
+			continue
+		}
+
+		if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+			return err
+		}
+
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			return err
+		}
+
+		rc, err := f.Open()
+		if err != nil {
+			outFile.Close()
+			return err
+		}
+
+		_, err = io.Copy(outFile, rc)
+		outFile.Close()
+		rc.Close()
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func extractTarGz(r io.Reader, dest string) error {
+	gzr, err := gzip.NewReader(r)
+	if err != nil {
+		return err
+	}
+	defer gzr.Close()
+
+	tr := tar.NewReader(gzr)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		fpath := filepath.Join(dest, header.Name)
+		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
+			return fmt.Errorf("illegal file path: %s", fpath) // zip slip mitigation
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(fpath, 0755); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
+				return err
+			}
+			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(outFile, tr); err != nil {
+				outFile.Close()
+				return err
+			}
+			outFile.Close()
+		}
+	}
+	return nil
+}
+
+// bootstrapLuaRocks downloads and builds luarocks
+func bootstrapLuaRocks(ctx context.Context, luaInstallPath, luaVersion string) error {
+	luarocksVer := "3.11.1" // Latest stable
+
+	tmpDir, err := os.MkdirTemp("", "luarocks-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	githubProxy := env.Get("GITHUB_PROXY")
+	if githubProxy != "" && !strings.HasSuffix(githubProxy, "/") {
+		githubProxy += "/"
+	}
+	url := fmt.Sprintf("%shttps://github.com/luarocks/luarocks/archive/refs/tags/v%s.tar.gz", githubProxy, luarocksVer)
+	archiveName := fmt.Sprintf("luarocks-%s.tar.gz", luarocksVer)
+	archivePath, err := downloadLuaArchive(ctx, url, archiveName)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Open(archivePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if err := extractTarGz(f, tmpDir); err != nil {
+		return err
+	}
+
+	srcDir := filepath.Join(tmpDir, fmt.Sprintf("luarocks-%s", luarocksVer))
+	luaBinDir := filepath.Join(luaInstallPath, "bin")
+	currentPath := env.Get("PATH")
+	luaPathEnv := fmt.Sprintf("PATH=%s%c%s%c%s", luaBinDir, os.PathListSeparator, luaInstallPath, os.PathListSeparator, currentPath)
+	cmdEnv := append(os.Environ(), luaPathEnv)
+
+	if runtime.GOOS == "windows" {
+		cmd := exec.CommandContext(ctx, "install.bat", "/F", "/MW", "/LUA", luaInstallPath, "/P", luaInstallPath, "/Q")
+		cmd.Dir = srcDir
+		cmd.Env = cmdEnv
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("luarocks install.bat failed: %v\nOutput: %s", err, string(out))
+		}
+	} else {
+		cmd := exec.CommandContext(ctx, "./configure", "--prefix="+luaInstallPath, "--with-lua="+luaInstallPath)
+		cmd.Dir = srcDir
+		cmd.Env = cmdEnv
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("luarocks configure failed: %v\nOutput: %s", err, string(out))
+		}
+
+		makeBuildCmd := exec.CommandContext(ctx, "make", "build")
+		makeBuildCmd.Dir = srcDir
+		makeBuildCmd.Env = cmdEnv
+		out, err = makeBuildCmd.CombinedOutput()
+		if err != nil {
+			// fallback to just 'make' if 'make build' fails
+			makeBuildCmd = exec.CommandContext(ctx, "make")
+			makeBuildCmd.Dir = srcDir
+			makeBuildCmd.Env = cmdEnv
+			out, err = makeBuildCmd.CombinedOutput()
+			if err != nil {
+				return fmt.Errorf("luarocks make build failed: %v\nOutput: %s", err, string(out))
+			}
+		}
+
+		makeCmd := exec.CommandContext(ctx, "make", "install")
+		makeCmd.Dir = srcDir
+		makeCmd.Env = cmdEnv
+		out, err = makeCmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("luarocks make install failed: %v\nOutput: %s", err, string(out))
+		}
+	}
+
+	return nil
+}

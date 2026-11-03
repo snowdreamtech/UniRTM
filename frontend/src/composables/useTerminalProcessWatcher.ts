@@ -1,0 +1,186 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+import { reactive } from "vue";
+
+export interface DetectedProcessInfo {
+  type: string;
+  name: string;
+  icon: string;
+  color: string;
+  startTime: number;
+}
+
+interface ProcessRule {
+  type: string;
+  name: string;
+  icon: string;
+  color: string;
+  regex: RegExp;
+}
+
+const PROCESS_RULES: ProcessRule[] = [
+  {
+    type: "node",
+    name: "Node",
+    icon: "codicon-symbol-property",
+    color: "#22c55e",
+    regex: /(?:^|[\s[])(?:node|npm|pnpm|yarn|bun|vite|nuxt|next|nest|ts-node|tsx)(?:[\s\]./]|$)/i,
+  },
+  {
+    type: "python",
+    name: "Python",
+    icon: "codicon-symbol-variable",
+    color: "#3b82f6",
+    regex: /(?:^|[\s[])(?:python3?|pytest|uvicorn|flask|django|gunicorn|pip)(?:[\s\]./]|$)/i,
+  },
+  {
+    type: "go",
+    name: "Go",
+    icon: "codicon-symbol-structure",
+    color: "#06b6d4",
+    regex: /\bgo\s+(?:run|test|build)\b|\bair\b|\bdlv\b/i,
+  },
+  {
+    type: "rust",
+    name: "Rust",
+    icon: "codicon-gear",
+    color: "#f97316",
+    regex: /\bcargo(?:\s|$|\.|\/)|rustc\b/i,
+  },
+  {
+    type: "docker",
+    name: "Docker",
+    icon: "codicon-server",
+    color: "#38bdf8",
+    regex: /\bdocker\b|\bkubectl\b|\bpodman\b|\bcompose\b/i,
+  },
+  {
+    type: "git",
+    name: "Git",
+    icon: "codicon-git-commit",
+    color: "#a855f7",
+    regex: /\bgit\s+(?:push|pull|clone|fetch|merge|rebase|commit|checkout|switch)\b/i,
+  },
+  {
+    type: "build",
+    name: "Build",
+    icon: "codicon-tools",
+    color: "#eab308",
+    regex: /\bmake\b|\bcmake\b|\bninja\b|\bmvn\b|\bgradle\b/i,
+  },
+];
+
+// Regex to detect shell prompt return (command finished, idle state)
+const SHELL_PROMPT_REGEX = /(?:[$#>]\s*$|\(base\)\s*[$#>])/;
+
+const activeProcesses = reactive<Map<string, DetectedProcessInfo>>(new Map());
+const customTitles = reactive<Map<string, string>>(new Map());
+
+/**
+ * Sniff active process from output stream
+ */
+export function detectProcessFromChunk(text: string): DetectedProcessInfo | null {
+  if (!text) return null;
+
+  // Sample beginning and end of large chunks to bound regex processing time
+  const sample = text.length > 1024 ? text.slice(0, 512) + " " + text.slice(-512) : text;
+
+  for (const rule of PROCESS_RULES) {
+    if (rule.regex.test(sample)) {
+      return {
+        type: rule.type,
+        name: rule.name,
+        icon: rule.icon,
+        color: rule.color,
+        startTime: Date.now(),
+      };
+    }
+  }
+
+  return null;
+}
+
+export function useTerminalProcessWatcher() {
+  /**
+   * Record output and update active process for pane
+   */
+  function recordChunk(paneId: string, chunk: string): void {
+    if (!paneId || !chunk) return;
+
+    // 1. If shell prompt returned, foreground process exited to interactive mode (check last 512 chars)
+    const promptSample = chunk.length > 512 ? chunk.slice(-512) : chunk;
+    if (SHELL_PROMPT_REGEX.test(promptSample)) {
+      activeProcesses.delete(paneId);
+      return;
+    }
+
+    // 2. Match rules
+    const detected = detectProcessFromChunk(chunk);
+    if (detected) {
+      const existing = activeProcesses.get(paneId);
+      // If same type, retain original startTime for accurate duration
+      if (existing && existing.type === detected.type) {
+        return;
+      }
+      activeProcesses.set(paneId, detected);
+    }
+  }
+
+  /**
+   * Get running process info for pane
+   */
+  function getActiveProcess(paneId: string): DetectedProcessInfo | null {
+    return activeProcesses.get(paneId) || null;
+  }
+
+  /**
+   * Set custom terminal title
+   */
+  function setCustomTitle(id: string, title: string): void {
+    if (!id) return;
+    if (!title || !title.trim()) {
+      customTitles.delete(id);
+    } else {
+      customTitles.set(id, title.trim());
+    }
+  }
+
+  /**
+   * Get custom terminal title
+   */
+  function getCustomTitle(id: string): string {
+    return customTitles.get(id) || "";
+  }
+
+  /**
+   * Compute effective terminal title
+   */
+  function getEffectiveTitle(id: string, defaultName: string): string {
+    const custom = customTitles.get(id);
+    if (custom) return custom;
+
+    const process = activeProcesses.get(id);
+    if (process) {
+      return `${process.name} (${defaultName})`;
+    }
+
+    return defaultName;
+  }
+
+  function _clearAllForTest(): void {
+    activeProcesses.clear();
+    customTitles.clear();
+  }
+
+  return {
+    recordChunk,
+    getActiveProcess,
+    setCustomTitle,
+    getCustomTitle,
+    getEffectiveTitle,
+    activeProcesses,
+    customTitles,
+    _clearAllForTest,
+  };
+}

@@ -7,7 +7,7 @@ The template enforces code quality locally using [pre-commit](https://pre-commit
 Pre-commit is installed automatically when you run:
 
 ```bash
-unirtm run setup
+unirtm install
 ```
 
 Or manually:
@@ -38,7 +38,7 @@ pre-commit install --hook-type commit-msg
 
 ### Git Hygiene
 
-`builtin:commit-msg`, `trailing-whitespace`, `end-of-file-fixer`, `check-merge-conflict`, `check-added-large-files`
+`commitlint`, `trailing-whitespace`, `end-of-file-fixer`, `check-merge-conflict`, `check-added-large-files`
 
 ## Running Manually
 

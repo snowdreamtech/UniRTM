@@ -1,0 +1,156 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package native
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	unirtmhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
+)
+
+// GolangHandler handles the official Go download metadata from go.dev/dl/?mode=json.
+type GolangHandler struct {
+	flight singleflight.Group
+	cache  sync.Map // cacheKey -> []VersionInfo
+}
+
+type goFile struct {
+	Filename string `json:"filename"`
+	OS       string `json:"os"`
+	Arch     string `json:"arch"`
+	Version  string `json:"version"`
+	Sha256   string `json:"sha256"`
+	Size     int64  `json:"size"`
+	Kind     string `json:"kind"`
+}
+
+type goVersion struct {
+	Version string   `json:"version"`
+	Stable  bool     `json:"stable"`
+	Files   []goFile `json:"files"`
+}
+
+func (h *GolangHandler) Name() string {
+	return "golang"
+}
+
+func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
+	}
+
+	metadataURL := baseURL
+	skipChecksum := env.Get("GO_SKIP_CHECKSUM") == "1"
+
+	// For metadata fetching only: prefer golang.google.cn as a reliable mirror.
+	// This does NOT affect the lockfile URL — asset URLs always use the canonical
+	// go.dev/dl address so that the lockfile is environment-agnostic.
+	if strings.Contains(baseURL, "go.dev") {
+		metadataURL = "https://golang.google.cn/dl"
+	}
+
+	// canonicalBase is used for asset URL construction and written to the lockfile.
+	// It is always the official upstream base regardless of the metadata mirror.
+	canonicalBase := "https://go.dev/dl"
+	if !strings.Contains(baseURL, "go.dev") {
+		// Non-standard baseURL (e.g. a test server): preserve it as-is.
+		canonicalBase = strings.TrimSuffix(baseURL, "/")
+	}
+
+	// Cache key: metadata URL + checksum-skip flag.
+	// downloadMirror is intentionally excluded: asset URLs are always canonical,
+	// so cached results are valid regardless of which mirror the caller uses.
+	cacheKey := fmt.Sprintf("%s|%t", metadataURL, skipChecksum)
+	if val, ok := h.cache.Load(cacheKey); ok {
+		return val.([]VersionInfo), nil
+	}
+
+	var diskVersions []VersionInfo
+	if readNativeDiskCache("go", cacheKey, &diskVersions, 10*time.Minute) {
+		h.cache.Store(cacheKey, diskVersions)
+		return diskVersions, nil
+	}
+
+	res, err, _ := h.flight.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := h.cache.Load(cacheKey); ok {
+			return val, nil
+		}
+
+		url := fmt.Sprintf("%s/?mode=json&include=all", strings.TrimSuffix(metadataURL, "/"))
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := unirtmhttp.NewClient().Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("golang: fetch metadata: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("golang: unexpected status code: %d", resp.StatusCode)
+		}
+
+		var goVersions []goVersion
+		if err := json.NewDecoder(resp.Body).Decode(&goVersions); err != nil {
+			return nil, fmt.Errorf("golang: decode metadata: %w", err)
+		}
+
+		var versions []VersionInfo
+		for _, gv := range goVersions {
+			vi := VersionInfo{
+				Version: strings.TrimPrefix(gv.Version, "go"),
+				IsLTS:   gv.Stable,
+			}
+
+			for _, gf := range gv.Files {
+				if gf.Kind != "archive" {
+					continue
+				}
+
+				// Always construct the canonical go.dev/dl URL so the lockfile
+				// is environment-agnostic. The downloader applies GO_DOWNLOAD_MIRROR
+				// at runtime to redirect to the configured mirror.
+				asset := Asset{
+					URL:      fmt.Sprintf("%s/%s", canonicalBase, gf.Filename),
+					Filename: gf.Filename,
+					OS:       gf.OS,
+					Arch:     gf.Arch,
+					Checksum: gf.Sha256,
+					Algo:     "sha256",
+					Metadata: make(map[string]string),
+				}
+
+				if skipChecksum {
+					asset.Metadata["skip_checksum"] = "1"
+				}
+
+				vi.Assets = append(vi.Assets, asset)
+			}
+
+			if len(vi.Assets) > 0 {
+				versions = append(versions, vi)
+			}
+		}
+
+		h.cache.Store(cacheKey, versions)
+		writeNativeDiskCache("go", cacheKey, versions)
+		return versions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res.([]VersionInfo), nil
+}

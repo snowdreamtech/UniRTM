@@ -24,7 +24,6 @@ git config core.filemode false    # Recommended for Windows
 Run the project hydration script to replace template placeholders with your project's actual identity:
 
 ```bash
-bash scripts/init-project.sh
 ```
 
 This will interactively prompt for:
@@ -48,7 +47,7 @@ Open your project in any supported AI IDE and run the init workflow:
 This triggers the AI agent to:
 
 - Enable zero-config Node.js environment via `corepack enable`
-- Install all project-local linters and formatters via `pnpm install`
+- Install all project-local linters and formatters via `npm install`
 - Configure platform-specific tools (Homebrew / APT / Scoop)
 - Activate pre-commit hooks
 
@@ -57,10 +56,8 @@ This triggers the AI agent to:
 Follow the standardized sequence for a robust environment:
 
 ```bash
-unirtm run init     # Step 1: Hydrate project from template
-unirtm run setup    # Step 2: Install system-level tools (binaries)
-unirtm run install  # Step 3: Install project dependencies & hooks
-unirtm run verify   # Step 4: Run comprehensive health check
+unirtm install   # Step 2: Install all tools, dependencies & hooks
+make verify      # Step 3: Run comprehensive health check
 ```
 
 ## Step 4: Open in DevContainer
@@ -82,11 +79,8 @@ Your AI assistant will now follow the project rules automatically. Jump in:
 ## Verify Everything Works
 
 ```bash
-unirtm run lint    # Run all linters
-unirtm run test    # Run tests
-unirtm run build   # Build the project
+make lint    # Run all linters
 ```
 
 ::: tip
-Run `unirtm run help` to see all available commands.
 :::

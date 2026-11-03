@@ -1,0 +1,431 @@
+<template>
+  <Teleport to="body">
+    <div
+      v-if="contextMenu.visible"
+      class="context-menu-backdrop"
+      @click="closeContextMenu"
+      @contextmenu.prevent="closeContextMenu"
+    >
+      <div class="file-context-menu" :style="adjustedStyle" @click.stop>
+        <!-- New File / New Folder (if directory, create inside; if file, create in parent directory) -->
+        <div class="menu-item" @click="handleNewFile">
+          <span class="menu-icon codicon codicon-new-file"></span>
+          <span class="menu-label">{{ t("file_menu.new_file") || "New File" }}</span>
+        </div>
+        <div class="menu-item" @click="handleNewFolder">
+          <span class="menu-icon codicon codicon-new-folder"></span>
+          <span class="menu-label">{{ t("file_menu.new_folder") || "New Folder" }}</span>
+        </div>
+
+        <div class="menu-separator"></div>
+
+        <!-- Copy Path -->
+        <div class="menu-item" @click="handleCopyPath">
+          <span class="menu-icon codicon codicon-copy"></span>
+          <span class="menu-label">{{ t("file_menu.copy_path") || "Copy Path" }}</span>
+        </div>
+
+        <!-- Copy Relative Path -->
+        <div class="menu-item" @click="handleCopyRelativePath">
+          <span class="menu-icon codicon codicon-copy"></span>
+          <span class="menu-label">{{ t("file_menu.copy_rel_path") || "Copy Relative Path" }}</span>
+        </div>
+
+        <!-- Copy Name -->
+        <div class="menu-item" @click="handleCopyName">
+          <span class="menu-icon codicon codicon-files"></span>
+          <span class="menu-label">{{ t("file_menu.copy_name") || "Copy Name" }}</span>
+        </div>
+
+        <div class="menu-separator"></div>
+
+        <!-- Rename -->
+        <div class="menu-item" @click="handleRename">
+          <span class="menu-icon codicon codicon-edit"></span>
+          <span class="menu-label">{{ t("file_menu.rename") || "Rename" }}</span>
+          <span class="menu-shortcut">F2</span>
+        </div>
+
+        <!-- Delete -->
+        <div class="menu-item danger" @click="handleDelete">
+          <span class="menu-icon codicon codicon-trash"></span>
+          <span class="menu-label">{{ t("file_menu.delete") || "Delete" }}</span>
+          <span class="menu-shortcut">Del</span>
+        </div>
+
+        <div class="menu-separator"></div>
+
+        <!-- Open in Integrated Terminal -->
+        <div class="menu-item" @click="handleOpenTerminal">
+          <span class="menu-icon codicon codicon-terminal"></span>
+          <span class="menu-label">{{ t("explorer.context_menu.open_terminal") }}</span>
+        </div>
+
+        <!-- Workspace Multi-root Actions -->
+        <template v-if="contextMenu.node?.is_dir">
+          <div class="menu-separator"></div>
+
+          <div class="menu-item" @click="handleAddToWorkspace">
+            <span class="menu-icon codicon codicon-folder-library"></span>
+            <span class="menu-label">{{ t("explorer.add_folder_to_workspace") || "Add Folder to Workspace..." }}</span>
+          </div>
+
+          <div v-if="isWorkspaceRoot(contextMenu.node)" class="menu-item danger" @click="handleRemoveFromWorkspace">
+            <span class="menu-icon codicon codicon-close"></span>
+            <span class="menu-label">{{
+              t("explorer.remove_folder_from_workspace") || "Remove Folder from Workspace"
+            }}</span>
+          </div>
+        </template>
+
+        <div class="menu-separator"></div>
+
+        <!-- Git SCM & Git Graph Actions -->
+        <div class="menu-item" @click="handleViewGitHistory">
+          <span class="menu-icon codicon codicon-git-commit"></span>
+          <span class="menu-label">{{ t("file_menu.view_git_graph") || "View Commit History in Git Graph" }}</span>
+        </div>
+
+        <!-- Local History Action -->
+        <div v-if="!contextMenu.node?.is_dir" class="menu-item" @click="handleOpenLocalHistory">
+          <span class="menu-icon codicon codicon-history"></span>
+          <span class="menu-label">{{ t("file_menu.local_history") || "Local History" }}</span>
+        </div>
+
+        <!-- Git Changes Group -->
+        <template v-if="gitStateInfo.hasGitChanges">
+          <div class="menu-separator"></div>
+
+          <div class="menu-item" @click="handleOpenDiff">
+            <span class="menu-icon codicon codicon-diff"></span>
+            <span class="menu-label">{{ t("file_menu.open_diff") || "Open Diff" }}</span>
+          </div>
+
+          <div v-if="gitStateInfo.isStaged" class="menu-item" @click="handleUnstageFile">
+            <span class="menu-icon codicon codicon-remove"></span>
+            <span class="menu-label">{{ t("file_menu.unstage_changes") || "Unstage Changes" }}</span>
+          </div>
+
+          <div v-if="gitStateInfo.isUnstaged" class="menu-item" @click="handleStageFile">
+            <span class="menu-icon codicon codicon-add"></span>
+            <span class="menu-label">{{ t("file_menu.stage_changes") || "Stage Changes" }}</span>
+          </div>
+
+          <div v-if="gitStateInfo.isUnstaged" class="menu-item danger" @click="handleDiscardFile">
+            <span class="menu-icon codicon codicon-discard"></span>
+            <span class="menu-label">{{ t("file_menu.discard_changes") || "Discard Changes" }}</span>
+          </div>
+        </template>
+      </div>
+    </div>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import { useFileTree } from "../../composables/useFileTree";
+import { useGit } from "../../composables/useGit";
+import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
+import { useLocalHistory } from "../../composables/useLocalHistory";
+import { t } from "../../i18n";
+
+const router = useRouter();
+const { status, getGitStatus, setGraphFilterPath, stage, unstage, discard, fetchDiff } = useGit();
+const { openDiff: openWorkspaceDiff, notifyGitStatusChanged } = useWorkspaceBus();
+
+const emit = defineEmits<{
+  (e: "open-terminal", dirPath: string): void;
+}>();
+
+const {
+  contextMenu,
+  closeContextMenu,
+  startInlineCreate,
+  startInlineRename,
+  promptDelete,
+  copyPath,
+  copyRelativePath,
+  copyFileName,
+  isWorkspaceRoot,
+  openAddFolderModal,
+  removeFolderFromWorkspace,
+} = useFileTree();
+
+const gitStateInfo = computed(() => {
+  const node = contextMenu.value.node;
+  if (!node || node.is_dir) {
+    return { hasGitChanges: false, isStaged: false, isUnstaged: false };
+  }
+  const isStaged = status.value.staged.some((item) => item.path === node.path);
+  const isUnstaged = status.value.unstaged.some((item) => item.path === node.path);
+  const quickStatus = getGitStatus(node.path);
+
+  return {
+    hasGitChanges: isStaged || isUnstaged || !!quickStatus,
+    isStaged,
+    isUnstaged: isUnstaged || (!isStaged && !!quickStatus),
+  };
+});
+
+function handleViewGitHistory() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  setGraphFilterPath(node.path);
+  router.push({
+    name: "scm",
+    query: {
+      tab: "graph",
+      path: node.path,
+    },
+  });
+}
+
+async function handleOpenDiff() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+
+  const isStaged = gitStateInfo.value.isStaged;
+  const diff = await fetchDiff(node.path, isStaged);
+
+  openWorkspaceDiff({
+    path: node.path,
+    originalContent: diff?.original || "",
+    modifiedContent: diff?.modified || "",
+    isStaged,
+  });
+}
+
+async function handleStageFile() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  await stage([node.path]);
+  notifyGitStatusChanged();
+}
+
+async function handleUnstageFile() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  await unstage([node.path]);
+  notifyGitStatusChanged();
+}
+
+async function handleDiscardFile() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  if (
+    confirm(
+      t("file_menu.discard_confirm", { name: node.name }) ||
+        `Are you sure you want to discard all unstaged changes to "${node.name}"?`
+    )
+  ) {
+    await discard([node.path]);
+    notifyGitStatusChanged();
+  }
+}
+
+function getTargetParent(): string {
+  const node = contextMenu.value.node;
+  if (!node) return "";
+  if (node.is_dir) return node.path;
+  const parts = node.path.split("/").filter(Boolean);
+  parts.pop();
+  return parts.join("/");
+}
+
+function handleNewFile() {
+  const parent = getTargetParent();
+  closeContextMenu();
+  startInlineCreate(parent, "new-file");
+}
+
+function handleNewFolder() {
+  const parent = getTargetParent();
+  closeContextMenu();
+  startInlineCreate(parent, "new-folder");
+}
+
+function handleCopyPath() {
+  const node = contextMenu.value.node;
+  if (node) {
+    copyPath(node.path);
+  }
+  closeContextMenu();
+}
+
+function handleCopyRelativePath() {
+  const node = contextMenu.value.node;
+  if (node) {
+    copyRelativePath(node.path);
+  }
+  closeContextMenu();
+}
+
+function handleAddToWorkspace() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (node && node.is_dir) {
+    openAddFolderModal(node.path, node.name);
+  } else {
+    openAddFolderModal("", "");
+  }
+}
+
+async function handleRemoveFromWorkspace() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  const ok = window.confirm(
+    t("file_menu.remove_workspace_confirm", { name: node.name }) ||
+      `Are you sure you want to remove folder [${node.name}] from workspace?\nThis only removes it from the workspace view and does not delete any files on disk.`
+  );
+  if (ok) {
+    await removeFolderFromWorkspace(node.path);
+  }
+}
+
+function handleCopyName() {
+  const node = contextMenu.value.node;
+  if (node) {
+    copyFileName(node.name);
+  }
+  closeContextMenu();
+}
+
+function handleRename() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (node) {
+    startInlineRename(node);
+  }
+}
+
+function handleDelete() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (node) {
+    promptDelete(node);
+  }
+}
+
+function handleOpenTerminal() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (node) {
+    const dir = node.is_dir ? node.path : getTargetParent();
+    emit("open-terminal", dir);
+    useWorkspaceBus().revealInTerminal(dir);
+  }
+}
+
+function handleOpenLocalHistory() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (node && !node.is_dir) {
+    const { openLocalHistory } = useLocalHistory();
+    openLocalHistory(node.path);
+  }
+}
+
+const MENU_WIDTH = 220;
+const ESTIMATED_HEIGHT = 400;
+
+const adjustedStyle = computed(() => {
+  let left = contextMenu.value.x;
+  let top = contextMenu.value.y;
+
+  if (typeof window !== "undefined") {
+    if (left + MENU_WIDTH > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - MENU_WIDTH - 8);
+    }
+    if (top + ESTIMATED_HEIGHT > window.innerHeight - 8) {
+      top = Math.max(8, window.innerHeight - ESTIMATED_HEIGHT - 8);
+    }
+  }
+
+  return {
+    top: `${Math.max(8, top)}px`,
+    left: `${Math.max(8, left)}px`,
+  };
+});
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape" && contextMenu.value.visible) {
+    closeContextMenu();
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", handleKeydown);
+  window.addEventListener("resize", closeContextMenu);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleKeydown);
+  window.removeEventListener("resize", closeContextMenu);
+});
+</script>
+
+<style scoped>
+.file-context-menu {
+  position: fixed;
+  z-index: var(--z-context-menu-popover, 1001);
+  background-color: var(--modal-bg, var(--card-bg));
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 200px;
+  font-size: 13px;
+  color: var(--text-main);
+  user-select: none;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  cursor: pointer;
+  gap: 8px;
+  transition: all 0.1s ease;
+}
+
+.menu-item:hover {
+  background-color: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15));
+  color: var(--accent-cyan);
+}
+
+.menu-item.danger:hover {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--error, #ef4444);
+}
+
+.menu-icon {
+  font-size: 14px;
+  width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-label {
+  flex: 1;
+}
+
+.menu-shortcut {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 12px;
+}
+
+.menu-separator {
+  height: 1px;
+  background-color: var(--card-border);
+  margin: 4px 0;
+}
+</style>

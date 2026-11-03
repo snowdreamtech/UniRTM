@@ -1,174 +1,270 @@
-# Snowdream Tech AI IDE Template
+<div align="center">
 
-[![CI Pipeline](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/ci.yml?branch=main&label=CI%20Pipeline)](https://github.com/snowdreamtech/template/actions/workflows/ci.yml)
-[![CD Pipeline](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/cd.yml?branch=main&label=CD%20Pipeline)](https://github.com/snowdreamtech/template/actions/workflows/cd.yml)
-[![GitHub Pages](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/pages.yml?branch=main&label=Docs&logo=github)](https://github.com/snowdreamtech/template/actions/workflows/pages.yml)
-[![CodeQL](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/codeql.yml?branch=main&label=CodeQL&logo=github)](https://github.com/snowdreamtech/template/actions/workflows/codeql.yml)
-[![Multi-OS Verified](https://img.shields.io/badge/Verified-Linux%20%7C%20macOS%20%7C%20Windows-blue)](https://github.com/snowdreamtech/template/actions/workflows/ci.yml)
-[![Security Audit](https://img.shields.io/badge/Security-Zizmor%20%7C%20Trivy%20%7C%20Gitleaks-brightgreen)](https://github.com/snowdreamtech/template/actions/workflows/ci.yml)
-[![UniRTM Quality Guard](https://img.shields.io/badge/Quality%20Guard-UniRTM%20Native-blue)](https://github.com/snowdreamtech/UniRTM)
-[![SBOM Available](https://img.shields.io/badge/SBOM-Available-success)](https://github.com/snowdreamtech/template/releases/latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/license/MIT)
-[![Release](https://img.shields.io/github/v/release/snowdreamtech/template?logo=github&sort=semver)](https://github.com/snowdreamtech/template/releases/latest)
-[![Dependabot Enabled](https://img.shields.io/badge/Dependabot-Enabled-brightgreen?logo=dependabot)](https://github.com/snowdreamtech/template/blob/main/.github/dependabot.yml)
-[![GitHub Stars](https://img.shields.io/github/stars/snowdreamtech/template?style=social)](https://github.com/snowdreamtech/template)
-[![GitHub Issues](https://img.shields.io/github/issues/snowdreamtech/template)](https://github.com/snowdreamtech/template/issues)
-[![Code Size](https://img.shields.io/github/languages/code-size/snowdreamtech/template)](https://github.com/snowdreamtech/template)
+<img src="./docs/public/logo.svg" width="200" alt="UniRTM Logo" />
 
-[English](README.md) | [简体中文](README_zh-CN.md)
+<h1 align="center">
+    UniRTM
+</h1>
 
-An enterprise-grade, foundational template designed for multi-AI IDE collaboration, powered by [UniRTM](https://github.com/snowdreamtech/UniRTM). This repository employs a **Zero-Footprint Architecture** for AI agents, providing standard Model Context Protocol (MCP) services, deterministic toolchains, and multi-level quality guardrails across Linux, macOS, and Windows.
+<p>
+  <a href="https://github.com/snowdreamtech/UniRTM/blob/main/LICENSE"><img alt="GitHub" src="https://img.shields.io/github/license/snowdreamtech/UniRTM?style=for-the-badge&color=6B7F4E"></a>
+  <a href="https://github.com/snowdreamtech/UniRTM/actions/workflows/pages.yml"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/snowdreamtech/UniRTM/pages.yml?style=for-the-badge&color=C5975B"></a>
+  <a href="https://github.com/snowdreamtech/UniRTM/actions/workflows/ci.yml"><img alt="Continuous Integration" src="https://github.com/snowdreamtech/UniRTM/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/snowdreamtech/UniRTM/actions/workflows/cd.yml"><img alt="Continuous Delivery" src="https://github.com/snowdreamtech/UniRTM/actions/workflows/cd.yml/badge.svg"></a>
+</p>
 
----
+<p><b>Dev tools, env vars, and tasks in one CLI with built-in security.</b><br><i>Inspired by and paying tribute to <a href="https://github.com/jdx/mise">mise</a>.</i></p>
 
-## 🌟 Key Features
+<p align="center">
+  <a href="https://snowdreamtech.github.io/UniRTM/guide/getting-started.html">Getting Started</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM">Documentation</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM/dev-tools/overview.html">Dev Tools</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM/environments/overview.html">Environments</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM/tasks/overview.html">Tasks</a>
+</p>
 
-- **Zero-Footprint AI Integration**: Connects any AI IDE or agent (Cursor, Windsurf, Claude Code, GitHub Copilot, Roo Code, Trae, Zed) via standard Model Context Protocol (`unirtm mcp`) without polluting the repository with 50+ proprietary dot-directories (`.cursor/`, `.cline/`, etc.).
-- **UniRTM Deterministic Toolchain**: Pins and cryptographically verifies all compiler runtimes (Node.js, Go, Python) and development tools across platforms via `unirtm.lock`.
-- **Native Quality Guardrails**: Built-in Conventional Commits validation (`builtin:commit-msg`), code formatting, and linting rules enforced locally and remotely with zero external overhead.
-- **Enterprise-Grade Security Pipeline**: Deep secret scanning via Gitleaks, GitHub Actions security scanning with Zizmor, and multi-layer dependency vulnerability scanning via OSV-Scanner and Trivy.
-- **Reproducible DevContainers**: Standardized `.devcontainer` configuration ensuring 100% development parity between cloud IDEs and local workstations.
-- **Bilingual Documentation Site**: Modern VitePress documentation automatically built and deployed to GitHub Pages.
+<hr />
 
----
+</div>
 
-## 🏗️ Architecture
+> [!TIP]
+> UniRTM's powerful task runner empowers you to orchestrate deep security scans (like Trivy & Syft) perfectly alongside your environments.
 
-```mermaid
-graph TD
-    subgraph "AI IDEs & Agents"
-        IDE["Cursor / Windsurf / Claude Code / Copilot / Trae / Zed"]
-    end
+## What is it?
 
-    subgraph "UniRTM Platform"
-        MCP["UniRTM MCP Server<br/>(unirtm mcp)"]
-        CLI["UniRTM Task Runner<br/>(unirtm run ...)"]
-        Guard["Quality Guard<br/>(builtin:commit-msg, formatters, linters)"]
-        Lock["Deterministic Toolchain<br/>(.unirtm.toml / unirtm.lock)"]
-    end
+`UniRTM` (Universal Runtime Manager) prepares your development environment before each command runs. It keeps project tools, environment variables, and tasks in one `.unirtm.toml` file so new shells, checkouts, and CI jobs all start from the exact same setup.
 
-    subgraph "CI / CD Pipeline"
-        GH["GitHub Actions<br/>(Ubuntu / macOS / Windows)"]
-        Sec["Security Audit<br/>(Zizmor, Gitleaks, Trivy, OSV)"]
-        Pages["Docs Deployment<br/>(GitHub Pages)"]
-    end
+- Install and switch between **dev tools** like node, python, go, and more.
+- Load **environment variables** per project directory, including values from `.env` files and secure secret managers like SOPS.
+- Define and run **tasks** for building, testing, linting, and deploying projects.
 
-    IDE <-->|Model Context Protocol via stdio| MCP
-    MCP -->|Dynamic Rules & Workflows| Lock
-    CLI --> Guard
-    CLI --> Lock
-    GH --> Guard
-    GH --> Sec
-    GH --> Pages
+While taking heavy inspiration from the brilliant tool `mise` (dev tools, env vars, and tasks in one CLI), UniRTM introduces several distinct architectural choices:
+
+- **Pure Go Engine**: Extreme parallel downloading capabilities leveraging goroutines.
+- **Lightweight Native Shims**: Replaces sluggish bash shims with a unified, high-performance Go router. This prevents `$PATH` explosion while maintaining near-native execution speeds.
+- **Unifying Security via Tasks**: While keeping the core engine minimal, UniRTM allows you to perfectly integrate external security scanners like Trivy or Syft into your reproducible task workflows.
+- **Absolute Locking**: Generates a `unirtm.lock` file that pins the exact checksums and versions of your downloaded tools for reproducible environments.
+
+## Supported Platforms
+
+*Fully supported on macOS (Apple Silicon / Intel), Linux (glibc & musl/Alpine), and Windows.*
+
+## Demo
+
+The following demo shows how to use `UniRTM` to install a specific version of `go` globally.
+Notice the speed and the built-in vulnerability scanning!
+
+[![demo](https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/docs/tapes/demo.gif)](https://github.com/snowdreamtech/UniRTM/blob/main/docs/tapes/demo.mp4)
+
+## Quickstart
+
+### Install UniRTM
+
+See [Getting started](https://snowdreamtech.github.io/UniRTM/guide/getting-started.html) for more options.
+
+**Via Script (Linux/macOS)**:
+
+```sh-session
+$ curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | bash
+$ ~/.local/bin/unirtm --version
+UniRTM v0.1.0 macos-arm64 (2026-05-28)
 ```
 
-### Core Architecture Pillars
+**Via PowerShell (Windows)**:
 
-1. **Zero Repository Pollution**: AI agent instructions, rules, and workflows are provided dynamically over stdio MCP (`unirtm://config`, `unirtm://conventions`) rather than static configuration files committed to the repository root.
-2. **Single Source of Truth (SSoT)**: All project dependencies, task workflows, and quality policies are centrally declared in [.unirtm.toml](.unirtm.toml) and pinned in [unirtm.lock](unirtm.lock).
-3. **Triple Guarantee Quality Gate**: Clean code quality is enforced at three checkpoints: IDE real-time formatting, local Git pre-commit hooks, and multi-OS GitHub Actions CI matrix.
-
----
-
-## 📖 Quick Start
-
-### Prerequisites
-
-- **[UniRTM](https://github.com/snowdreamtech/UniRTM) (>= 0.39.0)**: Global universal runtime and task manager.
-- **Git**: Configured with user email and signing key (recommended).
-
-### Bootstrap Workflow
-
-```bash
-# 1. Clone repository
-git clone https://github.com/snowdreamtech/template.git
-cd template
-
-# 2. Trust the repository configuration
-unirtm trust
-
-# 3. Setup toolchains and install local hooks
-unirtm run setup
-
-# 4. Verify environment and execute full workspace quality check
-unirtm run verify
+```powershell
+irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex
+unirtm --version
 ```
 
----
+**Via Git Bash (Windows)**:
 
-## 🛠️ Task Reference
-
-All workflows are standardized through UniRTM tasks defined in [.unirtm.toml](.unirtm.toml):
-
-| Command | Purpose | Description |
-| :--- | :--- | :--- |
-| `unirtm run setup` | Toolchain Bootstrap | Installs pinned compilers, tools, and hooks |
-| `unirtm run verify` | Full Quality Check | Runs all formatters, linters, and security scanners |
-| `unirtm run audit` | Security Audit | Runs Gitleaks, Zizmor, Trivy, and OSV-Scanner |
-| `unirtm run fix` | Auto-Fix Issues | Automatically corrects formatting and fixable lint errors |
-| `unirtm run docs:dev` | Local Docs Server | Starts VitePress documentation server with hot reload |
-| `unirtm run docs:build` | Build Docs | Builds production-ready static documentation |
-| `unirtm mcp` | AI Agent Server | Starts standard Model Context Protocol server |
-
----
-
-## 📂 Project Structure
-
-```text
-project-root/
-├── .devcontainer/        # 🐳 Standardized reproducible DevContainer environment
-├── .github/              # 🐙 GitHub integration and automation
-│   └── workflows/        # 🚀 Multi-OS verified CI/CD workflows (CI, CD, Pages, CodeQL)
-├── .vscode/              # 💻 Recommended editor configurations and task definitions
-├── docs/                 # 📖 VitePress comprehensive bilingual documentation site
-│   ├── guide/            # Architectural principles, CI, and pre-commit guides
-│   ├── reference/        # Configuration, toolchain, and API specifications
-│   ├── security/         # Supply chain security analysis and mitigation
-│   └── workflows/        # SpecKit workflow documentation
-├── schemas/              # 📐 JSON schemas for UniRTM toolchain and manifests
-├── .editorconfig         # 📝 Cross-editor formatting specifications
-├── .unirtm.toml          # 🔧 Repository toolchain, guard rules, and task definitions
-├── unirtm.lock           # 🔒 Cryptographically pinned tool versions and cross-platform hashes
-├── CHANGELOG.md          # 📜 Release history (automated via Release-Please)
-├── CONTRIBUTING.md       # 🤝 Contributor guidelines and standards
-├── LICENSE               # ⚖️ MIT License
-└── VERSION               # 🏷️ Semantic project version
+```sh-session
+powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
+~/bin/unirtm.exe --version
 ```
 
----
+**Via NPM**:
 
-## 🔒 Security Model
+```sh-session
+npm install -g @snowdreamtech/unirtm
+```
 
-- **Secret Detection**: Hardcoded credential protection enforced via Gitleaks on staged files and historical commits.
-- **Actions Hardening**: Workflow permissions and syntax audited via Zizmor and Actionlint.
-- **Dependency Auditing**: Automated dependency vulnerability scanning with OSV-Scanner and Trivy.
-- **Reproducible Builds**: All downloaded tools and artifacts are verified against cryptographic SHA-256 checksums in `unirtm.lock`.
+**Via PyPI**:
 
----
+```sh-session
+pip install snowdreamtech-unirtm
+```
 
-## ❓ Troubleshooting
+Hook UniRTM into your shell (pick the right one for your shell):
 
-- **Configuration not trusted warning**:
-  - *Diagnosis*: `Tasks in .unirtm.toml are ignored because the configuration file is not trusted`.
-  - *Solution*: Run `unirtm trust` in the workspace root.
-- **Windows PowerShell Execution Policy**:
-  - *Diagnosis*: `unirtm run ...` blocked by script execution policies on Windows.
-  - *Solution*: Run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in your terminal.
-- **Gitleaks false positives**:
-  - *Diagnosis*: Gitleaks flags non-sensitive test tokens or mocks.
-  - *Solution*: Add the specific commit hash or rule fingerprint to [.gitleaksignore](.gitleaksignore).
-- **Missing platforms during lock generation**:
-  - *Diagnosis*: `unirtm lock` reports missing target platform assets.
-  - *Solution*: Run `unirtm lock --allow-incomplete` to maintain pinned binaries for supported platforms.
+```sh-session
+# Bash (Linux/macOS or Windows Git Bash)
+echo 'eval "$(unirtm env)"' >> ~/.bashrc
 
----
+# Zsh
+echo 'eval "$(unirtm env)"' >> ~/.zshrc
 
-## 📄 License
+# Fish
+echo 'unirtm env | source' >> ~/.config/fish/config.fish
 
-This project is licensed under the **MIT License**.
-Copyright (c) 2026-present [SnowdreamTech Inc.](https://github.com/snowdreamtech)
-See the [LICENSE](./LICENSE) file for details.
+# PowerShell (Windows) - add to $PROFILE
+unirtm env | Out-String | Invoke-Expression
+```
 
-## 🌟 Star History
+### Execute commands with specific tools
 
-[![Star History Chart](https://api.star-history.com/image?repos=snowdreamtech/template&type=date&legend=top-left)](https://www.star-history.com/?repos=snowdreamtech%2Ftemplate&type=date&legend=top-left)
+```sh-session
+$ unirtm exec node@20 -- node -v
+unirtm node@20.x.x ✓ installed
+v20.x.x
+```
+
+### Install tools
+
+```sh-session
+$ unirtm use --global node@22 go@1.22
+$ node -v
+v22.x.x
+$ go version
+go version go1.22.x macos/arm64
+```
+
+See [dev tools](https://snowdreamtech.github.io/UniRTM/dev-tools/overview.html) for more examples.
+
+### Manage environment variables
+
+```toml
+# .unirtm.toml
+[env]
+SOME_VAR = "foo"
+```
+
+```sh-session
+$ unirtm set SOME_VAR=bar
+$ echo $SOME_VAR
+bar
+```
+
+Note that `UniRTM` can also [load `.env` files](https://snowdreamtech.github.io/UniRTM/environments/overview.html#env-directives).
+
+### Run tasks
+
+```toml
+# .unirtm.toml
+[tasks.build]
+description = "build the project"
+run = "echo building..."
+```
+
+```sh-session
+$ unirtm run build
+building...
+```
+
+See [tasks](https://snowdreamtech.github.io/UniRTM/tasks/overview.html) for more information.
+
+### Example UniRTM project
+
+Here is a combined example to give you an idea of how you can use UniRTM to manage your a project's tools, environment, and tasks with security baked in.
+
+```toml
+# .unirtm.toml
+[tools]
+terraform = "1"
+aws-cli = "2"
+node = "20"
+
+[env]
+TF_WORKSPACE = "development"
+AWS_REGION = "us-west-2"
+NODE_ENV = "production"
+
+[tasks.plan]
+description = "Run terraform plan with configured workspace"
+run = """
+terraform init
+terraform workspace select $TF_WORKSPACE
+terraform plan
+"""
+
+[tasks.validate]
+description = "Validate AWS credentials and terraform config"
+run = """
+aws sts get-caller-identity
+terraform validate
+"""
+
+[tasks.audit]
+description = "Run deep security scans using Trivy and Gitleaks"
+run = """
+trivy fs --format cyclonedx --output sbom.json .
+gitleaks detect --source . --no-banner
+"""
+
+[tasks.deploy]
+description = "Deploy infrastructure after validation and audit"
+depends = ["validate", "audit", "plan"]
+run = "terraform apply -auto-approve"
+```
+
+Run it with:
+
+```sh-session
+unirtm install # install all required tools specified in .unirtm.toml
+unirtm run deploy # automatically runs validation and audit dependencies first
+```
+
+## Full Documentation
+
+See [snowdreamtech.github.io/UniRTM](https://snowdreamtech.github.io/UniRTM)
+
+### Architecture & Environments Comparison
+
+We believe in making deliberate architectural choices to support modern enterprise environments. Here is how `UniRTM` compares to ecosystem pioneers like `mise` and `asdf` across multiple dimensions:
+
+#### 1. Core Architecture & Execution
+
+| Dimension | `asdf` (Bash) | `mise` (Rust) | `UniRTM` (Go) | Why it matters |
+| :--- | :--- | :--- | :--- | :--- |
+| **Execution Path** | Bash Shims | Rust Shims / PATH | **Lightweight Go Shims** | Uses a single compiled Go binary as a router to perfectly solve the performance issues of Bash shims and ensure cross-platform compatibility. |
+| **Concurrency Model** | None | OS Threads | **Goroutines** | Go's ultra-lightweight goroutines provide extreme parallel throughput during massive toolchain downloads. |
+| **Config Hierarchy** | `.tool-versions` | `mise.toml` | **`.unirtm.toml`** | Standardized, unified TOML configs across your entire project. |
+
+#### 2. Environment & Context
+
+| Feature | `asdf` | `mise` | `UniRTM` | Details |
+| :--- | :--- | :--- | :--- | :--- |
+| **Scope Management** | Tools only | Tools + Env + Tasks | **Tools + Env + Tasks** | Seamlessly manage environments contextually per directory. |
+| **`.env` Parsing** | ❌ | Native | **Native** | Reads traditional `.env` files automatically without external loaders. |
+| **Secrets Engine** | ❌ | Plugins / Integrations | **Native SOPS** | Treats secure secret management as a first-class citizen using native SOPS integration. |
+
+#### 3. Cross-Platform & Resilience
+
+| Feature | `asdf` | `mise` | `UniRTM` | Details |
+| :--- | :--- | :--- | :--- | :--- |
+| **Windows Support** | WSL/MSYS Dependent | Supported | **Native (Ground-up)** | Engineered natively for a flawless Windows and Cygdrive experience. |
+| **Alpine/Musl** | Partial | Supported | **Hardcore Supported** | Runs flawlessly in minimal `musl`/Alpine containers without `glibc` overhead. |
+| **Reproducibility** | Versions | `mise.lock` (Supported) | **`unirtm.lock` (Default)** | Strictly pins exact checksums to ensure reproducible team environments. |
+
+#### 4. Ecosystem Affinity & Minimalism
+
+| Feature | `asdf` | `mise` | `UniRTM` | Details |
+| :--- | :--- | :--- | :--- | :--- |
+| **Hybrid Path Resolution** | ❌ | Partial | **Deeply Supported** | Dedicated optimizations for translating paths seamlessly across Windows Git Bash / Cygdrive environments. |
+| **External Dependencies** | Bash Ecosystem | Minimal | **Absolute Zero** | Core plugins are compiled directly into the binary. Drop it into any minimal OS and it runs out of the box. |
+| **Shim Overhead** | Standard (Bash script) | Optimized (Rust binary) | **Lightning Fast (Go)** | All tools symlink back to the unirtm engine for instant routing, perfectly preventing `$PATH` explosion. |
+| **DevOps Integration** | Custom Scripts | Good | **Native Synergy** | Go-based architecture naturally aligns with cloud-native infrastructure, making custom integrations frictionless. |
+
+- [Discussions](https://github.com/snowdreamtech/UniRTM/discussions)
+- [Issues](https://github.com/snowdreamtech/UniRTM/issues)
+
+## Special Thanks
+
+<p>
+  Inspired by the architecture and developer experience pioneered by <a href="https://github.com/jdx/mise">mise</a>.
+</p>
+
+## License
+
+MIT License. Copyright (c) 2026-present SnowdreamTech Inc.

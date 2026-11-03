@@ -1,0 +1,4 @@
+- [x] 1. Check current `.release-please-config.json`.
+- [x] 2. Replace `"VERSION"` with `{"type": "xml", "path": "VERSION"}` in the `extra-files` array.
+- [x] 3. Verify the changes locally and run formatting.
+- [x] 4. Commit the changes to `012-fix-release-please-version` branch.

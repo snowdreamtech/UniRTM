@@ -1,0 +1,993 @@
+/* Glassmorphism Theme CSS — UniGoDesktop Design System */
+/* Optimize font loading: prevent FOIT (Flash of Invisible Text) with font-display: swap */
+@font-face {
+  font-family: "codicon";
+  font-display: swap;
+  src: url("@vscode/codicons/dist/codicon.ttf") format("truetype");
+}
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-color: #070a12;
+  --card-bg: rgba(18, 26, 43, 0.92);
+  --modal-bg: rgba(13, 20, 36, 0.95);
+  --input-bg: rgba(8, 14, 26, 0.8);
+  --section-bg: rgba(0, 0, 0, 0.25);
+  --card-border: rgba(0, 229, 255, 0.15);
+  --card-border-active: rgba(0, 229, 255, 0.6);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent-cyan: #00e5ff;
+  --accent-cyan-glow: rgba(0, 229, 255, 0.35);
+  --accent-purple: #9d4edd;
+  --success: #10b981;
+  --warning: #f59e0b;
+  /* Semantic token aliases */
+  --text-primary: var(--text-main);
+  --text-secondary: var(--text-muted);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --header-bg: rgba(255, 255, 255, 0.04);
+  --btn-secondary-bg: rgba(255, 255, 255, 0.08);
+  --btn-secondary-hover-bg: rgba(255, 255, 255, 0.14);
+  --btn-secondary-text: var(--text-main);
+  --btn-secondary-border: var(--card-border);
+  /* Global Layer Hierarchy & Z-Index Tokens */
+  --z-base: 1;
+  --z-sidebar: 25;
+  --z-activity-bar: 50;
+  --z-status-bar: 60;
+  --z-drawer: 70;
+  --z-title-bar: 100;
+  --z-dropdown: 500;
+  --z-context-menu: 1000;
+  --z-context-menu-popover: 1001;
+  --z-modal: 1500;
+  --z-toast: 2500;
+  --z-tooltip: 3000;
+  /* Context menu tokens (Dark) */
+  --vscode-menu-background: #0d1626;
+  --vscode-menu-foreground: #f8fafc;
+  --vscode-menu-selectionBackground: rgba(0, 229, 255, 0.15);
+  --vscode-menu-selectionForeground: #00e5ff;
+  --vscode-menu-separatorBackground: rgba(255, 255, 255, 0.08);
+  --vscode-menu-border: rgba(0, 229, 255, 0.18);
+  /* Terminal / Editor Floating Search Widget Tokens (Dark) */
+  --vscode-editorWidget-background: #252526;
+  --vscode-editorWidget-border: #454545;
+  --vscode-editorWidget-foreground: #cccccc;
+  --vscode-input-background: #3c3c3c;
+  --vscode-input-border: #3c3c3c;
+  --vscode-input-foreground: #cccccc;
+  --vscode-input-placeholderForeground: #8c8c8c;
+  --vscode-descriptionForeground: #999999;
+  --vscode-icon-foreground: #c5c5c5;
+  --vscode-focusBorder: #007fd4;
+  --vscode-toolbar-hoverBackground: rgba(90, 93, 94, 0.31);
+  --vscode-inputOption-activeBackground: rgba(0, 127, 212, 0.4);
+  --vscode-inputOption-activeBorder: #007fd4;
+  --vscode-inputOption-activeForeground: #ffffff;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg-color: #f1f5f9;
+  --card-bg: #ffffff;
+  --modal-bg: #ffffff;
+  --input-bg: #f8fafc;
+  --section-bg: #f1f5f9;
+  --card-border: #cbd5e1;
+  --card-border-active: #0284c7;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --accent-cyan: #0284c7;
+  --accent-cyan-glow: rgba(2, 132, 199, 0.2);
+  --accent-purple: #7c3aed;
+  --success: #059669;
+  --warning: #d97706;
+  /* Semantic token aliases */
+  --text-primary: var(--text-main);
+  --text-secondary: var(--text-muted);
+  --hover-bg: rgba(0, 0, 0, 0.04);
+  --header-bg: #f8fafc;
+  --btn-secondary-bg: #e2e8f0;
+  --btn-secondary-hover-bg: #cbd5e1;
+  --btn-secondary-text: #0f172a;
+  --btn-secondary-border: #cbd5e1;
+  /* Context menu tokens (Light) */
+  --vscode-menu-background: #ffffff;
+  --vscode-menu-foreground: #0f172a;
+  --vscode-menu-selectionBackground: #e0f2fe;
+  --vscode-menu-selectionForeground: #0284c7;
+  --vscode-menu-separatorBackground: #e2e8f0;
+  --vscode-menu-border: #cbd5e1;
+  /* Terminal / Editor Floating Search Widget Tokens (Light) */
+  --vscode-editorWidget-background: #ffffff;
+  --vscode-editorWidget-border: #cbd5e1;
+  --vscode-editorWidget-foreground: #0f172a;
+  --vscode-input-background: #f8fafc;
+  --vscode-input-border: #cbd5e1;
+  --vscode-input-foreground: #0f172a;
+  --vscode-input-placeholderForeground: #94a3b8;
+  --vscode-descriptionForeground: #64748b;
+  --vscode-icon-foreground: #475569;
+  --vscode-focusBorder: #0284c7;
+  --vscode-toolbar-hoverBackground: rgba(0, 0, 0, 0.08);
+  --vscode-inputOption-activeBackground: rgba(2, 132, 199, 0.15);
+  --vscode-inputOption-activeBorder: #0284c7;
+  --vscode-inputOption-activeForeground: #0284c7;
+}
+
+/* Global Select & Option Dropdown Light/Dark Theme Adaptations */
+select,
+option,
+optgroup {
+  background-color: var(--input-bg) !important;
+  color: var(--text-main) !important;
+  border-color: var(--card-border) !important;
+}
+
+:root[data-theme="light"] select,
+:root[data-theme="light"] option,
+:root[data-theme="light"] optgroup,
+[data-theme="light"] select,
+[data-theme="light"] option,
+[data-theme="light"] optgroup,
+[data-theme="light"] select option {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] option,
+:root[data-theme="dark"] optgroup,
+[data-theme="dark"] select,
+[data-theme="dark"] option,
+[data-theme="dark"] optgroup,
+[data-theme="dark"] select option {
+  color-scheme: dark !important;
+  background-color: #0d1424 !important;
+  color: #f8fafc !important;
+}
+
+/* Global Input & Textarea Placeholder Styling - Subtle & Muted Hint */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: rgba(148, 163, 184, 0.45) !important;
+  opacity: 1 !important;
+  font-size: 0.82rem;
+  font-weight: 400;
+  transition: color 0.2s ease;
+}
+
+input:focus::placeholder,
+textarea:focus::placeholder,
+select:focus::placeholder {
+  color: rgba(148, 163, 184, 0.22) !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder,
+[data-theme="light"] select::placeholder {
+  color: rgba(100, 116, 139, 0.45) !important;
+}
+
+[data-theme="light"] input:focus::placeholder,
+[data-theme="light"] textarea:focus::placeholder,
+[data-theme="light"] select:focus::placeholder {
+  color: rgba(100, 116, 139, 0.22) !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-main) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset !important;
+  box-shadow: 0 0 0px 1000px var(--input-bg) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: var(--text-main);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Desktop Native App UI Normalization */
+html,
+body,
+#app {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+}
+
+/* Allow text selection in inputs and explicit selectable elements */
+input,
+textarea,
+[contenteditable="true"],
+.selectable,
+[data-selectable] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Prevent browser ghost dragging on media and link elements */
+img,
+a,
+svg {
+  -webkit-user-drag: none;
+}
+
+/* Clean focus outline for mouse clicks while keeping keyboard accessibility */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Cross-Platform Modern Overlay / Thin Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+[data-theme="light"] {
+  scrollbar-color: rgba(100, 116, 139, 0.25) transparent;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.45);
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "SF Pro Display",
+    "Segoe UI Variable Text",
+    "Segoe UI Variable Display",
+    "Segoe UI",
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei UI",
+    "Microsoft YaHei",
+    "Inter",
+    "Roboto",
+    "Ubuntu",
+    "Cantarell",
+    "Noto Sans",
+    "Noto Sans CJK SC",
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Noto Color Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  background-color: var(--bg-color);
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(0, 229, 255, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(157, 78, 221, 0.08) 0%, transparent 40%);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card:hover {
+  border-color: var(--card-border-active);
+  box-shadow: 0 8px 32px 0 var(--accent-cyan-glow);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00e5ff 0%, #0088ff 100%);
+  color: #070a12;
+  font-weight: 700;
+  border: none;
+  padding: 0.75rem 1.75rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 15px var(--accent-cyan-glow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px var(--accent-cyan-glow);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border: 1px solid var(--card-border);
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-cyan);
+}
+
+/* Smooth transition for layout directions and theme switching */
+html {
+  transition: direction 0.25s ease;
+}
+
+body,
+.app-container,
+.main-content,
+.app-header,
+.settings-modal-card {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+/* LTR / RTL explicit Direction Controls */
+html[dir="ltr"],
+[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+html[dir="ltr"] input,
+html[dir="ltr"] select,
+html[dir="ltr"] textarea {
+  text-align: left;
+}
+html[dir="ltr"] .header-brand,
+html[dir="ltr"] .section-header-row,
+html[dir="ltr"] .modal-header,
+html[dir="ltr"] .sync-status,
+html[dir="ltr"] .tab-group,
+html[dir="ltr"] .protocol-radio-bar,
+html[dir="ltr"] .radio-group {
+  flex-direction: row;
+}
+html[dir="ltr"] .dropdown-caret,
+html[dir="ltr"] .opt-check {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+html[dir="rtl"],
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+html[dir="rtl"] input,
+html[dir="rtl"] select,
+html[dir="rtl"] textarea {
+  text-align: right;
+}
+html[dir="rtl"] .header-brand,
+html[dir="rtl"] .section-header-row,
+html[dir="rtl"] .modal-header,
+html[dir="rtl"] .sync-status,
+html[dir="rtl"] .tab-group,
+html[dir="rtl"] .protocol-radio-bar,
+html[dir="rtl"] .radio-group {
+  flex-direction: row-reverse;
+}
+html[dir="rtl"] .dropdown-caret,
+html[dir="rtl"] .opt-check {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Header dropdown menu anchoring in RTL */
+[dir="rtl"] .lang-dropdown-menu {
+  right: auto !important;
+  left: 0 !important;
+}
+
+[dir="rtl"] .lang-option {
+  text-align: right;
+}
+
+/* Custom Select in RTL */
+[dir="rtl"] .custom-select-container .select-trigger {
+  text-align: right;
+}
+
+[dir="rtl"] .custom-select-container .dropdown-item {
+  text-align: right;
+}
+
+/* Code editors, diff editors, and terminal consoles MUST strictly remain LTR across all locales */
+html[dir="rtl"] .monaco-wrapper,
+html[dir="rtl"] .monaco-host-container,
+html[dir="rtl"] .monaco-editor,
+html[dir="rtl"] .monaco-diff-wrapper,
+html[dir="rtl"] .monaco-diff-host,
+html[dir="rtl"] .monaco-diff-editor,
+html[dir="rtl"] .editor-content-area,
+html[dir="rtl"] .xterm-pane-wrapper,
+html[dir="rtl"] .xterm-container,
+html[dir="rtl"] .xterm,
+[dir="rtl"] .monaco-wrapper,
+[dir="rtl"] .monaco-host-container,
+[dir="rtl"] .monaco-editor,
+[dir="rtl"] .monaco-diff-wrapper,
+[dir="rtl"] .monaco-diff-host,
+[dir="rtl"] .monaco-diff-editor,
+[dir="rtl"] .editor-content-area,
+[dir="rtl"] .xterm-pane-wrapper,
+[dir="rtl"] .xterm-container,
+[dir="rtl"] .xterm {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
+}
+
+[dir="rtl"] .monaco-editor .overflow-guard,
+[dir="rtl"] .monaco-editor .monaco-scrollable-element,
+[dir="rtl"] .monaco-editor .lines-content,
+[dir="rtl"] .monaco-editor .view-lines,
+[dir="rtl"] .monaco-editor .margin,
+[dir="rtl"] .monaco-editor .minimap {
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: isolate !important;
+}
+
+/* Native Window Focus / Blur State Visual Adaptation */
+.window-inactive {
+  --accent-cyan-glow: rgba(0, 229, 255, 0.12);
+}
+
+.window-inactive .app-header {
+  opacity: 0.94;
+}
+
+.window-inactive .logo-img {
+  filter: grayscale(0.2) opacity(0.88);
+}
+
+/* ==========================================================================
+   Global Unified Button Design System (Action Design System)
+   ========================================================================== */
+
+/* 1. Base Button Anchor */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+  line-height: 1;
+  text-decoration: none;
+  outline: none;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 2. Primary Variant */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
+  color: #ffffff;
+  border-color: rgba(2, 132, 199, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 229, 255, 0.18);
+  padding: 6px 14px;
+  height: 32px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #00f0ff, #0369a1);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.32);
+}
+
+/* 3. Secondary / Outline Variant */
+.btn-secondary {
+  background: var(--input-bg);
+  border-color: var(--card-border);
+  color: var(--text-main);
+  padding: 6px 14px;
+  height: 32px;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--text-muted);
+  color: var(--text-main);
+}
+
+/* 4. Danger Variant */
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 6px 14px;
+  height: 32px;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.35);
+}
+
+/* 5. Ghost / Icon Button (Standard Square Action Icon) */
+.btn-icon {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.btn-icon.btn-icon-md {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+}
+
+.btn-icon.danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.28);
+  color: #ef4444;
+}
+
+.btn-icon.success:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: #10b981;
+}
+
+.btn-icon.accent:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.28);
+  color: var(--accent-cyan);
+}
+
+/* 6. Capsule Status / Trigger Button (Small Height: 26px) */
+.btn-capsule {
+  height: 26px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+}
+
+.btn-capsule:hover:not(:disabled) {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.06);
+}
+
+.btn-capsule.active,
+.btn-capsule.applied {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.12);
+  cursor: default;
+}
+
+/* Light Theme Overrides */
+:root[data-theme="light"] .btn-secondary,
+[data-theme="light"] .btn-secondary {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+:root[data-theme="light"] .btn-secondary:hover:not(:disabled),
+[data-theme="light"] .btn-secondary:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .btn-icon:hover:not(:disabled),
+[data-theme="light"] .btn-icon:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+
+/* ==========================================================================
+   7. Monaco Editor Context Menu (Contrast Theme & Solid Background)
+   ========================================================================== */
+
+/* Universal context menu container & scrollable container base (100% Unified with FileContextMenu) */
+.context-view.monaco-menu-container,
+.context-view .monaco-scrollable-element,
+.context-view .monaco-menu,
+.tab-context-menu,
+.tab-submenu-independent {
+  border-radius: 6px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 13px !important;
+  background-color: var(--modal-bg, var(--card-bg)) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+  padding: 4px 0 !important;
+  user-select: none;
+  min-width: 200px !important;
+  box-sizing: border-box !important;
+}
+
+:root[data-theme="light"] .context-view.monaco-menu-container,
+:root[data-theme="light"] .context-view .monaco-scrollable-element,
+:root[data-theme="light"] .context-view .monaco-menu,
+:root[data-theme="light"] .tab-context-menu,
+:root[data-theme="light"] .tab-submenu-independent,
+[data-theme="light"] .context-view.monaco-menu-container,
+[data-theme="light"] .context-view .monaco-scrollable-element,
+[data-theme="light"] .context-view .monaco-menu,
+[data-theme="light"] .tab-context-menu,
+[data-theme="light"] .tab-submenu-independent {
+  background-color: var(--modal-bg, #ffffff) !important;
+  color: var(--text-main, #0f172a) !important;
+  border: 1px solid var(--card-border, #cbd5e1) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+.context-view .monaco-menu .monaco-action-bar.vertical,
+.tab-context-menu .monaco-action-bar.vertical,
+.tab-submenu-independent .monaco-action-bar.vertical {
+  width: 100% !important;
+  overflow: visible !important;
+}
+
+.context-view .monaco-menu .actions-container,
+.tab-context-menu .actions-container,
+.tab-submenu-independent .actions-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.context-view .monaco-menu .action-item,
+.tab-context-menu .action-item,
+.tab-submenu-independent .action-item {
+  display: block !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.tab-context-menu .action-item.has-submenu {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* Row Layout: edge-to-edge hover, identical to FileContextMenu's .menu-item */
+.context-view .monaco-menu .monaco-action-bar.vertical .action-menu-item,
+.tab-context-menu .action-menu-item,
+.tab-submenu-independent .action-menu-item {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  padding: 6px 12px !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  outline: none !important;
+  border: none !important;
+  color: var(--text-main) !important;
+  background-color: transparent !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  min-height: 30px !important;
+  box-sizing: border-box !important;
+  transition: all 0.1s ease !important;
+  text-decoration: none !important;
+  width: 100% !important;
+  white-space: nowrap !important;
+}
+
+/* Icons inside menu items (100% matching FileContextMenu .menu-icon) */
+.context-view .monaco-menu .menu-icon,
+.tab-context-menu .menu-icon,
+.tab-submenu-independent .menu-icon {
+  font-size: 14px !important;
+  width: 16px !important;
+  min-width: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  color: inherit !important;
+}
+
+/* Cut action scissors icon definition (missing in @vscode/codicons font) */
+.codicon.codicon-scissors:before,
+.codicon-scissors:before {
+  content: "" !important;
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23000' d='M4.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0-4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm0 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0-4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM7.2 7.5l2.4-2.4-.7-.7L6.5 6.8 4.1 4.4l-.7.7 2.4 2.4-2.4 2.4.7.7 2.4-2.4 2.4 2.4.7-.7-2.4-2.4zm2.1-.5l5.2-5.2-.7-.7-5.9 5.9.7.7.7-.7zm0 1l-.7-.7-.7.7 5.9 5.9.7-.7-5.2-5.2z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23000' d='M4.5 9a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0-4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm0 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zm0-4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM7.2 7.5l2.4-2.4-.7-.7L6.5 6.8 4.1 4.4l-.7.7 2.4 2.4-2.4 2.4.7.7 2.4-2.4 2.4 2.4.7-.7-2.4-2.4zm2.1-.5l5.2-5.2-.7-.7-5.9 5.9.7.7.7-.7zm0 1l-.7-.7-.7.7 5.9 5.9.7-.7-5.2-5.2z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+
+/* Action Label: Left-aligned, flexible width, ellipsis */
+.context-view .monaco-menu .monaco-action-bar.vertical .action-label,
+.tab-context-menu .action-label,
+.tab-submenu-independent .action-label {
+  display: inline-block !important;
+  flex: 1 1 auto !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  color: inherit !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Keybinding: Right-aligned, fixed width, strictly nowrap, safe spacing */
+.context-view .monaco-menu .monaco-action-bar.vertical .keybinding,
+.tab-context-menu .keybinding,
+.tab-submenu-independent .keybinding {
+  display: inline-flex !important;
+  float: none !important;
+  flex: 0 0 auto !important;
+  font-size: 11px !important;
+  line-height: 18px !important;
+  color: var(--text-muted) !important;
+  margin-left: 12px !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  font-family: inherit !important;
+  padding: 0 !important;
+}
+
+/* Submenu Arrow: Right-aligned chevron icon */
+.tab-context-menu .submenu-arrow,
+.tab-submenu-independent .submenu-arrow {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  font-size: 12px !important;
+  margin-left: 12px !important;
+  color: var(--text-muted) !important;
+  align-items: center !important;
+}
+
+/* Compact 1px Separator: Completely eliminates Monaco red borders and matches FileContextMenu */
+.context-view .monaco-menu .monaco-action-bar.vertical .action-item.separator,
+.monaco-menu .monaco-action-bar.vertical .action-item.separator,
+.context-view .monaco-menu .action-item.separator,
+.context-view .monaco-menu .action-menu-item.separator,
+.context-view .monaco-menu .action-label.separator,
+.tab-context-menu .action-item.separator,
+.tab-context-menu .action-separator,
+.tab-submenu-independent .action-item.separator,
+.tab-submenu-independent .action-separator {
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
+  line-height: 1px !important;
+  background-color: var(--card-border) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--card-border) !important;
+  margin: 4px 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  overflow: hidden !important;
+  list-style: none !important;
+  pointer-events: none !important;
+}
+
+/* Hover & Active / Focused: Strictly aligns with FileContextMenu --accent-cyan-glow and --accent-cyan */
+.context-view .monaco-menu .action-item.focused,
+.context-view .monaco-menu .action-item:hover,
+.context-view .monaco-menu .action-item.focused > .action-menu-item,
+.context-view .monaco-menu .action-item:hover > .action-menu-item,
+.context-view .monaco-menu .action-menu-item:hover,
+.tab-context-menu .action-item.focused,
+.tab-context-menu .action-item:hover,
+.tab-context-menu .action-item.focused > .action-menu-item,
+.tab-context-menu .action-item:hover > .action-menu-item,
+.tab-context-menu .action-menu-item:hover,
+.tab-submenu-independent .action-item.focused,
+.tab-submenu-independent .action-item:hover,
+.tab-submenu-independent .action-item.focused > .action-menu-item,
+.tab-submenu-independent .action-item:hover > .action-menu-item,
+.tab-submenu-independent .action-menu-item:hover {
+  background-color: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15)) !important;
+  color: var(--accent-cyan) !important;
+}
+
+.context-view .monaco-menu .action-item.focused .action-label,
+.context-view .monaco-menu .action-item:hover .action-label,
+.context-view .monaco-menu .action-item.focused .menu-icon,
+.context-view .monaco-menu .action-item:hover .menu-icon,
+.context-view .monaco-menu .action-item.focused .action-menu-item,
+.context-view .monaco-menu .action-item:hover .action-menu-item,
+.tab-context-menu .action-item.focused .action-label,
+.tab-context-menu .action-item:hover .action-label,
+.tab-context-menu .action-item.focused .menu-icon,
+.tab-context-menu .action-item:hover .menu-icon,
+.tab-context-menu .action-item.focused .action-menu-item,
+.tab-context-menu .action-item:hover .action-menu-item,
+.tab-submenu-independent .action-item.focused .action-label,
+.tab-submenu-independent .action-item:hover .action-label,
+.tab-submenu-independent .action-item.focused .menu-icon,
+.tab-submenu-independent .action-item:hover .menu-icon,
+.tab-submenu-independent .action-item.focused .action-menu-item,
+.tab-submenu-independent .action-item:hover .action-menu-item {
+  color: var(--accent-cyan) !important;
+}
+
+.context-view .monaco-menu .action-item.focused .keybinding,
+.context-view .monaco-menu .action-item:hover .keybinding,
+.tab-context-menu .action-item.focused .keybinding,
+.tab-context-menu .action-item:hover .keybinding,
+.tab-submenu-independent .action-item.focused .keybinding,
+.tab-submenu-independent .action-item:hover .keybinding,
+.tab-context-menu .action-item.focused .submenu-arrow,
+.tab-context-menu .action-item:hover .submenu-arrow,
+.tab-submenu-independent .action-item.focused .submenu-arrow,
+.tab-submenu-independent .action-item:hover .submenu-arrow {
+  color: var(--accent-cyan) !important;
+  opacity: 0.9 !important;
+}
+
+.context-view .monaco-menu .action-item.disabled .action-menu-item,
+.tab-context-menu .action-item.disabled .action-menu-item,
+.tab-submenu-independent .action-item.disabled .action-menu-item {
+  color: var(--text-muted) !important;
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+  background-color: transparent !important;
+}
+
+/* Tab Context Menu & Submenus Fixed Positioning & Animations */
+.tab-context-menu,
+.tab-submenu-independent {
+  position: fixed !important;
+  z-index: 99999 !important;
+  min-width: 240px !important;
+  max-width: 360px !important;
+  width: max-content !important;
+  overflow: visible !important;
+  animation: tabMenuFadeIn 0.12s ease-out;
+}
+
+.tab-submenu-independent {
+  z-index: 100000 !important;
+  min-width: 180px !important;
+  animation: tabSubMenuFadeIn 0.1s ease-out;
+}
+
+@keyframes tabMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tabSubMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Global Context Menu Backdrop & Layering Architecture */
+.context-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-context-menu, 1000);
+  background: transparent;
+  cursor: default;
+}

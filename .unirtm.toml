@@ -27,6 +27,7 @@ UNIRTM_HOOK_ALLOW_MISSING = "1"
 go = "1.27.3"
 node = "26.8.1"
 "npm:@taplo/cli" = "0.7.0"
+"npm:bats" = "1.13.0"
 "npm:eslint" = "10.13.0"
 "npm:prettier" = "3.9.10"
 "npm:sort-package-json" = "4.1.0"
@@ -41,6 +42,14 @@ python = "3.14.7"
 
 [guard]
 enabled = true
+
+[guard.slots."go.linter"]
+tool = "go"
+command = "go vet ./..."
+
+[guard.slots."web.i18n-linter"]
+tool = "npm"
+command = "npm --prefix frontend test -- src/i18n/i18n.test.ts"
 
 [tasks]
 [tasks.audit]
@@ -206,9 +215,40 @@ run = "unirtm check --all"
 output = "interleaved"
 
 [tasks.test]
-description = "Run template sanity check"
-run = "unirtm version"
+description = "Run Go unit tests for all packages recursively"
+# -timeout 10m : prevent a single hung test from consuming the entire CI budget (default: 10m)
+# -p 4         : limit the number of packages compiled/tested in parallel to prevent CI OOM
+#                (GitHub Actions ubuntu-latest has ~7GB RAM; -race multiplies usage 5-10x)
+# CGO_ENABLED=0: force pure-Go build — all test files must use modernc.org/sqlite, not mattn/go-sqlite3
+run = "unirtm exec -- go test -cover -v -timeout 10m -p 4 ./..."
 output = "interleaved"
+env = { GOTOOLCHAIN = "auto", CGO_ENABLED = "0" }
+
+[tasks."test:frontend"]
+description = "Run Vue/Frontend Vitest unit tests"
+run = "cd frontend && ([ -d node_modules ] || npm install --silent) && npm test"
+output = "interleaved"
+
+[tasks."test:shell"]
+description = "Run Bats tests for install.sh"
+run = "unirtm exec -- bats tests/install.bats"
+output = "interleaved"
+
+[tasks."test:powershell"]
+description = "Run Pester tests for install.ps1"
+# Encoded equivalent of:
+#    = New-PesterConfiguration
+#   .Run.Path = 'tests/install.Tests.ps1'
+#   .Run.Exit = 
+#   Invoke-Pester -Configuration 
+run = "pwsh -NoProfile -EncodedCommand JABjACAAPQAgAE4AZQB3AC0AUABlAHMAdABlAHIAQwBvAG4AZgBpAGcAdQByAGEAdABpAG8AbgA7ACAAJABjAC4AUgB1AG4ALgBQAGEAdABoACAAPQAgACcAdABlAHMAdABzAC8AaQBuAHMAdABhAGwAbAAuAFQAZQBzAHQAcwAuAHAAcwAxACcAOwAgACQAYwAuAFIAdQBuAC4ARQB4AGkAdAAgAD0AIAAkAHQAcgB1AGUAOwAgAEkAbgB2AG8AawBlAC0AUABlAHMAdABlAHIAIAAtAEMAbwBuAGYAaQBnAHUAcgBhAHQAaQBvAG4AIAAkAGMA"
+output = "interleaved"
+
+[tasks."test:all"]
+description = "Run full test suite across Go, Frontend, and shell scripts"
+depends = ["test", "test:frontend", "test:shell"]
+output = "interleaved"
+
 env = { GOTOOLCHAIN = "auto", CGO_ENABLED = "0" }
 
 [tasks.verify]
@@ -221,7 +261,7 @@ else
     echo "⚡ Local Environment detected: Running fast incremental lint on changed files..."
     unirtm run lint
 fi
-unirtm run test
+unirtm run test:all
 unirtm run audit
 '''
 output = "interleaved"
@@ -239,6 +279,23 @@ unirtm exec -- trivy image --download-db-only
 echo "Downloading Java index DB..."
 unirtm exec -- trivy image --download-java-db-only
 '''
+output = "interleaved"
+
+[tasks."build:frontend"]
+description = "Build frontend production assets"
+run = "cd frontend && npm install && npm run build"
+output = "interleaved"
+
+[tasks.build]
+description = "Compile UniRTM single binary with embedded frontend"
+depends = ["build:frontend"]
+run = 'unirtm exec -- go build -trimpath -ldflags="-s -w" -o unirtm main.go'
+output = "interleaved"
+
+[tasks.dev]
+description = "Build frontend production assets and launch UniRTM Workbench in development mode"
+depends = ["build:frontend"]
+run = "unirtm exec -- go run main.go ui"
 output = "interleaved"
 
 [settings]
