@@ -1,0 +1,14 @@
+/*
+ * Copyright (c) 2026 SnowdreamTech. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for full license information.
+ */
+
+graph ethane {
+    C_0 -- H_0;
+    C_0 -- H_1;
+    C_0 -- H_2;
+    C_0 -- C_1;
+    C_1 -- H_3;
+    C_1 -- H_4;
+    C_1 -- H_5;
+}

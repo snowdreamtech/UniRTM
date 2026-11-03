@@ -61,7 +61,7 @@ unirtm run verify        # run all checks in sequence
 
 ```bash
 # Node packages (documentation)
-cd docs && pnpm update
+cd docs && npm update
 
 # Python packages (pre-commit hooks)
 pre-commit autoupdate
@@ -73,8 +73,8 @@ unirtm upgrade
 ### Build Documentation
 
 ```bash
-cd docs && pnpm run build       # production build
-cd docs && pnpm run dev         # development server (hot-reload)
+cd docs && npm run build       # production build
+cd docs && npm run dev         # development server (hot-reload)
 ```
 
 ### Create a Release
@@ -114,7 +114,7 @@ unirtm run lint 2>&1 | grep -A5 "error\|failed"
 
 ### Pre-commit Hook Fails on macOS
 
-**Symptom**: `unirtm run install` completes but hooks fail with Python/binary not found errors.
+**Symptom**: `unirtm install` completes but hooks fail with Python/binary not found errors.
 
 **Diagnosis**:
 
@@ -129,7 +129,7 @@ pre-commit --version
 ```bash
 # Rebuild the venv
 rm -rf .venv
-unirtm run install
+unirtm install
 ```
 
 ---
@@ -166,8 +166,8 @@ find . -xtype l   # list broken symlinks
 **Solution**:
 
 ```bash
-# Re-initialize symlinks
-unirtm run setup
+# Re-initialize environment
+unirtm install
 ```
 
 ---
@@ -190,9 +190,8 @@ unirtm run setup
 git stash                    # save local changes
 git checkout main            # switch to main
 git pull origin main         # fetch latest
-unirtm run setup                   # re-initialize toolchain
-unirtm run install                 # re-install dependencies
-unirtm run verify                  # confirm clean state
+unirtm install               # re-install tools and dependencies
+make verify                  # confirm clean state
 ```
 
 ### Rollback a Bad Commit

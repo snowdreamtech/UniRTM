@@ -1,6 +1,6 @@
 # Common Shell Functions API Reference
 
-This document provides API documentation for the common shell functions used throughout the project, particularly those in `scripts/lib/common.sh`.
+This document provides API documentation for the common shell functions used throughout the project, particularly those in `.unirtm.toml`.
 
 ## Core Installation Functions
 
@@ -533,7 +533,6 @@ fi
 ## Related Documentation
 
 - [Tool Installation Architecture](./tool-installation.md)
-- [Troubleshooting](../troubleshooting-unirtm-provenance.md)
 
 ## References
 

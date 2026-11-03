@@ -29,7 +29,7 @@ These tools provide universal security coverage regardless of project language o
 
 ```bash
 # In CI workflows
-unirtm run setup security
+unirtm install
 ```
 
 ---
@@ -55,12 +55,10 @@ These tools are language-specific and only relevant when the corresponding langu
 
 **Installation**:
 
+All configured security tools are installed via:
+
 ```bash
-# Installed automatically when language files are detected
-unirtm run setup go      # Installs govulncheck
-unirtm run setup rust    # Installs cargo-audit
-unirtm run setup node    # npm-audit is part of npm
-unirtm run setup python  # Installs pip-audit
+unirtm install
 ```
 
 ---
@@ -137,42 +135,26 @@ fi
 
 ### For Workflows Using Universal Security Scanners
 
-Workflows that require universal security scanning must explicitly install these tools:
-
-```yaml
-- name: "🔒 Install Security Tools"
-  shell: sh
-  run: |
-    unirtm run setup security
-```
-
-Or include in the main setup:
+Workflows that require universal security scanning can install these tools via:
 
 ```yaml
 - name: "🚀 Initialize Development Environment"
   shell: sh
   run: |
-    unirtm run setup security  # Install universal security tools
-    unirtm run install
-    unirtm run check-env
+    unirtm install
+    make check-env
 ```
 
 ### For Workflows Not Using Security Scanners
 
-If a workflow doesn't need security scanning (e.g., documentation builds), it will fail at `unirtm run check-env` unless security tools are installed. Options:
+If a workflow doesn't need security scanning (e.g., documentation builds), it will run `unirtm install` to set up basic tools:
 
-1. **Install security tools** (recommended):
-
-   ```yaml
-   run: unirtm run setup security && unirtm run check-env
-   ```
-
-2. **Skip check-env** (not recommended):
-
-   ```yaml
-   run: unirtm run setup && unirtm run install
-   # Skip check-env
-   ```
+```yaml
+- name: "🚀 Initialize Development Environment"
+  shell: sh
+  run: |
+    unirtm install
+```
 
 ---
 
@@ -182,7 +164,7 @@ If a workflow doesn't need security scanning (e.g., documentation builds), it wi
 
 If adding a new universal security scanner (applicable to all projects):
 
-1. Add to `scripts/lib/versions.sh`:
+1. Add to `.unirtm.toml`:
 
    ```bash
    VER_NEWTOOL="1.0.0"
@@ -260,7 +242,7 @@ If you have existing workflows that relied on the old Optional CI-only behavior 
 
 ```yaml
 - name: "Install Security Tools"
-  run: unirtm run setup security
+  run: unirtm install
 
 - name: "Check Environment"
   run: unirtm run check-env
@@ -294,5 +276,4 @@ CI=true unirtm run check-env
 ## References
 
 - Implementation details in `scripts/check-env.sh`
-- Security tool installation in `scripts/lib/langs/security.sh`
-- Tool version definitions in `scripts/lib/versions.sh`
+- Tool version definitions in `.unirtm.toml`

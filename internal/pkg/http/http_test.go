@@ -1,0 +1,137 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package http
+
+import (
+	"net/http"
+	"testing"
+	"time"
+)
+
+func TestShouldBypassProxy(t *testing.T) {
+	t.Setenv("NO_PROXY", "company.internal,custom-mirror.net")
+
+	tests := []struct {
+		host     string
+		expected bool
+	}{
+		{"example.com", false},
+		{"google.com", false},
+		{"aliyun.com", true},
+		{"npmmirror.com", true},
+		{"foo.cn", true},
+		{"registry.npmmirror.com", true},
+		{"mirrors.aliyun.com", true},
+		{"test.mirror.com", false}, // non-domestic mirror should NOT bypass proxy
+		// RFC 1918 Private networks
+		{"10.0.0.1", true},
+		{"10.1.2.3:8080", true},
+		{"192.168.1.100", true},
+		{"172.16.0.50", true},
+		{"127.0.0.1", true},
+		{"localhost", true},
+		// User configured NO_PROXY
+		{"repo.company.internal", true},
+		{"custom-mirror.net:443", true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.host, func(t *testing.T) {
+			result := ShouldBypassProxy(tc.host)
+			if result != tc.expected {
+				t.Errorf("ShouldBypassProxy(%q) = %v; expected %v", tc.host, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestExtractApexDomain(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"objects.githubusercontent.com", "githubusercontent.com"},
+		{"api.github.com", "github.com"},
+		{"github.com", "github.com"},
+		{"mirrors.aliyun.com:443", "aliyun.com"},
+		{"registry.npmmirror.com", "npmmirror.com"},
+		{"mirrors.tuna.tsinghua.edu.cn", "tsinghua.edu.cn"},
+		{"news.bbc.co.uk", "bbc.co.uk"},
+		{"127.0.0.1:8080", "127.0.0.1"},
+		{"localhost", "localhost"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			got := ExtractApexDomain(tc.input)
+			if got != tc.expected {
+				t.Errorf("ExtractApexDomain(%q) = %q; want %q", tc.input, got, tc.expected)
+			}
+		})
+	}
+}
+
+func TestDisableHTTP2(t *testing.T) {
+	trans := http.DefaultTransport.(*http.Transport).Clone()
+
+	DisableHTTP2(trans)
+
+	if trans.ForceAttemptHTTP2 {
+		t.Error("expected ForceAttemptHTTP2 to be false")
+	}
+
+	if trans.TLSNextProto == nil {
+		t.Error("expected TLSNextProto to be initialized")
+	}
+
+	if trans.TLSClientConfig == nil {
+		t.Error("expected TLSClientConfig to be initialized")
+	} else if len(trans.TLSClientConfig.NextProtos) != 1 || trans.TLSClientConfig.NextProtos[0] != "http/1.1" {
+		t.Errorf("expected NextProtos to be ['http/1.1'], got %v", trans.TLSClientConfig.NextProtos)
+	}
+}
+
+func TestNewClient(t *testing.T) {
+	client := NewClient()
+	if client == nil {
+		t.Fatal("expected non-nil client")
+	}
+	if client.Transport == nil {
+		t.Error("expected non-nil transport")
+	}
+}
+
+func TestNewClientWithTimeout(t *testing.T) {
+	timeout := 10 * time.Second
+	client := NewClientWithTimeout(timeout)
+	if client == nil {
+		t.Fatal("expected non-nil client")
+	}
+	if client.Timeout != timeout {
+		t.Errorf("expected timeout %v, got %v", timeout, client.Timeout)
+	}
+}
+
+func TestDefaultTransport(t *testing.T) {
+	trans := DefaultTransport()
+	if trans == nil {
+		t.Fatal("expected non-nil transport")
+	}
+	if trans.Proxy == nil {
+		t.Error("expected non-nil proxy func")
+	}
+}
+
+func TestDisableHTTP2_Nil(t *testing.T) {
+	// Should not panic
+	DisableHTTP2(nil)
+}
+
+func TestDisableHTTP2_NoTLS(t *testing.T) {
+	trans := &http.Transport{}
+	DisableHTTP2(trans)
+	if trans.TLSClientConfig == nil {
+		t.Error("expected TLSClientConfig to be initialized")
+	}
+}

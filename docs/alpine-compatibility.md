@@ -13,8 +13,8 @@ Alpine Linux 使用 musl libc 而不是 glibc，这会影响某些预编译二�
 **原因**: Go 官方二进制是静态链接的，不依赖 libc
 
 ```toml
-# .unirtm.toml - 无需修改
-go = "1.26.2"
+# .mise.toml - 无需修改
+go = "1.26.4"
 ```
 
 **验证**:
@@ -166,7 +166,7 @@ RUN unirtm install
 # 生产环境配置 - 使用系统包
 # node = "25.9.0"  # 注释掉，使用 apk 安装
 # python = "3.14.3"  # 注释掉，使用 apk 安装
-# go = "1.26.2"  # 注释掉，使用 apk 安装
+# go = "1.26.4"  # 注释掉，使用 apk 安装
 
 # 开发工具仍然使用 unirtm
 "github:astral-sh/ruff" = "0.15.9"

@@ -1,0 +1,1432 @@
+<template>
+  <div class="view-container about-view" id="view-about" @contextmenu.prevent>
+    <!-- Top Header Bar -->
+    <div class="view-header-row">
+      <div>
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px">
+          <TechIcon id="workbench:about" :size="20" />
+          <span>{{ t("about.title") || "About" }} (About UniRTM)</span>
+        </h2>
+        <p class="view-desc">
+          {{ t("about.subtitle") || "Universal Runtime Manager" }}
+        </p>
+      </div>
+      <div class="view-actions">
+        <button class="about-action-btn secondary" @click="copySystemInfo" :disabled="copied">
+          <TechIcon id="workbench:config" :size="14" />
+          <span>{{ copied ? t("about.copied") || "Copied" : t("about.copyInfo") || "Copy Info" }}</span>
+        </button>
+
+        <button
+          v-if="!hasUpdateAvailable && !isRestartReady"
+          class="about-action-btn"
+          :class="isLatestChecked ? 'latest' : 'primary'"
+          @click="handleCheckUpdate"
+          :disabled="checking || updating"
+        >
+          <span v-if="checking" style="display: inline-flex; align-items: center; gap: 6px">
+            <span class="spin-icon">
+              <TechIcon id="workbench:sync" :size="14" />
+            </span>
+            <span>{{ t("about.checking") || "Checking..." }}</span>
+          </span>
+          <span v-else-if="isLatestChecked" style="display: inline-flex; align-items: center; gap: 6px">
+            <TechIcon id="workbench:check" :size="14" />
+            <span>{{ t("about.isLatest") || "Already Latest Version" }}</span>
+          </span>
+          <span v-else style="display: inline-flex; align-items: center; gap: 6px">
+            <TechIcon id="workbench:search" :size="14" />
+            <span>{{ t("about.checkUpdate") || "Check Updates" }}</span>
+          </span>
+        </button>
+
+        <button
+          v-else-if="isRestartReady"
+          class="about-action-btn restart"
+          @click="handleRestartApp"
+          :disabled="restarting"
+        >
+          <span style="display: inline-flex; align-items: center; gap: 6px">
+            <TechIcon id="workbench:speed" :size="14" />
+            <span>{{
+              restarting ? t("about.restarting") || "Restarting..." : t("about.restartToApply") || "Restart to Apply"
+            }}</span>
+          </span>
+        </button>
+
+        <button v-else-if="upgradeHint" class="about-action-btn update" @click="copyUpgradeCommand">
+          <span style="display: inline-flex; align-items: center; gap: 6px">
+            <TechIcon id="workbench:config" :size="14" />
+            <span>{{
+              copiedUpgrade ? t("about.copied") || "Copied" : t("about.copy_upgrade_cmd") || "Copy Upgrade Command"
+            }}</span>
+          </span>
+        </button>
+
+        <button v-else class="about-action-btn update" @click="handlePerformUpdate" :disabled="updating">
+          <span style="display: inline-flex; align-items: center; gap: 6px">
+            <TechIcon id="workbench:tasks" :size="14" />
+            <span>{{
+              updating ? t("about.updating", { progress: updateProgress }) : t("about.updateTo", { tag: latestTag })
+            }}</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- New Release Available Notification Banner -->
+    <transition name="fade-slide">
+      <div v-if="hasUpdateAvailable" class="glass-card new-version-banner">
+        <div class="banner-main-row">
+          <div class="banner-title-area">
+            <span class="banner-badge">NEW</span>
+            <span class="banner-headline">
+              {{ t("about.newVersionNotice", { tag: latestTag }) || `New version ${latestTag} found` }}
+            </span>
+            <span v-if="installMethod && installMethod !== 'script'" class="install-method-badge font-mono">
+              {{ installMethod }}
+            </span>
+          </div>
+
+          <div class="banner-action-area">
+            <button v-if="releaseNotes" class="banner-sub-btn" @click="toggleReleaseNotes">
+              <span>{{
+                showReleaseNotes
+                  ? t("about.collapse_release_notes") || "Collapse Release Notes"
+                  : t("about.view_release_notes") || "View Release Notes"
+              }}</span>
+            </button>
+            <button v-if="upgradeHint" class="banner-copy-btn" @click="copyUpgradeCommand">
+              <span>{{
+                copiedUpgrade
+                  ? t("about.copied_cmd") || "Copied Command"
+                  : t("about.copy_cmd_fmt", { cmd: upgradeHint }) || `Copy: ${upgradeHint}`
+              }}</span>
+            </button>
+          </div>
+        </div>
+
+        <p v-if="upgradeHint" class="package-manager-warning">
+          {{
+            t("about.pkg_manager_warning", { method: installMethod }) ||
+            `⚠️ UniRTM was installed via ${installMethod} package manager. To prevent file conflicts, run the command above to upgrade.`
+          }}
+        </p>
+        <p v-else-if="isUnsupported" class="package-manager-warning">
+          {{
+            t("about.unofficial_warning") ||
+            "⚠️ Current installation source is unofficial. Self-update may pose security risks. It is recommended to get the latest version from official repo."
+          }}
+        </p>
+
+        <!-- Collapsible Release Notes Box -->
+        <transition name="fade-slide">
+          <div v-if="showReleaseNotes && releaseNotes" class="release-notes-box">
+            <div class="release-notes-header">
+              <span class="font-mono">Release Notes for {{ latestTag }}</span>
+            </div>
+            <pre class="release-notes-content font-mono">{{ releaseNotes }}</pre>
+          </div>
+        </transition>
+      </div>
+    </transition>
+
+    <!-- Update Feedback Banner (displayed only when user action/restart is required) -->
+    <transition name="fade-slide">
+      <div v-if="updateMessage && isRestartReady" class="update-status-banner glass-card" :class="updateStatusClass">
+        <span class="banner-icon">
+          <TechIcon :id="isRestartReady ? 'workbench:sparkle' : 'workbench:info'" :size="16" />
+        </span>
+        <span class="banner-text">{{ updateMessage }}</span>
+      </div>
+    </transition>
+
+    <!-- Progress Bar during download -->
+    <div v-if="updating" class="update-progress-card glass-card">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" :style="{ width: updateProgress + '%' }"></div>
+      </div>
+      <span class="progress-text">{{ updateStatusText || t("about.downloading", { progress: updateProgress }) }}</span>
+    </div>
+
+    <!-- Hero Brand Banner -->
+    <div class="glass-card about-hero-banner">
+      <div class="hero-left">
+        <div class="logo-wrapper">
+          <div class="logo-glow"></div>
+          <img src="/logo.png" alt="UniRTM" class="app-logo-image" />
+        </div>
+        <div class="hero-details">
+          <div class="title-with-badge">
+            <h1 class="app-brand-name">{{ t("app.title") || "UniRTM" }}</h1>
+            <span class="version-pill font-mono">
+              <span class="dot"></span>
+              {{ displayVersion }}
+            </span>
+          </div>
+          <p class="hero-tagline">Universal Runtime Manager — Next-Gen Modern Dev Environment Workspace</p>
+          <div class="hero-tags">
+            <span class="hero-tag">⚡ Fast AST Engine</span>
+            <span class="hero-tag">🔒 Multi-Scope Isolation</span>
+            <span class="hero-tag">🌐 Embedded Workbench</span>
+            <span class="hero-tag">📦 Zero-Dependency</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core Specs Grid -->
+    <div class="specs-grid">
+      <div class="glass-card spec-card">
+        <span class="spec-label">{{ t("about.gitTag") || "Git Tag" }}</span>
+        <span class="spec-value font-mono">{{ displayGitTag }}</span>
+      </div>
+
+      <div class="glass-card spec-card">
+        <span class="spec-label">{{ t("about.commitHash") || "Commit Hash" }}</span>
+        <span class="spec-value font-mono">{{ displayCommitHash }}</span>
+      </div>
+
+      <div class="glass-card spec-card">
+        <span class="spec-label">{{ t("about.buildTime") || "Build Time" }}</span>
+        <span class="spec-value font-mono">{{ displayBuildTime }}</span>
+      </div>
+
+      <div class="glass-card spec-card">
+        <span class="spec-label">{{ t("about.environment") || "Environment" }}</span>
+        <span class="spec-value font-mono"
+          >{{ appInfo.osArch || "Linux / Darwin / Windows" }} ({{ appInfo.goVersion || "Go 1.27+" }})</span
+        >
+      </div>
+    </div>
+
+    <!-- Architecture Highlights Grid -->
+    <div class="highlights-grid">
+      <div class="glass-card highlight-card">
+        <div class="highlight-icon-wrap">
+          <TechIcon id="workbench:tools" :size="24" />
+        </div>
+        <div class="highlight-body">
+          <h3>{{ t("about.feature1_title") || "Multi-Runtime Declarative Control" }}</h3>
+          <p>
+            {{
+              t("about.feature1_desc") ||
+              "Seamlessly manage Node.js, Go, Python, Rust, Java versions with locked toolchains and aligned cross-platform environments."
+            }}
+          </p>
+        </div>
+      </div>
+
+      <div class="glass-card highlight-card">
+        <div class="highlight-icon-wrap">
+          <TechIcon id="workbench:lock" :size="24" />
+        </div>
+        <div class="highlight-body">
+          <h3>{{ t("about.feature2_title") || "Three-Tier Namespace & Exclusive Locks" }}</h3>
+          <p>
+            {{
+              t("about.feature2_desc") ||
+              "Strictly isolate core system settings and third-party plugin configs, acquiring file locks on write and preserving original TOML comments."
+            }}
+          </p>
+        </div>
+      </div>
+
+      <div class="glass-card highlight-card">
+        <div class="highlight-icon-wrap">
+          <TechIcon id="workbench:speed" :size="24" />
+        </div>
+        <div class="highlight-body">
+          <h3>{{ t("about.feature3_title") || "Blazing Instant Auto-Save" }}</h3>
+          <p>
+            {{
+              t("about.feature3_desc") ||
+              "Adhering to modern IDE philosophy, option changes take effect on disk immediately, eliminating manual save buttons and data loss risks."
+            }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Open Source Acknowledgements & Icon Credits -->
+    <div class="glass-card about-credits-card">
+      <div class="credits-header">
+        <TechIcon id="workbench:about" :size="18" />
+        <h3>{{ t("about.credits_title") || "Open Source & Icon Credits" }}</h3>
+      </div>
+      <p class="credits-desc">
+        {{
+          t("about.credits_desc") ||
+          "UniRTM embraces modern open-source ecosystems in compliance with standard commercial and open-source licenses:"
+        }}
+      </p>
+      <div class="credits-grid">
+        <div class="credit-item">
+          <div class="credit-item-title">
+            <span class="codicon codicon-vscode"></span>
+            <a
+              href="https://github.com/microsoft/vscode-codicons"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-link"
+            >
+              VS Code Codicons (@vscode/codicons) ↗
+            </a>
+            <a
+              href="https://github.com/microsoft/vscode-codicons/blob/main/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-license-badge"
+              :title="t('about.view_cc_license') || 'View CC-BY-4.0 Commercial License'"
+            >
+              CC-BY-4.0 ↗
+            </a>
+          </div>
+          <p>
+            {{
+              t("about.credits_codicons_desc") ||
+              "Visual Studio Code official workbench & product icon set, maintained by Microsoft under CC-BY-4.0 commercial-friendly license."
+            }}
+          </p>
+        </div>
+
+        <div class="credit-item">
+          <div class="credit-item-title">
+            <span class="codicon codicon-file"></span>
+            <a
+              href="https://github.com/jesseweed/seti-ui"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-link"
+            >
+              {{ t("about.seti_icons") || "Seti UI Icon Theme (@vscode/seti-ui) ↗" }}
+            </a>
+            <a
+              href="https://github.com/jesseweed/seti-ui/blob/master/LICENSE.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-license-badge"
+              :title="t('about.view_mit_license') || 'View MIT License'"
+            >
+              MIT License ↗
+            </a>
+          </div>
+          <p>
+            {{
+              t("about.credits_seti_desc") ||
+              "UniRTM default file and language icon set, maintained by Jesse Weed and the VS Code team under MIT license."
+            }}
+          </p>
+        </div>
+
+        <div class="credit-item">
+          <div class="credit-item-title">
+            <span class="codicon codicon-extensions"></span>
+            <a href="https://open-vsx.org" target="_blank" rel="noopener noreferrer" class="credit-link">
+              {{ t("about.openvsx_spec") || "VS Code Theme Extension Spec & Open VSX ↗" }}
+            </a>
+            <a
+              href="https://open-vsx.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-license-badge"
+              :title="t('about.view_openvsx') || 'Visit Open VSX Extension Registry'"
+            >
+              Open VSX ↗
+            </a>
+          </div>
+          <p>
+            {{
+              t("about.credits_themes_desc") ||
+              "Native support for VS Code theme manifests across color themes (contributes.themes), file icon themes (contributes.iconThemes), and product icon themes (contributes.productIconThemes)."
+            }}
+          </p>
+          <div class="manifest-links" style="margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap">
+            <a
+              href="https://code.visualstudio.com/api/extension-guides/color-theme"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="sub-link"
+              >{{ t("about.color_theme_spec") || "Color Theme Spec ↗" }}</a
+            >
+            <span style="color: var(--text-muted); opacity: 0.5">•</span>
+            <a
+              href="https://code.visualstudio.com/api/extension-guides/file-icon-theme"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="sub-link"
+              >{{ t("about.file_icon_spec") || "File Icon Spec ↗" }}</a
+            >
+            <span style="color: var(--text-muted); opacity: 0.5">•</span>
+            <a
+              href="https://code.visualstudio.com/api/extension-guides/product-icon-theme"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="sub-link"
+              >{{ t("about.product_icon_spec") || "Product Icon Spec ↗" }}</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Links & Copyright -->
+    <div class="glass-card about-footer-card">
+      <div class="footer-links">
+        <button @click="openUrl('https://github.com/snowdreamtech/unirtm')" class="footer-link-btn">
+          <TechIcon id="workbench:github" :size="16" />
+          <span>GitHub Repository</span>
+        </button>
+        <span class="link-separator">•</span>
+        <button @click="openUrl('https://github.com/snowdreamtech/unirtm/blob/main/LICENSE')" class="footer-link-btn">
+          <span>MIT License</span>
+        </button>
+      </div>
+      <p class="copyright-text">
+        {{ appInfo.copyright || "Copyright © 2026-present SnowdreamTech Inc. All rights reserved." }}
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { t } from "../i18n";
+import { useToast } from "../composables/useToast";
+import { formatUpdateProgress, type UpdateProgressPayload } from "../utils/updater";
+import TechIcon from "../components/common/TechIcon.vue";
+
+const { showToast } = useToast();
+
+interface AppInfo {
+  projectName?: string;
+  version?: string;
+  gitTag?: string;
+  commitHash?: string;
+  commitHashFull?: string;
+  buildTime?: string;
+  author?: string;
+  copyright?: string;
+  license?: string;
+  goVersion?: string;
+  osArch?: string;
+}
+
+const appInfo = ref<AppInfo>({
+  projectName: "UniRTM",
+  version: "v0.35.0",
+  gitTag: "v0.35.0",
+  commitHash: "HEAD",
+  buildTime: new Date().toISOString().slice(0, 10),
+  copyright: "Copyright © 2026 SnowdreamTech. All rights reserved.",
+  goVersion: "Go 1.27+",
+  osArch: "Web / Universal",
+});
+
+const displayVersion = computed(() => appInfo.value.version || appInfo.value.gitTag || "v0.35.0");
+const displayGitTag = computed(() => appInfo.value.gitTag || "v0.35.0");
+const displayCommitHash = computed(() => appInfo.value.commitHash || "dev");
+const displayBuildTime = computed(() => appInfo.value.buildTime || "N/A");
+
+const copied = ref(false);
+const checking = ref(false);
+const updating = ref(false);
+const isRestartReady = ref(false);
+const restarting = ref(false);
+const updateProgress = ref(0);
+const currentProgress = ref<UpdateProgressPayload | null>(null);
+
+const updateStatusText = computed(() => {
+  return formatUpdateProgress(currentProgress.value, updateProgress.value);
+});
+
+const hasUpdateAvailable = ref(false);
+const latestTag = ref("");
+const latestReleaseName = ref("");
+const releaseNotes = ref("");
+const installMethod = ref("script");
+const upgradeHint = ref("");
+const isUnsupported = ref(false);
+const showReleaseNotes = ref(false);
+const copiedUpgrade = ref(false);
+
+const updateMessage = ref("");
+const updateStatusClass = ref("");
+const isLatestChecked = ref(false);
+let isLatestTimer: number | undefined;
+
+const toggleReleaseNotes = () => {
+  showReleaseNotes.value = !showReleaseNotes.value;
+};
+
+const copyUpgradeCommand = async () => {
+  if (!upgradeHint.value) return;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(upgradeHint.value);
+    }
+    copiedUpgrade.value = true;
+    showToast(t("about.copied") || "Copied", "success");
+    setTimeout(() => {
+      copiedUpgrade.value = false;
+    }, 2500);
+  } catch (err) {
+    console.error("Failed to copy upgrade command:", err);
+  }
+};
+
+const openUrl = (url: string) => {
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
+const copySystemInfo = async () => {
+  const diagnosticText = `--- UniRTM Diagnostic Info ---
+Version: ${displayVersion.value} (${displayGitTag.value})
+Commit: ${displayCommitHash.value}
+Build Time: ${displayBuildTime.value}
+OS/Arch: ${appInfo.value.osArch || "Web / Universal"}
+Go Runtime: ${appInfo.value.goVersion || "Go 1.27+"}
+License: MIT License
+------------------------------`;
+
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(diagnosticText);
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = diagnosticText;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+    copied.value = true;
+    setTimeout(() => {
+      copied.value = false;
+    }, 2500);
+  } catch (err) {
+    console.error("Failed to copy system info:", err);
+  }
+};
+
+async function fetchSystemStatus() {
+  try {
+    const res = await fetch("/api/status");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.version && data.version !== "N/A") {
+        const v = data.version.startsWith("v") ? data.version : `v${data.version}`;
+        appInfo.value.version = v;
+        appInfo.value.gitTag = data.git_tag || v;
+      }
+      if (data.commit && data.commit !== "N/A") {
+        appInfo.value.commitHash = data.commit;
+      }
+      if (data.build_time && data.build_time !== "N/A") {
+        appInfo.value.buildTime = data.build_time;
+      }
+      if (data.platform) {
+        appInfo.value.osArch = data.platform;
+      }
+      if (data.go_version) {
+        appInfo.value.goVersion = data.go_version;
+      }
+      if (data.project_name) {
+        appInfo.value.projectName = data.project_name;
+      }
+      if (data.copyright) {
+        appInfo.value.copyright = data.copyright;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to fetch system status from /api/status:", err);
+  }
+}
+
+const handleCheckUpdate = async () => {
+  checking.value = true;
+  updateMessage.value = "";
+  isLatestChecked.value = false;
+  await fetchSystemStatus();
+
+  try {
+    const res = await fetch("/api/system/check-update");
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) {
+        latestTag.value = data.latest_version || "";
+        latestReleaseName.value = data.release_name || data.latest_version || "";
+        releaseNotes.value = data.release_notes || "";
+        installMethod.value = data.install_method || "script";
+        upgradeHint.value = data.upgrade_hint || "";
+        isUnsupported.value = Boolean(data.is_unsupported);
+
+        if (data.has_update) {
+          hasUpdateAvailable.value = true;
+          isLatestChecked.value = false;
+          showToast(
+            t("about.newVersionNotice", { tag: data.latest_version }) || `🚀 New version ${data.latest_version} found!`,
+            "info"
+          );
+        } else {
+          hasUpdateAvailable.value = false;
+          isLatestChecked.value = true;
+          showToast(
+            t("about.isLatest", { version: displayVersion.value }) ||
+              `Already the latest version (${displayVersion.value})`,
+            "success"
+          );
+          if (isLatestTimer) clearTimeout(isLatestTimer);
+          isLatestTimer = window.setTimeout(() => {
+            isLatestChecked.value = false;
+          }, 2500);
+        }
+      } else {
+        throw new Error(data?.error || "Unknown update check error");
+      }
+    } else {
+      throw new Error(`HTTP ${res.status}`);
+    }
+  } catch (err: any) {
+    console.warn("Failed to check update from /api/system/check-update:", err);
+    showToast(t("about.checkFailed") || "Check Failed", "error");
+  } finally {
+    checking.value = false;
+  }
+};
+
+let updateTimer: ReturnType<typeof setInterval> | null = null;
+
+const handlePerformUpdate = async () => {
+  if (upgradeHint.value) {
+    await copyUpgradeCommand();
+    return;
+  }
+
+  updating.value = true;
+  updateProgress.value = 15;
+  currentProgress.value = { stage: "checking", percentage: 15 };
+  updateMessage.value = "";
+
+  if (updateTimer) clearInterval(updateTimer);
+  updateTimer = setInterval(() => {
+    if (updateProgress.value < 85) {
+      updateProgress.value += 10;
+      currentProgress.value = {
+        percentage: updateProgress.value,
+        stage: "downloading",
+      };
+    }
+  }, 400);
+
+  try {
+    const res = await fetch("/api/system/self-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) {
+        updateProgress.value = 100;
+        currentProgress.value = { stage: "ready", percentage: 100 };
+        isRestartReady.value = true;
+        hasUpdateAvailable.value = false;
+        updateMessage.value =
+          t("about.updateCompleteRestart") || "New version ready. Restart the application to apply.";
+        updateStatusClass.value = "is-latest";
+        showToast(updateMessage.value, "success");
+      } else {
+        throw new Error(data?.error || "Self update failed");
+      }
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error || `HTTP ${res.status}`);
+    }
+  } catch (err: any) {
+    showToast(err.message || t("about.onlineUpdateFailed", { error: "Update failed" }), "error");
+  } finally {
+    if (updateTimer) {
+      clearInterval(updateTimer);
+      updateTimer = null;
+    }
+    updating.value = false;
+  }
+};
+
+const handleRestartApp = async () => {
+  restarting.value = true;
+  updateMessage.value = t("about.restarting") || "Restarting...";
+  setTimeout(() => {
+    window.location.reload();
+  }, 600);
+};
+
+onMounted(async () => {
+  await fetchSystemStatus();
+});
+
+onBeforeUnmount(() => {
+  if (updateTimer) {
+    clearInterval(updateTimer);
+    updateTimer = null;
+  }
+});
+</script>
+
+<style scoped>
+.about-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.view-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.view-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 0.25rem;
+}
+
+.view-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.view-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.about-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 124px;
+  gap: 0.45rem;
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1.4;
+  user-select: none;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.about-action-btn.primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.28);
+}
+
+.about-action-btn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  border-color: #38bdf8;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+  transform: translateY(-1px);
+}
+
+.about-action-btn.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border: 1px solid var(--card-border);
+}
+
+.about-action-btn.secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--card-border-active);
+  transform: translateY(-1px);
+}
+
+.about-action-btn.restart {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.28);
+}
+
+.about-action-btn.latest {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+.about-action-btn.latest:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #34d399;
+}
+
+.about-action-btn.restart:hover:not(:disabled) {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  border-color: #6ee7b7;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.about-action-btn.update {
+  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(147, 51, 234, 0.4);
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.28);
+}
+
+.about-action-btn.update:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  border-color: #c084fc;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(147, 51, 234, 0.4);
+  transform: translateY(-1px);
+}
+
+.about-action-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.about-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Update Banner */
+.new-version-banner {
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  background: rgba(147, 51, 234, 0.08);
+  border: 1px solid rgba(147, 51, 234, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.banner-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.banner-title-area {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.banner-badge {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.banner-headline {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.install-method-badge {
+  background: var(--section-bg);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+}
+
+.banner-action-area {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.banner-sub-btn,
+.banner-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  transition: all 0.15s ease;
+}
+
+.banner-sub-btn:hover,
+.banner-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--card-border-active);
+}
+
+.package-manager-warning {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #f59e0b;
+  line-height: 1.4;
+}
+
+.release-notes-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.release-notes-header {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 4px;
+}
+
+.release-notes-content {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-main);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.update-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: var(--success);
+  font-size: 0.85rem;
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.update-progress-card {
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+  transition: width 0.2s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Hero Banner */
+.about-hero-banner {
+  padding: 1.5rem 1.75rem;
+  border-radius: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="dark"] .about-hero-banner,
+[data-theme="dark"] .about-hero-banner {
+  background: linear-gradient(135deg, rgba(18, 26, 43, 0.95) 0%, rgba(13, 20, 36, 0.98) 100%);
+  border-color: var(--card-border);
+}
+
+:root[data-theme="light"] .about-hero-banner,
+[data-theme="light"] .about-hero-banner {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-color: var(--card-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.hero-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.logo-wrapper {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logo-glow {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-cyan-glow) 0%, transparent 70%);
+}
+
+.app-logo-image {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.title-with-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-brand-name {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.version-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: var(--accent-cyan-glow);
+  border: 1px solid var(--card-border);
+  color: var(--accent-cyan);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.version-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+}
+
+.hero-tagline {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.hero-tags {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.hero-tag {
+  font-size: 0.72rem;
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+}
+
+/* Specs Grid */
+.specs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.spec-card {
+  padding: 1rem 1.15rem;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.spec-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.spec-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Highlights Grid */
+.highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.highlight-card {
+  padding: 1.25rem;
+  border-radius: 10px;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.highlight-icon-wrap {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.highlight-body h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 0.35rem;
+}
+
+.highlight-body p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Open Source & Icon Credits Card */
+.about-credits-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.credits-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.credits-header h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-main);
+}
+
+.credits-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.credits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.credit-item {
+  background: var(--bg-card-glass, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.credit-item-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  flex-wrap: wrap;
+}
+
+.credit-link {
+  color: var(--text-main);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.credit-link:hover {
+  color: var(--accent-cyan, #00e5ff);
+  text-decoration: underline;
+}
+
+.credit-license-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--accent-cyan, #00e5ff);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  font-weight: 600;
+  margin-left: auto;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.credit-license-badge:hover {
+  background: rgba(0, 229, 255, 0.25);
+  color: #ffffff;
+  border-color: var(--accent-cyan, #00e5ff);
+  transform: translateY(-1px);
+}
+
+.manifest-links {
+  display: inline;
+}
+
+.sub-link {
+  color: var(--accent-cyan, #00e5ff);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-family: var(--font-mono, monospace);
+  transition: opacity 0.2s ease;
+}
+
+.sub-link:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+.credit-item p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Footer Card */
+.about-footer-card {
+  padding: 1.25rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.footer-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: none;
+  color: var(--accent-cyan);
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+
+.footer-link-btn:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+.link-separator {
+  color: var(--text-muted);
+}
+
+.copyright-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.spin-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================================
+   LIGHT THEME OVERRIDES FOR ABOUT VIEW
+   ======================================================== */
+:root[data-theme="light"] .about-action-btn.primary,
+[data-theme="light"] .about-action-btn.primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff !important;
+  border: 1px solid #0284c7;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.28);
+}
+
+:root[data-theme="light"] .about-action-btn.primary:hover:not(:disabled),
+[data-theme="light"] .about-action-btn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  border-color: #0284c7;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.38);
+}
+
+:root[data-theme="light"] .about-action-btn.secondary,
+[data-theme="light"] .about-action-btn.secondary {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .about-action-btn.secondary:hover:not(:disabled),
+[data-theme="light"] .about-action-btn.secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .about-action-btn.restart,
+[data-theme="light"] .about-action-btn.restart {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff !important;
+  border: 1px solid #059669;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.28);
+}
+
+:root[data-theme="light"] .about-action-btn.update,
+[data-theme="light"] .about-action-btn.update {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #ffffff !important;
+  border: 1px solid #7c3aed;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.28);
+}
+
+:root[data-theme="light"] .hero-tag,
+[data-theme="light"] .hero-tag {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+:root[data-theme="light"] .credit-item,
+[data-theme="light"] .credit-item {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .credit-license-badge,
+[data-theme="light"] .credit-license-badge {
+  background: rgba(2, 132, 199, 0.1);
+  border-color: rgba(2, 132, 199, 0.25);
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .credit-license-badge:hover,
+[data-theme="light"] .credit-license-badge:hover {
+  background: rgba(2, 132, 199, 0.2);
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .new-version-banner,
+[data-theme="light"] .new-version-banner {
+  background: rgba(147, 51, 234, 0.05);
+  border-color: rgba(147, 51, 234, 0.2);
+}
+
+:root[data-theme="light"] .banner-sub-btn,
+:root[data-theme="light"] .banner-copy-btn,
+[data-theme="light"] .banner-sub-btn,
+[data-theme="light"] .banner-copy-btn {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+:root[data-theme="light"] .banner-sub-btn:hover,
+:root[data-theme="light"] .banner-copy-btn:hover,
+[data-theme="light"] .banner-sub-btn:hover,
+[data-theme="light"] .banner-copy-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .release-notes-box,
+[data-theme="light"] .release-notes-box {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+</style>

@@ -1,0 +1,134 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package envpath
+
+import (
+	"os"
+	"regexp"
+	"runtime"
+	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+)
+
+// EnvPathHelper provides path formatting and manipulation utilities.
+type EnvPathHelper struct{}
+
+var isWindowsMode = runtime.GOOS == "windows"
+var winDriveRegex = regexp.MustCompile(`^([A-Za-z]):[\\/](.*)$`)
+
+// JoinForOS joins multiple paths into a single string using the native operating system's
+// list separator (e.g. ';' on Windows, ':' on Posix). This must be used when injecting
+// PATH values into Go's native OS API execution contexts (os.Setenv, exec.Cmd).
+func JoinForOS(paths []string) string {
+	return strings.Join(paths, string(os.PathListSeparator))
+}
+
+// JoinForPosix joins multiple paths into a single string meant for POSIX shell scripts
+// (Bash, Zsh, Sh). It strictly uses the POSIX separator ':' regardless of the underlying OS,
+// and sanitizes Windows backslashes into forward slashes to prevent shell escape bugs.
+func JoinForPosix(paths []string) string {
+	var posixPaths []string
+	for _, p := range paths {
+		posixPaths = append(posixPaths, FormatDirForPosix(p))
+	}
+	return strings.Join(posixPaths, ":")
+}
+
+// FormatDirForPosix ensures that a single directory path is safe for injection into
+// POSIX shell scripts (Bash, Zsh). On Windows, it converts backslashes to forward slashes,
+// and supports UNIRTM_CYGDRIVE_PREFIX for Git Bash/MSYS2 path conversions.
+func FormatDirForPosix(dir string) string {
+	if isWindowsMode {
+		dir = strings.ReplaceAll(dir, "\\", "/")
+
+		if matches := winDriveRegex.FindStringSubmatch(dir); len(matches) == 3 {
+			drive := strings.ToLower(matches[1])
+			rest := matches[2]
+			prefix := env.Get("CYGDRIVE_PREFIX")
+			if prefix != "" {
+				prefix = strings.TrimRight(prefix, "/")
+				return prefix + "/" + drive + "/" + rest
+			}
+			return "/" + drive + "/" + rest
+		}
+		return dir
+	}
+	return dir
+}
+
+// FormatExeForPosix sanitizes an executable path for invocation inside POSIX scripts (Bash, Zsh).
+// It converts Windows backslashes to forward slashes and safely quotes paths with spaces or special chars.
+func FormatExeForPosix(exePath string) string {
+	if exePath == "" {
+		return "unirtm"
+	}
+	p := strings.ReplaceAll(exePath, "\\", "/")
+	if isWindowsMode {
+		if matches := winDriveRegex.FindStringSubmatch(p); len(matches) == 3 {
+			drive := strings.ToLower(matches[1])
+			rest := matches[2]
+			prefix := env.Get("CYGDRIVE_PREFIX")
+			if prefix != "" {
+				prefix = strings.TrimRight(prefix, "/")
+				p = prefix + "/" + drive + "/" + rest
+			} else {
+				p = "/" + drive + "/" + rest
+			}
+		}
+	}
+	if strings.ContainsAny(p, " \t$*?()[]{}<>~`#^&|;\"") {
+		return `"` + strings.ReplaceAll(p, `"`, `\"`) + `"`
+	}
+	return p
+}
+
+// FormatExeForPowerShell sanitizes an executable path for invocation inside PowerShell scripts.
+// It wraps paths containing spaces or path separators with the call operator (&) and quotes.
+func FormatExeForPowerShell(exePath string) string {
+	if exePath == "" {
+		return "unirtm"
+	}
+	if strings.ContainsAny(exePath, " \t$*?()[]{}<>~`#^&|;\"\\/") {
+		escaped := strings.ReplaceAll(exePath, `"`, "`\"")
+		return `& "` + escaped + `"`
+	}
+	return exePath
+}
+
+// FormatExeForFish sanitizes an executable path for invocation inside Fish scripts.
+func FormatExeForFish(exePath string) string {
+	return FormatExeForPosix(exePath)
+}
+
+// JoinForPowerShell joins multiple paths into a single string meant for PowerShell scripts.
+// PowerShell fundamentally requires the OS native PathListSeparator.
+func JoinForPowerShell(paths []string) string {
+	return JoinForOS(paths)
+}
+
+// DeduplicateOSPaths takes a raw native PATH string and removes duplicates,
+// correctly handling case-insensitivity on Windows.
+func DeduplicateOSPaths(pathStr string) string {
+	if pathStr == "" {
+		return ""
+	}
+	parts := strings.Split(pathStr, string(os.PathListSeparator))
+	seen := make(map[string]bool)
+	var result []string
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		key := p
+		if isWindowsMode {
+			key = strings.ToLower(p)
+		}
+		if !seen[key] {
+			seen[key] = true
+			result = append(result, p)
+		}
+	}
+	return JoinForOS(result)
+}

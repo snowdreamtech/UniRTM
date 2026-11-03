@@ -1,0 +1,126 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+import { t } from "../i18n";
+
+export type VersionFormatKind = "semver" | "calver" | "channel_date" | "channel_alias";
+
+export interface VersionValidationResult {
+  valid: boolean;
+  kind?: VersionFormatKind;
+  error?: string;
+  isCompleteSemver?: boolean;
+}
+
+/**
+ * Validates whether an input string is a legitimate semantic version (SemVer),
+ * calendar version (CalVer, e.g. 2024.03.15, 2024.1, 24.04), date-based toolchain
+ * (e.g. nightly-2024-03-01), or release channel alias (e.g. nightly, lts).
+ */
+export function validateRuntimeVersion(toolId: string, input: string): VersionValidationResult {
+  const val = input.trim().replace(/^v/i, "");
+  if (!val) {
+    return { valid: false };
+  }
+
+  // 1. Basic allowed characters: alphanumeric, dots, hyphens, plus, underscores
+  if (!/^[0-9a-zA-Z._+-]+$/.test(val)) {
+    return {
+      valid: false,
+      error:
+        t("runtimes.version_invalid_format") || "Invalid version format (must follow Semantic Versioning, e.g. 1.23.0)",
+    };
+  }
+
+  const tid = toolId.toLowerCase();
+
+  // 2. Check for toolchain channel aliases (e.g. "nightly", "beta", "stable", "latest", "lts")
+  if (/^(nightly|beta|stable|latest|lts)$/i.test(val)) {
+    return { valid: true, kind: "channel_alias" };
+  }
+
+  // 3. Check for toolchain date channels (e.g. Rust "nightly-2024-03-01", "beta-2024-03-01")
+  const channelDateRegex = /^(nightly|beta|stable)-\d{4}-(0?[1-9]|1[0-2])-(0?[1-9]|[12]\d|3[01])$/i;
+  if (channelDateRegex.test(val)) {
+    return { valid: true, kind: "channel_date" };
+  }
+
+  // 4. Check for ISO Date format (e.g. "2024-03-15", "2024-01-01")
+  const isoDateRegex = /^\d{4}-(0?[1-9]|1[0-2])-(0?[1-9]|[12]\d|3[01])$/;
+  if (isoDateRegex.test(val)) {
+    return { valid: true, kind: "calver" };
+  }
+
+  // 5. Check for CalVer (Calendar Versioning):
+  // 4-digit Year (1990-2099): 2024.03.15, 2024.1, 2024.05.1
+  // 2-digit Year (10-99): 24.04, 24.04.1
+  const calverRegex =
+    /^(19\d\d|20\d\d|[1-9]\d)\.(0?[1-9]|1[0-2])(?:\.(0?[1-9]|[12]\d|3[01]|\d+))?(?:[._-][0-9A-Za-z.-]+)?$/;
+  const calverMatch = val.match(calverRegex);
+  if (calverMatch) {
+    const year = parseInt(calverMatch[1], 10);
+    if (year >= 1990 || (year >= 10 && year <= 99)) {
+      return { valid: true, kind: "calver" };
+    }
+  }
+
+  // 6. Strict SemVer check: (Major).(Minor)(.(Patch))?(-prerelease)?(+build)?
+  // SemVer specification requires numeric identifiers not to have leading zeroes (e.g. '01' is invalid)
+  const semverRegex = /^(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\.(0|[1-9]\d*))?(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$/;
+  const match = val.match(semverRegex);
+  if (!match) {
+    return {
+      valid: false,
+      error:
+        t("runtimes.version_invalid_format") || "Invalid version format (must follow Semantic Versioning, e.g. 1.23.0)",
+    };
+  }
+
+  const major = parseInt(match[1], 10);
+  const minor = parseInt(match[2], 10);
+  const patch = match[3] !== undefined ? parseInt(match[3], 10) : undefined;
+
+  // 7. Tool-specific runtime version validations
+  if (tid === "go" || tid === "golang") {
+    // Go public releases are >= 1.0 (e.g. 1.24.0, 1.23.6)
+    if (major < 1) {
+      return {
+        valid: false,
+        error: `Invalid version: Go releases are 1.x (e.g. 1.24.0)`,
+      };
+    }
+    if (major > 30) {
+      return { valid: false, error: `Go major version is out of reasonable range (v${major})` };
+    }
+  } else if (tid === "rust") {
+    // Rust stable toolchains are >= 1.0
+    if (major < 1) {
+      return {
+        valid: false,
+        error: `Invalid version: Rust stable toolchains are 1.x (e.g. 1.85.0)`,
+      };
+    }
+  } else if (tid === "python") {
+    // Python modern versions are 3.x (or 2.7)
+    if (major < 2 || major > 4) {
+      return {
+        valid: false,
+        error: `Invalid version: Python versions are typically 3.x (e.g. 3.12.0)`,
+      };
+    }
+  } else if (tid === "node") {
+    // Node.js releases: 0.10.x, 0.12.x or modern >= 4.0.0
+    if (major === 0) {
+      if (minor !== 10 && minor !== 12) {
+        return {
+          valid: false,
+          error: `Invalid version: Modern Node.js versions are 18.x, 20.x, etc.`,
+        };
+      }
+    } else if (major < 4 || major > 50) {
+      return { valid: false, error: `Node.js version is out of reasonable range` };
+    }
+  }
+
+  return { valid: true, kind: "semver", isCompleteSemver: patch !== undefined };
+}

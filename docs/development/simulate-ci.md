@@ -79,7 +79,7 @@ env CI=true GITHUB_ACTIONS=true unirtm run audit
 
 **本地模式**:
 
-- 缺失的工具会被优雅跳过（`⏭️ Skipped`）
+- 缺失的工具会被优雅跳过（`↷ Skipped`）
 - 不会因为工具缺失而失败
 
 **CI 模式**:
@@ -133,8 +133,8 @@ env CI=true GITHUB_ACTIONS=true unirtm run audit
 # 启用 CI 模式
 source scripts/simulate-ci.sh
 
-# 测试 setup 脚本（CI 模式下会严格验证）
-unirtm run setup
+# 测试工具安装（CI 模式下会严格验证）
+unirtm install
 
 # 检查是否所有工具都正确安装
 unirtm run verify
@@ -182,11 +182,11 @@ CI=true taplo fmt --check .
 
 ```bash
 # 方法 1: 使用 detect_ci_platform
-source scripts/lib/common.sh
+source .unirtm.toml
 detect_ci_platform
 
 # 方法 2: 使用 is_ci_env
-source scripts/lib/common.sh
+source .unirtm.toml
 if is_ci_env; then
   echo "Running in CI"
 else
@@ -233,9 +233,9 @@ diff local.log ci.log
 
 **A**: CI 模式下会严格验证工具的可执行性。检查：
 
-- 工具是否在 `.unirtm.toml` 中正确配置
-- 工具版本是否与 `scripts/lib/versions.sh` 一致
-- unirtm 缓存是否需要刷新：`unirtm cache clear`
+- 工具是否在 `.mise.toml` 中正确配置
+- 工具版本是否与 `.unirtm.toml` 一致
+- mise 缓存是否需要刷新：`mise cache clear`
 
 ### Q2: 如何永久禁用 CI 模式？
 
@@ -302,7 +302,7 @@ export GITEA_ACTIONS=true
 ## 相关文件
 
 - `scripts/simulate-ci.sh` - CI 模拟脚本
-- `scripts/lib/common.sh` - CI 检测函数（`detect_ci_platform`, `is_ci_env`）
+- `.unirtm.toml` - CI 检测函数（`detect_ci_platform`, `is_ci_env`）
 - `.github/workflows/` - GitHub Actions 工作流配置
 - `.ci_summary.log` - 本地 CI 摘要文件
 

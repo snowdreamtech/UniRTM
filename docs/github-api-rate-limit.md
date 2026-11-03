@@ -40,7 +40,6 @@
 以下脚本已自动集成 API 速率限制监控：
 
 - `scripts/setup.sh` - 环境设置
-- `scripts/update.sh` - 工具更新
 - `scripts/audit.sh` - 安全审计
 
 无需额外配置，运行这些脚本时会自动在 CI Summary 中显示 API 信息。

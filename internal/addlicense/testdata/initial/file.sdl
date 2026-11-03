@@ -1,0 +1,11 @@
+-- Copyright (c) 2026 SnowdreamTech. All rights reserved.
+-- Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+-- This is a fake table.
+CREATE TABLE Foo (
+  -- This is a fake column.
+  Bar INT64 NOT NULL,
+
+  -- Another fake column.
+  Baz STRING(MAX) NOT NULL,
+) PRIMARY KEY (Bar);

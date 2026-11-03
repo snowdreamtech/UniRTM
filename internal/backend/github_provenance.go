@@ -1,0 +1,385 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+// Package backend provides the GitHub Provenance (SLSA attestation) verifier.
+package backend
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/golang/snappy"
+	"github.com/sigstore/sigstore-go/pkg/root"
+	"github.com/sigstore/sigstore-go/pkg/verify"
+	"golang.org/x/sync/singleflight"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+)
+
+var (
+	provenanceCache  sync.Map
+	provenanceFlight singleflight.Group
+)
+
+func getAttestationDiskCachePath(owner, repo, digest string) string {
+	safeRepo := strings.NewReplacer("/", "_", ":", "_").Replace(owner + "_" + repo)
+	return filepath.Join(env.GetCacheDir(), "attestations", safeRepo, digest+".json")
+}
+
+func readAttestationDiskCache(owner, repo, digest string) *ProvenanceResult {
+	p := getAttestationDiskCachePath(owner, repo, digest)
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return nil
+	}
+	var res ProvenanceResult
+	if err := json.Unmarshal(data, &res); err != nil {
+		return nil
+	}
+	return &res
+}
+
+func writeAttestationDiskCache(owner, repo, digest string, res *ProvenanceResult) {
+	if res == nil {
+		return
+	}
+	p := getAttestationDiskCachePath(owner, repo, digest)
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		return
+	}
+	data, err := json.Marshal(res)
+	if err != nil {
+		return
+	}
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, data, 0644); err == nil {
+		_ = os.Rename(tmp, p)
+	}
+}
+
+// VerifyArtifactProvenance checks the GitHub attestation for the artifact at
+// artifactPath against the repository owner/repo.
+func VerifyArtifactProvenance(
+	ctx context.Context,
+	token, owner, repo, artifactPath string,
+) (*ProvenanceResult, error) {
+	digest, err := sha256File(artifactPath)
+	if err != nil {
+		return nil, fmt.Errorf("provenance: compute digest: %w", err)
+	}
+
+	cacheKey := fmt.Sprintf("%s/%s@sha256:%s", owner, repo, digest)
+	if val, ok := provenanceCache.Load(cacheKey); ok {
+		return val.(*ProvenanceResult), nil
+	}
+
+	if diskRes := readAttestationDiskCache(owner, repo, digest); diskRes != nil {
+		provenanceCache.Store(cacheKey, diskRes)
+		return diskRes, nil
+	}
+
+	v, err, _ := provenanceFlight.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := provenanceCache.Load(cacheKey); ok {
+			return val.(*ProvenanceResult), nil
+		}
+		if diskRes := readAttestationDiskCache(owner, repo, digest); diskRes != nil {
+			provenanceCache.Store(cacheKey, diskRes)
+			return diskRes, nil
+		}
+
+		verifier := &provenanceVerifier{
+			client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+		}
+
+		result, err := verifier.verifyDigest(ctx, token, owner, repo, digest)
+		if err != nil && strings.Contains(err.Error(), "malformed HTTP response") {
+			logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
+			verifier = &provenanceVerifier{
+				client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+			}
+			if trans, ok := verifier.client.Transport.(*http.Transport); ok {
+				pkgHttp.DisableHTTP2(trans)
+			}
+			result, err = verifier.verifyDigest(ctx, token, owner, repo, digest)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		provenanceCache.Store(cacheKey, result)
+		writeAttestationDiskCache(owner, repo, digest, result)
+		return result, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return v.(*ProvenanceResult), nil
+}
+
+type provenanceVerifier struct {
+	client *http.Client
+}
+
+func (v *provenanceVerifier) verify(
+	ctx context.Context,
+	token, owner, repo, artifactPath string,
+) (*ProvenanceResult, error) {
+	digest, err := sha256File(artifactPath)
+	if err != nil {
+		return nil, fmt.Errorf("provenance: compute digest: %w", err)
+	}
+	return v.verifyDigest(ctx, token, owner, repo, digest)
+}
+
+func (v *provenanceVerifier) verifyDigest(
+	ctx context.Context,
+	token, owner, repo, digest string,
+) (*ProvenanceResult, error) {
+
+	logger.Debug("provenance: fetching attestations from GitHub", map[string]interface{}{"owner": owner, "repo": repo, "digest": digest})
+	bundles, err := v.fetchAttestations(ctx, token, owner, repo, digest)
+	if err != nil {
+		return nil, err
+	}
+	logger.Debug("provenance: found attestation bundles", map[string]interface{}{"count": len(bundles)})
+
+	if len(bundles) == 0 {
+		return &ProvenanceResult{Supported: false}, nil
+	}
+
+	trustedMaterials, err := sigstoreTrustedRoots()
+	if err != nil {
+		return nil, fmt.Errorf("provenance: load TUF trusted roots: %w", err)
+	}
+
+	expectedRepo := owner + "/" + repo
+	repoRegex := "^https://github\\.com/" + owner + "/" + repo + "/"
+
+	mainIdentity, err := verify.NewShortCertificateIdentity(
+		"https://token.actions.githubusercontent.com",
+		"",
+		"",
+		repoRegex,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("build main identity: %w", err)
+	}
+
+	globalIdentity, err := verify.NewShortCertificateIdentity(
+		"",
+		".*",
+		"",
+		"^https://dotcom\\.releases\\.github\\.com$",
+	)
+	if err != nil {
+		return nil, fmt.Errorf("build global identity: %w", err)
+	}
+
+	sigstoreVerifier := &SigstoreVerifier{
+		TrustedMaterials: trustedMaterials,
+		Identities:       []verify.CertificateIdentity{mainIdentity, globalIdentity},
+		ExpectedRepo:     expectedRepo,
+	}
+
+	return sigstoreVerifier.VerifyBundles(bundles, digest)
+}
+
+// -----------------------------------------------------------------------------
+// TUF-backed Sigstore trusted roots (singleton with 24 h refresh)
+// -----------------------------------------------------------------------------
+
+var (
+	trustedRootsOnce sync.Once
+	trustedRoots     []root.TrustedMaterial
+	trustedRootsErr  error
+)
+
+func sigstoreTrustedRoots() ([]root.TrustedMaterial, error) {
+	trustedRootsOnce.Do(func() {
+		logger.Debug("provenance: initializing TUF trusted roots (GitHub + Public)")
+
+		githubRoot, err := InitializeTUFRoot(
+			"github-tuf",
+			"https://tuf-repo.github.com",
+			githubTufRoot,
+		)
+		if err != nil {
+			logger.Error("provenance: failed to initialize GitHub TUF root", map[string]interface{}{"error": err.Error()})
+		} else {
+			trustedRoots = append(trustedRoots, githubRoot)
+		}
+
+		publicRoot, err := InitializeTUFRoot(
+			"public-sigstore-tuf",
+			"https://tuf-repo-cdn.sigstore.dev",
+			nil, // Sigstore-go automatically embeds the public initial root
+		)
+		if err != nil {
+			logger.Error("provenance: failed to initialize Public Sigstore TUF root", map[string]interface{}{"error": err.Error()})
+		} else {
+			trustedRoots = append(trustedRoots, publicRoot)
+		}
+
+		if len(trustedRoots) == 0 {
+			trustedRootsErr = fmt.Errorf("failed to initialize any TUF trust roots")
+		}
+	})
+	return trustedRoots, trustedRootsErr
+}
+
+func ResetTrustedRootForTest() {
+	trustedRootsOnce = sync.Once{}
+	trustedRoots = nil
+	trustedRootsErr = nil
+}
+
+// -----------------------------------------------------------------------------
+// GitHub Attestations REST API
+// -----------------------------------------------------------------------------
+
+type attestationAPIResponse struct {
+	Attestations []attestationEntry `json:"attestations"`
+}
+
+type attestationEntry struct {
+	BundleURL string          `json:"bundle_url"`
+	Bundle    json.RawMessage `json:"bundle"`
+}
+
+func (v *provenanceVerifier) fetchAttestations(
+	ctx context.Context,
+	token, owner, repo, digest string,
+) ([]json.RawMessage, error) {
+	apiBase := env.Get("GITHUB_API_BASEURL")
+	if apiBase == "" {
+		apiBase = "https://api.github.com"
+	}
+	apiBase = strings.TrimSuffix(apiBase, "/")
+
+	url := fmt.Sprintf(
+		"%s/repos/%s/%s/attestations/sha256:%s",
+		apiBase, owner, repo, digest,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("provenance: create request: %w", err)
+	}
+	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	resp, err := v.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("provenance: fetch attestations: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("provenance: attestations API returned %d: %s", resp.StatusCode, body)
+	}
+
+	var apiResp attestationAPIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		return nil, fmt.Errorf("provenance: decode API response: %w", err)
+	}
+	fmt.Printf("ℹ provenance: found %d attestation(s)\n", len(apiResp.Attestations))
+	raw := make([]json.RawMessage, len(apiResp.Attestations))
+	valid := make([]bool, len(apiResp.Attestations))
+
+	var wg sync.WaitGroup
+	for i, a := range apiResp.Attestations {
+		if len(a.Bundle) > 0 && string(a.Bundle) != "null" {
+			raw[i] = a.Bundle
+			valid[i] = true
+			continue
+		}
+
+		if a.BundleURL != "" {
+			fmt.Printf("ℹ provenance: fetching external bundle %d/%d from URL...\n", i+1, len(apiResp.Attestations))
+			wg.Add(1)
+			go func(idx int, bundleURL string) {
+				defer wg.Done()
+				bundleData, err := v.fetchExternalBundle(ctx, bundleURL)
+				if err != nil {
+					logger.Warn("provenance: failed to fetch external bundle", map[string]interface{}{
+						"url":   bundleURL,
+						"error": err.Error(),
+					})
+					return
+				}
+				raw[idx] = bundleData
+				valid[idx] = true
+			}(i, a.BundleURL)
+		}
+	}
+	wg.Wait()
+
+	var finalRaw []json.RawMessage
+	for i, ok := range valid {
+		if ok {
+			finalRaw = append(finalRaw, raw[i])
+		}
+	}
+	return finalRaw, nil
+}
+
+func (v *provenanceVerifier) fetchExternalBundle(ctx context.Context, urlStr string) (json.RawMessage, error) {
+	finalURL := urlStr
+	githubProxy := env.Get("GITHUB_PROXY")
+	enableProxy := env.Get("ENABLE_GITHUB_PROXY")
+	if githubProxy != "" && enableProxy != "0" && strings.ToLower(enableProxy) != "false" {
+		if !strings.HasPrefix(urlStr, githubProxy) {
+			finalURL = githubProxy + urlStr
+		}
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, finalURL, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+
+	resp, err := v.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("external bundle API returned %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if strings.Contains(urlStr, ".sn") || strings.HasSuffix(urlStr, ".sn") {
+		decoded, err := snappy.Decode(nil, body)
+		if err != nil {
+			return nil, fmt.Errorf("provenance: decompress snappy bundle: %w", err)
+		}
+		return decoded, nil
+	}
+
+	return body, nil
+}

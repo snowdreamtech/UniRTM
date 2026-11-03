@@ -1,0 +1,9 @@
+- [x] Create the `internal/sysinfo` package if it doesn't exist.
+- [x] Implement the `IsMusl()` logic using file path checks (`/etc/alpine-release`, `ld-musl*.so`).
+- [x] Write tests for `IsMusl()` in `env_test.go`.
+- [x] Add tests with missing or mock files to ensure fallback defaults to `glibc`.
+- [x] Add `IsGlibcFallback` boolean to `CommonAsset` in `internal/backend/common.go`.
+- [x] In `FindBestAsset`, set `IsGlibcFallback = true` if running on Musl but asset name lacks "musl".
+- [x] Propagate `IsGlibcFallback` to `VersionInfo.Metadata` in GitHub, Forgejo, GitLab backends.
+- [x] Add logic in `internal/service/installation.go` to print a warning when `IsGlibcFallback` is "true".
+- [x] Ensure specific providers (like `golang.go`, `ruby.go`) inject this metadata manually when resolving versions.

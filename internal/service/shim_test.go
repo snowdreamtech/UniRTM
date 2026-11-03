@@ -1,0 +1,348 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package service
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+)
+
+func TestGenerator_GenerateShim(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+
+	ctx := context.Background()
+	err := g.GenerateShim(ctx, "go")
+	if err != nil {
+		t.Fatalf("failed to generate shim: %v", err)
+	}
+
+	if !g.ShimExists("go") {
+		t.Error("expected shim to exist")
+	}
+
+	shims, err := g.ListShims()
+	if err != nil {
+		t.Fatalf("failed to list shims: %v", err)
+	}
+
+	found := false
+	for _, shim := range shims {
+		if shim == "go" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected 'go' in listed shims")
+	}
+
+	err = g.RemoveShim(ctx, "go")
+	if err != nil {
+		t.Fatalf("failed to remove shim: %v", err)
+	}
+
+	if g.ShimExists("go") {
+		t.Error("expected shim to be removed")
+	}
+}
+
+func TestToolVersionEnvVar(t *testing.T) {
+	tests := []struct {
+		tool string
+		want string
+	}{
+		{"node", "UNIRTM_NODE_VERSION"},
+		{"go", "UNIRTM_GO_VERSION"},
+		{"rust-analyzer", "UNIRTM_RUST_ANALYZER_VERSION"},
+	}
+
+	for _, tt := range tests {
+		got := toolVersionEnvVar(tt.tool)
+		if got != tt.want {
+			t.Errorf("toolVersionEnvVar(%q) = %q, want %q", tt.tool, got, tt.want)
+		}
+	}
+}
+
+func TestGenerator_GenerateShim_MultipleExecutables(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+
+	ctx := context.Background()
+	err := g.GenerateShim(ctx, "node", "node", "npm", "npx")
+	if err != nil {
+		t.Fatalf("failed to generate shims: %v", err)
+	}
+
+	if !g.ShimExists("npm") {
+		t.Error("expected npm shim to exist")
+	}
+	if !g.ShimExists("npx") {
+		t.Error("expected npx shim to exist")
+	}
+	if !g.ShimExists("nodejs") {
+		t.Error("expected nodejs alias shim to exist")
+	}
+}
+
+func TestExecuteBinary_NotExists(t *testing.T) {
+	origGOOS := env.RuntimeGOOS
+	defer func() { env.RuntimeGOOS = origGOOS }()
+
+	env.RuntimeGOOS = "linux"
+	err := ExecuteBinary(filepath.Join(t.TempDir(), "non-existent-binary"), []string{"binary"})
+	if err == nil {
+		t.Error("expected error when executing non-existent binary on linux")
+	}
+
+	env.RuntimeGOOS = "windows"
+	err = ExecuteBinary(filepath.Join(t.TempDir(), "non-existent-binary.exe"), []string{"binary.exe"})
+	if err == nil {
+		t.Error("expected error when executing non-existent binary on windows")
+	}
+}
+
+func TestGenerator_generateUnixShim_Fallback(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims_is_a_file")
+	g := NewGenerator(shimsDir, "/installs")
+
+	// Create a file instead of a directory to guarantee write failure cross-platform
+	f, err := os.Create(shimsDir)
+	if err != nil {
+		t.Fatalf("failed to create dummy file: %v", err)
+	}
+	f.Close()
+
+	err = g.generateUnixShim("go", "go")
+	if err == nil {
+		t.Error("expected error when creating shim in invalid/read-only directory")
+	}
+}
+func TestShimPaths(t *testing.T) {
+	g := NewGenerator("/shims", "/installs")
+	paths := g.shimPaths("go")
+	if len(paths) == 0 {
+		t.Error("expected at least one path")
+	}
+	if env.RuntimeGOOS == "windows" {
+		if len(paths) != 3 {
+			t.Errorf("expected 3 paths on Windows, got %d", len(paths))
+		}
+	} else {
+		if len(paths) != 1 {
+			t.Errorf("expected 1 path on Unix, got %d", len(paths))
+		}
+	}
+}
+
+func TestGenerator_GenerateUnixShim_Direct(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+	err := g.generateUnixShim("go", "go")
+	if err != nil {
+		t.Fatalf("generateUnixShim failed: %v", err)
+	}
+}
+
+func TestGenerator_GenerateWindowsShim_Direct(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+	err := g.generateWindowsShim("go", "go")
+	if err != nil {
+		t.Fatalf("generateWindowsShim failed: %v", err)
+	}
+}
+
+func TestGenerator_GenerateShim_SelfReferentialPrevention(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+
+	ctx := context.Background()
+	err := g.GenerateShim(ctx, "unirtm")
+	if err == nil {
+		t.Error("expected error when attempting to generate shim for unirtm itself")
+	}
+}
+
+func TestIsSelfReferential(t *testing.T) {
+	unirtmExe, err := os.Executable()
+	if err != nil {
+		t.Fatalf("failed to get os.Executable: %v", err)
+	}
+
+	if !isSelfReferential(unirtmExe, unirtmExe, "node", "node") {
+		t.Error("expected isSelfReferential to be true when shimPath == unirtmPath")
+	}
+
+	for _, blocked := range []string{"unirtm", "mise", "rtx", "asdf"} {
+		if !isSelfReferential("/tmp/shims/"+blocked, "/usr/bin/unirtm", blocked, blocked) {
+			t.Errorf("expected isSelfReferential to be true for tool %s", blocked)
+		}
+	}
+
+	if isSelfReferential("/tmp/shims/node", "/usr/bin/unirtm", "node", "node") {
+		t.Error("expected isSelfReferential to be false for distinct tool and paths")
+	}
+}
+
+func TestGenerator_GenerateShim_SymlinkEvaluation(t *testing.T) {
+	tmpDir := t.TempDir()
+	realBin := filepath.Join(tmpDir, "real_unirtm")
+	if err := os.WriteFile(realBin, []byte("binary"), 0755); err != nil {
+		t.Fatalf("failed to write dummy binary: %v", err)
+	}
+	symlinkBin := filepath.Join(tmpDir, "symlink_unirtm")
+	if err := os.Symlink(realBin, symlinkBin); err != nil {
+		t.Skipf("skipping symlink test on platform without symlink privilege: %v", err)
+	}
+
+	if !isSelfReferential(symlinkBin, realBin, "node", "node") {
+		t.Error("expected isSelfReferential to recognize symlink pointing to real binary")
+	}
+}
+
+func TestGenerator_GenerateWindowsShim_AlreadyWithExtension(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+	_ = os.MkdirAll(shimsDir, 0755)
+	// Simulate legacy buggy files already present
+	_ = os.WriteFile(filepath.Join(shimsDir, "node.exe.exe"), []byte("buggy"), 0755)
+	_ = os.WriteFile(filepath.Join(shimsDir, "node.exe.cmd"), []byte("buggy"), 0755)
+
+	// Calling with node.exe should create node.cmd/node.exe, NOT node.exe.exe or node.exe.cmd
+	err := g.generateWindowsShim("node", "node.exe")
+	if err != nil {
+		t.Fatalf("generateWindowsShim failed: %v", err)
+	}
+
+	// Verify legacy files were cleaned up and no double extension exists
+	if _, err := os.Stat(filepath.Join(shimsDir, "node.exe.exe")); err == nil {
+		t.Error("node.exe.exe should have been cleaned up")
+	}
+	if _, err := os.Stat(filepath.Join(shimsDir, "node.exe.cmd")); err == nil {
+		t.Error("node.exe.cmd should have been cleaned up")
+	}
+
+	err = g.generateWindowsShim("node", "npm.cmd")
+	if err != nil {
+		t.Fatalf("generateWindowsShim for npm.cmd failed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(shimsDir, "npm.cmd.exe")); err == nil {
+		t.Error("npm.cmd.exe should not have been created")
+	}
+	if _, err := os.Stat(filepath.Join(shimsDir, "npm.cmd.cmd")); err == nil {
+		t.Error("npm.cmd.cmd should not have been created")
+	}
+}
+
+func TestPrepareWindowsCommand(t *testing.T) {
+	// Test .cmd script wrapping
+	cmdScript := "C:\\Program Files\\Tools\\npm.cmd"
+	c, err := PrepareWindowsCommand(cmdScript, []string{"install", "--save"})
+	if err != nil {
+		t.Fatalf("PrepareWindowsCommand failed: %v", err)
+	}
+	if filepath.Base(c.Path) != "cmd.exe" && c.Path != "cmd.exe" {
+		t.Errorf("expected cmd.exe, got %s", c.Path)
+	}
+	expectedArgs := []string{"cmd.exe", "/d", "/s", "/c", cmdScript, "install", "--save"}
+	if len(c.Args) != len(expectedArgs) {
+		t.Fatalf("expected %d args, got %d: %v", len(expectedArgs), len(c.Args), c.Args)
+	}
+	for i, arg := range expectedArgs {
+		if c.Args[i] != arg {
+			t.Errorf("arg[%d]: expected %q, got %q", i, arg, c.Args[i])
+		}
+	}
+
+	// Verify environment variables have PATH, Path, PATHEXT, PathExt
+	var hasPath, hasPathLower, hasPathExt, hasPathExtLower bool
+	for _, env := range c.Env {
+		if strings.HasPrefix(env, "PATH=") {
+			hasPath = true
+		}
+		if strings.HasPrefix(env, "Path=") {
+			hasPathLower = true
+		}
+		if strings.HasPrefix(env, "PATHEXT=") {
+			hasPathExt = true
+		}
+		if strings.HasPrefix(env, "PathExt=") {
+			hasPathExtLower = true
+		}
+	}
+	if !hasPath || !hasPathLower {
+		t.Errorf("expected both PATH and Path in environment, got hasPath=%v, hasPathLower=%v", hasPath, hasPathLower)
+	}
+	if !hasPathExt || !hasPathExtLower {
+		t.Errorf("expected both PATHEXT and PathExt in environment, got hasPathExt=%v, hasPathExtLower=%v", hasPathExt, hasPathExtLower)
+	}
+
+	// Test .exe native execution
+	exeBinary := "C:\\Tools\\node.exe"
+	cExe, err := PrepareWindowsCommand(exeBinary, []string{"-v"})
+	if err != nil {
+		t.Fatalf("PrepareWindowsCommand for .exe failed: %v", err)
+	}
+	if cExe.Path != exeBinary {
+		t.Errorf("expected %s, got %s", exeBinary, cExe.Path)
+	}
+
+	// Test .ps1 PowerShell execution
+	ps1Script := "C:\\Tools\\script.ps1"
+	cPs1, err := PrepareWindowsCommand(ps1Script, []string{"arg1"})
+	if err != nil {
+		t.Fatalf("PrepareWindowsCommand for .ps1 failed: %v", err)
+	}
+	if filepath.Base(cPs1.Path) != "powershell.exe" && cPs1.Path != "powershell.exe" {
+		t.Errorf("expected powershell.exe, got %s", cPs1.Path)
+	}
+	expectedPsArgs := []string{"powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ps1Script, "arg1"}
+	if len(cPs1.Args) != len(expectedPsArgs) {
+		t.Fatalf("expected %d args for powershell, got %d: %v", len(expectedPsArgs), len(cPs1.Args), cPs1.Args)
+	}
+
+	// Test hashbang script fallback
+	tmpDir := t.TempDir()
+	shScript := filepath.Join(tmpDir, "hashbang-tool")
+	if err := os.WriteFile(shScript, []byte("#!/bin/sh\necho hello\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	cSh, err := PrepareWindowsCommand(shScript, []string{"foo"})
+	if err == nil {
+		// sh.exe or bash.exe was available in PATH
+		baseName := filepath.Base(cSh.Path)
+		if !strings.HasPrefix(baseName, "sh") && !strings.HasPrefix(baseName, "bash") {
+			t.Errorf("expected sh or bash wrapper, got %s", cSh.Path)
+		}
+		if len(cSh.Args) < 3 || cSh.Args[1] != shScript || cSh.Args[2] != "foo" {
+			t.Errorf("unexpected args for sh wrapper: %v", cSh.Args)
+		}
+	}
+}

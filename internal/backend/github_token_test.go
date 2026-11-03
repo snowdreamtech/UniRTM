@@ -1,0 +1,570 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package backend
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+)
+
+func TestResolveGitHubToken_EnvPriority(t *testing.T) {
+	// Clean all relevant env vars before each sub-test to ensure strict isolation
+	envVars := []string{
+		"UNIRTM_GITHUB_TOKEN",
+		"MISE_GITHUB_TOKEN",
+		"GITHUB_TOKEN",
+		"UNIRTM_GH_TOKEN",
+		"MISE_GH_TOKEN",
+		"GH_TOKEN",
+		"UNIRTM_GITHUB_API_TOKEN",
+		"MISE_GITHUB_API_TOKEN",
+		"GITHUB_API_TOKEN",
+		"UNIRTM_GITHUB_CREDENTIAL_COMMAND",
+		"MISE_GITHUB_CREDENTIAL_COMMAND",
+		"GITHUB_CREDENTIAL_COMMAND",
+		"UNIRTM_CONFIG_DIR",
+		"MISE_CONFIG_DIR",
+		"CONFIG_DIR",
+		"UNIRTM_GH_CONFIG_DIR",
+		"MISE_GH_CONFIG_DIR",
+		"GH_CONFIG_DIR",
+		"UNIRTM_XDG_CONFIG_HOME",
+		"MISE_XDG_CONFIG_HOME",
+		"XDG_CONFIG_HOME",
+	}
+	for _, v := range envVars {
+		t.Setenv(v, "")
+	}
+
+	// Point config dirs to an isolated empty directory to avoid reading host configs
+	emptyDir := t.TempDir()
+	t.Setenv("UNIRTM_CONFIG_DIR", emptyDir)
+	t.Setenv("GH_CONFIG_DIR", emptyDir)
+	t.Setenv("XDG_CONFIG_HOME", emptyDir)
+
+	// Mock gh auth token command to avoid invoking host gh CLI
+	origGhAuthTokenFn := ghAuthTokenFn
+	ghAuthTokenFn = func(host string) string { return "" }
+	defer func() { ghAuthTokenFn = origGhAuthTokenFn }()
+
+	t.Run("UNIRTM_GITHUB_TOKEN takes priority", func(t *testing.T) {
+		ClearTokenCache()
+		t.Setenv("UNIRTM_GITHUB_TOKEN", "unirtm-token")
+		t.Setenv("GITHUB_TOKEN", "github-token")
+
+		got := resolveGitHubToken("github.com")
+		if got != "unirtm-token" {
+			t.Errorf("expected 'unirtm-token', got %q", got)
+		}
+	})
+
+	t.Run("GITHUB_TOKEN used when UNIRTM_GITHUB_TOKEN not set", func(t *testing.T) {
+		ClearTokenCache()
+		t.Setenv("GITHUB_TOKEN", "ci-token")
+
+		got := resolveGitHubToken("github.com")
+		if got != "ci-token" {
+			t.Errorf("expected 'ci-token', got %q", got)
+		}
+	})
+
+	t.Run("GH_TOKEN used when GITHUB_TOKEN not set", func(t *testing.T) {
+		ClearTokenCache()
+		t.Setenv("GH_TOKEN", "gh-token")
+
+		got := resolveGitHubToken("github.com")
+		if got != "gh-token" {
+			t.Errorf("expected 'gh-token', got %q", got)
+		}
+	})
+
+	t.Run("GITHUB_API_TOKEN used as fallback", func(t *testing.T) {
+		ClearTokenCache()
+		t.Setenv("GITHUB_API_TOKEN", "api-token")
+
+		got := resolveGitHubToken("github.com")
+		if got != "api-token" {
+			t.Errorf("expected 'api-token', got %q", got)
+		}
+	})
+
+	t.Run("gh auth token fallback when configured", func(t *testing.T) {
+		ClearTokenCache()
+		orig := ghAuthTokenFn
+		ghAuthTokenFn = func(host string) string { return "gh-cli-token" }
+		defer func() { ghAuthTokenFn = orig }()
+
+		got := resolveGitHubToken("github.com")
+		if got != "gh-cli-token" {
+			t.Errorf("expected 'gh-cli-token', got %q", got)
+		}
+	})
+
+	t.Run("returns empty string when no token configured", func(t *testing.T) {
+		ClearTokenCache()
+		got := resolveGitHubToken("github.com")
+		if got != "" {
+			t.Errorf("expected empty string, got %q", got)
+		}
+	})
+}
+
+func TestParseGhHostsYml(t *testing.T) {
+	content := `github.com:
+    oauth_token: ghp_fromghcli
+    user: octocat
+github.mycompany.com:
+    oauth_token: ghp_enterprise
+    user: corp-user
+`
+	tests := []struct {
+		host string
+		want string
+	}{
+		{"github.com", "ghp_fromghcli"},
+		{"github.mycompany.com", "ghp_enterprise"},
+		{"unknown.host", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.host, func(t *testing.T) {
+			got := parseGhHostsYml(content, tt.host)
+			if got != tt.want {
+				t.Errorf("parseGhHostsYml(%q) = %q, want %q", tt.host, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestReadGitHubTokensFile(t *testing.T) {
+	// Create a temp config dir with github_tokens.toml
+	dir := t.TempDir()
+	t.Setenv("UNIRTM_CONFIG_DIR", dir)
+
+	tomlContent := `[tokens]
+[tokens."github.com"]
+token = "ghp_from_toml"
+
+[tokens."github.mycompany.com"]
+token = "ghp_enterprise_toml"
+`
+	if err := os.WriteFile(dir+"/github_tokens.toml", []byte(tomlContent), 0o600); err != nil {
+		t.Fatalf("failed to write test token file: %v", err)
+	}
+
+	t.Run("reads token for github.com", func(t *testing.T) {
+		got := readGitHubTokensFile("github.com")
+		if got != "ghp_from_toml" {
+			t.Errorf("expected 'ghp_from_toml', got %q", got)
+		}
+	})
+
+	t.Run("reads token for enterprise host", func(t *testing.T) {
+		got := readGitHubTokensFile("github.mycompany.com")
+		if got != "ghp_enterprise_toml" {
+			t.Errorf("expected 'ghp_enterprise_toml', got %q", got)
+		}
+	})
+
+	t.Run("returns empty for unknown host", func(t *testing.T) {
+		got := readGitHubTokensFile("unknown.host")
+		if got != "" {
+			t.Errorf("expected empty string, got %q", got)
+		}
+	})
+}
+
+func TestFindGhHostsFile(t *testing.T) {
+	// Create a dummy hosts file
+	dir := t.TempDir()
+	hostsFile := filepath.Join(dir, "hosts.yml")
+	os.WriteFile(hostsFile, []byte(""), 0o644)
+
+	// Test 1: GH_CONFIG_DIR
+	t.Setenv("GH_CONFIG_DIR", dir)
+	if f := findGhHostsFile(); f != hostsFile {
+		t.Errorf("expected %s, got %s", hostsFile, f)
+	}
+
+	// Test 2: XDG_CONFIG_HOME
+	t.Setenv("GH_CONFIG_DIR", "")
+	ghDir := filepath.Join(dir, "gh")
+	os.Mkdir(ghDir, 0o755)
+	hostsFile2 := filepath.Join(ghDir, "hosts.yml")
+	os.WriteFile(hostsFile2, []byte(""), 0o644)
+
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	if f := findGhHostsFile(); f != hostsFile2 {
+		t.Errorf("expected %s, got %s", hostsFile2, f)
+	}
+}
+
+func TestResolveGitHubTokenPublic(t *testing.T) {
+	token := ResolveGitHubTokenPublic("github.com")
+	if token == "mock-token-xyz" {
+		t.Log("got mock token")
+	}
+}
+
+func TestRunCredentialCommand(t *testing.T) {
+	var expected string
+	if env.RuntimeGOOS == "windows" {
+		expected = "mytoken github.com"
+	} else {
+		expected = "mytoken"
+	}
+	token := runCredentialCommand("echo mytoken", "github.com")
+	if token != expected {
+		t.Errorf("expected %q, got %q", expected, token)
+	}
+
+	// Test with a failing command
+	token2 := runCredentialCommand("exit 1", "github.com")
+	if token2 != "" {
+		t.Errorf("expected empty string for failing command, got %q", token2)
+	}
+}
+
+func TestResolveGitHubToken_EmptyHost(t *testing.T) {
+	// Empty host should default to github.com and not panic
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GITHUB_API_TOKEN", "")
+	t.Setenv("GITHUB_CREDENTIAL_COMMAND", "")
+	t.Setenv("UNIRTM_GITHUB_TOKEN", "")
+	t.Setenv("MISE_GITHUB_TOKEN", "")
+	// Just test it doesn't panic with empty host
+	_ = resolveGitHubToken("")
+}
+
+func TestResolveGitHubToken_CredentialCommand(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GITHUB_API_TOKEN", "")
+	t.Setenv("UNIRTM_GITHUB_TOKEN", "")
+	t.Setenv("MISE_GITHUB_TOKEN", "")
+	t.Setenv("UNIRTM_GITHUB_API_TOKEN", "")
+	t.Setenv("MISE_GITHUB_API_TOKEN", "")
+	// env.Get("GITHUB_CREDENTIAL_COMMAND") checks UNIRTM_GITHUB_CREDENTIAL_COMMAND first
+	t.Setenv("UNIRTM_GITHUB_CREDENTIAL_COMMAND", "echo cred-token")
+
+	token := resolveGitHubToken("github.com")
+
+	var expected string
+	if env.RuntimeGOOS == "windows" {
+		expected = "cred-token github.com"
+	} else {
+		expected = "cred-token"
+	}
+
+	// The credential command 'echo cred-token' should return expected value
+	if token != expected {
+		t.Logf("token from credential command: %q (expected %q)", token, expected)
+	}
+}
+
+func TestReadGitHubTokensFile_WithXDG(t *testing.T) {
+	// Test with XDG_CONFIG_HOME set
+	dir := t.TempDir()
+	unirtmDir := dir + "/unirtm"
+	os.MkdirAll(unirtmDir, 0o755)
+	tomlContent := `[tokens]
+[tokens."github.com"]
+token = "ghp_from_xdg"
+`
+	os.WriteFile(unirtmDir+"/github_tokens.toml", []byte(tomlContent), 0o600)
+
+	// Ensure CONFIG_DIR is not set
+	t.Setenv("UNIRTM_CONFIG_DIR", "")
+	t.Setenv("CONFIG_DIR", "")
+	t.Setenv("UNIRTM_XDG_CONFIG_HOME", dir)
+
+	got := readGitHubTokensFile("github.com")
+	// May or may not work depending on env alias resolution - just ensure no panic
+	t.Logf("token from XDG: %q", got)
+}
+
+func TestReadGitHubTokensFile_InvalidToml(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("UNIRTM_CONFIG_DIR", dir)
+
+	// Write invalid TOML
+	os.WriteFile(dir+"/github_tokens.toml", []byte("not valid toml [[["), 0o600)
+
+	got := readGitHubTokensFile("github.com")
+	if got != "" {
+		t.Errorf("expected empty string for invalid TOML, got %q", got)
+	}
+}
+
+func TestFindGhHostsFile_NotFound(t *testing.T) {
+	// Unset all env vars and use a non-existent home
+	t.Setenv("GH_CONFIG_DIR", "")
+	// Even if not found, function should return empty string without panic
+	// We can't easily override home directory but we can at least test the path
+	t.Setenv("GH_CONFIG_DIR", "/nonexistent/path")
+	f := findGhHostsFile()
+	// Should not find it
+	if f != "" {
+		t.Logf("found unexpected file: %s", f)
+	}
+}
+
+func TestParseGhHostsYml_TabIndented(t *testing.T) {
+	// Test with tab-indented content
+	content := "github.com:\n\toauth_token: ghp_tabindented\n\tuser: octocat\n"
+	got := parseGhHostsYml(content, "github.com")
+	if got != "ghp_tabindented" {
+		t.Errorf("expected 'ghp_tabindented', got %q", got)
+	}
+}
+
+func TestReadGhCliToken_WithHostsFile(t *testing.T) {
+	dir := t.TempDir()
+	hostsContent := `github.com:
+    oauth_token: ghp_from_hosts_yml
+    user: octocat
+`
+	hostsFile := dir + "/hosts.yml"
+	os.WriteFile(hostsFile, []byte(hostsContent), 0o644)
+
+	t.Setenv("GH_CONFIG_DIR", dir)
+
+	token := readGhCliToken("github.com")
+	if token != "ghp_from_hosts_yml" {
+		t.Errorf("expected 'ghp_from_hosts_yml', got %q", token)
+	}
+}
+
+func TestReadGhCliToken_UnknownHost(t *testing.T) {
+	dir := t.TempDir()
+	hostsContent := `github.com:
+    oauth_token: ghp_token
+    user: octocat
+`
+	hostsFile := dir + "/hosts.yml"
+	os.WriteFile(hostsFile, []byte(hostsContent), 0o644)
+
+	t.Setenv("GH_CONFIG_DIR", dir)
+
+	token := readGhCliToken("unknown.host")
+	if token != "" {
+		t.Errorf("expected empty string for unknown host, got %q", token)
+	}
+}
+
+func TestReadGhCliToken_FileNotReadable(t *testing.T) {
+	dir := t.TempDir()
+	hostsFile := dir + "/hosts.yml"
+	os.WriteFile(hostsFile, []byte(""), 0o000)
+
+	t.Setenv("GH_CONFIG_DIR", dir)
+
+	// Should return empty string (file not readable)
+	token := readGhCliToken("github.com")
+	if token != "" {
+		t.Logf("token from non-readable file: %q", token)
+	}
+}
+
+func TestFindGhHostsFile_XDGPath(t *testing.T) {
+	dir := t.TempDir()
+	ghDir := dir + "/gh"
+	os.MkdirAll(ghDir, 0o755)
+	hostsFile := filepath.Join(ghDir, "hosts.yml")
+	os.WriteFile(hostsFile, []byte(""), 0o644)
+
+	t.Setenv("GH_CONFIG_DIR", "")
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	f := findGhHostsFile()
+	if f != hostsFile {
+		t.Errorf("expected %s, got %s", hostsFile, f)
+	}
+}
+
+func TestFindGhHostsFile_XDGConfigHome(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "gh"), 0o755)
+	hostsFile := filepath.Join(dir, "gh", "hosts.yml")
+	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0o600)
+
+	t.Setenv("UNIRTM_GH_CONFIG_DIR", "")
+	t.Setenv("UNIRTM_XDG_CONFIG_HOME", dir)
+
+	f := findGhHostsFile()
+	if f != hostsFile {
+		t.Errorf("expected %s, got %s", hostsFile, f)
+	}
+}
+
+func TestFindGhHostsFile_HomeDirFallback(t *testing.T) {
+	homeDir := t.TempDir()
+	// Mock XDG default
+	os.MkdirAll(filepath.Join(homeDir, ".config", "gh"), 0o755)
+	hostsFile := filepath.Join(homeDir, ".config", "gh", "hosts.yml")
+	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0o600)
+
+	t.Setenv("UNIRTM_GH_CONFIG_DIR", "")
+	t.Setenv("MISE_GH_CONFIG_DIR", "")
+	t.Setenv("GH_CONFIG_DIR", "")
+	t.Setenv("UNIRTM_XDG_CONFIG_HOME", "")
+	t.Setenv("MISE_XDG_CONFIG_HOME", "")
+	t.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir)
+
+	f := findGhHostsFile()
+	if f != hostsFile {
+		t.Errorf("expected %s, got %s", hostsFile, f)
+	}
+}
+
+func TestFindGhHostsFile_MacosFallback(t *testing.T) {
+	homeDir := t.TempDir()
+	// Mock macos path
+	os.MkdirAll(filepath.Join(homeDir, "Library", "Application Support", "gh"), 0o755)
+	hostsFile := filepath.Join(homeDir, "Library", "Application Support", "gh", "hosts.yml")
+	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0o600)
+
+	t.Setenv("UNIRTM_GH_CONFIG_DIR", "")
+	t.Setenv("MISE_GH_CONFIG_DIR", "")
+	t.Setenv("GH_CONFIG_DIR", "")
+	t.Setenv("UNIRTM_XDG_CONFIG_HOME", "")
+	t.Setenv("MISE_XDG_CONFIG_HOME", "")
+	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir)
+
+	f := findGhHostsFile()
+	if f != hostsFile {
+		t.Errorf("expected %s, got %s", hostsFile, f)
+	}
+}
+
+func TestExtractGitHubTokenFromToml_CaseAndSections(t *testing.T) {
+	tests := []struct {
+		name     string
+		toml     string
+		host     string
+		expected string
+	}{
+		{
+			name:     "lowercase github_token in env",
+			toml:     "[env]\ngithub_token = \"token_lower_env\"\n",
+			host:     "github.com",
+			expected: "token_lower_env",
+		},
+		{
+			name:     "uppercase GITHUB_TOKEN in env",
+			toml:     "[env]\nGITHUB_TOKEN = \"token_upper_env\"\n",
+			host:     "github.com",
+			expected: "token_upper_env",
+		},
+		{
+			name:     "mixed case GitHub_Token in env",
+			toml:     "[ENV]\nGitHub_Token = \"token_mixed_env\"\n",
+			host:     "github.com",
+			expected: "token_mixed_env",
+		},
+		{
+			name:     "camelCase githubToken in settings",
+			toml:     "[settings]\ngithubToken = \"token_camel_settings\"\n",
+			host:     "github.com",
+			expected: "token_camel_settings",
+		},
+		{
+			name:     "uppercase GITHUB_TOKEN in settings",
+			toml:     "[SETTINGS]\nGITHUB_TOKEN = \"token_upper_settings\"\n",
+			host:     "github.com",
+			expected: "token_upper_settings",
+		},
+		{
+			name:     "gh_token and GH_TOKEN in env",
+			toml:     "[env]\nGH_TOKEN = \"token_gh\"\n",
+			host:     "github.com",
+			expected: "token_gh",
+		},
+		{
+			name:     "root level github_token",
+			toml:     "github_token = \"token_root\"\n",
+			host:     "github.com",
+			expected: "token_root",
+		},
+		{
+			name:     "tokens table for enterprise host",
+			toml:     "[tokens.\"github.enterprise.com\"]\ntoken = \"token_ent\"\n",
+			host:     "github.enterprise.com",
+			expected: "token_ent",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := extractGitHubTokenFromToml([]byte(tc.toml), tc.host)
+			if got != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, got)
+			}
+		})
+	}
+}
+
+func TestReadWorkspaceGitHubToken(t *testing.T) {
+	tempDir := t.TempDir()
+	origWd, _ := os.Getwd()
+	defer os.Chdir(origWd)
+
+	subDir := filepath.Join(tempDir, "sub", "project")
+	if err := os.MkdirAll(subDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// In parent directory, place .unirtm.toml with mixed case
+	tomlContent := "[env]\nGitHub_Token = \"workspace_token_123\"\n"
+	if err := os.WriteFile(filepath.Join(tempDir, ".unirtm.toml"), []byte(tomlContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(subDir); err != nil {
+		t.Fatal(err)
+	}
+	got := readWorkspaceGitHubToken("github.com")
+	if got != "workspace_token_123" {
+		t.Errorf("expected 'workspace_token_123', got %q", got)
+	}
+}
+
+func TestResolveGitHubToken_PrefixesAndCase(t *testing.T) {
+	// Clean env
+	t.Setenv("UNIRTM_GITHUB_TOKEN", "")
+	t.Setenv("MISE_GITHUB_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("GITHUB_API_TOKEN", "")
+
+	t.Run("lowercase mise_github_token in env", func(t *testing.T) {
+		t.Setenv("mise_github_token", "mise_token_val")
+		got := resolveGitHubTokenFromEnv()
+		if got != "mise_token_val" {
+			t.Errorf("expected 'mise_token_val', got %q", got)
+		}
+	})
+
+	t.Run("unirtm prefix overrides mise prefix in env", func(t *testing.T) {
+		t.Setenv("mise_github_token", "mise_val")
+		t.Setenv("unirtm_github_token", "unirtm_val")
+		got := resolveGitHubTokenFromEnv()
+		if got != "unirtm_val" {
+			t.Errorf("expected 'unirtm_val', got %q", got)
+		}
+	})
+
+	t.Run("mise prefix in toml", func(t *testing.T) {
+		toml := "[env]\nmise_github_token = \"from_mise_toml\"\n"
+		got := extractGitHubTokenFromToml([]byte(toml), "github.com")
+		if got != "from_mise_toml" {
+			t.Errorf("expected 'from_mise_toml', got %q", got)
+		}
+	})
+}

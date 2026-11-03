@@ -1,0 +1,157 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package cmd
+
+import (
+	"bytes"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/pterm/pterm"
+	internalhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+)
+
+type E2EHarness struct {
+	t        *testing.T
+	TmpDir   string
+	MockHTTP map[string]func(req *http.Request) (*http.Response, error)
+}
+
+func NewE2EHarness(t *testing.T) *E2EHarness {
+	tmpDir := t.TempDir()
+	return &E2EHarness{
+		t:        t,
+		TmpDir:   tmpDir,
+		MockHTTP: make(map[string]func(req *http.Request) (*http.Response, error)),
+	}
+}
+
+// RoundTrip implements http.RoundTripper
+func (h *E2EHarness) RoundTrip(req *http.Request) (*http.Response, error) {
+	url := req.URL.String()
+	h.t.Logf("[MOCK HTTP] Requested: %s", url)
+	if handler, ok := h.MockHTTP[url]; ok {
+		return handler(req)
+	}
+	// Default to 404 for unmocked requests to prevent real network calls
+	return &http.Response{
+		StatusCode: 404,
+		Body:       io.NopCloser(bytes.NewBufferString("Not Found (Mocked)")),
+		Header:     make(http.Header),
+		Request:    req,
+	}, nil
+}
+
+// Run executes a command in the isolated environment and returns stdout/stderr.
+func (h *E2EHarness) Run(args ...string) (stdout string, stderr string, err error) {
+	h.t.Helper()
+
+	// Intercept all HTTP requests globally
+	oldMockTransport := internalhttp.MockTransport
+	internalhttp.MockTransport = h
+	defer func() {
+		internalhttp.MockTransport = oldMockTransport
+	}()
+
+	// Isolate Environment
+	h.t.Setenv("UNIRTM_HOME", h.TmpDir)
+	h.t.Setenv("XDG_DATA_HOME", h.TmpDir)
+	h.t.Setenv("XDG_CONFIG_HOME", h.TmpDir)
+	h.t.Setenv("HOME", h.TmpDir)
+	h.t.Setenv("USERPROFILE", h.TmpDir)
+
+	// Intercept os.Stdout, os.Stderr, and os.Stdin
+	oldStdout := os.Stdout
+	oldStderr := os.Stderr
+	oldStdin := os.Stdin
+	rOut, wOut, _ := os.Pipe()
+	rErr, wErr, _ := os.Pipe()
+	rIn, wIn, _ := os.Pipe()
+	wIn.Close() // Immediately close it so reads return EOF
+	os.Stdout = wOut
+	os.Stderr = wErr
+	os.Stdin = rIn
+
+	// Reset global state variables
+	cwd = ""
+	configPath = ""
+	verbose = false
+	quiet = false
+	jsonOutput = false
+	dryRun = false
+	yes = true
+	locked = false
+	silent = false
+
+	// Reset all cobra flags to prevent cross-test pollution
+	var resetFlags func(c *cobra.Command)
+	resetFlags = func(c *cobra.Command) {
+		c.Flags().VisitAll(func(f *pflag.Flag) {
+			f.Value.Set(f.DefValue)
+			f.Changed = false
+		})
+		c.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+			f.Value.Set(f.DefValue)
+			f.Changed = false
+		})
+		for _, sub := range c.Commands() {
+			resetFlags(sub)
+		}
+	}
+	resetFlags(rootCmd)
+
+	// Capture pterm output
+	pterm.SetDefaultOutput(wOut)
+
+	var bufOut bytes.Buffer
+	var bufErr bytes.Buffer
+	outDone := make(chan struct{})
+	errDone := make(chan struct{})
+
+	go func() {
+		io.Copy(&bufOut, rOut)
+		close(outDone)
+	}()
+	go func() {
+		io.Copy(&bufErr, rErr)
+		close(errDone)
+	}()
+
+	rootCmd.SetArgs(args)
+	err = rootCmd.Execute()
+
+	// Restore Stdout/Stderr/Stdin
+	wOut.Close()
+	wErr.Close()
+	rIn.Close()
+	os.Stdout = oldStdout
+	os.Stderr = oldStderr
+	os.Stdin = oldStdin
+
+	<-outDone
+	<-errDone
+
+	return bufOut.String(), bufErr.String(), err
+}
+
+func (h *E2EHarness) SetupMockTool(tool, version string) {
+	h.t.Helper()
+
+	toolPath := filepath.Join(h.TmpDir, "installs", tool, version)
+	err := os.MkdirAll(toolPath, 0755)
+	if err != nil {
+		h.t.Fatalf("Failed to create mock tool dir: %v", err)
+	}
+
+	// Create a dummy binary
+	binDir := filepath.Join(toolPath, "bin")
+	os.MkdirAll(binDir, 0755)
+	dummyBin := filepath.Join(binDir, tool)
+	os.WriteFile(dummyBin, []byte("#!/bin/sh\necho mock"), 0755)
+}

@@ -1,0 +1,611 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+// Package service provides business logic for UniRTM operations.
+package service
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/backend"
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/pkg/download"
+	"github.com/snowdreamtech/unirtm/internal/pkg/gpg"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
+	"github.com/snowdreamtech/unirtm/internal/provider"
+	"github.com/snowdreamtech/unirtm/internal/repository"
+	"github.com/snowdreamtech/unirtm/internal/transaction"
+)
+
+// UpdateInfo represents information about an available update for a tool.
+type UpdateInfo struct {
+	Tool           string // Tool name
+	CurrentVersion string // Currently installed version
+	LatestVersion  string // Latest available version
+	Backend        string // Backend used for the tool
+	UpdateRequired bool   // Whether an update is available
+}
+
+// UpdatePreview represents a preview of what will be updated.
+type UpdatePreview struct {
+	Updates        []UpdateInfo  // List of tools that will be updated
+	TotalUpdates   int           // Total number of updates
+	TotalInstalled int           // Total number of installed tools checked
+	EstimatedTime  time.Duration // Estimated time for all updates
+}
+
+// UpdateResult represents the result of an update operation.
+type UpdateResult struct {
+	Tool           string        // Tool name
+	OldVersion     string        // Previous version
+	NewVersion     string        // New version after update
+	Backend        string        // Backend used for the tool (e.g. "npm", "github", "asdf")
+	Success        bool          // Whether the update succeeded
+	Error          string        // Error message if update failed
+	Duration       time.Duration // Time taken for the update
+	RolledBack     bool          // Whether a rollback was performed
+	RollbackReason string        // Reason for rollback if applicable
+}
+
+// UpdateManager manages tool updates with version checking, preview, and rollback support.
+//
+// Validates Requirements: 25.1, 25.2, 25.3, 25.4, 25.5, 25.6, 25.7
+type UpdateManager struct {
+	backendRegistry  *backend.Registry
+	providerRegistry *provider.Registry
+	downloadManager  *download.Manager
+	installRepo      repository.InstallationRepository
+	auditRepo        repository.AuditRepository
+	txManager        transaction.TransactionManager
+	configManager    *config.Config
+	gpgVerifier      gpg.Verifier
+}
+
+// NewUpdateManager creates a new update manager.
+func NewUpdateManager(
+	backendRegistry *backend.Registry,
+	providerRegistry *provider.Registry,
+	downloadManager *download.Manager,
+	installRepo repository.InstallationRepository,
+	auditRepo repository.AuditRepository,
+	txManager transaction.TransactionManager,
+	configManager *config.Config,
+) *UpdateManager {
+	return &UpdateManager{
+		backendRegistry:  backendRegistry,
+		providerRegistry: providerRegistry,
+		downloadManager:  downloadManager,
+		installRepo:      installRepo,
+		auditRepo:        auditRepo,
+		txManager:        txManager,
+		configManager:    configManager,
+		gpgVerifier:      gpg.NewVerifier(),
+	}
+}
+
+// CheckForUpdates checks for newer versions of installed tools.
+//
+// Validates Requirement 25.1: Check for newer versions of installed tools
+func (um *UpdateManager) CheckForUpdates(ctx context.Context) ([]UpdateInfo, error) {
+	// Get all installed tools
+	installations, err := um.installRepo.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list installations: %w", err)
+	}
+
+	var updates []UpdateInfo
+	platform := backend.CurrentPlatform()
+
+	// Batch prefetch GitHub and GitLab releases via GraphQL if available
+	var ghSpecs []backend.GitHubReleaseQuerySpec
+	var glSpecs []backend.GitLabReleaseQuerySpec
+	for _, inst := range installations {
+		backendName := inst.Backend
+		if backendName == "" && strings.Contains(inst.Tool, "/") {
+			backendName = "github"
+		}
+		if backendName == "github" {
+			ghSpecs = append(ghSpecs, backend.GitHubReleaseQuerySpec{
+				Tool: inst.Tool,
+				Tag:  "latest",
+			})
+		} else if backendName == "gitlab" {
+			glSpecs = append(glSpecs, backend.GitLabReleaseQuerySpec{
+				Tool: inst.Tool,
+				Tag:  "latest",
+			})
+		}
+	}
+	if len(ghSpecs) > 0 {
+		if b, err := um.backendRegistry.Get("github"); err == nil {
+			if ghBackend, ok := b.(*backend.GitHubBackend); ok {
+				_ = ghBackend.BatchPrefetchReleases(ctx, ghSpecs)
+			}
+		}
+	}
+	if len(glSpecs) > 0 {
+		if b, err := um.backendRegistry.Get("gitlab"); err == nil {
+			if glBackend, ok := b.(*backend.GitlabBackend); ok {
+				_ = glBackend.BatchPrefetchReleases(ctx, glSpecs)
+			}
+		}
+	}
+
+	results := make([]UpdateInfo, len(installations))
+	valid := make([]bool, len(installations))
+
+	concurrency := 10
+	if len(installations) < concurrency {
+		concurrency = len(installations)
+	}
+	if concurrency < 1 {
+		concurrency = 1
+	}
+	sem := make(chan struct{}, concurrency)
+	var wg sync.WaitGroup
+
+	for i, installation := range installations {
+		wg.Add(1)
+		go func(idx int, inst *repository.Installation) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			b, err := um.backendRegistry.Get(inst.Backend)
+			if err != nil {
+				return
+			}
+
+			latestInfo, err := b.ResolveVersion(ctx, inst.Tool, "latest", platform)
+			if err != nil {
+				return
+			}
+
+			minAgeStr := "7d"
+			if um.configManager != nil {
+				if um.configManager.Settings.MinimumReleaseAge != "" {
+					minAgeStr = um.configManager.Settings.MinimumReleaseAge
+				}
+				if toolConfig, exists := um.configManager.Tools[inst.Tool]; exists {
+					if toolConfig.MinimumReleaseAge != "" {
+						minAgeStr = toolConfig.MinimumReleaseAge
+					}
+				}
+			}
+
+			if minAgeStr != "" && !latestInfo.PublishedAt.IsZero() {
+				ageSecs, err := config.ParseDurationToSeconds(minAgeStr)
+				if err == nil && ageSecs > 0 {
+					quarantineUntil := latestInfo.PublishedAt.Add(time.Duration(ageSecs) * time.Second)
+					if time.Now().Before(quarantineUntil) {
+						return
+					}
+				}
+			}
+
+			updateRequired := version.CompareVersions(latestInfo.Version, inst.Version) > 0
+
+			if um.configManager != nil {
+				if toolConfig, exists := um.configManager.Tools[inst.Tool]; exists {
+					if toolConfig.Version != "" && toolConfig.Version != "latest" {
+						configInfo, err := b.ResolveVersion(ctx, inst.Tool, toolConfig.Version, platform)
+						if err == nil {
+							latestInfo = configInfo
+							updateRequired = version.CompareVersions(configInfo.Version, inst.Version) > 0
+						}
+					}
+				}
+			}
+
+			results[idx] = UpdateInfo{
+				Tool:           inst.Tool,
+				CurrentVersion: inst.Version,
+				LatestVersion:  latestInfo.Version,
+				Backend:        inst.Backend,
+				UpdateRequired: updateRequired,
+			}
+			valid[idx] = true
+		}(i, installation)
+	}
+	wg.Wait()
+
+	for i, ok := range valid {
+		if ok {
+			updates = append(updates, results[i])
+		}
+	}
+
+	return updates, nil
+}
+
+// UpdateTool updates a specific tool to a specific version.
+//
+// Validates Requirement 25.2: Support updating a specific tool to a specific version
+// Validates Requirement 25.7: Rollback to the previous version when an update fails
+func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targetVersion string) (*UpdateResult, error) {
+	startTime := time.Now()
+
+	var installation *repository.Installation
+	var err error
+
+	if oldVersion != "" {
+		// Get specific installation
+		installation, err = um.installRepo.FindByToolAndVersion(ctx, tool, oldVersion)
+		if err != nil {
+			return nil, fmt.Errorf("tool %s@%s not installed: %w", tool, oldVersion, err)
+		}
+	} else {
+		// Find most recent installation if oldVersion is not specified
+		var installations []*repository.Installation
+		installations, err = um.installRepo.ListByTool(ctx, tool)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list installations for %s: %w", tool, err)
+		}
+		if len(installations) == 0 {
+			return nil, fmt.Errorf("tool %s not installed (run 'unirtm install' first)", tool)
+		}
+		installation = installations[0]
+		oldVersion = installation.Version
+	}
+
+	oldInstallPath := installation.InstallPath
+
+	// Check if already at target version
+	if oldVersion == targetVersion {
+		return &UpdateResult{
+			Tool:       tool,
+			OldVersion: oldVersion,
+			NewVersion: targetVersion,
+			Success:    true,
+			Duration:   time.Since(startTime),
+		}, nil
+	}
+
+	// Audit log: start update
+	auditEntry := &repository.AuditEntry{
+		Timestamp: time.Now(),
+		Operation: "update",
+		Tool:      tool,
+		Version:   targetVersion,
+		Status:    "in_progress",
+		Metadata:  fmt.Sprintf(`{"old_version":"%s","new_version":"%s"}`, oldVersion, targetVersion),
+	}
+	if um.auditRepo != nil {
+		if err := um.auditRepo.Log(ctx, auditEntry); err != nil {
+			return nil, fmt.Errorf("failed to log audit entry: %w", err)
+		}
+	}
+
+	// Get backend
+	b, err := um.backendRegistry.Get(installation.Backend)
+	if err != nil {
+		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("backend not found: %w", err), false, "")
+	}
+
+	// Get download info for target version
+	platform := backend.CurrentPlatform()
+	versionInfo, err := b.GetDownloadInfo(ctx, tool, targetVersion, platform)
+	if err != nil {
+		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to get download info: %w", err), false, "")
+	}
+
+	// Download new version
+	var downloadPath string
+	if versionInfo.DownloadURL != "" {
+		downloadPath = filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", tool, targetVersion))
+		downloader, err := um.downloadManager.Get("https")
+		if err != nil {
+			return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to get downloader: %w", err), false, "")
+		}
+
+		opts := download.DefaultDownloadOptions()
+		if versionInfo.Checksum != "" {
+			opts = opts.WithChecksum(versionInfo.Checksum)
+		}
+
+		if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadPath, opts); err != nil {
+			return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to download: %w", err), false, "")
+		}
+		defer os.Remove(downloadPath)
+
+		// Verify checksum
+		if versionInfo.Checksum != "" {
+			if err := downloader.VerifyChecksum(ctx, downloadPath, versionInfo.Checksum); err != nil {
+				return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("checksum verification failed: %w", err), false, "")
+			}
+		}
+
+		// Verify GPG signature if configured
+		verifyMetadata := true
+		if (versionInfo.SignatureURL != "" || versionInfo.GPGSignature != "") && verifyMetadata && (um.configManager == nil || um.configManager.Settings.GPGVerify != "off") {
+			sigPath := downloadPath + ".asc"
+			var downloadErr error
+			if versionInfo.GPGSignature != "" {
+				// Use embedded signature
+				if err := os.WriteFile(sigPath, []byte(versionInfo.GPGSignature), 0644); err != nil {
+					downloadErr = fmt.Errorf("failed to save embedded GPG signature: %w", err)
+				}
+			} else {
+				// Download signature file
+				sigOpts := download.DefaultDownloadOptions()
+				downloadErr = downloader.Download(ctx, versionInfo.SignatureURL, sigPath, sigOpts)
+			}
+
+			if downloadErr != nil {
+				msg := fmt.Sprintf("failed to obtain GPG signature: %v", downloadErr)
+				if um.configManager != nil && um.configManager.Settings.GPGVerify == "strict" {
+					return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("GPG signature required in strict mode: %w", downloadErr), false, "")
+				}
+				output.Warningf("WARNING: %s. Continuing anyway", msg)
+			} else {
+				defer os.Remove(sigPath)
+
+				// Collect all trusted keys
+				trustedKeys := make([]string, 0)
+				if um.configManager != nil {
+					trustedKeys = append(trustedKeys, um.configManager.Settings.GPGKeys...)
+					if tc, ok := um.configManager.Tools[tool]; ok {
+						trustedKeys = append(trustedKeys, tc.GPGKeys...)
+					}
+				}
+				trustedKeys = append(trustedKeys, versionInfo.GPGKeys...)
+
+				// Verify signature
+				err := um.gpgVerifier.Verify(ctx, sigPath, downloadPath, trustedKeys)
+				if err != nil && strings.Contains(err.Error(), "missing public key") && len(trustedKeys) > 0 {
+					// Handle missing public key: try to automatically import if TTY, but for update we'll just try importing
+					fp := trustedKeys[0] // Try first fingerprint
+					if importErr := um.gpgVerifier.ImportKey(ctx, fp); importErr == nil {
+						// Retry verification
+						err = um.gpgVerifier.Verify(ctx, sigPath, downloadPath, trustedKeys)
+					}
+				}
+
+				if err != nil {
+					msg := fmt.Sprintf("GPG verification failed: %v", err)
+					if um.configManager != nil && um.configManager.Settings.GPGVerify == "strict" {
+						return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("SECURITY ERROR: %s", msg), false, "")
+					}
+					output.Warningf("SECURITY WARNING: %s. Continuing anyway", msg)
+				}
+			}
+		} else if versionInfo.SignatureURL == "" && um.configManager != nil && um.configManager.Settings.GPGVerify == "strict" {
+			if len(versionInfo.GPGKeys) > 0 {
+				return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("GPG security violation: trusted fingerprints exist for %s but no signature URL found in strict mode", tool), false, "")
+			}
+		}
+	}
+
+	// Install new version
+	newInstallPath := filepath.Join(filepath.Dir(oldInstallPath), targetVersion)
+	p := um.providerRegistry.GetWithBackend(tool, installation.Backend)
+
+	if err := p.Install(ctx, tool, newInstallPath, downloadPath, targetVersion); err != nil {
+		os.RemoveAll(newInstallPath)
+		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("installation failed: %w", err), false, "")
+	}
+
+	if err := p.PostInstall(ctx, tool, newInstallPath, targetVersion); err != nil {
+		os.RemoveAll(newInstallPath)
+		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("post-install failed: %w", err), false, "")
+	}
+
+	// Update database record
+	newInstallation := &repository.Installation{
+		Tool:        tool,
+		Version:     targetVersion,
+		Backend:     installation.Backend,
+		Provider:    installation.Provider,
+		InstallPath: newInstallPath,
+		Checksum:    versionInfo.Checksum,
+		InstalledAt: time.Now(),
+		Metadata:    installation.Metadata,
+	}
+
+	// Start transaction for atomic database record update
+	tx, err := um.txManager.Begin(ctx)
+	if err != nil {
+		os.RemoveAll(newInstallPath)
+		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to start transaction: %w", err), false, "")
+	}
+	defer tx.Rollback()
+
+	// Delete old installation record
+	if err := tx.InstallationRepo().Delete(ctx, tool, oldVersion); err != nil {
+		os.RemoveAll(newInstallPath)
+		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to delete old installation record: %w", err), false, "")
+	}
+
+	// Upsert new installation record
+	if err := tx.InstallationRepo().Upsert(ctx, newInstallation); err != nil {
+		os.RemoveAll(newInstallPath)
+		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to upsert installation record: %w", err), true, "database update failed")
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		os.RemoveAll(newInstallPath)
+		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to commit transaction: %w", err), true, "transaction commit failed")
+	}
+
+	// Remove old installation directory (after successful commit)
+	if err := os.RemoveAll(oldInstallPath); err != nil {
+		// Log but don't fail - the update was successful
+		// The old version directory can be cleaned up manually
+	}
+
+	// Update audit log: success
+	auditEntry.Status = "success"
+	auditEntry.Duration = time.Since(startTime).Milliseconds()
+	auditEntry.GpgVerification = "NotRequested"
+	if err := um.auditRepo.Log(ctx, auditEntry); err != nil {
+		// Log but don't fail - the update was successful
+	}
+
+	return &UpdateResult{
+		Tool:       tool,
+		OldVersion: oldVersion,
+		NewVersion: targetVersion,
+		Backend:    installation.Backend,
+		Success:    true,
+		Duration:   time.Since(startTime),
+	}, nil
+}
+
+// UpdateAll updates all tools to their latest versions.
+//
+// Validates Requirement 25.3: Support updating all tools to their latest versions
+// Validates Requirement 25.4: Respect version constraints in configuration files
+func (um *UpdateManager) UpdateAll(ctx context.Context) ([]UpdateResult, error) {
+	// Check for updates
+	updates, err := um.CheckForUpdates(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check for updates: %w", err)
+	}
+
+	var results []UpdateResult
+
+	// Update each tool that has an available update
+	for _, update := range updates {
+		if !update.UpdateRequired {
+			continue
+		}
+
+		result, err := um.UpdateTool(ctx, update.Tool, update.CurrentVersion, update.LatestVersion)
+		if err != nil {
+			// Continue with other updates even if one fails
+			results = append(results, UpdateResult{
+				Tool:       update.Tool,
+				OldVersion: update.CurrentVersion,
+				NewVersion: update.LatestVersion,
+				Backend:    update.Backend,
+				Success:    false,
+				Error:      err.Error(),
+			})
+			continue
+		}
+
+		results = append(results, *result)
+	}
+
+	return results, nil
+}
+
+// PreviewUpdates shows a preview of what will be updated before applying.
+//
+// Validates Requirement 25.5: Show a preview of what will be updated before applying
+func (um *UpdateManager) PreviewUpdates(ctx context.Context) (*UpdatePreview, error) {
+	updates, err := um.CheckForUpdates(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check for updates: %w", err)
+	}
+
+	// Filter to only updates that are required
+	var requiredUpdates []UpdateInfo
+	for _, update := range updates {
+		if update.UpdateRequired {
+			requiredUpdates = append(requiredUpdates, update)
+		}
+	}
+
+	// Estimate time (rough estimate: 30 seconds per tool)
+	estimatedTime := time.Duration(len(requiredUpdates)) * 30 * time.Second
+
+	return &UpdatePreview{
+		Updates:        requiredUpdates,
+		TotalUpdates:   len(requiredUpdates),
+		TotalInstalled: len(updates),
+		EstimatedTime:  estimatedTime,
+	}, nil
+}
+
+// EnableAutomaticUpdates enables automatic updates with the specified schedule.
+//
+// Validates Requirement 25.6: Support automatic updates (opt-in, configurable schedule)
+//
+// Note: This method stores the automatic update configuration. The actual
+// scheduling and execution would be handled by a separate scheduler service
+// or cron job that calls UpdateAll periodically.
+func (um *UpdateManager) EnableAutomaticUpdates(ctx context.Context, schedule string) error {
+	// Store automatic update configuration in metadata
+	metadata := map[string]interface{}{
+		"automatic_updates_enabled": true,
+		"schedule":                  schedule,
+		"enabled_at":                time.Now().Format(time.RFC3339),
+	}
+
+	metadataJSON, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+
+	// Store in audit log for tracking
+	auditEntry := &repository.AuditEntry{
+		Timestamp: time.Now(),
+		Operation: "enable_automatic_updates",
+		Status:    "success",
+		Metadata:  string(metadataJSON),
+	}
+
+	if err := um.auditRepo.Log(ctx, auditEntry); err != nil {
+		return fmt.Errorf("failed to log automatic updates configuration: %w", err)
+	}
+
+	return nil
+}
+
+// DisableAutomaticUpdates disables automatic updates.
+func (um *UpdateManager) DisableAutomaticUpdates(ctx context.Context) error {
+	// Store automatic update configuration in metadata
+	metadata := map[string]interface{}{
+		"automatic_updates_enabled": false,
+		"disabled_at":               time.Now().Format(time.RFC3339),
+	}
+
+	metadataJSON, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+
+	// Store in audit log for tracking
+	auditEntry := &repository.AuditEntry{
+		Timestamp: time.Now(),
+		Operation: "disable_automatic_updates",
+		Status:    "success",
+		Metadata:  string(metadataJSON),
+	}
+
+	if err := um.auditRepo.Log(ctx, auditEntry); err != nil {
+		return fmt.Errorf("failed to log automatic updates configuration: %w", err)
+	}
+
+	return nil
+}
+
+// createFailureResult creates an UpdateResult for a failed update.
+func (um *UpdateManager) createFailureResult(
+	tool, oldVersion, newVersion string,
+	startTime time.Time,
+	err error,
+	rolledBack bool,
+	rollbackReason string,
+) (*UpdateResult, error) {
+	return &UpdateResult{
+		Tool:           tool,
+		OldVersion:     oldVersion,
+		NewVersion:     newVersion,
+		Success:        false,
+		Error:          err.Error(),
+		Duration:       time.Since(startTime),
+		RolledBack:     rolledBack,
+		RollbackReason: rollbackReason,
+	}, err
+}

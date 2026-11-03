@@ -6,7 +6,7 @@
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
 version: 2
-project_name: template
+project_name: unirtm
 
 report_sizes: true
 
@@ -25,28 +25,30 @@ before:
   hooks:
     # You may remove this if you don't use go modules.
     - go mod tidy
+    # Build frontend production assets for embedded workbench
+    - sh -c "cd frontend && npm install --registry=https://registry.npmjs.org && npm run build"
     # Generate shell completion scripts dynamically before building packages
     - go run ./main.go completion -d ./completions --all
     # Generate manpages
     - go run ./main.go generate manpage -d ./manpages
 
 builds:
-  - id: template
-    binary: template
+  - id: unirtm
+    binary: unirtm
     env:
       - CGO_ENABLED=0
     flags:
       - -trimpath
     ldflags:
       - -s -w
-      - -X 'github.com/snowdreamtech/template/internal/pkg/env.ProjectName=template'
-      - -X 'github.com/snowdreamtech/template/internal/pkg/env.Author=Snowdream Tech <snowdreamtech@qq.com>'
-      - -X github.com/snowdreamtech/template/internal/pkg/env.BuildTime={{.Date}}
-      - -X github.com/snowdreamtech/template/internal/pkg/env.CommitHash={{.ShortCommit}}
-      - -X github.com/snowdreamtech/template/internal/pkg/env.CommitHashFull={{.FullCommit}}
-      - -X github.com/snowdreamtech/template/internal/pkg/env.GitTag={{.Tag}}
-      - -X 'github.com/snowdreamtech/template/internal/pkg/env.COPYRIGHT=Copyright (c) 2026-present SnowdreamTech Inc.'
-      - -X 'github.com/snowdreamtech/template/internal/pkg/env.LICENSE=MIT <https://github.com/snowdreamtech/template/blob/main/LICENSE>'
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.ProjectName=unirtm'
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.Author=Snowdream Tech <snowdreamtech@qq.com>'
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.BuildTime={{.Date}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHash={{.ShortCommit}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHashFull={{.FullCommit}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.GitTag={{.Tag}}
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.COPYRIGHT=Copyright (c) 2023-present SnowdreamTech Inc.'
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.LICENSE=MIT <https://github.com/snowdreamtech/unirtm/blob/main/LICENSE>'
     goos:
       - linux
       - darwin
@@ -66,9 +68,8 @@ builds:
       - goos: windows
         goarch: arm
     mod_timestamp: "{{ .CommitTimestamp }}"
-
 archives:
-  - id: template
+  - id: unirtm
     formats: [tar.gz]
     # This name template makes the OS and Arch compatible with uname and includes the version.
     name_template: >-
@@ -128,17 +129,28 @@ release:
   prerelease: auto
   github:
     owner: snowdreamtech
-    name: template
+    name: UniRTM
   header: |
-    **Snowdream Tech AI IDE Template** is an enterprise-grade, foundational template designed for multi-AI IDE collaboration.
+    **UniRTM** (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager inspired by [mise](https://github.com/jdx/mise).
 
-    This repository serves as a **Single Source of Truth** for AI agent rules, workflows, and project configurations, supporting over 50 different AI-assisted IDEs with massive multi-language support.
+    It manages runtimes, tools, and tasks across Linux, macOS, and Windows — while serving as the **Single Source of Truth** for AI agent rules, workflows, and project configurations across 50+ AI-assisted IDEs (Cursor, Windsurf, GitHub Copilot, Gemini, Claude, Cline, and more).
+
+    **Key capabilities:**
+    - 📦 Manage runtimes & tools (Go, Node.js, Python, Rust, and more) with version pinning
+    - 🤖 Unified rule engine for 50+ AI-assisted IDEs via a single `.agent/rules/` directory
+    - 🔁 Smart SpecKit workflows (`speckit.plan`, `speckit.analyze`, `speckit.implement`)
+    - 🛡️ Triple-guarantee quality gates: IDE → pre-commit → GitHub Actions CI/CD
+    - 🌐 Cross-platform: Linux (Debian/Alpine/RHEL), macOS, Windows
   footer: |
-    **Full Changelog**: https://github.com/snowdreamtech/template/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/snowdreamtech/UniRTM/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    ## 📦 Installation
+
+    See the [Installation Guide](https://github.com/snowdreamtech/UniRTM#-installation) for all available methods.
 
     ## 🤝 Contributing
 
-    Contributions are welcome! Please read our [Contributing Guide](https://github.com/snowdreamtech/template/blob/main/CONTRIBUTING.md) first.
+    Contributions are welcome! Please read our [Contributing Guide](https://github.com/snowdreamtech/UniRTM/blob/main/CONTRIBUTING.md) first.
 
 source:
   enabled: true
@@ -188,10 +200,11 @@ changelog:
 nfpms:
   - id: default
     file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    homepage: https://github.com/snowdreamtech/template
+    homepage: https://github.com/snowdreamtech/unirtm
     maintainer: "Snowdream Tech <snowdreamtech@qq.com>"
     description: |-
-      Snowdream Tech AI IDE Template is an enterprise-grade, foundational template designed for multi-AI IDE collaboration.
+      UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
+      It manages runtimes, tools, and tasks across Linux, macOS, and Windows.
     license: MIT
     vendor: SnowdreamTech
     bindir: /usr/bin
@@ -205,18 +218,18 @@ nfpms:
     dependencies:
       - git
     contents:
-      - src: ./completions/template.bash
-        dst: /usr/share/bash-completion/completions/template
+      - src: ./completions/unirtm.bash
+        dst: /usr/share/bash-completion/completions/unirtm
         file_info:
           mode: 0644
           mtime: "{{ .CommitDate }}"
-      - src: ./completions/template.zsh
-        dst: /usr/share/zsh/vendor-completions/_template
+      - src: ./completions/unirtm.zsh
+        dst: /usr/share/zsh/vendor-completions/_unirtm
         file_info:
           mode: 0644
           mtime: "{{ .CommitDate }}"
-      - src: ./completions/template.fish
-        dst: /usr/share/fish/vendor_completions.d/template.fish
+      - src: ./completions/unirtm.fish
+        dst: /usr/share/fish/vendor_completions.d/unirtm.fish
         file_info:
           mode: 0644
           mtime: "{{ .CommitDate }}"
@@ -226,7 +239,7 @@ nfpms:
           mode: 0644
           mtime: "{{ .CommitDate }}"
       - src: LICENSE
-        dst: /usr/share/doc/template/copyright
+        dst: /usr/share/doc/unirtm/copyright
         file_info:
           mode: 0644
           mtime: "{{ .CommitDate }}"
@@ -243,16 +256,16 @@ nfpms:
 
 snapcrafts:
   - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-    summary: Snowdream Tech AI IDE Template
+    summary: UniRTM (Uni Runtime and Tools Manager)
     description: |
-      Snowdream Tech AI IDE Template is an enterprise-grade, foundational template designed for multi-AI IDE collaboration.
+      UniRTM manages runtimes, tools, and tasks across Linux, macOS, and Windows.
     grade: stable
     confinement: classic
     publish: false
     disable: "{{ if .IsNightly }}true{{ end }}"
 
 flatpak:
-  - app_id: io.github.snowdreamtech.template
+  - app_id: io.github.snowdreamtech.UniRTM
     runtime: org.freedesktop.Platform
     runtime_version: "24.08"
     sdk: org.freedesktop.Sdk
@@ -282,41 +295,41 @@ signs:
       - --yes # Enables keyless signing via OIDC token
 
 homebrew_casks:
-  - name: template
+  - name: unirtm
     binaries:
-      - template
+      - unirtm
     manpages:
-      - manpages/template.1
+      - manpages/unirtm.1
     completions:
-      bash: completions/template.bash
-      zsh: completions/template.zsh
-      fish: completions/template.fish
+      bash: completions/unirtm.bash
+      zsh: completions/unirtm.zsh
+      fish: completions/unirtm.fish
     repository:
       owner: snowdreamtech
       name: homebrew-tap
-    homepage: "https://github.com/snowdreamtech/template"
+    homepage: "https://github.com/snowdreamtech/UniRTM"
     url:
-      template: "https://github.com/snowdreamtech/template/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    description: "Snowdream Tech AI IDE Template is an enterprise-grade, foundational template designed for multi-AI IDE collaboration."
+      template: "https://github.com/snowdreamtech/UniRTM/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    description: "UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager."
     license: "MIT"
     hooks:
       post:
         install: |
           if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/template"]
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/unirtm"]
           end
 
 winget:
-  - name: template
+  - name: unirtm
     publisher: SnowdreamTech
     license: MIT
-    homepage: https://github.com/snowdreamtech/template
-    short_description: Snowdream Tech AI IDE Template
+    homepage: https://github.com/snowdreamtech/UniRTM
+    short_description: Cross-platform developer toolchain manager
     repository:
       owner: snowdreamtech
       name: winget-pkgs
       token: "{{ .Env.WORKFLOW_SECRET }}"
-      branch: "template-{{.Version}}"
+      branch: "unirtm-{{.Version}}"
       pull_request:
         enabled: true
         base:
@@ -329,8 +342,8 @@ scoops:
       owner: snowdreamtech
       name: scoop-bucket
       token: "{{ .Env.WORKFLOW_SECRET }}"
-    homepage: https://github.com/snowdreamtech/template
-    description: Snowdream Tech AI IDE Template is an enterprise-grade, foundational template designed for multi-AI IDE collaboration.
+    homepage: https://github.com/snowdreamtech/UniRTM
+    description: UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
     license: MIT
 
 nix:
@@ -338,33 +351,33 @@ nix:
       owner: snowdreamtech
       name: nur
       token: "{{ .Env.WORKFLOW_SECRET }}"
-    homepage: https://github.com/snowdreamtech/template
-    description: Snowdream Tech AI IDE Template is an enterprise-grade, foundational template designed for multi-AI IDE collaboration.
+    homepage: https://github.com/snowdreamtech/UniRTM
+    description: UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
     license: mit
     skip_upload: auto
 
 aurs:
-  - homepage: https://github.com/snowdreamtech/template
-    description: Snowdream Tech AI IDE Template is an enterprise-grade, foundational template designed for multi-AI IDE collaboration.
+  - homepage: https://github.com/snowdreamtech/UniRTM
+    description: UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
     maintainers:
       - "Snowdream Tech <snowdreamtech@qq.com>"
     license: MIT
     private_key: "{{ .Env.AUR_KEY }}"
-    git_url: "ssh://aur@aur.archlinux.org/template-bin.git"
+    git_url: "ssh://aur@aur.archlinux.org/unirtm-bin.git"
     package: |-
       # bin
-      install -Dm755 "./template" "${pkgdir}/usr/bin/template"
+      install -Dm755 "./unirtm" "${pkgdir}/usr/bin/unirtm"
 
       # license
-      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/template/LICENSE"
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/unirtm/LICENSE"
 
       # completions
       mkdir -p "${pkgdir}/usr/share/bash-completion/completions/"
       mkdir -p "${pkgdir}/usr/share/zsh/site-functions/"
       mkdir -p "${pkgdir}/usr/share/fish/vendor_completions.d/"
-      install -Dm644 "./completions/template.bash" "${pkgdir}/usr/share/bash-completion/completions/template"
-      install -Dm644 "./completions/template.zsh" "${pkgdir}/usr/share/zsh/site-functions/_template"
-      install -Dm644 "./completions/template.fish" "${pkgdir}/usr/share/fish/vendor_completions.d/template.fish"
+      install -Dm644 "./completions/unirtm.bash" "${pkgdir}/usr/share/bash-completion/completions/unirtm"
+      install -Dm644 "./completions/unirtm.zsh" "${pkgdir}/usr/share/zsh/site-functions/_unirtm"
+      install -Dm644 "./completions/unirtm.fish" "${pkgdir}/usr/share/fish/vendor_completions.d/unirtm.fish"
 
       # man pages
-      install -Dm644 "./manpages/template.1.gz" "${pkgdir}/usr/share/man/man1/template.1.gz"
+      install -Dm644 "./manpages/unirtm.1.gz" "${pkgdir}/usr/share/man/man1/unirtm.1.gz"

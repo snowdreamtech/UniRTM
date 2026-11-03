@@ -394,8 +394,7 @@ For a complete list, see the implementation in `scripts/lib/langs/*.sh`.
 ## Related Documentation
 
 - [Alpine Linux Compatibility](../alpine-compatibility.md)
-- [API Documentation](./api-common.md)
-- [Troubleshooting](../troubleshooting-unirtm-provenance.md)
+- [Troubleshooting](../../docs/about/troubleshooting.md)
 
 ## References
 

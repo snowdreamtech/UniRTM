@@ -1,0 +1,66 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package native
+
+import (
+	"context"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+)
+
+// Asset represents a downloadable file for a specific version.
+type Asset struct {
+	URL          string
+	Filename     string
+	OS           string
+	Arch         string
+	Checksum     string
+	Algo         string            // sha256, sha1, etc.
+	SignatureURL string            // URL to the GPG signature (.asc, .sig)
+	Signature    string            // Raw content of the GPG signature (e.g. from JSON)
+	Metadata     map[string]string // Additional metadata
+}
+
+// VersionInfo represents a tool version and its associated assets.
+type VersionInfo struct {
+	Version string
+	IsLTS   bool
+	LTSName string
+	Assets  []Asset
+}
+
+// ProtocolHandler defines the interface for parsing upstream tool metadata.
+type ProtocolHandler interface {
+	// Name returns the identifier of the protocol handler.
+	Name() string
+	// ResolveVersions fetches and parses the upstream metadata to get all available versions.
+	ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error)
+}
+
+// Recipe defines the configuration for a native tool.
+type Recipe struct {
+	ID      string
+	Handler ProtocolHandler
+	BaseURL string
+	Aliases map[string]string
+	GPGKeys []string // List of trusted GPG fingerprints for this tool
+}
+
+// GitHubTokenResolver allows injecting full config/credential token resolution without cyclic dependency.
+var GitHubTokenResolver func(host string) string
+
+// getGitHubToken retrieves the GitHub token using the resolver if set, falling back to environment variables.
+func getGitHubToken() string {
+	if GitHubTokenResolver != nil {
+		if tok := GitHubTokenResolver("github.com"); tok != "" {
+			return tok
+		}
+	}
+	for _, key := range []string{"GITHUB_TOKEN", "GH_TOKEN", "GITHUB_API_TOKEN"} {
+		if token := env.Get(key); token != "" {
+			return token
+		}
+	}
+	return ""
+}

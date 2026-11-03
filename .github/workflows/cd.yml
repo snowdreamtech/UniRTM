@@ -94,6 +94,28 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-trivy-
 
+      - name: "🔨 Build In-tree UniRTM Binary"
+        shell: sh
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/bin"
+          TARGET="$GITHUB_WORKSPACE/bin/unirtm"
+          if command -v cygpath >/dev/null 2>&1 || [ "${{ runner.os }}" = "Windows" ]; then
+            TARGET="$TARGET.exe"
+          fi
+          unirtm exec -- go build -trimpath -ldflags="-s -w" -o "$TARGET" main.go
+          cp "$TARGET" "$GITHUB_WORKSPACE/bin/unirtm" 2>/dev/null || true
+          cp "$TARGET" "$GITHUB_WORKSPACE/bin/unirtm.exe" 2>/dev/null || true
+          BIN_PATH="$GITHUB_WORKSPACE/bin"
+          if command -v cygpath >/dev/null 2>&1; then
+            BIN_PATH=$(cygpath -w "$BIN_PATH")
+          fi
+          echo "$BIN_PATH" >> "$GITHUB_PATH"
+
+      - name: "📦 Install Frontend Dependencies"
+        shell: sh
+        run: |
+          cd frontend && npm install --silent
+
       - name: "🧪 Execute Full Quality & Safety Verification"
         shell: sh
         run: |
