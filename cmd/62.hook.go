@@ -7,12 +7,14 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/hook"
 	"github.com/spf13/cobra"
 )
 
 var hookAll bool
+var hookGlobal bool
 var hookStage string
 
 var hookCmd = &cobra.Command{
@@ -26,9 +28,42 @@ var hookInstallCmd = &cobra.Command{
 	Use:   "install [hookName]",
 	Short: "Install a git hook bridge script",
 	Long: `Injects the UniRTM bridge script into .git/hooks/<hookName> to enable routing.
-Use the -a/--all flag to install the bridge script to all non-sample hooks in .git/hooks.`,
+Use the -a/--all flag to install the bridge script to all non-sample hooks in .git/hooks.
+Use the -g/--global flag to configure hooks globally across all repositories using git core.hooksPath.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
+		if hookGlobal {
+			if len(args) == 0 {
+				installed, err := hook.InstallAllGlobalBridgeScripts(ctx)
+				if err != nil {
+					return fmt.Errorf("failed to install global git hooks: %w", err)
+				}
+				fmt.Printf("✨ Successfully installed global UniRTM Git hooks (%s) at: %s\n", strings.Join(installed, ", "), hook.GetGlobalHooksDir())
+				fmt.Println("✓ Configured git config --global core.hooksPath")
+				fmt.Println("✓ All repositories and AI Agents are now globally protected by UniRTM.")
+				return nil
+			}
+
+			hookName := args[0]
+			if err := hook.ValidateHookName(hookName); err != nil {
+				return err
+			}
+			if err := hook.InstallGlobalBridgeScript(cmd.Context(), hookName); err != nil {
+				return fmt.Errorf("failed to install global hook %s: %w", hookName, err)
+			}
+			if err := hook.ConfigureGitCoreHooksPath(cmd.Context()); err != nil {
+				return err
+			}
+			fmt.Printf("✨ Successfully installed global UniRTM Git hook (%s) at: %s\n", hookName, hook.GetGlobalHooksDir())
+			fmt.Println("✓ Configured git config --global core.hooksPath")
+			return nil
+		}
+
 		pwd, err := os.Getwd()
 		if err != nil {
 			return err
@@ -68,6 +103,23 @@ Use the -a/--all flag to install the bridge script to all non-sample hooks in .g
 		}
 
 		fmt.Printf("✨ Successfully installed UniRTM bridge script for hook: %s\n", hookName)
+		return nil
+	},
+}
+
+var hookUninstallCmd = &cobra.Command{
+	Use:   "uninstall",
+	Short: "Uninstall git hook bridge scripts",
+	Long:  "Uninstall global git hooks configuration, unsetting git core.hooksPath when using --global flag.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if hookGlobal {
+			if err := hook.UnsetGitCoreHooksPath(cmd.Context()); err != nil {
+				return fmt.Errorf("failed to unset git core.hooksPath: %w", err)
+			}
+			fmt.Println("✨ Successfully unset git config --global core.hooksPath.")
+			return nil
+		}
+		fmt.Println("Please specify --global to unset global hooks, or remove individual hook scripts from .git/hooks/.")
 		return nil
 	},
 }
@@ -117,8 +169,11 @@ var hookRunCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(hookCmd)
 	hookInstallCmd.Flags().BoolVarP(&hookAll, "all", "a", false, "Install bridge scripts to all non-sample hooks in .git/hooks")
+	hookInstallCmd.Flags().BoolVarP(&hookGlobal, "global", "g", false, "Install git hooks globally using git core.hooksPath")
+	hookUninstallCmd.Flags().BoolVarP(&hookGlobal, "global", "g", false, "Uninstall global git hooks configuration")
 	hookRunCmd.Flags().StringVar(&hookStage, "stage", "", "Git lifecycle stage (e.g. pre-commit)")
 	hookRunCmd.Flags().SetInterspersed(false)
 	hookCmd.AddCommand(hookInstallCmd)
+	hookCmd.AddCommand(hookUninstallCmd)
 	hookCmd.AddCommand(hookRunCmd)
 }
