@@ -12,11 +12,13 @@ The script injection will rely on two primary string markers:
 ```bash
 # Auto-load UniRTM environment for Headless (AI/CI) and GUI Git Clients
 if ! command -v unirtm >/dev/null 2>&1; then
-    _UNIRTM_BIN="$(git rev-parse --show-toplevel 2>/dev/null)/unirtm"
-    if [ -x "$_UNIRTM_BIN" ]; then
-        eval "$("$_UNIRTM_BIN" env)" 2>/dev/null
+    UNIRTM_BIN="$(git rev-parse --show-toplevel 2>/dev/null)/unirtm"
+    if [ -x "$UNIRTM_BIN" ]; then
+        eval "$("$UNIRTM_BIN" env)" 2>/dev/null
     else
-        if [ -x "$HOME/.local/bin/unirtm" ]; then
+        if [ -x "$HOME/bin/unirtm" ]; then
+            eval "$("$HOME/bin/unirtm" env)" 2>/dev/null
+        elif [ -x "$HOME/.local/bin/unirtm" ]; then
             eval "$("$HOME/.local/bin/unirtm" env)" 2>/dev/null
         fi
     fi
