@@ -15,6 +15,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/hook"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/envpath"
 	"github.com/snowdreamtech/unirtm/internal/task"
@@ -89,6 +90,11 @@ Examples:
 // runTaskCommand executes the task routing.
 func runTaskCommand(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
+
+	// Ensure git hooks are seamlessly and idempotently ready
+	if pwd, err := os.Getwd(); err == nil {
+		_, _ = hook.EnsureGitHooksIdempotent(ctx, pwd)
+	}
 
 	// Scheme 3: Get output mode from flag and set environment variable
 	outputMode, _ := cmd.Flags().GetString("output")

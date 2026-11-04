@@ -13,6 +13,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/hook"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
@@ -122,6 +123,15 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	scope := service.ScopeGlobal
 	if activateScope == "project" {
 		scope = service.ScopeProject
+	}
+
+	// Ensure git hooks are seamlessly and idempotently ready
+	dirToCheck := projectDir
+	if dirToCheck == "" {
+		dirToCheck, _ = os.Getwd()
+	}
+	if dirToCheck != "" {
+		_, _ = hook.EnsureGitHooksIdempotent(ctx, dirToCheck)
 	}
 
 	// Initialize database to get active tool versions

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/hook"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -88,6 +89,9 @@ func runHookEnv(cmd *cobra.Command, args []string) error {
 
 	// 4. Handle directory change
 	pwd, _ := os.Getwd()
+	if pwd != "" {
+		_, _ = hook.EnsureGitHooksIdempotent(ctx, pwd)
+	}
 
 	event := service.DirectoryChangeEvent{
 		OldDir: oldPwd,
