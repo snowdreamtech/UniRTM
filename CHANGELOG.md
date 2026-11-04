@@ -6,6 +6,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.42.0](https://github.com/snowdreamtech/UniRTM/compare/v0.41.0...v0.42.0) (2026-11-04)
+
+
+### 🚀 Features
+
+* **hook:** add global git hooks support via core.hooksPath ([15d633f](https://github.com/snowdreamtech/UniRTM/commit/15d633f17e1602d247ee1d266bbde72ce30a1a1a))
+* **hook:** ensure git hooks automatically, idempotently and without side effects ([e3db6d7](https://github.com/snowdreamtech/UniRTM/commit/e3db6d725464a230dcd1ca728bf069bfcc5ef7a4))
+* **hook:** seamlessly ensure git hooks across activate, hook-env, and run commands ([99c69ba](https://github.com/snowdreamtech/UniRTM/commit/99c69ba7cec96db1c085c91122db14223ab1425a))
+* **hook:** support subdirectories and custom hooks in git hook auto-configuration ([4ccbf33](https://github.com/snowdreamtech/UniRTM/commit/4ccbf338ce2e9f1332f7ad0b16f3b70c631c34ff))
+* **ui:** display notification when git hooks are automatically configured on startup ([c04aa2f](https://github.com/snowdreamtech/UniRTM/commit/c04aa2f9be26ef1b4751f86724343c2b47c86066))
+
+
+### 🐛 Bug Fixes
+
+* **server:** open only current repo when root is already a git project ([5699a41](https://github.com/snowdreamtech/UniRTM/commit/5699a41d4d37973010ca3119286d4e658a4e1f7a))
+* **server:** remove placeholder 3.2.0 from fallback remote versions ([ced0e88](https://github.com/snowdreamtech/UniRTM/commit/ced0e88d3bcfa810ccb80817705d6a2af931b696))
+* **test:** skip posix file permission assertion on windows in TestInstallGlobalBridgeScript ([df3cd64](https://github.com/snowdreamtech/UniRTM/commit/df3cd64bc727211d733b9f1f79a852c79ce8b9cb))
+* **workbench:** default to root project instead of non-root subfolder ([9d68ba3](https://github.com/snowdreamtech/UniRTM/commit/9d68ba3e5061632e75507aadc020136633d3e44b))
+
+
+### 🛠 Refactoring
+
+* **hook:** rename _UNIRTM_BIN to UNIRTM_BIN in bridge script ([65d3ab4](https://github.com/snowdreamtech/UniRTM/commit/65d3ab45b11ff5ee5c891ac41fa21e1f8bfc3618))
+
 ## [0.41.0](https://github.com/snowdreamtech/UniRTM/compare/v0.40.0...v0.41.0) (2026-11-04)
 
 
