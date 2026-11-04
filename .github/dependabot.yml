@@ -124,6 +124,10 @@ updates:
     labels:
       - "dependencies"
       - "javascript"
+    ignore:
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "pip"
     directory: "/pypi"
