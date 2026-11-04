@@ -65,9 +65,9 @@ export function useActiveProject() {
           if (matched) {
             activeProject.value = matched;
           } else {
-            // Default to first non-empty subproject if exists
-            const nonRoot = items.find((i) => i.path !== "" && i.path !== ".");
-            activeProject.value = nonRoot || items[0];
+            // Default to primary root project if available, otherwise first item
+            const rootProj = items.find((i) => i.path === "" || i.path === ".");
+            activeProject.value = rootProj || items[0];
           }
         }
         isInitialized.value = true;
