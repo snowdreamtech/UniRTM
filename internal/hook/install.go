@@ -9,7 +9,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/config"
 )
 
 const (
@@ -80,8 +83,10 @@ func injectOrUpdateBlock(content string, hasShebang bool, hookName ...string) st
 			switch name {
 			case "commit-msg":
 				defaultExec = "# Execute UniRTM Quality Guard to validate commit message\nexec unirtm check \"$@\"\n"
-			default:
+			case "pre-commit":
 				defaultExec = "# Execute UniRTM Quality Guard to scan staged files before commit\nexec unirtm check --staged \"$@\"\n"
+			default:
+				defaultExec = fmt.Sprintf("# Execute UniRTM hook engine\nexec unirtm hook run %s \"$@\"\n", name)
 			}
 			return "#!/bin/sh\n" + managedBlock + "\n" + defaultExec
 		}
@@ -98,13 +103,51 @@ func injectOrUpdateBlock(content string, hasShebang bool, hookName ...string) st
 	return parts[0] + "\n" + managedBlock
 }
 
+// findEnclosingGitRoot searches upward starting from dir until it finds a directory containing .git.
+// If not found or if dir is invalid, it returns empty string.
+func findEnclosingGitRoot(dir string) string {
+	if dir == "" {
+		return ""
+	}
+	curr, err := filepath.Abs(dir)
+	if err != nil {
+		curr = dir
+	}
+	for {
+		gitPath := filepath.Join(curr, ".git")
+		if fi, err := os.Stat(gitPath); err == nil {
+			if fi.IsDir() {
+				return curr
+			}
+			// .git can be a file for git worktrees and git submodules
+			data, readErr := os.ReadFile(gitPath)
+			if readErr == nil && strings.HasPrefix(strings.TrimSpace(string(data)), "gitdir:") {
+				return curr
+			}
+		}
+		parent := filepath.Dir(curr)
+		if parent == curr || parent == "." {
+			break
+		}
+		curr = parent
+	}
+	return ""
+}
+
 // resolveGitHooksDir locates the .git/hooks directory quickly using Go filesystem APIs without forking a git process.
-// It returns an empty string if dir is not a git repository or the hooks directory cannot be determined.
+// It searches upward if dir is a subdirectory of a git repository.
+// It returns an empty string if dir is not within a git repository or the hooks directory cannot be determined.
 func resolveGitHooksDir(dir string) string {
 	if dir == "" {
 		return ""
 	}
-	gitPath := filepath.Join(dir, ".git")
+
+	root := findEnclosingGitRoot(dir)
+	if root == "" {
+		root = dir
+	}
+
+	gitPath := filepath.Join(root, ".git")
 	fi, err := os.Stat(gitPath)
 	if err != nil {
 		return ""
@@ -122,7 +165,7 @@ func resolveGitHooksDir(dir string) string {
 	if strings.HasPrefix(content, "gitdir:") {
 		target := strings.TrimSpace(strings.TrimPrefix(content, "gitdir:"))
 		if !filepath.IsAbs(target) {
-			target = filepath.Join(dir, target)
+			target = filepath.Join(root, target)
 		}
 		hooksPath := filepath.Join(target, "hooks")
 		if _, err := os.Stat(hooksPath); err == nil {
@@ -139,20 +182,47 @@ func resolveGitHooksDir(dir string) string {
 	return ""
 }
 
-// hasProjectHooksConfig quickly checks if the directory has UniRTM or known hook configurations.
+// hasProjectHooksConfig quickly checks if the directory or any enclosing parent up to gitRoot
+// has UniRTM or known hook configurations.
 // It is side-effect free and uses only fast filesystem checks.
-func hasProjectHooksConfig(dir string) bool {
-	// Check for UniRTM config files
-	for _, cfgName := range []string{".unirtm.toml", "unirtm.toml"} {
-		if _, err := os.Stat(filepath.Join(dir, cfgName)); err == nil {
-			return true
+func hasProjectHooksConfig(dir string, gitRoot string) bool {
+	checkSingleDir := func(d string) bool {
+		for _, cfgName := range []string{".unirtm.toml", "unirtm.toml"} {
+			if _, err := os.Stat(filepath.Join(d, cfgName)); err == nil {
+				return true
+			}
+		}
+		for _, indicator := range []string{".husky", "lefthook.yml", ".pre-commit-config.yaml"} {
+			if _, err := os.Stat(filepath.Join(d, indicator)); err == nil {
+				return true
+			}
+		}
+		return false
+	}
+
+	curr, err := filepath.Abs(dir)
+	if err != nil {
+		curr = dir
+	}
+	absGitRoot := gitRoot
+	if gitRoot != "" {
+		if abs, err := filepath.Abs(gitRoot); err == nil {
+			absGitRoot = abs
 		}
 	}
-	// Check for other standard hook runners supported by UniRTM
-	for _, indicator := range []string{".husky", "lefthook.yml", ".pre-commit-config.yaml"} {
-		if _, err := os.Stat(filepath.Join(dir, indicator)); err == nil {
+
+	for {
+		if checkSingleDir(curr) {
 			return true
 		}
+		if curr == absGitRoot || filepath.Dir(curr) == curr {
+			break
+		}
+		curr = filepath.Dir(curr)
+	}
+
+	if absGitRoot != "" && checkSingleDir(absGitRoot) {
+		return true
 	}
 	return false
 }
@@ -163,6 +233,8 @@ func hasProjectHooksConfig(dir string) bool {
 //  2. Zero side effects: If not a git repository or not a configured project, it returns immediately without error.
 //     Any non-fatal filesystem error is caught and suppressed to prevent blocking the caller.
 //  3. Ultra-fast execution: Executes in < 2ms using native filesystem inspection (no git subprocess execution).
+//  4. Deep discovery: Seamlessly works even when executed from deep sub-directories of a repository.
+//  5. Dynamic hook support: Automatically incorporates custom hooks configured under [hooks] in unirtm.toml.
 //
 // Returns true if any hook file was created or modified.
 func EnsureGitHooksIdempotent(ctx context.Context, dir string) (updated bool, err error) {
@@ -170,14 +242,15 @@ func EnsureGitHooksIdempotent(ctx context.Context, dir string) (updated bool, er
 		return false, nil
 	}
 
-	// 1. Fast short-circuit: Not a git repo
+	// 1. Fast short-circuit: Find enclosing git root and resolve hooks dir
+	gitRoot := findEnclosingGitRoot(dir)
 	hooksDir := resolveGitHooksDir(dir)
 	if hooksDir == "" {
 		return false, nil
 	}
 
 	// 2. Fast short-circuit: Not a UniRTM or hook-configured project
-	if !hasProjectHooksConfig(dir) {
+	if !hasProjectHooksConfig(dir, gitRoot) {
 		return false, nil
 	}
 
@@ -188,10 +261,31 @@ func EnsureGitHooksIdempotent(ctx context.Context, dir string) (updated bool, er
 		}
 	}
 
-	// 4. Inspect standard hooks (pre-commit, commit-msg)
-	targetHooks := []string{"pre-commit", "commit-msg"}
-	var anyUpdated bool
+	// 4. Determine hooks to ensure: standard pre-commit & commit-msg + any configured custom hooks
+	targetHooksMap := map[string]struct{}{
+		"pre-commit": {},
+		"commit-msg": {},
+	}
 
+	effectiveConfigDir := gitRoot
+	if effectiveConfigDir == "" {
+		effectiveConfigDir = dir
+	}
+	if cfg, err := config.LoadHierarchy(effectiveConfigDir); err == nil && cfg != nil {
+		for h := range cfg.Hooks {
+			if err := ValidateHookName(h); err == nil {
+				targetHooksMap[h] = struct{}{}
+			}
+		}
+	}
+
+	targetHooks := make([]string, 0, len(targetHooksMap))
+	for h := range targetHooksMap {
+		targetHooks = append(targetHooks, h)
+	}
+	sort.Strings(targetHooks)
+
+	var anyUpdated bool
 	for _, hookName := range targetHooks {
 		hookPath := filepath.Join(hooksDir, hookName)
 		content, hasShebang, readErr := readExistingHook(hookPath)

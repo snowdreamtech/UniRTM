@@ -212,3 +212,72 @@ func TestEnsureGitHooksIdempotent_SideEffects(t *testing.T) {
 		t.Fatalf("expected user custom logic to be preserved, got: %s", string(content))
 	}
 }
+
+func TestEnsureGitHooksIdempotent_DeepSubDirectory(t *testing.T) {
+	tmpDir := t.TempDir()
+	initGitRepo(t, tmpDir)
+	_ = os.WriteFile(filepath.Join(tmpDir, ".unirtm.toml"), []byte("[settings]\n"), 0644)
+
+	// Create deep sub-directory structure: tmpDir/src/app/core
+	subDir := filepath.Join(tmpDir, "src", "app", "core")
+	if err := os.MkdirAll(subDir, 0755); err != nil {
+		t.Fatalf("failed to create subdirectories: %v", err)
+	}
+
+	// Run from subDir
+	updated, err := EnsureGitHooksIdempotent(context.Background(), subDir)
+	if err != nil {
+		t.Fatalf("subDir run failed: %v", err)
+	}
+	if !updated {
+		t.Fatalf("expected updated=true when run from subDir")
+	}
+
+	// Verify hooks are created at the repo root
+	rootHook := filepath.Join(tmpDir, ".git", "hooks", "pre-commit")
+	if _, err := os.Stat(rootHook); os.IsNotExist(err) {
+		t.Fatalf("expected root git hook to be created at %s", rootHook)
+	}
+
+	// Idempotent check from subDir
+	updated2, err := EnsureGitHooksIdempotent(context.Background(), subDir)
+	if err != nil || updated2 {
+		t.Fatalf("expected false, nil on second subDir run, got updated=%v, err=%v", updated2, err)
+	}
+}
+
+func TestEnsureGitHooksIdempotent_CustomHooksConfigured(t *testing.T) {
+	tmpDir := t.TempDir()
+	initGitRepo(t, tmpDir)
+
+	// Configure custom hooks in .unirtm.toml
+	cfgContent := `
+[hooks]
+pre-push = "unirtm check"
+post-merge = "unirtm install"
+invalid-hook-name = "echo test"
+`
+	_ = os.WriteFile(filepath.Join(tmpDir, ".unirtm.toml"), []byte(cfgContent), 0644)
+
+	updated, err := EnsureGitHooksIdempotent(context.Background(), tmpDir)
+	if err != nil {
+		t.Fatalf("run failed: %v", err)
+	}
+	if !updated {
+		t.Fatalf("expected updated=true")
+	}
+
+	// pre-push and post-merge should be generated
+	for _, h := range []string{"pre-commit", "commit-msg", "pre-push", "post-merge"} {
+		path := filepath.Join(tmpDir, ".git", "hooks", h)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			t.Errorf("expected hook %s to be created at %s", h, path)
+		}
+	}
+
+	// invalid-hook-name must NOT be created (defense against invalid hook names/traversal)
+	invalidPath := filepath.Join(tmpDir, ".git", "hooks", "invalid-hook-name")
+	if _, err := os.Stat(invalidPath); !os.IsNotExist(err) {
+		t.Errorf("expected invalid-hook-name to NOT be created")
+	}
+}
