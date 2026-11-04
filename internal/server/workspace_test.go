@@ -141,13 +141,13 @@ func TestAutoDiscoverSubRepositories(t *testing.T) {
 		t.Fatalf("Expected repo-a and repo-b, got %+v", roots)
 	}
 
-	// 3. If parent folder itself has .git, it should be included as primary root
+	// 3. If parent folder itself has .git, it should be a single git project (should NOT auto-discover sub-repos)
 	_ = os.MkdirAll(filepath.Join(tempDir, ".git"), 0755)
 	roots = loadWorkspaceRoots(tempDir)
-	if len(roots) != 3 {
-		t.Fatalf("Expected 3 roots when root has .git, got %d: %+v", len(roots), roots)
+	if len(roots) != 1 {
+		t.Fatalf("Expected exactly 1 root when root has .git, got %d: %+v", len(roots), roots)
 	}
 	if roots[0].ID != "root-primary" || roots[0].Path != "" {
-		t.Fatalf("Expected primary root first, got %+v", roots[0])
+		t.Fatalf("Expected primary root only, got %+v", roots[0])
 	}
 }

@@ -293,40 +293,45 @@ func scanGitRepositories() []GitRepositoryItem {
 		enclosingRepo = wd
 	}
 
-	// 2. Workspace roots
-	roots := loadWorkspaceRoots(enclosingRepo)
-	for _, root := range roots {
-		fullPath := root.Path
-		if !filepath.IsAbs(fullPath) {
-			fullPath = filepath.Join(enclosingRepo, fullPath)
-		}
-		addCandidate(fullPath)
+	if enclosingRepo != "" && enclosingRepo != wd {
+		// When inside a subfolder of an enclosing repository, ensure enclosingRepo is considered
+		addCandidate(enclosingRepo)
+	}
 
-		// Check subdirectories of workspace roots
-		if entries, err := os.ReadDir(fullPath); err == nil {
+	// 2. Discover repositories based on workspace context
+	if _, err := os.Stat(filepath.Join(enclosingRepo, ".git")); err == nil {
+		// If enclosingRepo is already a Git repository, only include enclosingRepo
+		// and any explicitly configured external roots (do not scan siblings or subdirs).
+		roots := loadWorkspaceRoots(enclosingRepo)
+		for _, root := range roots {
+			if root.Path == "" {
+				continue
+			}
+			fullPath := root.Path
+			if !filepath.IsAbs(fullPath) {
+				fullPath = filepath.Join(enclosingRepo, fullPath)
+			}
+			addCandidate(fullPath)
+		}
+	} else {
+		// If enclosingRepo is NOT a git repository (multi-repo parent folder),
+		// inspect workspace roots and immediate child directories.
+		roots := loadWorkspaceRoots(enclosingRepo)
+		for _, root := range roots {
+			fullPath := root.Path
+			if fullPath != "" {
+				if !filepath.IsAbs(fullPath) {
+					fullPath = filepath.Join(enclosingRepo, fullPath)
+				}
+				addCandidate(fullPath)
+			}
+		}
+
+		if entries, err := os.ReadDir(enclosingRepo); err == nil {
 			for _, entry := range entries {
 				if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
-					addCandidate(filepath.Join(fullPath, entry.Name()))
+					addCandidate(filepath.Join(enclosingRepo, entry.Name()))
 				}
-			}
-		}
-	}
-
-	// 3. Immediate subdirectories of enclosingRepo
-	if entries, err := os.ReadDir(enclosingRepo); err == nil {
-		for _, entry := range entries {
-			if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
-				addCandidate(filepath.Join(enclosingRepo, entry.Name()))
-			}
-		}
-	}
-
-	// 4. Sibling directories of enclosingRepo in parent
-	parent := filepath.Dir(enclosingRepo)
-	if entries, err := os.ReadDir(parent); err == nil {
-		for _, entry := range entries {
-			if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
-				addCandidate(filepath.Join(parent, entry.Name()))
 			}
 		}
 	}

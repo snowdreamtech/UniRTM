@@ -270,27 +270,21 @@ func loadWorkspaceRoots(rootDir string) []WorkspaceRootItem {
 		name = "workspace"
 	}
 
-	// Auto-discover sub-repositories if no explicit workspaces.json is configured.
-	subRepos := discoverSubRepositories(rootDir)
-	if len(subRepos) > 0 {
-		var roots []WorkspaceRootItem
-		hasGitRoot := false
-		if _, err := os.Stat(filepath.Join(rootDir, ".git")); err == nil {
-			hasGitRoot = true
-		}
-		hasUniRTMRoot := false
-		if _, err := os.Stat(filepath.Join(rootDir, ".unirtm.toml")); err == nil {
-			hasUniRTMRoot = true
-		}
-
-		if hasGitRoot || hasUniRTMRoot {
-			roots = append(roots, WorkspaceRootItem{
+	// If rootDir is already a Git repository, open only this repository by default.
+	if _, err := os.Stat(filepath.Join(rootDir, ".git")); err == nil {
+		return []WorkspaceRootItem{
+			{
 				ID:   "root-primary",
 				Name: name,
 				Path: "",
-			})
+			},
 		}
+	}
 
+	// If rootDir is NOT a git repo, auto-discover sub-repositories (multi-repo workspace container).
+	subRepos := discoverSubRepositories(rootDir)
+	if len(subRepos) > 0 {
+		var roots []WorkspaceRootItem
 		for _, sub := range subRepos {
 			roots = append(roots, WorkspaceRootItem{
 				ID:   fmt.Sprintf("root-%s", sub),
@@ -298,9 +292,7 @@ func loadWorkspaceRoots(rootDir string) []WorkspaceRootItem {
 				Path: sub,
 			})
 		}
-		if len(roots) > 0 {
-			return roots
-		}
+		return roots
 	}
 
 	return []WorkspaceRootItem{
