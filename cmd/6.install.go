@@ -19,6 +19,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/hook"
 	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -626,6 +627,13 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		duration := time.Since(startTime)
 		if len(toolsToInstall) > 1 && !jsonOutput {
 			output.Successf("All tools processed (took %s)", duration.Round(time.Millisecond).String())
+		}
+	}
+
+	// Ensure git hooks are seamlessly and idempotently ready if in a git repository
+	if pwd, err := os.Getwd(); err == nil {
+		if updated, _ := hook.EnsureGitHooksIdempotent(ctx, pwd); updated && !jsonOutput {
+			output.Success("Git hooks automatically configured (pre-commit, commit-msg)")
 		}
 	}
 

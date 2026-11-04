@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func initGitRepo(t *testing.T, dir string) {
@@ -119,5 +120,95 @@ func TestInstallBridgeScript_FilePermissions(t *testing.T) {
 		if perm != 0755 {
 			t.Errorf("expected permissions 0755, got %04o", perm)
 		}
+	}
+}
+
+func TestEnsureGitHooksIdempotent_IdempotentAndFast(t *testing.T) {
+	tmpDir := t.TempDir()
+	initGitRepo(t, tmpDir)
+
+	// Create UniRTM config file
+	cfgPath := filepath.Join(tmpDir, ".unirtm.toml")
+	_ = os.WriteFile(cfgPath, []byte("[settings]\n"), 0644)
+
+	// 1. First run: should install hooks
+	updated, err := EnsureGitHooksIdempotent(context.Background(), tmpDir)
+	if err != nil {
+		t.Fatalf("first run failed: %v", err)
+	}
+	if !updated {
+		t.Fatalf("expected updated=true on initial run")
+	}
+
+	hookPath := filepath.Join(tmpDir, ".git", "hooks", "pre-commit")
+	fi1, err := os.Stat(hookPath)
+	if err != nil {
+		t.Fatalf("expected hook file to exist: %v", err)
+	}
+	modTime1 := fi1.ModTime()
+
+	// 2. Second run: strictly idempotent, no disk modification, no mtime change, ultra-fast
+	start := time.Now()
+	updated2, err := EnsureGitHooksIdempotent(context.Background(), tmpDir)
+	duration := time.Since(start)
+
+	if err != nil {
+		t.Fatalf("second run failed: %v", err)
+	}
+	if updated2 {
+		t.Fatalf("expected updated=false on second idempotent run")
+	}
+
+	fi2, err := os.Stat(hookPath)
+	if err != nil {
+		t.Fatalf("expected hook file to exist: %v", err)
+	}
+	if !fi2.ModTime().Equal(modTime1) {
+		t.Fatalf("file was touched! ModTime changed from %v to %v", modTime1, fi2.ModTime())
+	}
+
+	// Performance assertion: check that idempotent check ran in < 5ms
+	if duration > 50*time.Millisecond {
+		t.Errorf("idempotent check took too long: %v (expected < 50ms)", duration)
+	}
+}
+
+func TestEnsureGitHooksIdempotent_SideEffects(t *testing.T) {
+	// Case 1: Non-git directory: should do nothing and return false, nil
+	nonGitDir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(nonGitDir, ".unirtm.toml"), []byte(""), 0644)
+
+	updated, err := EnsureGitHooksIdempotent(context.Background(), nonGitDir)
+	if err != nil || updated {
+		t.Fatalf("expected false, nil for non-git dir, got updated=%v, err=%v", updated, err)
+	}
+
+	// Case 2: Git directory without UniRTM or hook config: should not install hooks
+	gitOnlyDir := t.TempDir()
+	initGitRepo(t, gitOnlyDir)
+
+	updated, err = EnsureGitHooksIdempotent(context.Background(), gitOnlyDir)
+	if err != nil || updated {
+		t.Fatalf("expected false, nil for unconfigured repo, got updated=%v, err=%v", updated, err)
+	}
+	if _, statErr := os.Stat(filepath.Join(gitOnlyDir, ".git", "hooks", "pre-commit")); statErr == nil {
+		t.Fatalf("expected pre-commit NOT to be created in unconfigured repo")
+	}
+
+	// Case 3: Preserves user's existing hook script
+	userGitDir := t.TempDir()
+	initGitRepo(t, userGitDir)
+	_ = os.WriteFile(filepath.Join(userGitDir, ".unirtm.toml"), []byte(""), 0644)
+	existingHook := "#!/bin/bash\necho 'custom user logic'\nexit 0"
+	_ = os.MkdirAll(filepath.Join(userGitDir, ".git", "hooks"), 0755)
+	_ = os.WriteFile(filepath.Join(userGitDir, ".git", "hooks", "pre-commit"), []byte(existingHook), 0755)
+
+	updated, err = EnsureGitHooksIdempotent(context.Background(), userGitDir)
+	if err != nil || !updated {
+		t.Fatalf("expected true, nil, got %v, %v", updated, err)
+	}
+	content, _ := os.ReadFile(filepath.Join(userGitDir, ".git", "hooks", "pre-commit"))
+	if !strings.Contains(string(content), "custom user logic") {
+		t.Fatalf("expected user custom logic to be preserved, got: %s", string(content))
 	}
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/frontend"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/hook"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
@@ -40,6 +41,11 @@ type Options struct {
 
 // Run boots the embedded interactive graphical workbench server.
 func Run(ctx context.Context, opts Options) error {
+	// Ensure git hooks are seamlessly and idempotently ready for the workspace
+	if cwd, err := os.Getwd(); err == nil {
+		_, _ = hook.EnsureGitHooksIdempotent(ctx, cwd)
+	}
+
 	distFS, err := frontend.GetFS()
 	if err != nil {
 		return fmt.Errorf("failed to load embedded frontend assets: %w", err)
