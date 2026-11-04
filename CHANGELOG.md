@@ -6,6 +6,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.41.0](https://github.com/snowdreamtech/UniRTM/compare/v0.40.0...v0.41.0) (2026-11-04)
+
+
+### 🚀 Features
+
+* align with template dev and retain unirtm configs ([2c7fc0d](https://github.com/snowdreamtech/UniRTM/commit/2c7fc0de4e0798152efdf6179936bcd2117ff9a7))
+* initial release of snowdreamtech project template powered by unirtm ([24e923b](https://github.com/snowdreamtech/UniRTM/commit/24e923b5e147ea84e68241c21d75ab6ef2940f1a))
+
+
+### 🐛 Bug Fixes
+
+* **deps:** bump golang.org/x/crypto to v0.58.1-0.20261103070834-3d426ad4de97 to fix GO-2026-5932 ([6807394](https://github.com/snowdreamtech/UniRTM/commit/68073948e88ceec1c13ffaacbcbb373748e8fbc9))
+* **frontend:** downgrade typescript to 5.9.3 for vue-tsc compatibility ([40efd57](https://github.com/snowdreamtech/UniRTM/commit/40efd5761b07b9d2be68c75ac91bf58e9554187d))
+
+
+### 📖 Documentation
+
+* **unirtm:** fix dead link in unirtm-configuration.md ([4739b04](https://github.com/snowdreamtech/UniRTM/commit/4739b04a552029f057ef2e0699f044f23d7d2fe1))
+* update README with Zero-Footprint MCP architecture and UniRTM workflow ([814ad43](https://github.com/snowdreamtech/UniRTM/commit/814ad438d08f5cb48f4f0a255ca533721f2bb5a8))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** bump postcss in /docs in the all-dependencies group ([46ee383](https://github.com/snowdreamtech/UniRTM/commit/46ee383d1befeb25ffa1ea0ac7dba59791a0a3fc))
+* **deps:** bump typescript in /frontend in the all-dependencies group ([69243c9](https://github.com/snowdreamtech/UniRTM/commit/69243c973529170ec6e56d2898a2db2c745ae6e6))
+* **deps:** bump vite in /docs in the all-dependencies group ([d82e459](https://github.com/snowdreamtech/UniRTM/commit/d82e4593038f11a664275e1a8a15462d2242098e))
+* **deps:** pin all frontend and docs dependencies to exact versions ([8ab658a](https://github.com/snowdreamtech/UniRTM/commit/8ab658a141c65a9739720a7e539d03629280e93b))
+* **deps:** remove commitlint tools and obsolete configs ([1aa1467](https://github.com/snowdreamtech/UniRTM/commit/1aa14677ad6db61d83c2f5eb6c782a51d036d07c))
+* **deps:** sync dependabot config and unirtm toolchain ([395f88e](https://github.com/snowdreamtech/UniRTM/commit/395f88ee87148c6a1ea32365eb38a3f11b0994cc))
+* **deps:** sync dependabot config and unirtm toolchain ([3685ed4](https://github.com/snowdreamtech/UniRTM/commit/3685ed4b8b1b703e6de3843f8d68beab20460b3b))
+* merge upstream/dev into dev ([0520ca2](https://github.com/snowdreamtech/UniRTM/commit/0520ca24c4107ddb32b1969f4dec6c486e1b42ea))
+* release main ([a8c630c](https://github.com/snowdreamtech/UniRTM/commit/a8c630c330754fdd1e4c8d5332a84adf53d3f7bd))
+* release main ([80422b3](https://github.com/snowdreamtech/UniRTM/commit/80422b3a7cc9968cab27a4d902ae9409083848a9))
+* release main ([72bdaa7](https://github.com/snowdreamtech/UniRTM/commit/72bdaa77106e77ca67751f682df13af72b9c30df))
+
 ## [0.40.0](https://github.com/snowdreamtech/UniRTM/compare/v0.39.0...v0.40.0) (2026-11-04)
 
 
