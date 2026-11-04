@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -57,8 +58,10 @@ func TestInstallGlobalBridgeScript(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected global hook to be created at %s", hookPath)
 	}
-	if fi.Mode().Perm() != 0755 {
-		t.Errorf("expected 0755 perm, got %04o", fi.Mode().Perm())
+	if runtime.GOOS != "windows" {
+		if fi.Mode().Perm() != 0755 {
+			t.Errorf("expected 0755 perm, got %04o", fi.Mode().Perm())
+		}
 	}
 
 	// Test invalid hook name
