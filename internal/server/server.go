@@ -42,8 +42,9 @@ type Options struct {
 // Run boots the embedded interactive graphical workbench server.
 func Run(ctx context.Context, opts Options) error {
 	// Ensure git hooks are seamlessly and idempotently ready for the workspace
+	var hooksConfigured bool
 	if cwd, err := os.Getwd(); err == nil {
-		_, _ = hook.EnsureGitHooksIdempotent(ctx, cwd)
+		hooksConfigured, _ = hook.EnsureGitHooksIdempotent(ctx, cwd)
 	}
 
 	distFS, err := frontend.GetFS()
@@ -96,6 +97,9 @@ func Run(ctx context.Context, opts Options) error {
 	pterm.Info.Printf("Process PID  : %d\n", os.Getpid())
 	if opts.Browser != "" {
 		pterm.Info.Printf("Browser      : %s\n", pterm.Green(opts.Browser))
+	}
+	if hooksConfigured {
+		pterm.Success.Println("Git hooks automatically configured (pre-commit, commit-msg)")
 	}
 	pterm.Info.Println("Press Ctrl+C to stop the workbench server.")
 
