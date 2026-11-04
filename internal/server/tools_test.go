@@ -200,7 +200,7 @@ node = "22.14.0"
 	assert.Equal(t, "node", checkResp.Updates[0].Tool)
 	assert.NotEmpty(t, checkResp.Updates[0].LatestVersion)
 
-	// Test GET /api/tools/check-updates for checkmake and trivy (must not return fake 1.0 or 1.0.0)
+	// Test GET /api/tools/check-updates for checkmake and trivy (must not return fake 1.0 or 1.0.0 or 3.2.0)
 	req = httptest.NewRequest("GET", "/api/tools/check-updates?tool=github:checkmake/checkmake", nil)
 	rr = httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
@@ -210,6 +210,18 @@ node = "22.14.0"
 	require.NotEmpty(t, cmResp.Updates)
 	assert.NotEqual(t, "1.0", cmResp.Updates[0].LatestVersion)
 	assert.NotEqual(t, "1.0.0", cmResp.Updates[0].LatestVersion)
+	assert.NotEqual(t, "3.2.0", cmResp.Updates[0].LatestVersion)
+
+	// Test GET /api/tools/check-updates for actionlint must not return placeholder 3.2.0
+	req = httptest.NewRequest("GET", "/api/tools/check-updates?tool=github:rhysd/actionlint", nil)
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var actionlintResp CheckUpdatesResponse
+	_ = json.Unmarshal(rr.Body.Bytes(), &actionlintResp)
+	if len(actionlintResp.Updates) > 0 {
+		assert.NotEqual(t, "3.2.0", actionlintResp.Updates[0].LatestVersion)
+	}
 
 	// Set trivy 0.75.0 in config to verify upgrade detection
 	useTrivyBody, _ := json.Marshal(map[string]interface{}{

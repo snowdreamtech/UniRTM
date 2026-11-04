@@ -501,11 +501,7 @@ func getFallbackRemoteVersions(tool string) []string {
 			"8.0.30", "8.0.28",
 		}
 	default:
-		return []string{
-			"3.2.0", "3.1.0", "3.0.0",
-			"2.8.0", "2.6.0", "2.4.0", "2.2.0", "2.0.0",
-			"1.8.0", "1.5.0", "1.2.0", "1.0.0",
-		}
+		return nil
 	}
 }
 
@@ -819,10 +815,13 @@ func HandleCheckToolsUpdates(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		for _, v := range getLockfileVersions(name) {
-			candidateVersions = append(candidateVersions, v)
+		// If remote query didn't return any versions, check static fallback for known runtimes
+		if len(candidateVersions) == 0 {
+			for _, v := range getFallbackRemoteVersions(name) {
+				candidateVersions = append(candidateVersions, v)
+			}
 		}
-		for _, v := range getFallbackRemoteVersions(name) {
+		for _, v := range getLockfileVersions(name) {
 			candidateVersions = append(candidateVersions, v)
 		}
 		// Also scan locally installed versions to recognize local upgrade opportunities
