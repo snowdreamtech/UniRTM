@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.44.0](https://github.com/snowdreamtech/UniRTM/compare/v0.43.0...v0.44.0) (2026-11-05)
+
+
+### 🚀 Features
+
+* **config:** support explicit tool alias in tool configuration ([040c7b6](https://github.com/snowdreamtech/UniRTM/commit/040c7b6babd93a3ca9ae0834fdf8d69b1ea3ea6b))
+
+
+### 🐛 Bug Fixes
+
+* **provider:** resolve tool binary name for repositories where binary differs from repo name ([7f5df49](https://github.com/snowdreamtech/UniRTM/commit/7f5df4954b6e360b0ae57f35197ce27eee42e93a))
+* **shim:** allow regenerating existing shims located in shims directory ([52abcaa](https://github.com/snowdreamtech/UniRTM/commit/52abcaadeab84373cdfe84d90d1144c323fe7c5a))
+
 ## [0.43.0](https://github.com/snowdreamtech/UniRTM/compare/v0.42.0...v0.43.0) (2026-11-05)
 
 
