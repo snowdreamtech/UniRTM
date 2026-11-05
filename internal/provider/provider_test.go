@@ -77,3 +77,26 @@ func TestGetNoProxyEnv(t *testing.T) {
 		t.Error("expected to find NO_PROXY in environment")
 	}
 }
+
+func TestResolveToolBinaryName(t *testing.T) {
+	tests := []struct {
+		tool     string
+		expected string
+	}{
+		{"mvdan/sh", "shfmt"},
+		{"github:mvdan/sh", "shfmt"},
+		{"github:cli/cli", "cli"},
+		{"google/osv-scanner", "osv-scanner"},
+		{"github:golangci/golangci-lint", "golangci-lint"},
+		{"curl", "curl"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.tool, func(t *testing.T) {
+			got := ResolveToolBinaryName(tc.tool)
+			if got != tc.expected {
+				t.Errorf("ResolveToolBinaryName(%q) = %q, want %q", tc.tool, got, tc.expected)
+			}
+		})
+	}
+}

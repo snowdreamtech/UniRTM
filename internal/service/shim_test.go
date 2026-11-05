@@ -346,3 +346,28 @@ func TestPrepareWindowsCommand(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerator_GenerateShim_ToolAlias(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+	ctx := context.Background()
+
+	// Default executables when none provided should resolve mvdan/sh to shfmt
+	err := g.GenerateShim(ctx, "github:mvdan/sh")
+	if err != nil {
+		t.Fatalf("failed to generate shim: %v", err)
+	}
+
+	if !g.ShimExists("github:mvdan/sh") {
+		t.Error("expected shim to exist for github:mvdan/sh (resolved to shfmt)")
+	}
+	if !g.ShimExists("shfmt") {
+		t.Error("expected shim to exist for shfmt")
+	}
+	if g.ShimExists("sh") {
+		t.Error("expected shim NOT to exist for sh")
+	}
+}

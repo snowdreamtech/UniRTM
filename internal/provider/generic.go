@@ -66,7 +66,7 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 		}
 
 		// Standardize single-file executables to use the tool name (e.g. google/osv-scanner -> osv-scanner)
-		binName := filepath.Base(tool)
+		binName := ResolveToolBinaryName(tool)
 		if ext := filepath.Ext(artifactPath); isExecutableExtension(ext) {
 			binName += ext
 		}
@@ -109,8 +109,8 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 			return NewProviderError("generic", "unknown", version, "failed to create bin directory", err)
 		}
 
-		// Determine tool name from installPath to help identify the main binary
-		toolName := filepath.Base(filepath.Dir(installPath))
+		// Determine tool name from tool/installPath to help identify the main binary
+		toolName := ResolveToolBinaryName(tool)
 
 		// 5. Find and score all executable files in the extracted path
 		allExecs, err := g.findExecutables(installPath)
@@ -138,7 +138,7 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 
 			// Auto-rename primary executable to the standard tool name if it differs
 			if i == 0 {
-				primaryName := filepath.Base(tool)
+				primaryName := ResolveToolBinaryName(tool)
 				if ext := filepath.Ext(exe); isExecutableExtension(ext) {
 					primaryName += ext
 				}
@@ -265,7 +265,7 @@ func (g *GenericProvider) ListExecutables(tool string, installPath string, versi
 		return nil, NewProviderError("generic", "unknown", version, "no executables found in root or bin directory", nil)
 	}
 
-	return g.pickBestExecutables(executables, tool), nil
+	return g.pickBestExecutables(executables, ResolveToolBinaryName(tool)), nil
 }
 
 // GetBinPaths returns the absolute paths to the root and bin directory.

@@ -47,4 +47,23 @@ func TestGenericProvider_InstallCoverage(t *testing.T) {
 	if !p.isExecutable(fi) {
 		t.Errorf("Expected file to be executable")
 	}
+
+	// Test 4: single-file install for repo with alias (github:mvdan/sh -> shfmt)
+	shDir := filepath.Join(tmpDir, "sh_dir")
+	shArtifact := filepath.Join(tmpDir, "shfmt_v3.14.1_linux_amd64")
+	os.WriteFile(shArtifact, []byte("echo shfmt"), 0755)
+
+	err = p.Install(ctx, "github:mvdan/sh", shDir, shArtifact, "3.14.1")
+	if err != nil {
+		t.Errorf("Unexpected error for mvdan/sh install: %v", err)
+	}
+
+	shfmtPath := filepath.Join(shDir, "bin", "shfmt")
+	if _, err := os.Stat(shfmtPath); os.IsNotExist(err) {
+		t.Errorf("Expected executable to be named 'shfmt' at %s", shfmtPath)
+	}
+	shPath := filepath.Join(shDir, "bin", "sh")
+	if _, err := os.Stat(shPath); !os.IsNotExist(err) {
+		t.Errorf("Expected executable 'sh' NOT to exist at %s, but it was found", shPath)
+	}
 }

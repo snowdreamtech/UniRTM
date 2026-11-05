@@ -7,10 +7,30 @@ import (
 	"context"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
+
+// KnownRepoBinaryNames maps repositories where the primary executable name differs from the repository name.
+var KnownRepoBinaryNames = map[string]string{
+	"mvdan/sh": "shfmt",
+}
+
+// ResolveToolBinaryName returns the canonical binary name for a tool.
+// It strips any backend prefix (e.g. "github:") and checks known overrides before falling back to filepath.Base(tool).
+func ResolveToolBinaryName(tool string) string {
+	cleanTool := tool
+	if idx := strings.Index(cleanTool, ":"); idx >= 0 {
+		cleanTool = cleanTool[idx+1:]
+	}
+	cleanTool = strings.TrimSpace(cleanTool)
+	if binName, ok := KnownRepoBinaryNames[cleanTool]; ok {
+		return binName
+	}
+	return filepath.Base(cleanTool)
+}
 
 // Provider defines the interface for tool-specific installation and management logic.
 // Each provider handles the unique requirements of a specific tool or tool family.

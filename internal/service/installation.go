@@ -1818,7 +1818,7 @@ func (im *InstallationManager) resolveExecutableWithVisited(ctx context.Context,
 		}
 		// Among candidates of equal match quality, prefer the tool whose name
 		// matches the executable (e.g. tool "python" for exe "python").
-		toolBase := filepath.Base(c.inst.Tool)
+		toolBase := provider.ResolveToolBinaryName(c.inst.Tool)
 		toolMatch := c.inst.Tool == exeName || toolBase == exeName || (isWindows && (strings.EqualFold(c.inst.Tool, queryClean) || strings.EqualFold(toolBase, queryClean)))
 		if c.exactMatch == selected.exactMatch && toolMatch {
 			selected = c

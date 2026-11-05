@@ -20,6 +20,7 @@ import (
 	"syscall"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/provider"
 )
 
 // Generator creates shim scripts for installed tools.
@@ -50,7 +51,7 @@ func (g *Generator) GenerateShim(ctx context.Context, tool string, executables .
 	}
 
 	if len(executables) == 0 {
-		executables = []string{tool}
+		executables = []string{provider.ResolveToolBinaryName(tool)}
 	}
 
 	// Expand executables with standard aliases so both canonical and alias names are shimmed
@@ -159,10 +160,10 @@ func (g *Generator) ListShims() ([]string, error) {
 }
 
 // shimPaths returns all shim file paths for a tool (platform-dependent).
-// It ensures that the shim name is flat by using filepath.Base(tool).
+// It ensures that the shim name is flat by using provider.ResolveToolBinaryName(tool).
 func (g *Generator) shimPaths(tool string) []string {
 	// Flatten tool name for lookup to match flat shims directory
-	flatName := filepath.Base(tool)
+	flatName := provider.ResolveToolBinaryName(tool)
 	if env.RuntimeGOOS == "windows" {
 		ext := strings.ToLower(filepath.Ext(flatName))
 		if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
