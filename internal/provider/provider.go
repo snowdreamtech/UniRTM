@@ -18,9 +18,42 @@ var KnownRepoBinaryNames = map[string]string{
 	"mvdan/sh": "shfmt",
 }
 
+type toolAliasContextKey struct{}
+
+// WithToolAlias returns a new context with the given tool alias attached.
+func WithToolAlias(ctx context.Context, alias string) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, toolAliasContextKey{}, alias)
+}
+
+// ToolAliasFromContext retrieves any explicit tool alias stored in ctx.
+func ToolAliasFromContext(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	if alias, ok := ctx.Value(toolAliasContextKey{}).(string); ok {
+		return strings.TrimSpace(alias)
+	}
+	if alias, ok := ctx.Value("toolAlias").(string); ok {
+		return strings.TrimSpace(alias)
+	}
+	return ""
+}
+
 // ResolveToolBinaryName returns the canonical binary name for a tool.
 // It strips any backend prefix (e.g. "github:") and checks known overrides before falling back to filepath.Base(tool).
 func ResolveToolBinaryName(tool string) string {
+	return ResolveToolBinaryNameWithContext(context.Background(), tool)
+}
+
+// ResolveToolBinaryNameWithContext returns the canonical binary name for a tool,
+// checking any explicit alias in context first, then known overrides, then filepath.Base(tool).
+func ResolveToolBinaryNameWithContext(ctx context.Context, tool string) string {
+	if alias := ToolAliasFromContext(ctx); alias != "" {
+		return alias
+	}
 	cleanTool := tool
 	if idx := strings.Index(cleanTool, ":"); idx >= 0 {
 		cleanTool = cleanTool[idx+1:]

@@ -6,6 +6,7 @@ package config
 import (
 	"testing"
 
+	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v3"
 
 	"github.com/stretchr/testify/assert"
@@ -212,6 +213,23 @@ func TestToolConfig_Validate(t *testing.T) {
 			},
 			wantErr: false, // Whitespace is technically a non-empty string
 		},
+		{
+			name: "valid with tool alias",
+			config: ToolConfig{
+				Version: "3.14.1",
+				Alias:   "shfmt",
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid - tool alias with path separator",
+			config: ToolConfig{
+				Version: "3.14.1",
+				Alias:   "foo/bar",
+			},
+			wantErr: true,
+			errMsg:  "alias cannot contain path separators or colons",
+		},
 	}
 
 	for _, tt := range tests {
@@ -225,6 +243,22 @@ func TestToolConfig_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestToolConfig_ParseAlias(t *testing.T) {
+	tomlContent := `
+[tools]
+"github:mvdan/sh" = { version = "3.14.1", alias = "shfmt" }
+`
+	cfg := &Config{}
+	err := toml.Unmarshal([]byte(tomlContent), cfg)
+	require.NoError(t, err)
+	cfg.PostLoad()
+	require.NotNil(t, cfg.Tools)
+	tc, ok := cfg.Tools["github:mvdan/sh"]
+	require.True(t, ok)
+	assert.Equal(t, "3.14.1", tc.Version)
+	assert.Equal(t, "shfmt", tc.Alias)
 }
 
 func TestSettings_Validate(t *testing.T) {

@@ -448,7 +448,13 @@ func TestInstallationManager_SetAliases(t *testing.T) {
 
 func TestInstallationManager_SetToolConfigs(t *testing.T) {
 	im := NewInstallationManager(nil, nil, nil, nil, nil, &config.Settings{})
-	im.SetToolConfigs(map[string]config.ToolConfig{})
+	im.SetToolConfigs(map[string]config.ToolConfig{
+		"github:mvdan/sh": {
+			Version: "3.14.1",
+			Alias:   "shfmt",
+		},
+	})
+	assert.Equal(t, "shfmt", im.toolConfigs["github:mvdan/sh"].Alias)
 }
 
 func TestInstallationManager_SortToolsFromSpecs(t *testing.T) {

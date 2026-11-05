@@ -831,6 +831,21 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 	if !quietProgress {
 		fmt.Printf("ℹ extracting %s@%s...\n", tool, version)
 	}
+	var tc config.ToolConfig
+	if im.toolConfigs != nil {
+		if c, ok := im.toolConfigs[tool]; ok {
+			tc = c
+		} else if c, ok := im.toolConfigs[backendName+":"+tool]; ok {
+			tc = c
+		} else if idx := strings.Index(tool, ":"); idx >= 0 {
+			if c, ok := im.toolConfigs[tool[idx+1:]]; ok {
+				tc = c
+			}
+		}
+	}
+	if tc.Alias != "" {
+		ctx = provider.WithToolAlias(ctx, tc.Alias)
+	}
 	if err := p.Install(ctx, tool, actualInstallPath, downloadPath, version); err != nil {
 		os.RemoveAll(actualInstallPath)
 		return fmt.Errorf("installation failed: %w", err)
@@ -915,6 +930,36 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 		fmt.Printf("ℹ generating shims for %s...\n", tool)
 	}
 	execs, _ := p.ListExecutables(tool, installPath, version)
+	if tc.Alias != "" {
+		aliasName := tc.Alias
+		binDir := filepath.Join(installPath, "bin")
+		_ = os.MkdirAll(binDir, 0755)
+		dstPath := filepath.Join(binDir, aliasName)
+		if env.RuntimeGOOS == "windows" && filepath.Ext(dstPath) == "" {
+			dstPath += ".exe"
+			aliasName += ".exe"
+		}
+		if _, err := os.Stat(dstPath); os.IsNotExist(err) && len(execs) > 0 {
+			primaryPath := filepath.Join(installPath, execs[0])
+			if !filepath.IsAbs(execs[0]) && !strings.HasPrefix(execs[0], "bin") {
+				primaryPath = filepath.Join(binDir, execs[0])
+			}
+			relPath, _ := filepath.Rel(binDir, primaryPath)
+			if err := os.Symlink(relPath, dstPath); err != nil {
+				_ = copyInstallFile(primaryPath, dstPath)
+			}
+		}
+		found := false
+		for _, e := range execs {
+			if filepath.Base(e) == aliasName {
+				found = true
+				break
+			}
+		}
+		if !found {
+			execs = append(execs, aliasName)
+		}
+	}
 	if err := im.shimGenerator.GenerateShim(ctx, tool, execs...); err != nil {
 		if !quietProgress {
 			output.Warningf("️  WARNING: failed to generate shims for %s: %v", tool, err)
@@ -1819,7 +1864,13 @@ func (im *InstallationManager) resolveExecutableWithVisited(ctx context.Context,
 		// Among candidates of equal match quality, prefer the tool whose name
 		// matches the executable (e.g. tool "python" for exe "python").
 		toolBase := provider.ResolveToolBinaryName(c.inst.Tool)
-		toolMatch := c.inst.Tool == exeName || toolBase == exeName || (isWindows && (strings.EqualFold(c.inst.Tool, queryClean) || strings.EqualFold(toolBase, queryClean)))
+		aliasMatch := false
+		if im.toolConfigs != nil {
+			if tc, ok := im.toolConfigs[c.inst.Tool]; ok && tc.Alias != "" {
+				aliasMatch = strings.EqualFold(tc.Alias, exeName) || (isWindows && strings.EqualFold(tc.Alias, queryClean))
+			}
+		}
+		toolMatch := c.inst.Tool == exeName || toolBase == exeName || aliasMatch || (isWindows && (strings.EqualFold(c.inst.Tool, queryClean) || strings.EqualFold(toolBase, queryClean)))
 		if c.exactMatch == selected.exactMatch && toolMatch {
 			selected = c
 			break
@@ -1973,4 +2024,21 @@ func saveToDownloadCache(downloadPath, cachePath string) {
 	}
 	defer dst.Close()
 	_, _ = io.Copy(dst, src)
+}
+
+func copyInstallFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	return err
 }

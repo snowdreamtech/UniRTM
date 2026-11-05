@@ -66,7 +66,7 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 		}
 
 		// Standardize single-file executables to use the tool name (e.g. google/osv-scanner -> osv-scanner)
-		binName := ResolveToolBinaryName(tool)
+		binName := ResolveToolBinaryNameWithContext(ctx, tool)
 		if ext := filepath.Ext(artifactPath); isExecutableExtension(ext) {
 			binName += ext
 		}
@@ -110,7 +110,7 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 		}
 
 		// Determine tool name from tool/installPath to help identify the main binary
-		toolName := ResolveToolBinaryName(tool)
+		toolName := ResolveToolBinaryNameWithContext(ctx, tool)
 
 		// 5. Find and score all executable files in the extracted path
 		allExecs, err := g.findExecutables(installPath)
@@ -138,7 +138,7 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 
 			// Auto-rename primary executable to the standard tool name if it differs
 			if i == 0 {
-				primaryName := ResolveToolBinaryName(tool)
+				primaryName := ResolveToolBinaryNameWithContext(ctx, tool)
 				if ext := filepath.Ext(exe); isExecutableExtension(ext) {
 					primaryName += ext
 				}

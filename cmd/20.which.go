@@ -192,6 +192,9 @@ func runWhich(cmd *cobra.Command, args []string) error {
 				}
 			}
 			activeVersions[cleanTool] = tc.Version
+			if tc.Alias != "" {
+				activeVersions[tc.Alias] = tc.Version
+			}
 		}
 	}
 	if versionArg != "" {

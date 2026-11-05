@@ -34,6 +34,7 @@ type Config struct {
 
 type ToolConfig struct {
 	Version           string            `toml:"version" yaml:"version" mapstructure:"version"`
+	Alias             string            `toml:"alias,omitempty" yaml:"alias,omitempty" mapstructure:"alias,omitempty"`
 	Backend           string            `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
 	Provider          string            `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
 	PreInstall        StringArray       `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
@@ -132,6 +133,9 @@ func parseToolConfig(v interface{}) ToolConfig {
 	case map[string]interface{}:
 		if version, ok := val["version"].(string); ok {
 			tc.Version = version
+		}
+		if alias, ok := val["alias"].(string); ok {
+			tc.Alias = strings.TrimSpace(alias)
 		}
 		if pinned, ok := val["pinned"].(bool); ok {
 			tc.Pinned = pinned
@@ -719,6 +723,11 @@ func (c *Config) validateTaskDependencies() error {
 func (tc *ToolConfig) Validate() error {
 	if tc.Version == "" {
 		return errors.New("version is required")
+	}
+	if tc.Alias != "" {
+		if strings.ContainsAny(tc.Alias, "/\\:") {
+			return errors.New("alias cannot contain path separators or colons")
+		}
 	}
 	return nil
 }
