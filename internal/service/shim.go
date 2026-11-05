@@ -201,7 +201,7 @@ func (g *Generator) generateUnixShim(tool, executable string) error {
 	}
 
 	// Safety check: Prevent self-referential shimming
-	if isSelfReferential(shimPath, unirtmPath, tool, executable) {
+	if isSelfReferential(shimPath, unirtmPath, tool, executable, g.shimsDir) {
 		return fmt.Errorf("refusing to create self-referential shim for %s at %s", executable, shimPath)
 	}
 
@@ -250,7 +250,7 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 	shimPath := filepath.Join(g.shimsDir, baseName+".exe")
 
 	// Safety check: Prevent self-referential shimming
-	if isSelfReferential(shimPath, unirtmPath, tool, baseName) {
+	if isSelfReferential(shimPath, unirtmPath, tool, baseName, g.shimsDir) {
 		return fmt.Errorf("refusing to create self-referential shim for %s at %s", baseName, shimPath)
 	}
 
@@ -286,7 +286,7 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 
 // isSelfReferential checks if creating a shim for the given executable would result
 // in a self-referential execution loop or overwrite the unirtm binary itself.
-func isSelfReferential(shimPath, unirtmPath, tool, executable string) bool {
+func isSelfReferential(shimPath, unirtmPath, tool, executable string, shimsDir ...string) bool {
 	// 1. Check if tool or executable base name is unirtm or related version manager entry points
 	exeBase := strings.ToLower(strings.TrimSuffix(filepath.Base(executable), filepath.Ext(executable)))
 	toolBase := strings.ToLower(strings.TrimSuffix(filepath.Base(tool), filepath.Ext(tool)))
@@ -307,10 +307,17 @@ func isSelfReferential(shimPath, unirtmPath, tool, executable string) bool {
 		return true
 	}
 
-	// 3. Check if evaluated symlinks point to the same physical file
+	// 3. Check if evaluated symlinks point to the same physical file.
+	// If cleanShim is located inside the shims directory and is not cleanUnirtm itself,
+	// it is an existing shim created by UniRTM, which is safe to overwrite.
 	evalShim, err1 := filepath.EvalSymlinks(cleanShim)
 	evalUnirtm, err2 := filepath.EvalSymlinks(cleanUnirtm)
 	if err1 == nil && err2 == nil && evalShim == evalUnirtm {
+		if len(shimsDir) > 0 && shimsDir[0] != "" {
+			if filepath.Clean(filepath.Dir(cleanShim)) == filepath.Clean(shimsDir[0]) && filepath.Clean(filepath.Dir(cleanUnirtm)) != filepath.Clean(shimsDir[0]) {
+				return false
+			}
+		}
 		return true
 	}
 
