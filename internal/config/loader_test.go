@@ -482,8 +482,10 @@ CI = "true"
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, ".unirtm.toml"), []byte(baseContent), 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, ".unirtm.ci.toml"), []byte(ciContent), 0644))
 
-	// Without UNIRTM_ENV
+	// Without UNIRTM_ENV and non-CI environment
 	t.Setenv("UNIRTM_ENV", "")
+	t.Setenv("CI", "")
+	t.Setenv("GITHUB_ACTIONS", "")
 	cfgDefault, err := LoadFromDir(tmpDir)
 	require.NoError(t, err)
 	assert.Equal(t, "20.0.0", cfgDefault.Tools["node"].Version)
@@ -491,7 +493,16 @@ CI = "true"
 	assert.NotContains(t, cfgDefault.Tools, "trivy")
 	assert.Equal(t, "local", cfgDefault.Env["APP_ENV"])
 
-	// With UNIRTM_ENV=ci
+	// Auto-detect CI environment when CI=true
+	t.Setenv("CI", "true")
+	cfgAutoCI, err := LoadFromDir(tmpDir)
+	require.NoError(t, err)
+	assert.Equal(t, "18.0.0", cfgAutoCI.Tools["node"].Version)
+	assert.Equal(t, "0.76.1", cfgAutoCI.Tools["trivy"].Version)
+	assert.Equal(t, "ci", cfgAutoCI.Env["APP_ENV"])
+	t.Setenv("CI", "")
+
+	// With explicit UNIRTM_ENV=ci
 	t.Setenv("UNIRTM_ENV", "ci")
 	cfgCI, err := LoadFromDir(tmpDir)
 	require.NoError(t, err)
