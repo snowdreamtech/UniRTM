@@ -247,20 +247,6 @@
         "type": "string"
       }
     },
-    "environments": {
-      "type": "object",
-      "description": "Environment-specific overrides (e.g. development, staging, production).",
-      "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "tools": { "type": "object" },
-          "env": { "type": "object" },
-          "tasks": { "type": "object" },
-          "settings": { "type": "object" }
-        },
-        "additionalProperties": false
-      }
-    },
     "aliases": {
       "type": "object",
       "description": "Version alias mappings for tools.",

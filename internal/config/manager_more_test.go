@@ -85,31 +85,29 @@ func TestConfigManager_LoadWithEnvironment_Error(t *testing.T) {
 
 func TestConfigManager_ApplyEnvironment_MergeSettings(t *testing.T) {
 	cm := NewConfigManager()
+	dir := t.TempDir()
+	baseFile := filepath.Join(dir, ".unirtm.toml")
+	devFile := filepath.Join(dir, ".unirtm.dev.toml")
+
+	devContent := `
+[settings]
+cache_dir = "/tmp/cache"
+data_dir = "/tmp/data"
+github_token = "token"
+
+[tools]
+node = "18"
+
+[env]
+FOO = "bar"
+
+[tasks.build]
+run = "make"
+`
+	_ = os.WriteFile(devFile, []byte(devContent), 0644)
+
 	base := &Config{
-		Environments: map[string]EnvironmentConfig{
-			"dev": {
-				Settings: Settings{
-					CacheDir:           "/tmp/cache",
-					DataDir:            "/tmp/data",
-					CacheTTL:           3600,
-					Jobs:               4,
-					GitHubProxy:        "proxy",
-					HttpProxy:          "http",
-					HttpsProxy:         "https",
-					GitHubToken:        "token",
-					HTTPTimeout:        10,
-					TaskTimeout:        10,
-					TaskOutput:         "interleaved",
-					AutoInstall:        func() *bool { b := true; return &b }(),
-					Color:              "always",
-					AlwaysKeepDownload: true,
-					VerifyMetadata:     func() *bool { b := true; return &b }(),
-				},
-				Tools: map[string]ToolConfig{"node": {Version: "18"}},
-				Env:   map[string]interface{}{"FOO": "bar"},
-				Tasks: map[string]Task{"build": {Run: StringArray{"make"}}},
-			},
-		},
+		SourceFile: baseFile,
 		Aliases: map[string]map[string]string{
 			"node": {"lts": "20"},
 		},
@@ -120,6 +118,8 @@ func TestConfigManager_ApplyEnvironment_MergeSettings(t *testing.T) {
 	require.Equal(t, "/tmp/cache", envCfg.Settings.CacheDir)
 	require.Equal(t, "/tmp/data", envCfg.Settings.DataDir)
 	require.Equal(t, "token", envCfg.Settings.GitHubToken)
+	require.Equal(t, "18", envCfg.Tools["node"].Version)
+	require.Equal(t, "bar", envCfg.Env["FOO"])
 }
 
 func TestResolveAlias(t *testing.T) {

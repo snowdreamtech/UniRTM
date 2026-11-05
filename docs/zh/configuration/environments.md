@@ -1,47 +1,72 @@
 # 环境隔离配置 (Environments)
 
-在复杂的应用中，你经常需要根据程序是运行在 `development`（开发）、`staging`（测试）还是 `production`（生产）环境来加载不同的配置。
+在现代软件工程中，开发人员通常需要根据运行环境的不同（例如本地 `development`、持续集成 `ci`、预发布 `staging` 或生产 `production`）使用不同的工具链与环境变量。
 
-UniRTM 允许你在 `.unirtm.toml` 中定义特定环境的专属配置块。
+UniRTM 采用清晰的**多文件级联覆盖规范**（Multi-File Cascading Overlay，`.unirtm.<env>.toml`），使不同环境的配置彻底解耦、模块化，并彻底杜绝单文件膨胀与锁文件冲突。
 
-## 定义专属环境
+## 架构与加载优先级
 
-通过在 `[env.<环境名称>]` 下嵌套表格来定义环境。
+UniRTM 按以下层级顺序加载并合并配置（数字越大优先级越高，后加载的内容覆盖先加载的内容）：
 
-```toml
-[env]
-# 在所有环境下都会加载的全局变量
-APP_NAME = "My Awesome App"
+1. **全局用户配置**：`~/.config/unirtm/unirtm.toml`
+2. **项目基础配置**：`.unirtm.toml`（开发者日常开发工具与基准任务）
+3. **环境覆盖配置**：`.unirtm.<env>.toml`（例如 `.unirtm.ci.toml`、`.unirtm.production.toml`）
+4. **本地私有覆盖**：`.unirtm.local.toml`（个人机器专属配置，加入 `.gitignore` 且不入库）
 
-[env.development]
-# 仅在开发环境中加载
-DATABASE_URL = "postgres://localhost:5432/dev_db"
-DEBUG = "true"
+## 定义环境覆盖配置
 
-[env.production]
-# 仅在生产环境中加载
-DATABASE_URL = "postgres://prod-db.internal:5432/prod_db"
-DEBUG = "false"
-```
+无需在单个文件中堆叠冗长的 `[environments]` 表格，只需在项目根目录下创建对应环境的 `.unirtm.<env>.toml` 文件。
 
-## 激活特定环境
+### 示例：项目基础配置 (`.unirtm.toml`)
 
-默认情况下，如果没有指定，UniRTM 会默认使用 `development` 开发环境。你可以通过设置 `UNIRTM_ENV` 变量来改变这一行为。
-
-```bash
-# 这将会加载 [env] 和 [env.production]
-UNIRTM_ENV=production unirtm run start
-```
-
-## 开发工具环境隔离
-
-环境隔离不仅局限于变量。你甚至可以根据不同的环境指定不同版本的工具！
+声明本地开发所需的常用工具和基础环境变量：
 
 ```toml
 [tools]
-node = "20"
+node = "20.18.0"
+go = "1.23.0"
 
-[tools.production]
-# 在生产环境中强制使用精确锁定的版本
-node = "20.11.1"
+[env]
+APP_ENV = "development"
+PORT = 3000
+
+[settings]
+cache_ttl = 3600
 ```
+
+### 示例：CI 专属环境覆盖 (`.unirtm.ci.toml`)
+
+声明仅在 CI 流水线中执行的代码合规检测、安全扫描与发布打包工具，本地开发者机器无需下载这些沉重的二进制：
+
+```toml
+[tools]
+"github:aquasecurity/trivy" = "0.76.1"
+"github:google/osv-scanner" = "2.7.0"
+"github:goreleaser/goreleaser" = "2.19.0"
+
+[env]
+APP_ENV = "ci"
+CI = "true"
+```
+
+## 激活指定环境
+
+可以通过以下任意一种方式激活指定环境：
+
+1. **命令行参数 (`-E` 或 `--env`)**：
+   ```bash
+   unirtm -E ci run verify
+   unirtm --env production run start
+   ```
+
+2. **环境变量 (`UNIRTM_ENV`)**：
+   ```bash
+   export UNIRTM_ENV=ci
+   unirtm run verify
+   ```
+
+## 全局锁文件生成 (`unirtm lock`)
+
+UniRTM 多文件环境规范的一大核心优势在于统一的依赖锁定机制：
+
+执行 `unirtm lock` 时，UniRTM 会自动扫描项目根目录下的 `.unirtm.toml` 以及**所有** `.unirtm.<env>.toml` 覆盖文件，合并全部工具声明并生成全局统一的 `unirtm.lock` 锁文件。彻底避免不同环境下的 `unirtm lock` 互相覆盖或清空非当前环境依赖工具的问题。

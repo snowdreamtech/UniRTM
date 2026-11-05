@@ -227,9 +227,6 @@ func (m *defaultConfigManager) Load(ctx context.Context, path string) (*Config, 
 	if config.Tasks == nil {
 		config.Tasks = make(map[string]Task)
 	}
-	if config.Environments == nil {
-		config.Environments = make(map[string]EnvironmentConfig)
-	}
 	if config.Aliases == nil {
 		config.Aliases = make(map[string]map[string]string)
 	}
@@ -403,12 +400,11 @@ func (m *defaultConfigManager) LoadHierarchy(ctx context.Context) (*Config, erro
 	// 4. Final merge
 	if len(configs) == 0 {
 		return &Config{
-			Tools:        make(map[string]ToolConfig),
-			Env:          make(map[string]interface{}),
-			Tasks:        make(map[string]Task),
-			Environments: make(map[string]EnvironmentConfig),
-			Aliases:      make(map[string]map[string]string),
-			Plugins:      make(PluginMap),
+			Tools:   make(map[string]ToolConfig),
+			Env:     make(map[string]interface{}),
+			Tasks:   make(map[string]Task),
+			Aliases: make(map[string]map[string]string),
+			Plugins: make(PluginMap),
 		}, nil
 	}
 
@@ -451,12 +447,6 @@ func (m *defaultConfigManager) tryLoad(ctx context.Context, path string, enforce
 				// Strip sensitive fields
 				cfg.Env = make(map[string]interface{})
 				cfg.Tasks = make(map[string]Task)
-				// Also strip from environments
-				for name, env := range cfg.Environments {
-					env.Env = nil
-					env.Tasks = nil
-					cfg.Environments[name] = env
-				}
 				return cfg, nil
 			}
 			if status == TrustStatusTrusted {
@@ -532,12 +522,11 @@ func (m *defaultConfigManager) Merge(configs ...*Config) (*Config, error) {
 
 	// Start with an empty configuration
 	merged := &Config{
-		Tools:        make(map[string]ToolConfig),
-		Env:          make(map[string]interface{}),
-		Tasks:        make(map[string]Task),
-		Environments: make(map[string]EnvironmentConfig),
-		Aliases:      make(map[string]map[string]string),
-		Plugins:      make(PluginMap),
+		Tools:   make(map[string]ToolConfig),
+		Env:     make(map[string]interface{}),
+		Tasks:   make(map[string]Task),
+		Aliases: make(map[string]map[string]string),
+		Plugins: make(PluginMap),
 	}
 
 	// Merge each configuration in order
@@ -559,11 +548,6 @@ func (m *defaultConfigManager) Merge(configs ...*Config) (*Config, error) {
 		// Merge Tasks (later overrides earlier)
 		for taskName, task := range config.Tasks {
 			merged.Tasks[taskName] = task
-		}
-
-		// Merge Environments (later overrides earlier)
-		for envName, envConfig := range config.Environments {
-			merged.Environments[envName] = envConfig
 		}
 
 		if config.MinVersion != "" {
@@ -698,16 +682,11 @@ func (m *defaultConfigManager) Merge(configs ...*Config) (*Config, error) {
 
 // ApplyEnvironment applies environment-specific overrides to a configuration.
 //
-// This method takes a base configuration and applies the overrides from the specified
-// environment. If the environment does not exist in the configuration, it returns an error.
+// In the multi-file overlay model, this method loads the overlay configuration for the
+// specified environment (e.g. .unirtm.<environment>.toml) from the directory of config.SourceFile
+// and merges it on top of the base configuration.
 //
-// The merging follows these rules:
-//   - Tools: Environment tools override base tools (per tool name)
-//   - Env: Environment variables are merged with base variables (environment overrides base)
-//   - Tasks: Environment tasks override base tasks (per task name)
-//   - Settings: Non-zero environment settings override base settings
-//
-// Returns a new configuration with the environment overrides applied.
+// Returns a new configuration with the environment overlay applied.
 func (m *defaultConfigManager) ApplyEnvironment(config *Config, environment string) (*Config, error) {
 	if config == nil {
 		return nil, fmt.Errorf("configuration is nil")
@@ -717,112 +696,25 @@ func (m *defaultConfigManager) ApplyEnvironment(config *Config, environment stri
 		return nil, fmt.Errorf("environment name is empty")
 	}
 
-	// Check if the environment exists
-	envConfig, exists := config.Environments[environment]
-	if !exists {
-		return nil, fmt.Errorf("environment %q not found in configuration", environment)
+	dir := "."
+	if config.SourceFile != "" {
+		dir = filepath.Dir(config.SourceFile)
 	}
 
-	// Create a copy of the base configuration
-	result := &Config{
-		Tools:        make(map[string]ToolConfig),
-		Env:          make(map[string]interface{}),
-		Tasks:        make(map[string]Task),
-		Environments: make(map[string]EnvironmentConfig),
-		Aliases:      make(map[string]map[string]string),
-		Settings:     config.Settings,
+	overlay := LoadEnvironmentOverlay(dir, environment)
+	if overlay == nil {
+		return nil, fmt.Errorf("environment %q not found", environment)
 	}
 
-	// Copy base tools
-	for toolName, toolConfig := range config.Tools {
-		result.Tools[toolName] = toolConfig
+	// Create a copy of base configuration
+	result, err := m.Merge(config)
+	if err != nil {
+		return nil, err
 	}
+	result.SourceFile = config.SourceFile
 
-	// Copy base environment variables
-	for envKey, envValue := range config.Env {
-		result.Env[envKey] = envValue
-	}
-
-	// Copy base tasks
-	for taskName, task := range config.Tasks {
-		result.Tasks[taskName] = task
-	}
-
-	// Copy environments (for reference, though typically not used after applying)
-	for envName, env := range config.Environments {
-		result.Environments[envName] = env
-	}
-
-	// Copy aliases
-	for toolName, aliases := range config.Aliases {
-		result.Aliases[toolName] = make(map[string]string)
-		for aliasName, aliasVersion := range aliases {
-			result.Aliases[toolName][aliasName] = aliasVersion
-		}
-	}
-
-	// Apply environment-specific tool overrides
-	for toolName, toolConfig := range envConfig.Tools {
-		result.Tools[toolName] = toolConfig
-	}
-
-	// Apply environment-specific environment variable overrides
-	for envKey, envValue := range envConfig.Env {
-		result.Env[envKey] = envValue
-	}
-
-	// Apply environment-specific task overrides
-	for taskName, task := range envConfig.Tasks {
-		result.Tasks[taskName] = task
-	}
-
-	// Apply environment-specific settings overrides (non-zero values)
-	if envConfig.Settings.CacheDir != "" {
-		result.Settings.CacheDir = envConfig.Settings.CacheDir
-	}
-	if envConfig.Settings.DataDir != "" {
-		result.Settings.DataDir = envConfig.Settings.DataDir
-	}
-	if envConfig.Settings.CacheTTL != 0 {
-		result.Settings.CacheTTL = envConfig.Settings.CacheTTL
-	}
-	if envConfig.Settings.Jobs != 0 {
-		result.Settings.Jobs = envConfig.Settings.Jobs
-	}
-
-	if envConfig.Settings.GitHubProxy != "" {
-		result.Settings.GitHubProxy = envConfig.Settings.GitHubProxy
-	}
-	if envConfig.Settings.HttpProxy != "" {
-		result.Settings.HttpProxy = envConfig.Settings.HttpProxy
-	}
-	if envConfig.Settings.HttpsProxy != "" {
-		result.Settings.HttpsProxy = envConfig.Settings.HttpsProxy
-	}
-	if envConfig.Settings.GitHubToken != "" {
-		result.Settings.GitHubToken = envConfig.Settings.GitHubToken
-	}
-	if envConfig.Settings.HTTPTimeout != 0 {
-		result.Settings.HTTPTimeout = envConfig.Settings.HTTPTimeout
-	}
-	if envConfig.Settings.TaskTimeout != 0 {
-		result.Settings.TaskTimeout = envConfig.Settings.TaskTimeout
-	}
-	if envConfig.Settings.TaskOutput != "" {
-		result.Settings.TaskOutput = envConfig.Settings.TaskOutput
-	}
-	if envConfig.Settings.AutoInstall != nil {
-		result.Settings.AutoInstall = envConfig.Settings.AutoInstall
-	}
-	if envConfig.Settings.Color != "" {
-		result.Settings.Color = envConfig.Settings.Color
-	}
-	if envConfig.Settings.AlwaysKeepDownload {
-		result.Settings.AlwaysKeepDownload = envConfig.Settings.AlwaysKeepDownload
-	}
-	if envConfig.Settings.VerifyMetadata != nil {
-		result.Settings.VerifyMetadata = envConfig.Settings.VerifyMetadata
-	}
+	// Merge overlay with overlay taking precedence
+	result.MergeOverlay(overlay)
 
 	return result, nil
 }

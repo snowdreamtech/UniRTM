@@ -23,7 +23,6 @@ type Config struct {
 	Settings      Settings                     `toml:"settings" yaml:"settings" mapstructure:"settings"`
 	Tasks         map[string]Task              `toml:"tasks" yaml:"tasks" mapstructure:"tasks"`
 	Hooks         map[string]string            `toml:"hooks,omitempty" yaml:"hooks,omitempty" mapstructure:"hooks,omitempty"`
-	Environments  map[string]EnvironmentConfig `toml:"environments,omitempty" yaml:"environments,omitempty" mapstructure:"environments,omitempty"`
 	Aliases       map[string]map[string]string `toml:"aliases,omitempty" yaml:"aliases,omitempty" mapstructure:"aliases,omitempty"`
 	Plugins       PluginMap                    `toml:"-" yaml:"-" mapstructure:"-"`
 	PluginsRaw    map[string]interface{}       `toml:"plugins,omitempty" yaml:"plugins,omitempty" mapstructure:"plugins,omitempty"`
@@ -31,15 +30,6 @@ type Config struct {
 	Pins          map[string]interface{}       `toml:"pins,omitempty" yaml:"pins,omitempty" mapstructure:"pins,omitempty"`
 	SourceFile    string                       `toml:"-" yaml:"-" mapstructure:"-"`
 	LegacySources map[string]string            `toml:"-" yaml:"-" mapstructure:"-"`
-}
-
-type EnvironmentConfig struct {
-	Tools    ToolMap                `toml:"-" yaml:"-" mapstructure:"-"`
-	ToolsRaw map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
-	Env      map[string]interface{} `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
-	Settings Settings               `toml:"settings,omitempty" yaml:"settings,omitempty" mapstructure:"settings,omitempty"`
-	Tasks    map[string]Task        `toml:"tasks,omitempty" yaml:"tasks,omitempty" mapstructure:"tasks,omitempty"`
-	Hooks    map[string]string      `toml:"hooks,omitempty" yaml:"hooks,omitempty" mapstructure:"hooks,omitempty"`
 }
 
 type ToolConfig struct {
@@ -94,17 +84,42 @@ func (c *Config) PostLoad() {
 			c.Plugins[k] = parsePluginDeclaration(v)
 		}
 	}
-	for name, env := range c.Environments {
-		env.PostLoad()
-		c.Environments[name] = env
-	}
 }
 
-func (ec *EnvironmentConfig) PostLoad() {
-	if ec.ToolsRaw != nil {
-		ec.Tools = make(ToolMap)
-		for k, v := range ec.ToolsRaw {
-			ec.Tools[k] = parseToolConfig(v)
+// PostLoadOverlay processes tools, pins, and plugins for overlay configs without applying env vars or default settings.
+func (c *Config) PostLoadOverlay() {
+	if c.ToolsRaw != nil {
+		c.Tools = make(ToolMap)
+		for k, v := range c.ToolsRaw {
+			c.Tools[k] = parseToolConfig(v)
+		}
+	}
+	if c.Pins != nil {
+		if c.Tools == nil {
+			c.Tools = make(ToolMap)
+		}
+		for k, v := range c.Pins {
+			tc := c.Tools[k]
+			tc.Pinned = true
+			if reason, ok := v.(string); ok {
+				tc.PinReason = reason
+			} else if b, ok := v.(bool); ok {
+				tc.Pinned = b
+			} else if pinMap, ok := v.(map[string]interface{}); ok {
+				if r, ok := pinMap["reason"].(string); ok {
+					tc.PinReason = r
+				}
+				if p, ok := pinMap["pinned"].(bool); ok {
+					tc.Pinned = p
+				}
+			}
+			c.Tools[k] = tc
+		}
+	}
+	if c.PluginsRaw != nil {
+		c.Plugins = make(PluginMap)
+		for k, v := range c.PluginsRaw {
+			c.Plugins[k] = parsePluginDeclaration(v)
 		}
 	}
 }
@@ -384,14 +399,6 @@ func (c *Config) Validate() error {
 	if err := c.validateTaskDependencies(); err != nil {
 		errs = append(errs, err.Error())
 	}
-	if c.Environments == nil {
-		c.Environments = make(map[string]EnvironmentConfig)
-	}
-	for envName, envConfig := range c.Environments {
-		if err := envConfig.Validate(); err != nil {
-			errs = append(errs, fmt.Sprintf("environment %q: %v", envName, err))
-		}
-	}
 	if len(errs) > 0 {
 		return fmt.Errorf("configuration validation failed:\n  - %s", strings.Join(errs, "\n  - "))
 	}
@@ -462,16 +469,6 @@ func (c *Config) Merge(other *Config) {
 		}
 	}
 
-	// Merge environments
-	if c.Environments == nil {
-		c.Environments = make(map[string]EnvironmentConfig)
-	}
-	for k, v := range other.Environments {
-		if _, exists := c.Environments[k]; !exists {
-			c.Environments[k] = v
-		}
-	}
-
 	// Merge aliases
 	if c.Aliases == nil {
 		c.Aliases = make(map[string]map[string]string)
@@ -531,6 +528,128 @@ func (c *Config) Merge(other *Config) {
 		for k, v := range other.PluginsRaw {
 			c.PluginsRaw[k] = v
 		}
+	}
+}
+
+// MergeOverlay merges an overlay configuration (e.g. from .unirtm.<env>.toml or .unirtm.local.toml) into this configuration.
+// The overlay configuration takes precedence over the base configuration.
+func (c *Config) MergeOverlay(overlay *Config) {
+	if c == nil || overlay == nil {
+		return
+	}
+
+	if overlay.MinVersion != "" {
+		c.MinVersion = overlay.MinVersion
+	}
+
+	// Overlay tools override base tools
+	if c.Tools == nil {
+		c.Tools = make(ToolMap)
+	}
+	for k, v := range overlay.Tools {
+		c.Tools[k] = v
+	}
+
+	// Overlay pins override base pins
+	if c.Pins == nil {
+		c.Pins = make(map[string]interface{})
+	}
+	for k, v := range overlay.Pins {
+		c.Pins[k] = v
+	}
+
+	// Overlay env vars override base env vars
+	if c.Env == nil {
+		c.Env = make(map[string]interface{})
+	}
+	for k, v := range overlay.Env {
+		c.Env[k] = v
+	}
+
+	// Overlay tasks override base tasks
+	if c.Tasks == nil {
+		c.Tasks = make(map[string]Task)
+	}
+	for k, v := range overlay.Tasks {
+		c.Tasks[k] = v
+	}
+
+	// Overlay aliases override base aliases
+	if c.Aliases == nil {
+		c.Aliases = make(map[string]map[string]string)
+	}
+	for k, v := range overlay.Aliases {
+		if c.Aliases[k] == nil {
+			c.Aliases[k] = make(map[string]string)
+		}
+		for ak, av := range v {
+			c.Aliases[k][ak] = av
+		}
+	}
+
+	// Overlay hooks override base hooks
+	if c.Hooks == nil {
+		c.Hooks = make(map[string]string)
+	}
+	for k, v := range overlay.Hooks {
+		c.Hooks[k] = v
+	}
+
+	// Overlay plugins override base plugins
+	if overlay.Plugins != nil {
+		if c.Plugins == nil {
+			c.Plugins = make(PluginMap)
+		}
+		for pluginID, pluginDecl := range overlay.Plugins {
+			c.Plugins[pluginID] = pluginDecl
+		}
+	}
+
+	// Overlay non-zero settings override base settings
+	if overlay.Settings.CacheDir != "" {
+		c.Settings.CacheDir = overlay.Settings.CacheDir
+	}
+	if overlay.Settings.DataDir != "" {
+		c.Settings.DataDir = overlay.Settings.DataDir
+	}
+	if overlay.Settings.CacheTTL != 0 {
+		c.Settings.CacheTTL = overlay.Settings.CacheTTL
+	}
+	if overlay.Settings.Jobs != 0 {
+		c.Settings.Jobs = overlay.Settings.Jobs
+	}
+	if overlay.Settings.GitHubProxy != "" {
+		c.Settings.GitHubProxy = overlay.Settings.GitHubProxy
+	}
+	if overlay.Settings.HttpProxy != "" {
+		c.Settings.HttpProxy = overlay.Settings.HttpProxy
+	}
+	if overlay.Settings.HttpsProxy != "" {
+		c.Settings.HttpsProxy = overlay.Settings.HttpsProxy
+	}
+	if overlay.Settings.GitHubToken != "" {
+		c.Settings.GitHubToken = overlay.Settings.GitHubToken
+	}
+	if overlay.Settings.HTTPTimeout != 0 {
+		c.Settings.HTTPTimeout = overlay.Settings.HTTPTimeout
+	}
+	if overlay.Settings.TaskTimeout != 0 {
+		c.Settings.TaskTimeout = overlay.Settings.TaskTimeout
+	}
+	if overlay.Settings.TaskOutput != "" {
+		c.Settings.TaskOutput = overlay.Settings.TaskOutput
+	}
+	if overlay.Settings.AutoInstall != nil {
+		c.Settings.AutoInstall = overlay.Settings.AutoInstall
+	}
+	if overlay.Settings.Color != "" {
+		c.Settings.Color = overlay.Settings.Color
+	}
+	if overlay.Settings.AlwaysKeepDownload {
+		c.Settings.AlwaysKeepDownload = overlay.Settings.AlwaysKeepDownload
+	}
+	if overlay.Settings.VerifyMetadata != nil {
+		c.Settings.VerifyMetadata = overlay.Settings.VerifyMetadata
 	}
 }
 
@@ -633,27 +752,6 @@ func (t *Task) Validate() error {
 		if isEmpty {
 			return errors.New("run command or depends is required")
 		}
-	}
-	return nil
-}
-
-func (ec *EnvironmentConfig) Validate() error {
-	var errs []string
-	for toolName, toolConfig := range ec.Tools {
-		if err := toolConfig.Validate(); err != nil {
-			errs = append(errs, fmt.Sprintf("tool %q: %v", toolName, err))
-		}
-	}
-	if err := ec.Settings.Validate(); err != nil {
-		errs = append(errs, fmt.Sprintf("settings: %v", err))
-	}
-	for taskName, task := range ec.Tasks {
-		if err := task.Validate(); err != nil {
-			errs = append(errs, fmt.Sprintf("task %q: %v", taskName, err))
-		}
-	}
-	if len(errs) > 0 {
-		return errors.New(strings.Join(errs, "; "))
 	}
 	return nil
 }

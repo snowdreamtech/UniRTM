@@ -12,7 +12,7 @@ import (
 func TestReservedCoreTables(t *testing.T) {
 	// Verify that all fundamental tables are permanently reserved
 	expectedTables := []string{
-		"tools", "tasks", "format", "lint", "hooks", "env", "settings", "environments", "aliases", "plugins",
+		"tools", "tasks", "format", "lint", "hooks", "env", "settings", "aliases", "plugins",
 	}
 
 	for _, table := range expectedTables {
@@ -38,7 +38,6 @@ func TestValidateKeyNamespace_CoreKeys(t *testing.T) {
 		"format.overrides",
 		"lint.tools",
 		"hooks.pre-commit",
-		"environments.production.env.PORT",
 		"network_preset",
 		"browser",
 	}

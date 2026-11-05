@@ -145,19 +145,6 @@ func (cv *ConfigValidator) Validate(ctx context.Context, cfg *config.Config) *Co
 		}
 	}
 
-	// ── 13.5: Verify environment references ──────────────────────────────────
-	for envName, envCfg := range cfg.Environments {
-		for toolName, toolCfg := range envCfg.Tools {
-			if toolCfg.Version == "" {
-				result.Issues = append(result.Issues, ValidationIssue{
-					Severity: SeverityError,
-					Field:    fmt.Sprintf("environments.%s.tools.%s.version", envName, toolName),
-					Message:  fmt.Sprintf("tool %q in environment %q has no version", toolName, envName),
-				})
-			}
-		}
-	}
-
 	// ── 13.6: Validate settings ───────────────────────────────────────────────
 	if cfg.Settings.CacheTTL < 0 {
 		result.Issues = append(result.Issues, ValidationIssue{

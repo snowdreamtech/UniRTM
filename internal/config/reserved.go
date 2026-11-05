@@ -12,18 +12,17 @@ import (
 // ReservedCoreTables is the set of top-level table names permanently reserved for UniRTM core features.
 // Third-party plugins and user extensions are strictly prohibited from creating new root-level tables.
 var ReservedCoreTables = map[string]bool{
-	"tools":        true,
-	"tasks":        true,
-	"format":       true,
-	"lint":         true,
-	"guard":        true,
-	"hooks":        true,
-	"env":          true,
-	"settings":     true,
-	"environments": true,
-	"aliases":      true,
-	"plugins":      true,
-	"network":      true,
+	"tools":    true,
+	"tasks":    true,
+	"format":   true,
+	"lint":     true,
+	"guard":    true,
+	"hooks":    true,
+	"env":      true,
+	"settings": true,
+	"aliases":  true,
+	"plugins":  true,
+	"network":  true,
 }
 
 // ReservedRootFields are scalar or list fields explicitly reserved at the root level of .unirtm.toml.

@@ -486,141 +486,62 @@ func TestConfig_ValidateInitializesNilMaps(t *testing.T) {
 	assert.Len(t, config.Tasks, 0)
 }
 
-func TestEnvironmentConfig_Validate(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  EnvironmentConfig
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name: "valid environment config with all fields",
-			config: EnvironmentConfig{
-				Tools: map[string]ToolConfig{
-					"node": {Version: "18.0.0"},
-				},
-				Env: map[string]interface{}{
-					"NODE_ENV": "production",
-				},
-				Settings: Settings{
-					CacheTTL: 7200,
-				},
-				Tasks: map[string]Task{
-					"build": {Run: StringArray{"npm run build"}},
-				},
-			},
-			wantErr: false,
+func TestConfig_MergeOverlay(t *testing.T) {
+	base := &Config{
+		Tools: map[string]ToolConfig{
+			"node": {Version: "18.0.0"},
+			"go":   {Version: "1.21.0"},
 		},
-		{
-			name:    "valid empty environment config",
-			config:  EnvironmentConfig{},
-			wantErr: false,
+		Env: map[string]interface{}{
+			"APP_ENV": "development",
+			"PORT":    8080,
 		},
-		{
-			name: "invalid tool in environment config",
-			config: EnvironmentConfig{
-				Tools: map[string]ToolConfig{
-					"node": {Version: ""},
-				},
-			},
-			wantErr: true,
-			errMsg:  "version is required",
+		Tasks: map[string]Task{
+			"build": {Run: StringArray{"go build"}},
 		},
-		{
-			name: "invalid settings in environment config",
-			config: EnvironmentConfig{
-				Settings: Settings{
-					CacheTTL: -100,
-				},
-			},
-			wantErr: true,
-			errMsg:  "cache_ttl must be non-negative",
-		},
-		{
-			name: "invalid task in environment config",
-			config: EnvironmentConfig{
-				Tasks: map[string]Task{
-					"build": {Run: StringArray{""}},
-				},
-			},
-			wantErr: true,
-			errMsg:  "run command or depends is required",
+		Settings: Settings{
+			CacheTTL: 3600,
+			Color:    "auto",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestConfig_ValidateWithEnvironments(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  Config
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name: "valid config with environments",
-			config: Config{
-				Tools: map[string]ToolConfig{
-					"node": {Version: "20.0.0"},
-				},
-				Environments: map[string]EnvironmentConfig{
-					"development": {
-						Tools: map[string]ToolConfig{
-							"node": {Version: "18.0.0"},
-						},
-					},
-					"production": {
-						Settings: Settings{
-							CacheTTL: 7200,
-						},
-					},
-				},
-				Settings: Settings{},
-			},
-			wantErr: false,
+	overlay := &Config{
+		Tools: map[string]ToolConfig{
+			"node": {Version: "20.0.0"},
+			"rust": {Version: "1.75.0"},
 		},
-		{
-			name: "invalid environment config",
-			config: Config{
-				Tools: map[string]ToolConfig{
-					"node": {Version: "20.0.0"},
-				},
-				Environments: map[string]EnvironmentConfig{
-					"development": {
-						Tools: map[string]ToolConfig{
-							"node": {Version: ""},
-						},
-					},
-				},
-				Settings: Settings{},
-			},
-			wantErr: true,
-			errMsg:  "environment \"development\"",
+		Env: map[string]interface{}{
+			"APP_ENV": "production",
+			"DEBUG":   "true",
+		},
+		Tasks: map[string]Task{
+			"build": {Run: StringArray{"cargo build --release"}},
+			"test":  {Run: StringArray{"cargo test"}},
+		},
+		Settings: Settings{
+			CacheTTL: 7200,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.config.Validate()
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
+	base.MergeOverlay(overlay)
+
+	// Tools
+	assert.Equal(t, "20.0.0", base.Tools["node"].Version)
+	assert.Equal(t, "1.21.0", base.Tools["go"].Version)
+	assert.Equal(t, "1.75.0", base.Tools["rust"].Version)
+
+	// Env
+	assert.Equal(t, "production", base.Env["APP_ENV"])
+	assert.Equal(t, 8080, base.Env["PORT"])
+	assert.Equal(t, "true", base.Env["DEBUG"])
+
+	// Tasks
+	assert.Equal(t, StringArray{"cargo build --release"}, base.Tasks["build"].Run)
+	assert.Equal(t, StringArray{"cargo test"}, base.Tasks["test"].Run)
+
+	// Settings
+	assert.Equal(t, DurationOrInt(7200), base.Settings.CacheTTL)
+	assert.Equal(t, "auto", base.Settings.Color)
 }
 
 func TestDurationOrInt(t *testing.T) {

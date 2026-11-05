@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pterm/pterm"
@@ -147,10 +148,17 @@ func runLock(cmd *cobra.Command, args []string) error {
 		cfg.ApplyEnvironment()
 	}
 
+	// Discover all project tools across base configuration and all .unirtm.*.toml overlays
+	lockDir := filepath.Dir(lockPath)
+	allProjectTools, _ := config.DiscoverAllProjectTools(lockDir)
+	if len(allProjectTools) == 0 && cfg != nil {
+		allProjectTools = cfg.Tools
+	}
+
 	var tools map[string]service.ToolSpec
-	if cfg != nil && len(cfg.Tools) > 0 {
-		tools = make(map[string]service.ToolSpec, len(cfg.Tools))
-		for name, tc := range cfg.Tools {
+	if len(allProjectTools) > 0 {
+		tools = make(map[string]service.ToolSpec, len(allProjectTools))
+		for name, tc := range allProjectTools {
 			backendName := tc.Backend
 			toolName := name
 			if backendName == "" {
@@ -316,7 +324,19 @@ func runLockCheck(formatter output.Formatter, lockPath string) error {
 
 // checkConfigLockSync cross-validates project config tools against lockfile entries.
 func checkConfigLockSync(cfg *config.Config, lf *lockfile.LockFile, lockPath string) error {
-	if cfg == nil || len(cfg.Tools) == 0 {
+	toolsToCheck := make(config.ToolMap)
+	if cfg != nil {
+		for k, v := range cfg.Tools {
+			toolsToCheck[k] = v
+		}
+	}
+	lockDir := filepath.Dir(lockPath)
+	if allProjectTools, err := config.DiscoverAllProjectTools(lockDir); err == nil {
+		for k, v := range allProjectTools {
+			toolsToCheck[k] = v
+		}
+	}
+	if len(toolsToCheck) == 0 {
 		return nil
 	}
 
@@ -324,7 +344,7 @@ func checkConfigLockSync(cfg *config.Config, lf *lockfile.LockFile, lockPath str
 	knownBackends := registry.List()
 
 	var mismatches []string
-	for name, tc := range cfg.Tools {
+	for name, tc := range toolsToCheck {
 		if tc.Version == "" {
 			continue
 		}

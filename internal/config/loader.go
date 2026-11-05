@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/flosch/pongo2/v6"
@@ -176,7 +177,158 @@ func LoadFromDir(dir string) (*Config, error) {
 		MergeSidecarConfigs(cfg, projSidecars)
 	}
 
+	// Apply environment overlay (.unirtm.<env>.toml) if active environment is specified
+	activeEnv := GetActiveEnvironment()
+	if activeEnv != "" && activeEnv != "local" {
+		if envOverlay := LoadEnvironmentOverlay(dir, activeEnv); envOverlay != nil {
+			cfg.MergeOverlay(envOverlay)
+		}
+	}
+
+	// Apply .unirtm.local.toml private override if present
+	if localOverlay := LoadLocalOverlay(dir); localOverlay != nil {
+		cfg.MergeOverlay(localOverlay)
+	}
+
 	return cfg, nil
+}
+
+// GetActiveEnvironment returns the active environment name from env.EnvName, UNIRTM_ENV,
+// or defaults to "ci" when running in automated CI environments (CI=true / GITHUB_ACTIONS=true).
+func GetActiveEnvironment() string {
+	if env.EnvName != "" {
+		return env.EnvName
+	}
+	if v := os.Getenv("UNIRTM_ENV"); v != "" {
+		return v
+	}
+	if os.Getenv("CI") == "true" || os.Getenv("GITHUB_ACTIONS") == "true" {
+		return "ci"
+	}
+	return ""
+}
+
+// LoadEnvironmentOverlay loads and returns the overlay config for activeEnv from dir if present.
+func LoadEnvironmentOverlay(dir, activeEnv string) *Config {
+	if activeEnv == "" {
+		return nil
+	}
+	envFiles := []string{
+		fmt.Sprintf(".unirtm.%s.toml", activeEnv),
+		fmt.Sprintf("unirtm.%s.toml", activeEnv),
+		fmt.Sprintf(".mise.%s.toml", activeEnv),
+		fmt.Sprintf("mise.%s.toml", activeEnv),
+	}
+	for _, fileName := range envFiles {
+		p := filepath.Join(dir, fileName)
+		data, err := OsReadFile(p)
+		if err == nil {
+			overlay := &Config{}
+			if err := toml.Unmarshal(data, overlay); err == nil {
+				overlay.SourceFile = p
+				overlay.PostLoadOverlay()
+				return overlay
+			}
+		}
+	}
+	return nil
+}
+
+// LoadLocalOverlay loads and returns the local override config (.unirtm.local.toml) from dir if present.
+func LoadLocalOverlay(dir string) *Config {
+	localFiles := []string{
+		".unirtm.local.toml",
+		"unirtm.local.toml",
+		".mise.local.toml",
+		"mise.local.toml",
+	}
+	for _, fileName := range localFiles {
+		p := filepath.Join(dir, fileName)
+		data, err := OsReadFile(p)
+		if err == nil {
+			overlay := &Config{}
+			if err := toml.Unmarshal(data, overlay); err == nil {
+				overlay.SourceFile = p
+				overlay.PostLoadOverlay()
+				return overlay
+			}
+		}
+	}
+	return nil
+}
+
+// DiscoverAllProjectTools scans dir for base config and all environment overlay configs (.unirtm.*.toml, unirtm.*.toml),
+// returning a merged ToolMap of all tools declared across all environment files.
+// This allows unirtm lock to lock the complete dependency graph for all environments.
+func DiscoverAllProjectTools(dir string) (ToolMap, error) {
+	allTools := make(ToolMap)
+
+	// 1. Base tools from dir
+	baseCfg, err := LoadFromDir(dir)
+	if err == nil && baseCfg != nil {
+		for k, v := range baseCfg.Tools {
+			allTools[k] = v
+		}
+	}
+
+	// 2. Discover all .unirtm.*.toml and unirtm.*.toml in dir
+	entries, readErr := os.ReadDir(dir)
+	if readErr == nil {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			name := entry.Name()
+			if strings.HasSuffix(name, ".toml") &&
+				((strings.HasPrefix(name, ".unirtm.") && name != ".unirtm.toml" && name != ".unirtm.local.toml") ||
+					(strings.HasPrefix(name, "unirtm.") && name != "unirtm.toml" && name != "unirtm.local.toml") ||
+					(strings.HasPrefix(name, ".mise.") && name != ".mise.toml" && name != ".mise.local.toml") ||
+					(strings.HasPrefix(name, "mise.") && name != "mise.toml" && name != "mise.local.toml")) {
+				p := filepath.Join(dir, name)
+				if data, err := OsReadFile(p); err == nil {
+					overlay := &Config{}
+					if err := toml.Unmarshal(data, overlay); err == nil {
+						overlay.PostLoadOverlay()
+						for k, v := range overlay.Tools {
+							allTools[k] = v
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return allTools, nil
+}
+
+// DiscoverEnvironmentProfiles returns all environment profile names found in dir.
+func DiscoverEnvironmentProfiles(dir string) []string {
+	var profiles []string
+	seen := make(map[string]bool)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return profiles
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if strings.HasSuffix(name, ".toml") {
+			var envName string
+			if strings.HasPrefix(name, ".unirtm.") && name != ".unirtm.toml" && name != ".unirtm.local.toml" {
+				envName = strings.TrimSuffix(strings.TrimPrefix(name, ".unirtm."), ".toml")
+			} else if strings.HasPrefix(name, "unirtm.") && name != "unirtm.toml" && name != "unirtm.local.toml" {
+				envName = strings.TrimSuffix(strings.TrimPrefix(name, "unirtm."), ".toml")
+			}
+			if envName != "" && !seen[envName] {
+				seen[envName] = true
+				profiles = append(profiles, envName)
+			}
+		}
+	}
+	sort.Strings(profiles)
+	return profiles
 }
 
 // ResolveEnvironment resolves environment variables defined in the configuration.

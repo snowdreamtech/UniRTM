@@ -700,7 +700,46 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 	manager := newTestConfigManager()
 
 	t.Run("apply development environment", func(t *testing.T) {
+		dir := t.TempDir()
+		baseFile := filepath.Join(dir, ".unirtm.toml")
+		devFile := filepath.Join(dir, ".unirtm.development.toml")
+
+		_ = os.WriteFile(baseFile, []byte(`
+[tools]
+node = "20.0.0"
+python = "3.11.0"
+
+[env]
+NODE_ENV = "production"
+DEBUG = "false"
+
+[settings]
+cache_dir = "/prod/cache"
+cache_ttl = 7200
+
+[tasks.build]
+description = "Build for production"
+run = "npm run build"
+`), 0644)
+
+		_ = os.WriteFile(devFile, []byte(`
+[tools]
+node = "18.0.0"
+
+[env]
+NODE_ENV = "development"
+DEBUG = "true"
+
+[settings]
+cache_dir = "/dev/cache"
+
+[tasks.build]
+description = "Build for development"
+run = "npm run dev"
+`), 0644)
+
 		baseConfig := &Config{
+			SourceFile: baseFile,
 			Tools: map[string]ToolConfig{
 				"node":   {Version: "20.0.0"},
 				"python": {Version: "3.11.0"},
@@ -717,26 +756,6 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 				"build": {
 					Description: "Build for production",
 					Run:         StringArray{"npm run build"},
-				},
-			},
-			Environments: map[string]EnvironmentConfig{
-				"development": {
-					Tools: map[string]ToolConfig{
-						"node": {Version: "18.0.0"}, // Override node version
-					},
-					Env: map[string]interface{}{
-						"NODE_ENV": "development", // Override NODE_ENV
-						"DEBUG":    "true",        // Override DEBUG
-					},
-					Settings: Settings{
-						CacheDir: "/dev/cache", // Override cache dir
-					},
-					Tasks: map[string]Task{
-						"build": {
-							Description: "Build for development",
-							Run:         StringArray{"npm run dev"},
-						},
-					},
 				},
 			},
 		}
@@ -763,19 +782,22 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 	})
 
 	t.Run("apply staging environment", func(t *testing.T) {
+		dir := t.TempDir()
+		baseFile := filepath.Join(dir, ".unirtm.toml")
+		stagingFile := filepath.Join(dir, ".unirtm.staging.toml")
+
+		_ = os.WriteFile(stagingFile, []byte(`
+[settings]
+cache_ttl = 7200
+`), 0644)
+
 		baseConfig := &Config{
+			SourceFile: baseFile,
 			Tools: map[string]ToolConfig{
 				"node": {Version: "20.0.0"},
 			},
 			Settings: Settings{
 				CacheTTL: 3600,
-			},
-			Environments: map[string]EnvironmentConfig{
-				"staging": {
-					Settings: Settings{
-						CacheTTL: 7200,
-					},
-				},
 			},
 		}
 
@@ -791,26 +813,29 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 	})
 
 	t.Run("apply production environment", func(t *testing.T) {
+		dir := t.TempDir()
+		baseFile := filepath.Join(dir, ".unirtm.toml")
+		prodFile := filepath.Join(dir, ".unirtm.production.toml")
+
+		_ = os.WriteFile(prodFile, []byte(`
+[tools]
+node = "20.0.0"
+
+[env]
+NODE_ENV = "production"
+ENABLE_CACHE = "true"
+
+[settings]
+cache_ttl = 86400
+`), 0644)
+
 		baseConfig := &Config{
+			SourceFile: baseFile,
 			Tools: map[string]ToolConfig{
 				"node": {Version: "18.0.0"},
 			},
 			Env: map[string]interface{}{
 				"NODE_ENV": "development",
-			},
-			Environments: map[string]EnvironmentConfig{
-				"production": {
-					Tools: map[string]ToolConfig{
-						"node": {Version: "20.0.0"},
-					},
-					Env: map[string]interface{}{
-						"NODE_ENV":     "production",
-						"ENABLE_CACHE": "true",
-					},
-					Settings: Settings{
-						CacheTTL: 86400,
-					},
-				},
 			},
 		}
 
@@ -823,20 +848,12 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 		assert.Equal(t, "production", result.Env["NODE_ENV"])
 		assert.Equal(t, "true", result.Env["ENABLE_CACHE"])
 		assert.Equal(t, 86400, int(result.Settings.CacheTTL))
-
 	})
 
 	t.Run("environment not found", func(t *testing.T) {
 		baseConfig := &Config{
 			Tools: map[string]ToolConfig{
 				"node": {Version: "20.0.0"},
-			},
-			Environments: map[string]EnvironmentConfig{
-				"development": {
-					Tools: map[string]ToolConfig{
-						"node": {Version: "18.0.0"},
-					},
-				},
 			},
 		}
 
@@ -867,7 +884,13 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 	})
 
 	t.Run("empty environment config", func(t *testing.T) {
+		dir := t.TempDir()
+		baseFile := filepath.Join(dir, ".unirtm.toml")
+		testFile := filepath.Join(dir, ".unirtm.test.toml")
+		_ = os.WriteFile(testFile, []byte(``), 0644)
+
 		baseConfig := &Config{
+			SourceFile: baseFile,
 			Tools: map[string]ToolConfig{
 				"node": {Version: "20.0.0"},
 			},
@@ -876,9 +899,6 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 			},
 			Settings: Settings{
 				CacheTTL: 3600,
-			},
-			Environments: map[string]EnvironmentConfig{
-				"test": {}, // Empty environment config
 			},
 		}
 
@@ -899,9 +919,8 @@ func TestConfigManager_LoadWithEnvironment(t *testing.T) {
 
 	t.Run("load with environment from file", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		configPath := filepath.Join(tmpDir, "config.toml")
 
-		configContent := `
+		baseContent := `
 [tools]
 node = { version = "20.0.0" }
 python = { version = "3.11.0" }
@@ -911,22 +930,18 @@ NODE_ENV = "production"
 
 [settings]
 cache_ttl = 7200
-
-[environments.development]
-[environments.development.tools]
+`
+		devContent := `
+[tools]
 node = { version = "18.0.0" }
 
-[environments.development.env]
+[env]
 NODE_ENV = "development"
 DEBUG = "true"
 
-[environments.development.settings]
+[settings]
 cache_ttl = 3600
 `
-		err := os.WriteFile(configPath, []byte(configContent), 0644)
-		require.NoError(t, err)
-
-		// Change to the temp directory
 		originalDir, err := os.Getwd()
 		require.NoError(t, err)
 		defer os.Chdir(originalDir)
@@ -934,8 +949,10 @@ cache_ttl = 3600
 		err = os.Chdir(tmpDir)
 		require.NoError(t, err)
 
-		// Create a config file in the current directory
-		err = os.WriteFile("unirtm.toml", []byte(configContent), 0644)
+		err = os.WriteFile("unirtm.toml", []byte(baseContent), 0644)
+		require.NoError(t, err)
+
+		err = os.WriteFile("unirtm.development.toml", []byte(devContent), 0644)
 		require.NoError(t, err)
 
 		manager := newTestConfigManager()
@@ -946,7 +963,6 @@ cache_ttl = 3600
 		// Verify environment overrides were applied
 		assert.Equal(t, "18.0.0", config.Tools["node"].Version, "node should be overridden")
 		assert.Equal(t, "3.11.0", config.Tools["python"].Version, "python should be preserved")
-		// Note: keys are set directly in Go code - they are lowercase
 		assert.Equal(t, "development", config.Env["NODE_ENV"], "NODE_ENV should be overridden")
 		assert.Equal(t, "true", config.Env["DEBUG"], "DEBUG should be added")
 		assert.Equal(t, 3600, int(config.Settings.CacheTTL), "CacheTTL should be overridden")
@@ -955,18 +971,19 @@ cache_ttl = 3600
 	t.Run("load without environment", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		configContent := `
+		baseContent := `
 [tools]
 node = { version = "20.0.0" }
-
-[environments.development]
-[environments.development.tools]
+`
+		devContent := `
+[tools]
 node = { version = "18.0.0" }
 `
-		err := os.WriteFile(filepath.Join(tmpDir, "unirtm.toml"), []byte(configContent), 0644)
+		err := os.WriteFile(filepath.Join(tmpDir, "unirtm.toml"), []byte(baseContent), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tmpDir, "unirtm.development.toml"), []byte(devContent), 0644)
 		require.NoError(t, err)
 
-		// Change to the temp directory
 		originalDir, err := os.Getwd()
 		require.NoError(t, err)
 		defer os.Chdir(originalDir)
@@ -986,18 +1003,13 @@ node = { version = "18.0.0" }
 	t.Run("load with nonexistent environment", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		configContent := `
+		baseContent := `
 [tools]
 node = { version = "20.0.0" }
-
-[environments.development]
-[environments.development.tools]
-node = { version = "18.0.0" }
 `
-		err := os.WriteFile(filepath.Join(tmpDir, "unirtm.toml"), []byte(configContent), 0644)
+		err := os.WriteFile(filepath.Join(tmpDir, "unirtm.toml"), []byte(baseContent), 0644)
 		require.NoError(t, err)
 
-		// Change to the temp directory
 		originalDir, err := os.Getwd()
 		require.NoError(t, err)
 		defer os.Chdir(originalDir)
@@ -1042,48 +1054,53 @@ run = "npm run build"
 [tasks.test]
 description = "Run tests"
 run = "npm test"
-
-[environments.development]
-[environments.development.tools]
+`
+		devContent := `
+[tools]
 node = { version = "18.0.0" }
 
-[environments.development.env]
+[env]
 NODE_ENV = "development"
 LOG_LEVEL = "debug"
 DEBUG = "true"
 
-[environments.development.settings]
+[settings]
 cache_dir = "/dev/cache"
 cache_ttl = 3600
 
-[environments.development.tasks.build]
+[tasks.build]
 description = "Build for development"
 run = "npm run dev"
-
-[environments.staging]
-[environments.staging.env]
+`
+		stagingContent := `
+[env]
 NODE_ENV = "staging"
 
-[environments.staging.settings]
+[settings]
 cache_ttl = 43200
-
-[environments.production]
-[environments.production.tools]
+`
+		prodContent := `
+[tools]
 node = { version = "20.0.0" }
 go = { version = "1.22.0" }
 
-[environments.production.env]
+[env]
 NODE_ENV = "production"
 LOG_LEVEL = "warn"
 ENABLE_MONITORING = "true"
 
-[environments.production.settings]
+[settings]
 cache_ttl = 172800
 `
 		err := os.WriteFile(filepath.Join(tmpDir, "unirtm.toml"), []byte(baseContent), 0644)
 		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tmpDir, "unirtm.development.toml"), []byte(devContent), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tmpDir, "unirtm.staging.toml"), []byte(stagingContent), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tmpDir, "unirtm.production.toml"), []byte(prodContent), 0644)
+		require.NoError(t, err)
 
-		// Change to the temp directory
 		originalDir, err := os.Getwd()
 		require.NoError(t, err)
 		defer os.Chdir(originalDir)
@@ -1101,7 +1118,6 @@ cache_ttl = 172800
 		assert.Equal(t, "18.0.0", devConfig.Tools["node"].Version)
 		assert.Equal(t, "3.11.0", devConfig.Tools["python"].Version)
 		assert.Equal(t, "1.21.0", devConfig.Tools["go"].Version)
-		// TOML parsing preserves key case
 		assert.Equal(t, "development", devConfig.Env["NODE_ENV"])
 		assert.Equal(t, "debug", devConfig.Env["LOG_LEVEL"])
 		assert.Equal(t, "true", devConfig.Env["DEBUG"])
@@ -1118,7 +1134,6 @@ cache_ttl = 172800
 		require.NotNil(t, stagingConfig)
 
 		assert.Equal(t, "20.0.0", stagingConfig.Tools["node"].Version)
-		// TOML parsing preserves key case
 		assert.Equal(t, "staging", stagingConfig.Env["NODE_ENV"])
 		assert.Equal(t, "info", stagingConfig.Env["LOG_LEVEL"])
 		assert.Equal(t, "/prod/cache", stagingConfig.Settings.CacheDir)
@@ -1132,7 +1147,6 @@ cache_ttl = 172800
 		assert.Equal(t, "20.0.0", prodConfig.Tools["node"].Version)
 		assert.Equal(t, "3.11.0", prodConfig.Tools["python"].Version)
 		assert.Equal(t, "1.22.0", prodConfig.Tools["go"].Version)
-		// TOML parsing preserves key case
 		assert.Equal(t, "production", prodConfig.Env["NODE_ENV"])
 		assert.Equal(t, "warn", prodConfig.Env["LOG_LEVEL"])
 		assert.Equal(t, "true", prodConfig.Env["ENABLE_MONITORING"])

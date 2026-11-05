@@ -84,15 +84,6 @@ func TestConfigValidator_Validate(t *testing.T) {
 				Backend: "nonexistent",
 			},
 		},
-		Environments: map[string]config.EnvironmentConfig{
-			"dev": {
-				Tools: map[string]config.ToolConfig{
-					"known": {
-						Version: "",
-					},
-				},
-			},
-		},
 		Settings: config.Settings{
 			CacheTTL: -1,
 			Jobs:     -1,
@@ -112,13 +103,12 @@ func TestConfigValidator_Validate(t *testing.T) {
 			warnCount++
 		}
 	}
-	// Errors: bad_version(1), no_version(1), bad_backend(1), env_no_version(1), cache_ttl(1), jobs(1) -> 6
-	// Warnings: unknown tool(1), bad_version(1), no_version(1), bad_backend(1) -> wait, unknown is 1 warning for "unknown", "bad_version", "no_version", "bad_backend" (all unknown tools get warnings)
+	// Errors: bad_version(1), no_version(1), bad_backend(1), cache_ttl(1), jobs(1) -> 5
 	if warnCount != 4 {
 		t.Errorf("expected 4 warnings, got %d", warnCount)
 	}
-	if errCount != 6 {
-		t.Errorf("expected 6 errors, got %d", errCount)
+	if errCount != 5 {
+		t.Errorf("expected 5 errors, got %d", errCount)
 	}
 }
 

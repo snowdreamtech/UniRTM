@@ -457,3 +457,54 @@ func TestGetGlobalConfigPath_HomeDir(t *testing.T) {
 		fmt.Sprintf("expected path to end with unirtm.toml, got: %s", path))
 	assert.Contains(t, path, "unirtm")
 }
+
+// TestLoadFromDir_EnvironmentOverlay tests cascading overlay loading from .unirtm.<env>.toml
+func TestLoadFromDir_EnvironmentOverlay(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	baseContent := `
+[tools]
+node = "20.0.0"
+go = "1.22.0"
+
+[env]
+APP_ENV = "local"
+`
+	ciContent := `
+[tools]
+trivy = "0.76.1"
+node = "18.0.0"
+
+[env]
+APP_ENV = "ci"
+CI = "true"
+`
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, ".unirtm.toml"), []byte(baseContent), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, ".unirtm.ci.toml"), []byte(ciContent), 0644))
+
+	// Without UNIRTM_ENV
+	t.Setenv("UNIRTM_ENV", "")
+	cfgDefault, err := LoadFromDir(tmpDir)
+	require.NoError(t, err)
+	assert.Equal(t, "20.0.0", cfgDefault.Tools["node"].Version)
+	assert.Equal(t, "1.22.0", cfgDefault.Tools["go"].Version)
+	assert.NotContains(t, cfgDefault.Tools, "trivy")
+	assert.Equal(t, "local", cfgDefault.Env["APP_ENV"])
+
+	// With UNIRTM_ENV=ci
+	t.Setenv("UNIRTM_ENV", "ci")
+	cfgCI, err := LoadFromDir(tmpDir)
+	require.NoError(t, err)
+	assert.Equal(t, "18.0.0", cfgCI.Tools["node"].Version)  // Overridden by .unirtm.ci.toml
+	assert.Equal(t, "1.22.0", cfgCI.Tools["go"].Version)    // Inherited from base
+	assert.Equal(t, "0.76.1", cfgCI.Tools["trivy"].Version) // Added by .unirtm.ci.toml
+	assert.Equal(t, "ci", cfgCI.Env["APP_ENV"])
+	assert.Equal(t, "true", cfgCI.Env["CI"])
+
+	// Verify DiscoverAllProjectTools collects union of all tools
+	allTools, err := DiscoverAllProjectTools(tmpDir)
+	require.NoError(t, err)
+	assert.Contains(t, allTools, "node")
+	assert.Equal(t, "1.22.0", allTools["go"].Version)
+	assert.Equal(t, "0.76.1", allTools["trivy"].Version)
+}

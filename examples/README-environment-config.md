@@ -13,10 +13,10 @@ Environment-specific configuration allows you to:
 
 ## Configuration Structure
 
-The configuration file supports an `environments` section where you can define overrides for specific environments:
+UniRTM uses separate cascading overlay files (`.unirtm.<env>.toml`):
 
 ```toml
-# Base configuration
+# Base configuration (.unirtm.toml)
 [tools]
 node = { version = "20.0.0" }
 
@@ -25,17 +25,18 @@ NODE_ENV = "production"
 
 [settings]
 cache_ttl = 86400
+```
 
-# Environment-specific overrides
-[environments.development]
-[environments.development.tools]
+```toml
+# Development overlay (.unirtm.development.toml)
+[tools]
 node = { version = "18.0.0" }
 
-[environments.development.env]
+[env]
 NODE_ENV = "development"
 DEBUG = "true"
 
-[environments.development.settings]
+[settings]
 cache_ttl = 3600
 ```
 

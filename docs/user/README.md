@@ -66,9 +66,12 @@ version = "3.11.0"
 
 [tools.go]
 version = "1.21.0"
+```
 
-[environments.production]
-[environments.production.tools.node]
+To override tool versions for specific environments (e.g. `production`), create `.unirtm.production.toml`:
+
+```toml
+[tools.node]
 version = "18.0.0"        # Pin to LTS in production
 ```
 

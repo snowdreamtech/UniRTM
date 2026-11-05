@@ -591,7 +591,7 @@ func handleGetEnvVars(w http.ResponseWriter, r *http.Request) {
 
 	content, _ := config.ReadFileOrEmpty(targetFile)
 	baseEnvMap := config.GetEnvVarsFromContent(content)
-	profiles := config.GetEnvironmentProfiles(content)
+	profiles := config.DiscoverEnvironmentProfiles(projectDir)
 
 	type EnvVarItem struct {
 		Name          string `json:"name"`
@@ -625,15 +625,9 @@ func handleGetEnvVars(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// Specific workspace profile
-		envs := config.GetEnvironmentsFromContent(content)
-		var profEnvRaw map[string]interface{}
-		if cfg, exists := envs[profile]; exists {
-			profEnvRaw = cfg.Env
-		}
-		profEnvMap := make(map[string]string)
-		for k, v := range profEnvRaw {
-			profEnvMap[strings.ToUpper(k)] = fmt.Sprintf("%v", v)
-		}
+		profFile := filepath.Join(projectDir, fmt.Sprintf(".unirtm.%s.toml", profile))
+		profContent, _ := config.ReadFileOrEmpty(profFile)
+		profEnvMap := config.GetEnvVarsFromContent(profContent)
 
 		// Union of profile keys and base keys
 		allKeysMap := make(map[string]bool)
@@ -762,16 +756,13 @@ func handleUpsertEnvVar(w http.ResponseWriter, r *http.Request) {
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "profile name cannot be empty"})
 			return
 		}
-		updated, err := config.CreateEnvironmentProfile(content, profile)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
-			return
-		}
-		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
-			return
+		profFile := filepath.Join(projectDir, fmt.Sprintf(".unirtm.%s.toml", profile))
+		if _, err := os.Stat(profFile); os.IsNotExist(err) {
+			if err := os.WriteFile(profFile, []byte(fmt.Sprintf("# UniRTM Environment Overlay: %s\n", profile)), 0644); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+				return
+			}
 		}
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": true,
@@ -787,16 +778,13 @@ func handleUpsertEnvVar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if profile != "" && scope == "workspace" {
+		profFile := filepath.Join(projectDir, fmt.Sprintf(".unirtm.%s.toml", profile))
+		profContent, _ := config.ReadFileOrEmpty(profFile)
 		if req.OriginalKey != "" && !strings.EqualFold(req.OriginalKey, req.Key) {
-			content, _ = config.UnsetEnvironmentEnvVar(content, profile, req.OriginalKey)
+			profContent, _ = config.UnsetEnvVar(profContent, req.OriginalKey)
 		}
-		updated, err := config.UpsertEnvironmentEnvVar(content, profile, req.Key, req.Value)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
-			return
-		}
-		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+		updated := config.UpsertEnvVar(profContent, req.Key, req.Value)
+		if err := config.WriteTOMLFile(profFile, []byte(updated)); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
 			return
@@ -871,14 +859,8 @@ func handleDeleteEnvVar(w http.ResponseWriter, r *http.Request) {
 
 	// Delete entire profile
 	if action == "delete_profile" && profile != "" {
-		updated, removed := config.RemoveEnvironmentProfile(content, profile)
-		if removed {
-			if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
-				return
-			}
-		}
+		profFile := filepath.Join(projectDir, fmt.Sprintf(".unirtm.%s.toml", profile))
+		_ = os.Remove(profFile)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"success":         true,
 			"deleted_profile": profile,
@@ -892,19 +874,25 @@ func handleDeleteEnvVar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var updated string
-	var removed bool
 	if profile != "" && scope == "workspace" {
-		updated, removed = config.UnsetEnvironmentEnvVar(content, profile, key)
+		profFile := filepath.Join(projectDir, fmt.Sprintf(".unirtm.%s.toml", profile))
+		profContent, _ := config.ReadFileOrEmpty(profFile)
+		updated, removed := config.UnsetEnvVar(profContent, key)
+		if removed {
+			if err := config.WriteTOMLFile(profFile, []byte(updated)); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+				return
+			}
+		}
 	} else {
-		updated, removed = config.UnsetEnvVar(content, key)
-	}
-
-	if removed {
-		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
-			return
+		updated, removed := config.UnsetEnvVar(content, key)
+		if removed {
+			if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+				return
+			}
 		}
 	}
 

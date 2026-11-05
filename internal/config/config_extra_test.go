@@ -58,19 +58,6 @@ func TestConfig_ValidateErrors(t *testing.T) {
 		Tasks: map[string]Task{
 			"bad_task": {Depends: nil, Run: nil}, // invalid task
 		},
-		Environments: map[string]EnvironmentConfig{
-			"bad_env": {
-				Tools: map[string]ToolConfig{
-					"bad_env_tool": {Version: ""},
-				},
-				Settings: Settings{
-					CacheTTL: -1,
-				},
-				Tasks: map[string]Task{
-					"bad_env_task": {Depends: nil, Run: nil},
-				},
-			},
-		},
 	}
 	err := c.Validate()
 	assert.Error(t, err)
@@ -78,7 +65,6 @@ func TestConfig_ValidateErrors(t *testing.T) {
 	assert.Contains(t, errMsg, "tool \"bad_tool\": version is required")
 	assert.Contains(t, errMsg, "settings: cache_ttl must be non-negative; http_timeout must be non-negative; jobs must be non-negative")
 	assert.Contains(t, errMsg, "task \"bad_task\": run command or depends is required")
-	assert.Contains(t, errMsg, "environment \"bad_env\": tool \"bad_env_tool\": version is required; settings: cache_ttl must be non-negative; task \"bad_env_task\": run command or depends is required")
 }
 
 func TestDurationOrInt_UnmarshalJSON(t *testing.T) {
@@ -340,12 +326,14 @@ func TestManager_LoadWithEnvironment_Error(t *testing.T) {
 	os.MkdirAll(dir, 0755)
 	os.Chdir(dir)
 
-	content := `
-[environments.dev.tools]
+	configPath := filepath.Join(dir, ".unirtm.toml")
+	OsWriteFile(configPath, []byte("# base config\n"), 0644)
+	devPath := filepath.Join(dir, ".unirtm.dev.toml")
+	devContent := `
+[tools]
 "node" = "18.0.0"
 `
-	configPath := filepath.Join(dir, ".unirtm.toml")
-	OsWriteFile(configPath, []byte(content), 0644)
+	OsWriteFile(devPath, []byte(devContent), 0644)
 	cm.(*defaultConfigManager).trustManager = &mockTrustManager{}
 
 	// Environment doesn't exist
@@ -540,8 +528,6 @@ run = "echo build"
 	// Verify sensitive fields are stripped
 	assert.Empty(t, cfg.Env)
 	assert.Empty(t, cfg.Tasks)
-	assert.Empty(t, cfg.Environments["dev"].Env)
-	assert.Empty(t, cfg.Environments["dev"].Tasks)
 }
 
 func TestManager_TemplateHelpers(t *testing.T) {

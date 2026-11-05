@@ -82,12 +82,12 @@ func TestConfig_Merge_EdgeCases(t *testing.T) {
 		assert.Equal(t, StringArray{"go test ./..."}, c1.Tasks["test"].Run)
 	})
 
-	t.Run("merge environments", func(t *testing.T) {
-		c1 := &Config{Environments: map[string]EnvironmentConfig{"prod": {Tools: map[string]ToolConfig{"go": {Version: "1.22"}}}}}
-		c2 := &Config{Environments: map[string]EnvironmentConfig{"dev": {Tools: map[string]ToolConfig{"node": {Version: "20.0"}}}}}
-		c1.Merge(c2)
-		assert.Contains(t, c1.Environments, "prod")
-		assert.Contains(t, c1.Environments, "dev")
+	t.Run("merge overlay", func(t *testing.T) {
+		c1 := &Config{Tools: map[string]ToolConfig{"go": {Version: "1.22"}}}
+		c2 := &Config{Tools: map[string]ToolConfig{"node": {Version: "20.0"}}}
+		c1.MergeOverlay(c2)
+		assert.Contains(t, c1.Tools, "go")
+		assert.Contains(t, c1.Tools, "node")
 	})
 
 	t.Run("merge aliases deep merge", func(t *testing.T) {
