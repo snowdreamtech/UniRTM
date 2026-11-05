@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.43.0](https://github.com/snowdreamtech/UniRTM/compare/v0.42.0...v0.43.0) (2026-11-05)
+
+
+### 🚀 Features
+
+* **config:** refactor environments to multi-file cascading overlays (.unirtm.&lt;env&gt;.toml) ([e6fc4bc](https://github.com/snowdreamtech/UniRTM/commit/e6fc4bc5a7d7fa054a35fe82942e6a68db958513))
+
 ## [0.42.0](https://github.com/snowdreamtech/UniRTM/compare/v0.41.0...v0.42.0) (2026-11-04)
 
 
