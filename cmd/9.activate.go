@@ -178,7 +178,7 @@ func runActivate(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			if allInsts, lErr := installRepo.List(ctx); lErr == nil {
 				for _, inst := range allInsts {
-					if inst.Version == version && (inst.Tool == tool || inst.Tool == args[0]) {
+					if inst.Version == version && isInstallationMatch(inst, args[0], tool, cfg) {
 						installation = inst
 						err = nil
 						break
@@ -218,7 +218,7 @@ func runActivate(cmd *cobra.Command, args []string) error {
 		}
 		found := false
 		for _, inst := range installations {
-			if inst.Tool == targetTool || inst.Tool == tool {
+			if isInstallationMatch(inst, tool, targetTool, cfg) {
 				toolVersions[inst.Tool] = inst.Version
 				if cfg != nil {
 					if _, tc, foundTc := cfg.FindToolConfig(tool); foundTc && tc.Alias != "" {
