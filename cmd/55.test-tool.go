@@ -117,14 +117,10 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 		}
 
 		if isLegacySingleTool {
-			toolArg := args[0]
-			if cfg != nil {
-				if canonicalKey, _, found := cfg.FindToolConfig(toolArg); found {
-					toolArg = canonicalKey
-				}
+			backendName, tool, version, _ := resolveToolArg(im, cfg, args[0])
+			if args[1] != "" {
+				version = args[1]
 			}
-			backendName, tool, _, _ := im.ParseToolSpec(toolArg)
-			version := args[1]
 			if installBackend != "" {
 				backendName = installBackend
 			}
@@ -135,24 +131,9 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 			}
 		} else {
 			for _, arg := range args {
-				argToParse := arg
-				if cfg != nil {
-					if canonicalKey, _, found := cfg.FindToolConfig(arg); found {
-						argToParse = canonicalKey
-					}
-				}
-				backendName, tool, version, explicitVersion := im.ParseToolSpec(argToParse)
+				backendName, tool, version, _ := resolveToolArg(im, cfg, arg)
 				if installBackend != "" {
 					backendName = installBackend
-				}
-				if !explicitVersion && cfg != nil {
-					if canonicalKey, tc, ok := cfg.FindToolConfig(tool); ok && tc.Version != "" {
-						tool = canonicalKey
-						version = tc.Version
-						if tc.Backend != "" {
-							backendName = tc.Backend
-						}
-					}
 				}
 				if version == "" {
 					version = "latest"

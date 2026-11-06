@@ -101,19 +101,22 @@ func runOutdated(cmd *cobra.Command, args []string) error {
 	// Filter by CLI args if provided.
 	if len(args) > 0 {
 		cfg, _ := config.LoadFull()
-		want := make(map[string]bool, len(args)*2)
-		for _, a := range args {
-			cleanA := strings.TrimSpace(a)
-			want[cleanA] = true
-			if cfg != nil {
-				if canonicalKey, _, found := cfg.FindToolConfig(cleanA); found {
-					want[canonicalKey] = true
-				}
-			}
-		}
 		filtered := installations[:0]
 		for _, inst := range installations {
-			if want[inst.Tool] {
+			matched := false
+			for _, a := range args {
+				canonicalKey := a
+				if cfg != nil {
+					if ck, _, found := cfg.FindToolConfig(a); found {
+						canonicalKey = ck
+					}
+				}
+				if isInstallationMatch(inst, a, canonicalKey, cfg) {
+					matched = true
+					break
+				}
+			}
+			if matched {
 				filtered = append(filtered, inst)
 			}
 		}

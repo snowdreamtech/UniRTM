@@ -122,9 +122,16 @@ func runTool(cmd *cobra.Command, args []string) error {
 	// Load Config to resolve tool alias and get requested versions, tool options
 	cfgMgr := config.NewConfigManager()
 	cfg, _ := cfgMgr.LoadHierarchy(ctx)
+	targetCanonical := toolName
 	if cfg != nil {
 		if canonicalKey, _, found := cfg.FindToolConfig(toolName); found {
-			toolName = canonicalKey
+			targetCanonical = canonicalKey
+			if idx := strings.Index(canonicalKey, ":"); idx >= 0 {
+				backendName = canonicalKey[:idx]
+				toolName = canonicalKey[idx+1:]
+			} else {
+				toolName = canonicalKey
+			}
 		}
 	}
 
@@ -143,14 +150,15 @@ func runTool(cmd *cobra.Command, args []string) error {
 		if inst == nil {
 			continue
 		}
-		if inst.Tool != toolName {
+		if !isInstallationMatch(inst, rawArg, targetCanonical, cfg) {
 			continue
 		}
 		versions = append(versions, inst.Version)
-		if detectedBackend == "" {
+		isTarget := targetCanonical != "" && (inst.Tool == targetCanonical || inst.Tool == toolName || inst.Backend+":"+inst.Tool == targetCanonical)
+		if detectedBackend == "" || isTarget {
 			detectedBackend = inst.Backend
 		}
-		if installDir == "" {
+		if installDir == "" || isTarget {
 			installDir = filepath.Dir(inst.InstallPath)
 		}
 	}
@@ -182,7 +190,11 @@ func runTool(cmd *cobra.Command, args []string) error {
 	var toolOpts map[string]interface{}
 
 	if cfg != nil && cfg.Tools != nil {
-		if tc, ok := cfg.Tools[toolName]; ok {
+		tc, ok := cfg.Tools[toolName]
+		if !ok {
+			tc, ok = cfg.Tools[targetCanonical]
+		}
+		if ok {
 			if tc.Version != "" {
 				requestedVersions = append(requestedVersions, tc.Version)
 			}
@@ -211,7 +223,7 @@ func runTool(cmd *cobra.Command, args []string) error {
 
 	shimPath := detectShimPath(shimsDir, toolName)
 	if installDir == "" {
-		installDir = filepath.Join(installsDir, toolName)
+		installDir = filepath.Join(installsDir, env.GetFSToolName(toolName, detectedBackend))
 	}
 
 	info := toolInfo{

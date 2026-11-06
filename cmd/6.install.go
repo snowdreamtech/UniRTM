@@ -162,7 +162,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 
 		if isLegacySingleTool {
-			backendName, tool, _, _ := im.ParseToolSpec(args[0])
+			backendName, tool, _, _ := resolveToolArg(im, cfg, args[0])
 			version := args[1]
 
 			if tool == "" {
@@ -187,22 +187,10 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		} else {
 			// Parse each argument as a separate tool spec
 			for _, arg := range args {
-				backendName, tool, version, explicitVersion := im.ParseToolSpec(arg)
+				backendName, tool, version, explicitVersion := resolveToolArg(im, cfg, arg)
 
 				if installBackend != "" {
 					backendName = installBackend
-				}
-
-				// If version is not explicit, try to resolve from configuration file first
-				if !explicitVersion && cfg != nil {
-					if canonicalKey, tc, ok := cfg.FindToolConfig(tool); ok && tc.Version != "" {
-						tool = canonicalKey
-						version = tc.Version
-						explicitVersion = true
-						if tc.Backend != "" {
-							backendName = tc.Backend
-						}
-					}
 				}
 
 				if tool == "" {

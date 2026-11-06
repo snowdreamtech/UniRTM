@@ -116,3 +116,44 @@ func isToolKeyMatch(key string, filter string, targetCanonical string, cfg *conf
 	}
 	return false
 }
+
+// resolveToolArg resolves a tool argument (which might be an alias, short name, or backend:tool@version)
+// against configuration and parses it into (backendName, toolName, version, explicitVersion).
+func resolveToolArg(im *service.InstallationManager, cfg *config.Config, input string) (backendName, toolName, version string, explicitVersion bool) {
+	if im == nil {
+		return "", input, "", false
+	}
+	bName, tName, ver, explicit := im.ParseToolSpec(input)
+	backendName = bName
+	toolName = tName
+	version = ver
+	explicitVersion = explicit
+
+	if cfg != nil {
+		if canonicalKey, tc, found := cfg.FindToolConfig(toolName); found {
+			cBackend, cTool, cVer, cExplicit := im.ParseToolSpec(canonicalKey)
+			if cBackend != "" {
+				backendName = cBackend
+			}
+			toolName = cTool
+			if !explicitVersion {
+				if tc.Version != "" {
+					version = tc.Version
+					explicitVersion = true
+				} else if cExplicit && cVer != "" {
+					version = cVer
+					explicitVersion = true
+				}
+			}
+			if backendName == "" && tc.Backend != "" {
+				backendName = tc.Backend
+			}
+		}
+	}
+
+	if backendName == "" && toolName != "" {
+		backendName = im.AutoDetectBackend(toolName)
+	}
+
+	return backendName, toolName, version, explicitVersion
+}

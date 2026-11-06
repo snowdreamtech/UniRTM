@@ -195,23 +195,20 @@ func runLock(cmd *cobra.Command, args []string) error {
 					targetToolKey = canonicalKey
 				}
 			}
-			if spec, ok := tools[targetToolKey]; ok {
-				if version != "" {
-					spec.Version = version
+			matched := false
+			for k, spec := range tools {
+				if isToolKeyMatch(k, toolName, targetToolKey, cfg) {
+					if version != "" {
+						spec.Version = version
+					}
+					if backendName != "" {
+						spec.BackendName = backendName
+					}
+					subset[k] = spec
+					matched = true
 				}
-				if backendName != "" {
-					spec.BackendName = backendName
-				}
-				subset[targetToolKey] = spec
-			} else if spec, ok := tools[toolName]; ok {
-				if version != "" {
-					spec.Version = version
-				}
-				if backendName != "" {
-					spec.BackendName = backendName
-				}
-				subset[toolName] = spec
-			} else {
+			}
+			if !matched {
 				if version == "" {
 					version = "latest"
 				}

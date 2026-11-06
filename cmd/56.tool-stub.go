@@ -114,14 +114,6 @@ func runToolStub(cmd *cobra.Command, args []string) error {
 	}
 
 	cfg, _ := config.LoadFull()
-	if cfg != nil {
-		if canonKey, tc, found := cfg.FindToolConfig(toolName); found {
-			toolName = canonKey
-			if version == "latest" && tc.Version != "" {
-				version = tc.Version
-			}
-		}
-	}
 	installManager, err := getInstallationManager(ctx, cfg)
 	if installManager != nil {
 		defer installManager.Close()
@@ -132,7 +124,17 @@ func runToolStub(cmd *cobra.Command, args []string) error {
 
 	autoInstall := cfg != nil && (cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall)
 
-	backendName := installManager.AutoDetectBackend(toolName)
+	bName, tName, resolvedVer, _ := resolveToolArg(installManager, cfg, toolName)
+	if tName != "" {
+		toolName = tName
+	}
+	backendName := bName
+	if backendName == "" {
+		backendName = installManager.AutoDetectBackend(toolName)
+	}
+	if (version == "" || version == "latest") && resolvedVer != "" && resolvedVer != "latest" {
+		version = resolvedVer
+	}
 
 	if autoInstall {
 		spec := map[string]service.ToolSpec{

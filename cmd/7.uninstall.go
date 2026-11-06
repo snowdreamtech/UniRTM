@@ -175,13 +175,7 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 	}
 
 	if isLegacySingleTool {
-		toolArg := args[0]
-		if cfg != nil {
-			if canonicalKey, _, ok := cfg.FindToolConfig(toolArg); ok {
-				toolArg = canonicalKey
-			}
-		}
-		_, tool, _, _ := installManager.ParseToolSpec(toolArg)
+		_, tool, _, _ := resolveToolArg(installManager, cfg, args[0])
 		version := args[1]
 
 		if tool == "" {
@@ -193,25 +187,30 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 
 		// Verify the exact tool/version is installed
 		installation, err := installRepo.FindByToolAndVersion(ctx, tool, version)
-		if err != nil {
+		if err != nil || installation == nil {
+			if allInsts, lErr := installRepo.List(ctx); lErr == nil {
+				for _, cand := range allInsts {
+					if cand.Version == version && isInstallationMatch(cand, args[0], tool, cfg) {
+						installation = cand
+						err = nil
+						break
+					}
+				}
+			}
+		}
+		if installation == nil {
 			return fmt.Errorf("Tool %s@%s is not installed", tool, version)
 		}
 
 		targets = append(targets, uninstallTarget{
-			toolName:    tool,
+			toolName:    installation.Tool,
 			version:     version,
 			backendName: installation.Backend,
 			original:    args[0] + "@" + version,
 		})
 	} else {
 		for _, arg := range args {
-			argToParse := arg
-			if cfg != nil {
-				if canonicalKey, _, ok := cfg.FindToolConfig(arg); ok {
-					argToParse = canonicalKey
-				}
-			}
-			backendName, tool, version, explicitVersion := installManager.ParseToolSpec(argToParse)
+			backendName, tool, version, explicitVersion := resolveToolArg(installManager, cfg, arg)
 
 			if tool == "" {
 				return fmt.Errorf("tool name is required")
@@ -225,13 +224,14 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 				}
 				var matches []*repository.Installation
 				for _, inst := range installations {
-					if inst.Tool == tool {
+					if isInstallationMatch(inst, arg, tool, cfg) {
 						matches = append(matches, inst)
 					}
 				}
 				if len(matches) == 0 {
 					return fmt.Errorf("Tool %s is not installed", tool)
 				} else if len(matches) == 1 {
+					tool = matches[0].Tool
 					version = matches[0].Version
 					backendName = matches[0].Backend
 				} else {
@@ -244,9 +244,21 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 			} else {
 				// Verify exact tool/version is installed
 				installation, err := installRepo.FindByToolAndVersion(ctx, tool, version)
-				if err != nil {
+				if err != nil || installation == nil {
+					if allInsts, lErr := installRepo.List(ctx); lErr == nil {
+						for _, cand := range allInsts {
+							if cand.Version == version && isInstallationMatch(cand, arg, tool, cfg) {
+								installation = cand
+								err = nil
+								break
+							}
+						}
+					}
+				}
+				if installation == nil {
 					return fmt.Errorf("Tool %s@%s is not installed", tool, version)
 				}
+				tool = installation.Tool
 				backendName = installation.Backend
 			}
 

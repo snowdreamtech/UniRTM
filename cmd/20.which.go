@@ -229,6 +229,10 @@ func runWhich(cmd *cobra.Command, args []string) error {
 		if canonicalKey, _, ok := cfg.FindToolConfig(targetClean); ok && canonicalKey != targetClean {
 			if keyInstalls, kErr := installRepo.ListByTool(ctx, canonicalKey); kErr == nil && len(keyInstalls) > 0 {
 				toolInstallations = keyInstalls
+			} else if idx := strings.Index(canonicalKey, ":"); idx >= 0 {
+				if keyInstalls, kErr := installRepo.ListByTool(ctx, canonicalKey[idx+1:]); kErr == nil && len(keyInstalls) > 0 {
+					toolInstallations = keyInstalls
+				}
 			}
 		}
 	}

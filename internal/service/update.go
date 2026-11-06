@@ -239,15 +239,51 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 	if oldVersion != "" {
 		// Get specific installation
 		installation, err = um.installRepo.FindByToolAndVersion(ctx, tool, oldVersion)
-		if err != nil {
-			return nil, fmt.Errorf("tool %s@%s not installed: %w", tool, oldVersion, err)
+		if err != nil || installation == nil {
+			toolNoPrefix := tool
+			if idx := strings.Index(tool, ":"); idx >= 0 {
+				toolNoPrefix = tool[idx+1:]
+			}
+			installation, _ = um.installRepo.FindByToolAndVersion(ctx, toolNoPrefix, oldVersion)
+			if installation == nil {
+				if allInsts, lErr := um.installRepo.List(ctx); lErr == nil {
+					for _, candidate := range allInsts {
+						if candidate.Version == oldVersion && (candidate.Tool == tool || candidate.Tool == toolNoPrefix || strings.EqualFold(filepath.Base(candidate.Tool), toolNoPrefix)) {
+							installation = candidate
+							break
+						}
+					}
+				}
+			}
+			if installation == nil {
+				return nil, fmt.Errorf("tool %s@%s not installed: %w", tool, oldVersion, err)
+			}
 		}
 	} else {
 		// Find most recent installation if oldVersion is not specified
 		var installations []*repository.Installation
 		installations, err = um.installRepo.ListByTool(ctx, tool)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list installations for %s: %w", tool, err)
+		if len(installations) == 0 {
+			toolNoPrefix := tool
+			if idx := strings.Index(tool, ":"); idx >= 0 {
+				toolNoPrefix = tool[idx+1:]
+				installations, _ = um.installRepo.ListByTool(ctx, toolNoPrefix)
+			}
+		}
+		if len(installations) == 0 {
+			if allInsts, lErr := um.installRepo.List(ctx); lErr == nil {
+				toolClean := strings.ToLower(tool)
+				toolNoPrefix := toolClean
+				if idx := strings.Index(toolClean, ":"); idx >= 0 {
+					toolNoPrefix = toolClean[idx+1:]
+				}
+				for _, candidate := range allInsts {
+					candClean := strings.ToLower(candidate.Tool)
+					if candClean == toolClean || candClean == toolNoPrefix || strings.EqualFold(filepath.Base(candidate.Tool), toolNoPrefix) {
+						installations = append(installations, candidate)
+					}
+				}
+			}
 		}
 		if len(installations) == 0 {
 			return nil, fmt.Errorf("tool %s not installed (run 'unirtm install' first)", tool)
@@ -257,6 +293,7 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 	}
 
 	oldInstallPath := installation.InstallPath
+	targetToolName := installation.Tool
 
 	// Check if already at target version
 	if oldVersion == targetVersion {
@@ -292,7 +329,7 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 
 	// Get download info for target version
 	platform := backend.CurrentPlatform()
-	versionInfo, err := b.GetDownloadInfo(ctx, tool, targetVersion, platform)
+	versionInfo, err := b.GetDownloadInfo(ctx, targetToolName, targetVersion, platform)
 	if err != nil {
 		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to get download info: %w", err), false, "")
 	}
@@ -300,7 +337,7 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 	// Download new version
 	var downloadPath string
 	if versionInfo.DownloadURL != "" {
-		downloadPath = filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", tool, targetVersion))
+		downloadPath = filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", filepath.Base(targetToolName), targetVersion))
 		downloader, err := um.downloadManager.Get("https")
 		if err != nil {
 			return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to get downloader: %w", err), false, "")
@@ -386,21 +423,21 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 
 	// Install new version
 	newInstallPath := filepath.Join(filepath.Dir(oldInstallPath), targetVersion)
-	p := um.providerRegistry.GetWithBackend(tool, installation.Backend)
+	p := um.providerRegistry.GetWithBackend(targetToolName, installation.Backend)
 
-	if err := p.Install(ctx, tool, newInstallPath, downloadPath, targetVersion); err != nil {
+	if err := p.Install(ctx, targetToolName, newInstallPath, downloadPath, targetVersion); err != nil {
 		os.RemoveAll(newInstallPath)
 		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("installation failed: %w", err), false, "")
 	}
 
-	if err := p.PostInstall(ctx, tool, newInstallPath, targetVersion); err != nil {
+	if err := p.PostInstall(ctx, targetToolName, newInstallPath, targetVersion); err != nil {
 		os.RemoveAll(newInstallPath)
 		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("post-install failed: %w", err), false, "")
 	}
 
 	// Update database record
 	newInstallation := &repository.Installation{
-		Tool:        tool,
+		Tool:        targetToolName,
 		Version:     targetVersion,
 		Backend:     installation.Backend,
 		Provider:    installation.Provider,
@@ -419,7 +456,7 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 	defer tx.Rollback()
 
 	// Delete old installation record
-	if err := tx.InstallationRepo().Delete(ctx, tool, oldVersion); err != nil {
+	if err := tx.InstallationRepo().Delete(ctx, targetToolName, oldVersion); err != nil {
 		os.RemoveAll(newInstallPath)
 		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to delete old installation record: %w", err), false, "")
 	}

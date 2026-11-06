@@ -58,26 +58,10 @@ func runWhere(cmd *cobra.Command, args []string) error {
 
 	// 1. Parse input: could be "node", "node@20", or a binary like "gofmt"
 	input := args[0]
-	var backendName, toolName, version string
-
+	backendName, toolName, version, _ := resolveToolArg(im, cfg, input)
 	if len(args) == 2 {
-		toolName = args[0]
 		version = args[1]
-	} else {
-		_, toolName, version, _ = im.ParseToolSpec(input)
 	}
-
-	// 2. Resolve the version and backend
-	if cfg != nil {
-		if canonicalKey, toolSpec, ok := cfg.FindToolConfig(toolName); ok {
-			toolName = canonicalKey
-			if version == "" || version == "latest" {
-				version = toolSpec.Version
-				backendName = toolSpec.Backend
-			}
-		}
-	}
-
 	if backendName == "" {
 		backendName = im.AutoDetectBackend(toolName)
 	}

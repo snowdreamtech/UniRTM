@@ -62,25 +62,18 @@ func runInstallInto(cmd *cobra.Command, args []string) error {
 	toolArg := args[0]
 	destDir := args[1]
 
-	// Parse tool@version.
-	tool, version := parseToolVersion(toolArg)
-	if cfg, _ := config.LoadFull(); cfg != nil {
-		if canonicalKey, tc, found := cfg.FindToolConfig(tool); found {
-			tool = canonicalKey
-			if version == "" && tc.Version != "" {
-				version = tc.Version
-			}
-			if installIntoBackend == "" && tc.Backend != "" {
-				installIntoBackend = tc.Backend
-			}
-		}
+	cfg, _ := config.LoadFull()
+	im, _ := getInstallationManager(context.Background(), cfg)
+	if im != nil {
+		defer im.Close()
+	}
+	backendName, tool, version, _ := resolveToolArg(im, cfg, toolArg)
+	if installIntoBackend != "" {
+		backendName = installIntoBackend
 	}
 	if version == "" {
 		version = "latest"
 	}
-
-	// Resolve backend.
-	backendName := installIntoBackend
 	if backendName == "" {
 		backendName = getBackendName()
 	}

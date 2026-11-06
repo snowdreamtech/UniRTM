@@ -62,11 +62,15 @@ func runLink(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
-	tool := args[0]
-	if cfg, _ := config.LoadFull(); cfg != nil {
-		if canonicalKey, _, found := cfg.FindToolConfig(tool); found {
-			tool = canonicalKey
-		}
+	cfg, _ := config.LoadFull()
+	im, _ := getInstallationManager(context.Background(), cfg)
+	if im != nil {
+		defer im.Close()
+	}
+	bName, tName, _, _ := resolveToolArg(im, cfg, args[0])
+	tool := tName
+	if linkBackend == "" && bName != "" {
+		linkBackend = bName
 	}
 	version := args[1]
 	installPath := args[2]

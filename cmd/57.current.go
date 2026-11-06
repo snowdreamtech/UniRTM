@@ -49,11 +49,12 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 	}
 
 	filterTool := ""
+	canonicalFilter := ""
 	if len(args) == 1 {
 		filterTool = args[0]
 		if cfg != nil {
 			if canonicalKey, _, found := cfg.FindToolConfig(filterTool); found {
-				filterTool = canonicalKey
+				canonicalFilter = canonicalKey
 			}
 		}
 	}
@@ -69,7 +70,7 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 	// Get all tool names from merged config
 	var toolNames []string
 	for name := range cfg.Tools {
-		if filterTool != "" && name != filterTool {
+		if filterTool != "" && !isToolKeyMatch(name, filterTool, canonicalFilter, cfg) {
 			continue
 		}
 		toolNames = append(toolNames, name)

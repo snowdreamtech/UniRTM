@@ -108,15 +108,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 	}
 	pairs := make([]toolVersion, 0, len(args))
 	for _, arg := range args {
-		backendName, toolName, version, explicit := im.ParseToolSpec(arg)
-		if cfg != nil {
-			if canonicalKey, tc, found := cfg.FindToolConfig(toolName); found {
-				toolName = canonicalKey
-				if backendName == "" && tc.Backend != "" {
-					backendName = tc.Backend
-				}
-			}
-		}
+		backendName, toolName, version, explicit := resolveToolArg(im, cfg, arg)
 
 		// If no explicit version, try interactive selection
 		if !explicit || version == "latest" {
@@ -153,20 +145,28 @@ func runUse(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("invalid format %q: expected <tool>@<version> (e.g. node@20.0.0)", arg)
 		}
 
-		// Reconstruct key for config: backend:tool (if backend is not auto-detected or is explicit)
-		configKey := toolName
-		if strings.Contains(toolName, ":") {
+		// Reconstruct key for config: prefer existing canonicalKey in config if present
+		configKey := ""
+		if cfg != nil {
+			rawTool := arg
+			if idx := strings.Index(arg, "@"); idx != -1 {
+				rawTool = arg[:idx]
+			}
+			if canonicalKey, _, found := cfg.FindToolConfig(rawTool); found {
+				configKey = canonicalKey
+			}
+		}
+		if configKey == "" {
 			configKey = toolName
-		} else if backendName != "" && (strings.Contains(arg, ":") || backendName == "github") {
-			// If it's github or explicit backend, use backend:tool as key
-			// but for github, we often just use owner/repo which is auto-detected.
-			// Actually, let's keep it simple: if it contains '/', it's github.
-			if strings.Contains(toolName, "/") {
-				configKey = "github:" + toolName
-			} else if strings.Contains(arg, ":") {
-				// Was explicit backend in input
-				origBackend := strings.SplitN(arg, ":", 2)[0]
-				configKey = origBackend + ":" + toolName
+			if strings.Contains(toolName, ":") {
+				configKey = toolName
+			} else if backendName != "" && (strings.Contains(arg, ":") || backendName == "github") {
+				if strings.Contains(toolName, "/") {
+					configKey = "github:" + toolName
+				} else if strings.Contains(arg, ":") {
+					origBackend := strings.SplitN(arg, ":", 2)[0]
+					configKey = origBackend + ":" + toolName
+				}
 			}
 		}
 

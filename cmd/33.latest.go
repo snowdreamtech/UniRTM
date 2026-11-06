@@ -68,15 +68,8 @@ func runLatest(cmd *cobra.Command, args []string) error {
 		defer im.Close()
 	}
 
-	backendName, tool, versionPrefix, explicit := im.ParseToolSpec(args[0])
-	if cfg, _ := config.LoadFull(); cfg != nil {
-		if canonicalKey, tc, found := cfg.FindToolConfig(tool); found {
-			tool = canonicalKey
-			if backendName == "" && tc.Backend != "" {
-				backendName = tc.Backend
-			}
-		}
-	}
+	cfg, _ := config.LoadFull()
+	backendName, tool, versionPrefix, explicit := resolveToolArg(im, cfg, args[0])
 	if latestBackend != "" {
 		backendName = latestBackend
 	}

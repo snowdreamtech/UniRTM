@@ -110,21 +110,26 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 
 		if version != "" {
 			// Delete specific version from DB.
-			err := installRepo.Delete(ctx, canonicalTool, version)
-			if err != nil && canonicalTool != tool {
-				err = installRepo.Delete(ctx, tool, version)
+			all, _ := installRepo.List(ctx)
+			foundAny := false
+			for _, inst := range all {
+				if inst != nil && inst.Version == version && isInstallationMatch(inst, tool, canonicalTool, cfg) {
+					if err := installRepo.Delete(ctx, inst.Tool, inst.Version); err == nil {
+						foundAny = true
+					}
+				}
 			}
-			if err != nil {
-				formatter.Warning(fmt.Sprintf("Could not remove %s@%s from DB: %v", tool, version, err))
-			} else {
-				formatter.Success(fmt.Sprintf("Removed %s@%s from database", tool, version), nil)
+			if !foundAny {
+				_ = installRepo.Delete(ctx, canonicalTool, version)
+				_ = installRepo.Delete(ctx, tool, version)
 			}
+			formatter.Success(fmt.Sprintf("Removed %s@%s from database", tool, version), nil)
 		} else {
 			// Delete all versions for this tool from DB.
 			all, _ := installRepo.List(ctx)
 			removed := 0
 			for _, inst := range all {
-				if inst == nil || (inst.Tool != canonicalTool && inst.Tool != tool) {
+				if inst == nil || !isInstallationMatch(inst, tool, canonicalTool, cfg) {
 					continue
 				}
 				if err := installRepo.Delete(ctx, inst.Tool, inst.Version); err != nil {
