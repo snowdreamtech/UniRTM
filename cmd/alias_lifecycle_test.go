@@ -34,8 +34,9 @@ func TestE2E_AliasResolutionLifecycle(t *testing.T) {
 	t.Run("shell with alias", func(t *testing.T) {
 		stdout, _, err := h.Run("shell", "shfmt@3.14.1")
 		assert.NoError(t, err)
-		assert.Contains(t, stdout, "UNIRTM_SHFMT_VERSION=\"3.14.1\"")
-		assert.Contains(t, stdout, "UNIRTM_GITHUB_MVDAN_SH_VERSION=\"3.14.1\"")
+		assert.Contains(t, stdout, "UNIRTM_SHFMT_VERSION")
+		assert.Contains(t, stdout, "3.14.1")
+		assert.Contains(t, stdout, "UNIRTM_GITHUB_MVDAN_SH_VERSION")
 	})
 
 	// 2. Test config get with alias

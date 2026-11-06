@@ -1661,8 +1661,6 @@ var standardExecutableAliases = map[string][]string{
 	"ninja-build":   {"ninja"},
 	"bundle":        {"bundler"},
 	"bundler":       {"bundle"},
-	"sh":            {"bash"},
-	"bash":          {"sh"},
 	"awk":           {"gawk", "mawk"},
 	"gawk":          {"awk"},
 	"sed":           {"gsed"},

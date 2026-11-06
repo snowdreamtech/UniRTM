@@ -231,6 +231,27 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 					break
 				}
 
+				if yes || os.Getenv("UNIRTM_YES") == "1" {
+					if trustErr := tm.Trust(p); trustErr == nil {
+						output.Successf("Trusted %s — running task %q…", f, taskName)
+						if configPath != "" {
+							cfg, _ = configManager.Load(ctx, configPath)
+						} else {
+							cfg, _ = configManager.LoadHierarchy(ctx)
+						}
+						if cfg != nil {
+							cfg.ApplyEnvironment()
+							engine2 := task.NewEngine()
+							engine2.Register(task.NewNativeRunner(cfg.Tasks, cfg.Settings))
+							engine2.Register(task.NewGoTaskRunner())
+							engine2.Register(task.NewMakeRunner())
+							engine2.Register(task.NewJustRunner())
+							return engine2.Execute(ctx, cwd, taskName, taskArgs, envInjects)
+						}
+					}
+					break
+				}
+
 				// Non-interactive environment (CI/pipe): fall back to passive warning.
 				if !term.IsTerminal(int(os.Stdin.Fd())) {
 					pterm.Warning.Printf("Tasks in %s are ignored because the configuration file is not trusted.\nPlease run 'unirtm trust' to enable them.\n\n", f)

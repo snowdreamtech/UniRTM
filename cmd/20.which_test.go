@@ -206,6 +206,9 @@ func TestRunWhich_CustomToolAlias(t *testing.T) {
 
 	p := filepath.Join(binDir, "shfmt")
 	require.NoError(t, os.WriteFile(p, []byte("#!/bin/sh\n"), 0755))
+	if env.RuntimeGOOS == "windows" {
+		require.NoError(t, os.WriteFile(filepath.Join(binDir, "shfmt.exe"), []byte("#!/bin/sh\n"), 0755))
+	}
 
 	inst := &repository.Installation{
 		Tool:        "github:mvdan/sh",

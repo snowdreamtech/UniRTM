@@ -91,21 +91,25 @@ Use --list --all (-la) to view all globally trusted configuration files.`,
 			return
 		}
 
-		// Determine target directory
-		dir, err := os.Getwd()
-		if err != nil {
-			dir = "."
-		}
+		// Collect files to trust
+		var paths []string
 		if len(args) > 0 {
-			if absArg, err := filepath.Abs(args[0]); err == nil {
-				dir = absArg
-			} else {
-				dir = args[0]
+			for _, arg := range args {
+				if absArg, err := filepath.Abs(arg); err == nil {
+					if fi, statErr := os.Stat(absArg); statErr == nil && !fi.IsDir() {
+						paths = append(paths, absArg)
+					} else {
+						paths = append(paths, findAllProjectConfigFiles(absArg)...)
+					}
+				}
 			}
+		} else {
+			dir, err := os.Getwd()
+			if err != nil {
+				dir = "."
+			}
+			paths = findAllProjectConfigFiles(dir)
 		}
-
-		// Collect files to trust: always include all project config files
-		paths := findAllProjectConfigFiles(dir)
 
 		if trustAll {
 			// -a: also include the global config file
