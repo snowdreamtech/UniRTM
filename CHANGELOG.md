@@ -6,6 +6,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.45.0](https://github.com/snowdreamtech/UniRTM/compare/v0.44.0...v0.45.0) (2026-11-06)
+
+
+### 🚀 Features
+
+* **alias:** comprehensive tool alias lifecycle and resolution support ([c5cdd2e](https://github.com/snowdreamtech/UniRTM/commit/c5cdd2ecc467db697f88bbf6550bcbee9e2bd67c))
+* **cli:** complete universal tool alias resolution across all CLI subcommands ([6075141](https://github.com/snowdreamtech/UniRTM/commit/60751417211bb7c1df9f54a538c939bea5264043))
+* **cli:** resolve tool alias prefix stripping and universal installation matching ([344cd9a](https://github.com/snowdreamtech/UniRTM/commit/344cd9a47bd0fce9bec03af67a75f5ff7f426c4c))
+* **cli:** support tool argument in bin-paths and smart matching in list filter ([aad39f4](https://github.com/snowdreamtech/UniRTM/commit/aad39f43b9bb3459a7a5979e62f61250d43f2300))
+* **guard:** strictly enforce conventional commits and forbid special headers ([909d00e](https://github.com/snowdreamtech/UniRTM/commit/909d00e8248518bc35a5ee9ca8c09c913938568f))
+
+
+### 🐛 Bug Fixes
+
+* **activate:** support tool aliases and prefix stripping in shell activation ([849def3](https://github.com/snowdreamtech/UniRTM/commit/849def3d87a1e842011205cd8f9ceda9b5d4bfc6))
+* resolve cross-platform test assertions and prevent host shell shim hijacking ([7ba76b5](https://github.com/snowdreamtech/UniRTM/commit/7ba76b57f6261120a18f8d81af7bf2975f7fc984))
+
+
+### ♻️ Miscellaneous Chores
+
+* merge upstream/dev into dev ([dbd59b7](https://github.com/snowdreamtech/UniRTM/commit/dbd59b72c868bf73f4ca27cbc12e16aeaabe80de))
+* release main ([e2927ee](https://github.com/snowdreamtech/UniRTM/commit/e2927ee6b0186af23b32c5e683a9b3a6f1518b85))
+* **toolchain:** specify alias shfmt for github:mvdan/sh in config ([aef9f07](https://github.com/snowdreamtech/UniRTM/commit/aef9f074abaced3cc51063f4352df19aa6d03220))
+
 ## [0.44.0](https://github.com/snowdreamtech/UniRTM/compare/v0.43.0...v0.44.0) (2026-11-05)
 
 
