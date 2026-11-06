@@ -27,10 +27,13 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
     return { isValid: false };
   }
 
-  // 1. Check for special Git automated commits
+  // 1. Check for forbidden non-conventional special commit prefixes
   for (const prefix of SPECIAL_PREFIXES) {
     if (trimmed.startsWith(prefix)) {
-      return { isValid: true };
+      return {
+        isValid: false,
+        warning: `Special commit prefix "${prefix.trim()}" is forbidden. All commits must strictly follow Conventional Commits: <type>(<scope>): <subject>`,
+      };
     }
   }
 

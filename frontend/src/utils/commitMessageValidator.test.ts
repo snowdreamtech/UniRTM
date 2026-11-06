@@ -10,10 +10,10 @@ describe("validateCommitMessage", () => {
     expect(validateCommitMessage("   ").isValid).toBe(false);
   });
 
-  it("allows special Git commits like Merge and Revert", () => {
-    expect(validateCommitMessage("Merge branch dev into main").isValid).toBe(true);
-    expect(validateCommitMessage('Revert "feat: something"').isValid).toBe(true);
-    expect(validateCommitMessage("fixup! feat: something").isValid).toBe(true);
+  it("forbids special non-conventional Git commits like Merge and Revert", () => {
+    expect(validateCommitMessage("Merge branch dev into main").isValid).toBe(false);
+    expect(validateCommitMessage('Revert "feat: something"').isValid).toBe(false);
+    expect(validateCommitMessage("fixup! feat: something").isValid).toBe(false);
   });
 
   it("validates standard conventional commit", () => {

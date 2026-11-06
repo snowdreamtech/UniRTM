@@ -15,8 +15,8 @@ import (
 var (
 	// conventionalCommitHeaderRegex matches: <type>(<scope>)!: <subject> or <type>: <subject>
 	conventionalCommitHeaderRegex = regexp.MustCompile(`^([a-zA-Z0-9_\-]+)(\(([a-zA-Z0-9_\-\.\/ ]+)\))?(!)?: (.+)$`)
-	// allowedSpecialCommitRegex allows standard git merges, reverts, and interactive fixup commits
-	allowedSpecialCommitRegex = regexp.MustCompile(`^(Merge |Revert |fixup! |squash! |amend! )`)
+	// forbiddenSpecialCommitRegex matches non-conventional git special commit prefixes
+	forbiddenSpecialCommitRegex = regexp.MustCompile(`^(Merge |Revert |fixup! |squash! |amend! )`)
 )
 
 // AllowedCommitTypes lists all supported standard Conventional Commit types
@@ -79,9 +79,9 @@ func ValidateCommitMessageWithOptions(msg string, opts CommitMsgOptions) (bool, 
 
 	header := strings.TrimSpace(contentLines[0])
 
-	// Allow standard Git merge or fixup commits
-	if allowedSpecialCommitRegex.MatchString(header) {
-		return true, ""
+	// Forbid non-conventional special commits (Merge, Revert, fixup!, squash!, amend!)
+	if forbiddenSpecialCommitRegex.MatchString(header) {
+		return false, fmt.Sprintf("Special commit header %q is forbidden. All commits must strictly adhere to Conventional Commits: <type>(<scope>): <subject>", header)
 	}
 
 	maxHeader := opts.HeaderMaxLength

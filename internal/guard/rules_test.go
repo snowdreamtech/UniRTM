@@ -573,9 +573,9 @@ func TestBuiltinRules_CommitMsg(t *testing.T) {
 		t.Errorf("Expected valid conventional commit to pass")
 	}
 
-	ok, _ = guard.ValidateCommitMessage("Merge branch 'main' into dev")
-	if !ok {
-		t.Errorf("Expected git merge commit to pass")
+	okMerge, _ := guard.ValidateCommitMessage("Merge branch 'main' into dev")
+	if okMerge {
+		t.Errorf("Expected git merge commit to fail under strict Conventional Commits")
 	}
 
 	okBadType, _ := guard.ValidateCommitMessage("unknown(guard): something")
