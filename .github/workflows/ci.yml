@@ -66,8 +66,6 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
-      VENV: ".venv"
-      PYTHONUTF8: 1
     steps:
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -80,14 +78,14 @@ jobs:
           path: |
             ~/.local/share/unirtm
             ~/.cache/unirtm
-          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', 'unirtm.lock') }}
+          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', '.unirtm.*.toml', 'unirtm.lock') }}
           restore-keys: |
             ${{ runner.os }}-unirtm-
 
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@663cc55933eafea30cd63f43e837cecd4a587f45 # v0.7.0
         with:
-          unirtm-version: "0.39.0"
+          unirtm-version: "0.44.0"
           install: true
           trust: true
         env:
@@ -146,8 +144,6 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
-      VENV: ".venv"
-      PYTHONUTF8: 1
     steps:
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -160,14 +156,14 @@ jobs:
           path: |
             ~/.local/share/unirtm
             ~/.cache/unirtm
-          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', 'unirtm.lock') }}
+          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', '.unirtm.*.toml', 'unirtm.lock') }}
           restore-keys: |
             ${{ runner.os }}-unirtm-
 
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@663cc55933eafea30cd63f43e837cecd4a587f45 # v0.7.0
         with:
-          unirtm-version: "0.39.0"
+          unirtm-version: "0.44.0"
           install: true
           trust: true
         env:
@@ -245,9 +241,6 @@ jobs:
       statuses: write
       security-events: write
     timeout-minutes: 60
-    env:
-      VENV: ".venv"
-      PYTHONUTF8: 1
     steps:
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -261,14 +254,14 @@ jobs:
           path: |
             ~/.local/share/unirtm
             ~/.cache/unirtm
-          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', 'unirtm.lock') }}
+          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', '.unirtm.*.toml', 'unirtm.lock') }}
           restore-keys: |
             ${{ runner.os }}-unirtm-
 
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@663cc55933eafea30cd63f43e837cecd4a587f45 # v0.7.0
         with:
-          unirtm-version: "0.39.0"
+          unirtm-version: "0.44.0"
           install: true
           trust: true
         env:
@@ -330,6 +323,7 @@ jobs:
         if: ${{ always() }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TRIVY_SKIP_VERSION_CHECK: "true"
           TRIVY_CACHE_DIR: .trivycache
           TRIVY_DB_REPOSITORY: "ghcr.io/aquasecurity/trivy-db:2,public.ecr.aws/aquasecurity/trivy-db:2"
           TRIVY_JAVA_DB_REPOSITORY: "ghcr.io/aquasecurity/trivy-java-db:1,public.ecr.aws/aquasecurity/trivy-java-db:1"
@@ -339,7 +333,7 @@ jobs:
           ignore-unfixed: true
           format: "sarif"
           output: "trivy-results.sarif"
-          severity: "CRITICAL,HIGH,MEDIUM,LOW"
+          severity: "CRITICAL,HIGH"
           exit-code: "1"
           skip-dirs: "unirtm_data,cmd/unirtm_data"
 

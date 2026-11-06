@@ -27,11 +27,6 @@ name: "📄 Deploy Docs to GitHub Pages"
       - "package.json"
       - "package-lock.json"
   workflow_dispatch:
-    inputs:
-      venv:
-        description: "Virtual environment path"
-        required: false
-        default: ".venv"
 
 permissions: {}
 
@@ -51,9 +46,6 @@ jobs:
     permissions:
       contents: read # Required for repository checkout
     timeout-minutes: 50
-    env:
-      VENV: ${{ github.event.inputs.venv || '.venv' }}
-      PYTHONUTF8: 1
 
     steps:
       - name: "📂 Checkout Repository Code"
@@ -68,14 +60,14 @@ jobs:
           path: |
             ~/.local/share/unirtm
             ~/.cache/unirtm
-          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', 'unirtm.lock') }}
+          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', '.unirtm.*.toml', 'unirtm.lock') }}
           restore-keys: |
             ${{ runner.os }}-unirtm-
 
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@663cc55933eafea30cd63f43e837cecd4a587f45 # v0.7.0
         with:
-          unirtm-version: "0.39.0"
+          unirtm-version: "0.44.0"
           install: true
           trust: true
         env:

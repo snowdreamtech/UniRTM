@@ -24,6 +24,7 @@ unirtm/
 ├── .vscode/                  # 💻 VS Code workspace settings
 │
 ├── .unirtm.toml              # 🔧 Repository toolchain and quality guard contract
+├── .unirtm.ci.toml           # 🚀 CI-specific heavy toolchain overlay
 ├── unirtm.lock               # 🔒 Pinned tool versions and integrity hashes
 ├── go.mod                    # 📦 Go module dependencies
 ├── Makefile                  # 🛠️ Build and development automation
