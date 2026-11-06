@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -80,32 +81,63 @@ func runShell(cmd *cobra.Command, args []string) error {
 		pairs = append(pairs, toolVersion{tool: parts[0], version: parts[1]})
 	}
 
-	if dryRun {
-		for _, p := range pairs {
-			formatter.Info(fmt.Sprintf("[dry-run] Would export UNIRTM_%s_VERSION=%s for current shell", strings.ToUpper(p.tool), p.version), nil)
-		}
-		return nil
-	}
+	cfg, _ := config.LoadFull()
 
-	// Emit export statements based on shell type
-	var sb strings.Builder
-	for _, p := range pairs {
+	type envExport struct {
+		key     string
+		version string
+	}
+	var exports []envExport
+	seenKeys := make(map[string]bool)
+
+	addExport := func(name, version string) {
 		var b strings.Builder
-		for _, r := range strings.ToUpper(p.tool) {
+		for _, r := range strings.ToUpper(name) {
 			if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
 				b.WriteRune(r)
 			} else {
 				b.WriteRune('_')
 			}
 		}
-		envKey := fmt.Sprintf("UNIRTM_%s_VERSION", b.String())
+		k := fmt.Sprintf("UNIRTM_%s_VERSION", b.String())
+		if !seenKeys[k] {
+			seenKeys[k] = true
+			exports = append(exports, envExport{key: k, version: version})
+		}
+	}
+
+	for _, p := range pairs {
+		addExport(p.tool, p.version)
+		if cfg != nil {
+			if canon, tc, found := cfg.FindToolConfig(p.tool); found {
+				addExport(canon, p.version)
+				if idx := strings.Index(canon, ":"); idx >= 0 {
+					addExport(canon[idx+1:], p.version)
+				}
+				if tc.Alias != "" {
+					addExport(tc.Alias, p.version)
+				}
+			}
+		}
+	}
+
+	if dryRun {
+		for _, exp := range exports {
+			formatter.Info(fmt.Sprintf("[dry-run] Would export %s=%s for current shell", exp.key, exp.version), nil)
+		}
+		return nil
+	}
+
+	// Emit export statements based on shell type
+	var sb strings.Builder
+	for _, exp := range exports {
 		switch shellType {
 		case "fish":
-			sb.WriteString(fmt.Sprintf("set -gx %s %q;\n", envKey, p.version))
+			sb.WriteString(fmt.Sprintf("set -gx %s %q;\n", exp.key, exp.version))
 		case "powershell":
-			sb.WriteString(fmt.Sprintf("$env:%s = %q\n", envKey, p.version))
+			sb.WriteString(fmt.Sprintf("$env:%s = %q\n", exp.key, exp.version))
 		default: // bash, zsh
-			sb.WriteString(fmt.Sprintf("export %s=%q\n", envKey, p.version))
+			sb.WriteString(fmt.Sprintf("export %s=%q\n", exp.key, exp.version))
 		}
 	}
 

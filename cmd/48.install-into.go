@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository"
@@ -63,6 +64,17 @@ func runInstallInto(cmd *cobra.Command, args []string) error {
 
 	// Parse tool@version.
 	tool, version := parseToolVersion(toolArg)
+	if cfg, _ := config.LoadFull(); cfg != nil {
+		if canonicalKey, tc, found := cfg.FindToolConfig(tool); found {
+			tool = canonicalKey
+			if version == "" && tc.Version != "" {
+				version = tc.Version
+			}
+			if installIntoBackend == "" && tc.Backend != "" {
+				installIntoBackend = tc.Backend
+			}
+		}
+	}
 	if version == "" {
 		version = "latest"
 	}

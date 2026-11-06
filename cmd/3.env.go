@@ -155,6 +155,23 @@ func runEnv(cmd *cobra.Command, args []string) error {
 		varName := "UNIRTM_" + b.String() + "_VERSION"
 		vars = append(vars, envVarEntry{Name: varName, Value: version, Source: "tool:" + toolNameKey})
 
+		if cfg != nil {
+			if tc, ok := cfg.Tools[toolNameKey]; ok && tc.Alias != "" {
+				var bAlias strings.Builder
+				for _, r := range strings.ToUpper(tc.Alias) {
+					if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+						bAlias.WriteRune(r)
+					} else {
+						bAlias.WriteRune('_')
+					}
+				}
+				aliasVarName := "UNIRTM_" + bAlias.String() + "_VERSION"
+				if aliasVarName != varName {
+					vars = append(vars, envVarEntry{Name: aliasVarName, Value: version, Source: "tool:" + toolNameKey + " (alias)"})
+				}
+			}
+		}
+
 		// Add provider env vars
 		toolEnvVars, err := p.GetEnvVars(toolName, installPath, version)
 		if err == nil {

@@ -90,6 +90,7 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 	cfgContent, _ := config.ReadFileOrEmpty(cfgPath)
 	cfgChanged := false
 
+	cfg, _ := config.LoadFull()
 	for _, arg := range args {
 		tool := arg
 		version := ""
@@ -100,9 +101,20 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 			version = arg[idx+1:]
 		}
 
+		canonicalTool := tool
+		if cfg != nil {
+			if canonicalKey, _, found := cfg.FindToolConfig(tool); found {
+				canonicalTool = canonicalKey
+			}
+		}
+
 		if version != "" {
 			// Delete specific version from DB.
-			if err := installRepo.Delete(ctx, tool, version); err != nil {
+			err := installRepo.Delete(ctx, canonicalTool, version)
+			if err != nil && canonicalTool != tool {
+				err = installRepo.Delete(ctx, tool, version)
+			}
+			if err != nil {
 				formatter.Warning(fmt.Sprintf("Could not remove %s@%s from DB: %v", tool, version, err))
 			} else {
 				formatter.Success(fmt.Sprintf("Removed %s@%s from database", tool, version), nil)
@@ -112,7 +124,7 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 			all, _ := installRepo.List(ctx)
 			removed := 0
 			for _, inst := range all {
-				if inst == nil || inst.Tool != tool {
+				if inst == nil || (inst.Tool != canonicalTool && inst.Tool != tool) {
 					continue
 				}
 				if err := installRepo.Delete(ctx, inst.Tool, inst.Version); err != nil {
@@ -129,7 +141,11 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 		}
 
 		// Remove from [tools] section of config line by line.
-		if newContent, removed := config.RemoveToolVersion(cfgContent, tool); removed {
+		newContent, removed := config.RemoveToolVersion(cfgContent, canonicalTool)
+		if !removed && canonicalTool != tool {
+			newContent, removed = config.RemoveToolVersion(cfgContent, tool)
+		}
+		if removed {
 			cfgContent = newContent
 			cfgChanged = true
 			formatter.Success(fmt.Sprintf("Removed %s from [tools] in %s", tool, cfgPath), nil)

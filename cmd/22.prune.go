@@ -12,6 +12,7 @@ import (
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
@@ -100,9 +101,15 @@ func runPrune(cmd *cobra.Command, args []string) error {
 
 	// Filter by tool if specified
 	if pruneTool != "" {
+		targetTool := pruneTool
+		if cfg, _ := config.LoadFull(); cfg != nil {
+			if canonicalKey, _, found := cfg.FindToolConfig(pruneTool); found {
+				targetTool = canonicalKey
+			}
+		}
 		filtered := installations[:0]
 		for _, inst := range installations {
-			if inst.Tool == pruneTool {
+			if inst.Tool == targetTool || inst.Tool == pruneTool {
 				filtered = append(filtered, inst)
 			}
 		}

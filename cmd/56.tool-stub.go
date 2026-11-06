@@ -114,6 +114,14 @@ func runToolStub(cmd *cobra.Command, args []string) error {
 	}
 
 	cfg, _ := config.LoadFull()
+	if cfg != nil {
+		if canonKey, tc, found := cfg.FindToolConfig(toolName); found {
+			toolName = canonKey
+			if version == "latest" && tc.Version != "" {
+				version = tc.Version
+			}
+		}
+	}
 	installManager, err := getInstallationManager(ctx, cfg)
 	if installManager != nil {
 		defer installManager.Close()

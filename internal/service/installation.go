@@ -120,6 +120,33 @@ func (im *InstallationManager) SetToolConfigs(toolConfigs map[string]config.Tool
 	im.toolConfigs = toolConfigs
 }
 
+// getToolConfig looks up a ToolConfig by exact key, backend-prefixed key, base tool name, or alias.
+func (im *InstallationManager) getToolConfig(tool string) (config.ToolConfig, bool) {
+	if im.toolConfigs == nil {
+		return config.ToolConfig{}, false
+	}
+	if c, ok := im.toolConfigs[tool]; ok {
+		return c, true
+	}
+	toolNoPrefix := tool
+	if idx := strings.Index(tool, ":"); idx >= 0 {
+		toolNoPrefix = tool[idx+1:]
+	}
+	for k, c := range im.toolConfigs {
+		if c.Alias != "" && (strings.EqualFold(c.Alias, tool) || strings.EqualFold(c.Alias, toolNoPrefix)) {
+			return c, true
+		}
+		kNoPrefix := k
+		if idx := strings.Index(k, ":"); idx >= 0 {
+			kNoPrefix = k[idx+1:]
+		}
+		if strings.EqualFold(k, tool) || strings.EqualFold(kNoPrefix, toolNoPrefix) {
+			return c, true
+		}
+	}
+	return config.ToolConfig{}, false
+}
+
 // SetLockService updates the managed LockService reference.
 func (im *InstallationManager) SetLockService(ls *LockService) {
 	im.lockService = ls
@@ -318,11 +345,9 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 
 	// 2. Fetch tool config for hooks
 	var preInstall, postInstall string
-	if im.toolConfigs != nil {
-		if tc, ok := im.toolConfigs[tool]; ok {
-			preInstall = tc.PreInstall.Script()
-			postInstall = tc.PostInstall.Script()
-		}
+	if tc, ok := im.getToolConfig(tool); ok {
+		preInstall = tc.PreInstall.Script()
+		postInstall = tc.PostInstall.Script()
 	}
 
 	// 3. Run PreInstall hook
@@ -691,7 +716,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 				if im.settings != nil {
 					trustedKeys = append(trustedKeys, im.settings.GPGKeys...)
 				}
-				if tc, ok := im.toolConfigs[tool]; ok {
+				if tc, ok := im.getToolConfig(tool); ok {
 					trustedKeys = append(trustedKeys, tc.GPGKeys...)
 				}
 				trustedKeys = append(trustedKeys, versionInfo.GPGKeys...)
@@ -832,16 +857,10 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 		fmt.Printf("ℹ extracting %s@%s...\n", tool, version)
 	}
 	var tc config.ToolConfig
-	if im.toolConfigs != nil {
-		if c, ok := im.toolConfigs[tool]; ok {
-			tc = c
-		} else if c, ok := im.toolConfigs[backendName+":"+tool]; ok {
-			tc = c
-		} else if idx := strings.Index(tool, ":"); idx >= 0 {
-			if c, ok := im.toolConfigs[tool[idx+1:]]; ok {
-				tc = c
-			}
-		}
+	if c, ok := im.getToolConfig(tool); ok {
+		tc = c
+	} else if c, ok := im.getToolConfig(backendName + ":" + tool); ok {
+		tc = c
 	}
 	if tc.Alias != "" {
 		ctx = provider.WithToolAlias(ctx, tc.Alias)
@@ -1468,6 +1487,10 @@ func (im *InstallationManager) ResolveToolEnvBySpec(
 	// Always export UNIRTM_<TOOL>_VERSION so shims and scripts can read it.
 	envKey := "UNIRTM_" + strings.ToUpper(strings.ReplaceAll(toolName, "-", "_")) + "_VERSION"
 	result[envKey] = version
+	if tc, ok := im.getToolConfig(toolName); ok && tc.Alias != "" {
+		aliasKey := "UNIRTM_" + strings.ToUpper(strings.ReplaceAll(tc.Alias, "-", "_")) + "_VERSION"
+		result[aliasKey] = version
+	}
 
 	// For node runtime, verify the binary actually runs without crashing (e.g. dyld libc++ issues).
 	// If it crashes, fall back to another healthy installed version or system node.
@@ -1757,7 +1780,7 @@ func (im *InstallationManager) resolveExecutableWithVisited(ctx context.Context,
 
 	for _, inst := range installations {
 		// If the tool is configured in the current context, only consider the active version.
-		if tc, ok := im.toolConfigs[inst.Tool]; ok {
+		if tc, ok := im.getToolConfig(inst.Tool); ok {
 			expectedVersion := im.resolveAlias(inst.Tool, tc.Version)
 			// Parse the expected version out in case it's a path@version format
 			_, _, parsedVersion, explicit := im.ParseToolSpec(inst.Tool + "@" + expectedVersion)

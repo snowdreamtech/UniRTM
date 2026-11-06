@@ -82,6 +82,14 @@ func runLsRemote(cmd *cobra.Command, args []string) error {
 	}
 
 	backendName, tool, versionPrefix, explicit := im.ParseToolSpec(args[0])
+	if cfg != nil {
+		if canonicalKey, tc, found := cfg.FindToolConfig(tool); found {
+			tool = canonicalKey
+			if backendName == "" && tc.Backend != "" {
+				backendName = tc.Backend
+			}
+		}
+	}
 	if lsRemoteBackend != "" {
 		backendName = lsRemoteBackend
 	}

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
@@ -62,6 +63,11 @@ func runLink(cmd *cobra.Command, args []string) error {
 	})
 
 	tool := args[0]
+	if cfg, _ := config.LoadFull(); cfg != nil {
+		if canonicalKey, _, found := cfg.FindToolConfig(tool); found {
+			tool = canonicalKey
+		}
+	}
 	version := args[1]
 	installPath := args[2]
 

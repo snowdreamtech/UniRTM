@@ -101,9 +101,15 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	// Apply --tool filter.
 	if listToolFilter != "" {
+		targetTool := listToolFilter
+		if cfg, err := config.LoadFull(); err == nil && cfg != nil {
+			if canonicalKey, _, found := cfg.FindToolConfig(listToolFilter); found {
+				targetTool = canonicalKey
+			}
+		}
 		filtered := installations[:0]
 		for _, inst := range installations {
-			if inst.Tool == listToolFilter {
+			if inst.Tool == targetTool || inst.Tool == listToolFilter {
 				filtered = append(filtered, inst)
 			}
 		}

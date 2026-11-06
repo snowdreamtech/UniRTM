@@ -13,6 +13,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
@@ -99,9 +100,16 @@ func runOutdated(cmd *cobra.Command, args []string) error {
 
 	// Filter by CLI args if provided.
 	if len(args) > 0 {
-		want := make(map[string]bool, len(args))
+		cfg, _ := config.LoadFull()
+		want := make(map[string]bool, len(args)*2)
 		for _, a := range args {
-			want[strings.TrimSpace(a)] = true
+			cleanA := strings.TrimSpace(a)
+			want[cleanA] = true
+			if cfg != nil {
+				if canonicalKey, _, found := cfg.FindToolConfig(cleanA); found {
+					want[canonicalKey] = true
+				}
+			}
 		}
 		filtered := installations[:0]
 		for _, inst := range installations {

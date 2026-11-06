@@ -112,8 +112,16 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 		}
 
 		// Filter by target tool if specified in args
-		if targetTool != "" && strings.ToLower(toolName) != targetTool {
-			continue
+		if targetTool != "" {
+			matched := strings.EqualFold(toolName, targetTool) || strings.EqualFold(name, targetTool)
+			if !matched && cfg != nil {
+				if canonicalKey, _, found := cfg.FindToolConfig(targetTool); found {
+					matched = strings.EqualFold(name, canonicalKey) || strings.EqualFold(toolName, canonicalKey)
+				}
+			}
+			if !matched {
+				continue
+			}
 		}
 
 		isInstalled, _ := im.IsInstalled(ctx, toolName, version, backendName)

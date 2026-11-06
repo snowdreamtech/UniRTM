@@ -51,6 +51,11 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 	filterTool := ""
 	if len(args) == 1 {
 		filterTool = args[0]
+		if cfg != nil {
+			if canonicalKey, _, found := cfg.FindToolConfig(filterTool); found {
+				filterTool = canonicalKey
+			}
+		}
 	}
 
 	// 2. Resolve requested tools and their installation status

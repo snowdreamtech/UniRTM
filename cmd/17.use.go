@@ -109,6 +109,14 @@ func runUse(cmd *cobra.Command, args []string) error {
 	pairs := make([]toolVersion, 0, len(args))
 	for _, arg := range args {
 		backendName, toolName, version, explicit := im.ParseToolSpec(arg)
+		if cfg != nil {
+			if canonicalKey, tc, found := cfg.FindToolConfig(toolName); found {
+				toolName = canonicalKey
+				if backendName == "" && tc.Backend != "" {
+					backendName = tc.Backend
+				}
+			}
+		}
 
 		// If no explicit version, try interactive selection
 		if !explicit || version == "latest" {
@@ -147,7 +155,9 @@ func runUse(cmd *cobra.Command, args []string) error {
 
 		// Reconstruct key for config: backend:tool (if backend is not auto-detected or is explicit)
 		configKey := toolName
-		if backendName != "" && (strings.Contains(arg, ":") || backendName == "github") {
+		if strings.Contains(toolName, ":") {
+			configKey = toolName
+		} else if backendName != "" && (strings.Contains(arg, ":") || backendName == "github") {
 			// If it's github or explicit backend, use backend:tool as key
 			// but for github, we often just use owner/repo which is auto-detected.
 			// Actually, let's keep it simple: if it contains '/', it's github.

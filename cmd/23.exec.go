@@ -285,6 +285,22 @@ func runExec(cmd *cobra.Command, args []string) error {
 		// 5.2 Second, inject context tools from command line (higher priority)
 		for _, arg := range contextTools {
 			backendName, toolName, version, _ := installManager.ParseToolSpec(arg)
+			var aliasName string
+			if cfg != nil {
+				if canonKey, tc, found := cfg.FindToolConfig(toolName); found {
+					bName, tName, _, _ := installManager.ParseToolSpec(canonKey)
+					if bName != "" {
+						backendName = bName
+					}
+					toolName = tName
+					if version == "" && tc.Version != "" {
+						version = tc.Version
+					}
+					if tc.Alias != "" {
+						aliasName = tc.Alias
+					}
+				}
+			}
 
 			// Auto-install context tools when requested.
 			if autoInstall && !execNoDeps {
@@ -304,6 +320,10 @@ func runExec(cmd *cobra.Command, args []string) error {
 			toolEnv := installManager.ResolveToolEnvBySpec(toolName, version, backendName)
 			if len(toolEnv) > 0 {
 				mergeEnvMaps(additionalEnv, toolEnv)
+			}
+			if aliasName != "" && version != "" {
+				aliasEnvKey := "UNIRTM_" + strings.ToUpper(strings.ReplaceAll(aliasName, "-", "_")) + "_VERSION"
+				additionalEnv[aliasEnvKey] = version
 			}
 		}
 	}

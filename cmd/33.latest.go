@@ -10,6 +10,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -68,6 +69,14 @@ func runLatest(cmd *cobra.Command, args []string) error {
 	}
 
 	backendName, tool, versionPrefix, explicit := im.ParseToolSpec(args[0])
+	if cfg, _ := config.LoadFull(); cfg != nil {
+		if canonicalKey, tc, found := cfg.FindToolConfig(tool); found {
+			tool = canonicalKey
+			if backendName == "" && tc.Backend != "" {
+				backendName = tc.Backend
+			}
+		}
+	}
 	if latestBackend != "" {
 		backendName = latestBackend
 	}

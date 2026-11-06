@@ -189,7 +189,21 @@ func runLock(cmd *cobra.Command, args []string) error {
 		subset := make(map[string]service.ToolSpec)
 		for _, arg := range args {
 			toolName, version, backendName := parseLockToolArg(arg)
-			if spec, ok := tools[toolName]; ok {
+			targetToolKey := toolName
+			if cfg != nil {
+				if canonicalKey, _, found := cfg.FindToolConfig(toolName); found {
+					targetToolKey = canonicalKey
+				}
+			}
+			if spec, ok := tools[targetToolKey]; ok {
+				if version != "" {
+					spec.Version = version
+				}
+				if backendName != "" {
+					spec.BackendName = backendName
+				}
+				subset[targetToolKey] = spec
+			} else if spec, ok := tools[toolName]; ok {
 				if version != "" {
 					spec.Version = version
 				}

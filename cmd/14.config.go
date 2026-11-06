@@ -460,11 +460,14 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 			cfg = &config.Config{}
 		}
 	} else {
-		cm := config.NewConfigManager()
 		var err error
-		cfg, err = cm.LoadHierarchy(ctx)
+		cfg, err = config.LoadFull()
 		if err != nil || cfg == nil {
-			cfg = &config.Config{}
+			cm := config.NewConfigManager()
+			cfg, _ = cm.LoadHierarchy(ctx)
+			if cfg == nil {
+				cfg = &config.Config{}
+			}
 		}
 	}
 
@@ -479,8 +482,25 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 	switch segments[0] {
 	case "tools":
 		if len(segments) > 1 {
+			var tc *config.ToolConfig
 			if t, ok := cfg.Tools[segments[1]]; ok {
-				value = t
+				tc = &t
+			} else if _, t, ok := cfg.FindToolConfig(segments[1]); ok {
+				tc = &t
+			}
+			if tc != nil {
+				if len(segments) == 2 {
+					value = tc
+				} else {
+					switch segments[2] {
+					case "version":
+						value = tc.Version
+					case "alias":
+						value = tc.Alias
+					default:
+						value = tc
+					}
+				}
 			}
 		} else {
 			value = cfg.Tools

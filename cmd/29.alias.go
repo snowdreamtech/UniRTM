@@ -42,6 +42,17 @@ var aliasResolveCmd = &cobra.Command{
 			return err
 		}
 
+		canonicalTool := tool
+		if canonicalKey, _, found := cfg.FindToolConfig(tool); found {
+			canonicalTool = canonicalKey
+		}
+
+		if toolAliases, ok := cfg.Aliases[canonicalTool]; ok {
+			if version, ok := toolAliases[alias]; ok {
+				fmt.Println(version)
+				return nil
+			}
+		}
 		if toolAliases, ok := cfg.Aliases[tool]; ok {
 			if version, ok := toolAliases[alias]; ok {
 				fmt.Println(version)
@@ -88,8 +99,13 @@ var aliasListCmd = &cobra.Command{
 		}
 
 		filterTool := ""
+		canonicalFilter := ""
 		if len(args) == 1 {
 			filterTool = args[0]
+			canonicalFilter = filterTool
+			if canonicalKey, _, found := cfg.FindToolConfig(filterTool); found {
+				canonicalFilter = canonicalKey
+			}
 		}
 
 		pterm.DefaultSection.Println("Tool Aliases")
@@ -97,7 +113,7 @@ var aliasListCmd = &cobra.Command{
 		// Sort tools for consistent output
 		var tools []string
 		for t := range cfg.Aliases {
-			if filterTool != "" && t != filterTool {
+			if filterTool != "" && t != filterTool && t != canonicalFilter {
 				continue
 			}
 			tools = append(tools, t)
@@ -150,6 +166,11 @@ var aliasSetCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tool, alias, version := args[0], args[1], args[2]
+		if cfg, _ := config.LoadFull(); cfg != nil {
+			if canonicalKey, _, found := cfg.FindToolConfig(tool); found {
+				tool = canonicalKey
+			}
+		}
 
 		// 1. Resolve tool name and backend
 		toolName := tool
@@ -204,6 +225,11 @@ var aliasUnsetCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tool, alias := args[0], args[1]
+		if cfg, _ := config.LoadFull(); cfg != nil {
+			if canonicalKey, _, found := cfg.FindToolConfig(tool); found {
+				tool = canonicalKey
+			}
+		}
 
 		cfgPath := resolveConfigFilePath(aliasGlobal)
 		m, err := config.LoadRawTOML(cfgPath)

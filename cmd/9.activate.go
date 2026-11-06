@@ -157,6 +157,9 @@ func runActivate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("create installation repository: %w", err)
 	}
 
+	// Load configuration to get tools and [env] variables
+	cfg, _ := config.LoadFull()
+
 	// Build tool versions map
 	toolVersions := make(map[string]string)
 
@@ -164,9 +167,25 @@ func runActivate(cmd *cobra.Command, args []string) error {
 		// Specific tool and version requested
 		tool := args[0]
 		version := args[1]
+		if cfg != nil {
+			if canonicalKey, _, found := cfg.FindToolConfig(tool); found {
+				tool = canonicalKey
+			}
+		}
 
 		// Verify installation exists
 		installation, err := installRepo.FindByToolAndVersion(ctx, tool, version)
+		if err != nil {
+			if allInsts, lErr := installRepo.List(ctx); lErr == nil {
+				for _, inst := range allInsts {
+					if inst.Version == version && (inst.Tool == tool || inst.Tool == args[0]) {
+						installation = inst
+						err = nil
+						break
+					}
+				}
+			}
+		}
 		if err != nil {
 			formatter.Error(fmt.Sprintf("Tool %s@%s is not installed", tool, version), map[string]interface{}{
 				"tool":    tool,
@@ -176,9 +195,20 @@ func runActivate(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("tool %s@%s not found: %w", tool, version, err)
 		}
 		toolVersions[installation.Tool] = installation.Version
+		if cfg != nil {
+			if _, tc, found := cfg.FindToolConfig(args[0]); found && tc.Alias != "" {
+				toolVersions[tc.Alias] = installation.Version
+			}
+		}
 	} else if len(args) == 1 {
 		// Only tool specified — get latest installed version
 		tool := args[0]
+		targetTool := tool
+		if cfg != nil {
+			if canonicalKey, _, found := cfg.FindToolConfig(tool); found {
+				targetTool = canonicalKey
+			}
+		}
 		installations, err := installRepo.List(ctx)
 		if err != nil {
 			formatter.Error("Failed to list installations", map[string]interface{}{
@@ -188,8 +218,13 @@ func runActivate(cmd *cobra.Command, args []string) error {
 		}
 		found := false
 		for _, inst := range installations {
-			if inst.Tool == tool {
+			if inst.Tool == targetTool || inst.Tool == tool {
 				toolVersions[inst.Tool] = inst.Version
+				if cfg != nil {
+					if _, tc, foundTc := cfg.FindToolConfig(tool); foundTc && tc.Alias != "" {
+						toolVersions[tc.Alias] = inst.Version
+					}
+				}
 				found = true
 				break
 			}
@@ -218,10 +253,10 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	// Get shims directory
 	shimsDir := env.GetShimsDir()
 
-	// Load configuration to get tools and [env] variables
+	// Resolve environment variables from config
 	envVars := make(map[string]string)
 	var sources []string
-	if cfg, err := config.LoadFull(); err == nil {
+	if cfg != nil {
 		resolved, src, redacted, err := cfg.ResolveEnvironment()
 		if err != nil {
 			formatter.Error("Environment resolution error", map[string]interface{}{
@@ -236,6 +271,9 @@ func runActivate(cmd *cobra.Command, args []string) error {
 			toolVersions = make(map[string]string)
 			for name, tc := range cfg.Tools {
 				toolVersions[name] = tc.Version
+				if tc.Alias != "" {
+					toolVersions[tc.Alias] = tc.Version
+				}
 			}
 		}
 
