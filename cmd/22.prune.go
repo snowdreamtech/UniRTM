@@ -102,14 +102,15 @@ func runPrune(cmd *cobra.Command, args []string) error {
 	// Filter by tool if specified
 	if pruneTool != "" {
 		targetTool := pruneTool
-		if cfg, _ := config.LoadFull(); cfg != nil {
+		cfg, _ := config.LoadFull()
+		if cfg != nil {
 			if canonicalKey, _, found := cfg.FindToolConfig(pruneTool); found {
 				targetTool = canonicalKey
 			}
 		}
 		filtered := installations[:0]
 		for _, inst := range installations {
-			if inst.Tool == targetTool || inst.Tool == pruneTool {
+			if isInstallationMatch(inst, pruneTool, targetTool, cfg) {
 				filtered = append(filtered, inst)
 			}
 		}

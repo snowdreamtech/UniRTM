@@ -113,13 +113,13 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 
 		// Filter by target tool if specified in args
 		if targetTool != "" {
-			matched := strings.EqualFold(toolName, targetTool) || strings.EqualFold(name, targetTool)
-			if !matched && cfg != nil {
-				if canonicalKey, _, found := cfg.FindToolConfig(targetTool); found {
-					matched = strings.EqualFold(name, canonicalKey) || strings.EqualFold(toolName, canonicalKey)
+			canonicalKey := targetTool
+			if cfg != nil {
+				if ck, _, found := cfg.FindToolConfig(targetTool); found {
+					canonicalKey = ck
 				}
 			}
-			if !matched {
+			if !isToolKeyMatch(name, targetTool, canonicalKey, cfg) && !isToolKeyMatch(toolName, targetTool, canonicalKey, cfg) {
 				continue
 			}
 		}

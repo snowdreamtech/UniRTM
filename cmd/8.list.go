@@ -102,14 +102,15 @@ func runList(cmd *cobra.Command, args []string) error {
 	// Apply --tool filter.
 	if listToolFilter != "" {
 		targetTool := listToolFilter
-		if cfg, err := config.LoadFull(); err == nil && cfg != nil {
+		cfg, _ := config.LoadFull()
+		if cfg != nil {
 			if canonicalKey, _, found := cfg.FindToolConfig(listToolFilter); found {
 				targetTool = canonicalKey
 			}
 		}
 		filtered := installations[:0]
 		for _, inst := range installations {
-			if inst.Tool == targetTool || inst.Tool == listToolFilter {
+			if isInstallationMatch(inst, listToolFilter, targetTool, cfg) {
 				filtered = append(filtered, inst)
 			}
 		}
@@ -129,11 +130,11 @@ func runList(cmd *cobra.Command, args []string) error {
 				continue
 			}
 			for _, inst := range installations {
-				if inst.Tool == tool {
+				if isInstallationMatch(inst, tool, tool, cfg) {
 					cleanInst := strings.TrimPrefix(inst.Version, "v")
 					cleanReq := strings.TrimPrefix(reqVer, "v")
 					if inst.Version == reqVer || cleanInst == cleanReq || strings.HasPrefix(cleanInst, cleanReq+".") {
-						activeVersions[tool] = inst.Version
+						activeVersions[inst.Tool] = inst.Version
 						src := cfg.LegacySources[tool]
 						if src == "" && cfg.SourceFile != "" {
 							src = filepath.Base(cfg.SourceFile)
@@ -141,7 +142,7 @@ func runList(cmd *cobra.Command, args []string) error {
 						if src == "" {
 							src = "global"
 						}
-						versionSources[tool] = src
+						versionSources[inst.Tool] = src
 						break
 					}
 				}

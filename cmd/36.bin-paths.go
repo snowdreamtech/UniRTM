@@ -28,25 +28,31 @@ func init() {
 
 // binPathsCmd lists all active runtime bin directories.
 var binPathsCmd = &cobra.Command{
-	Use:     "bin-paths",
+	Use:     "bin-paths [tool]",
 	Aliases: []string{"bin"},
 	Short:   "List all active runtime bin directories",
 	Long: `List all active runtime bin directories.
 
-Outputs one directory per line — shims dir first, then each installed
-tool's bin directory. Useful for shell hook scripts that need to prepend
+Outputs one directory per line — shims dir first (when listing all tools),
+then each installed tool's bin directory. If a tool is specified, only that
+tool's bin directories are output. Useful for shell hook scripts that need to prepend
 the correct directories to PATH.
 
 Examples:
   # Print all bin paths (one per line)
   unirtm bin-paths
 
+  # Print bin path for a specific tool
+  unirtm bin-paths node
+  unirtm bin-paths shfmt
+
   # JSON output
   unirtm bin-paths --json
+  unirtm bin-paths shfmt --json
 
   # Use in a shell script
   export PATH="$(unirtm bin-paths | tr '\n' ':')$PATH"`,
-	Args: cobra.NoArgs,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runBinPaths,
 }
 
@@ -73,15 +79,36 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("create installation repository: %w", err)
 	}
 
+	filterTool := ""
+	if len(args) > 0 {
+		filterTool = args[0]
+	}
+
 	// 3. Collect paths
 	shimsDir := env.GetShimsDir()
-	paths := []string{shimsDir}
+	var paths []string
 	seen := make(map[string]bool)
-	seen[shimsDir] = true
+
+	// Shims dir is only included when listing ALL tools
+	if filterTool == "" {
+		paths = append(paths, shimsDir)
+		seen[shimsDir] = true
+	}
+
+	// If a specific tool is requested, resolve its canonical name from config if available
+	targetCanonical := filterTool
+	if filterTool != "" && cfg != nil {
+		if canonKey, _, found := cfg.FindToolConfig(filterTool); found {
+			targetCanonical = canonKey
+		}
+	}
 
 	// Get sorted tool names to ensure deterministic output
 	var toolNames []string
 	for name := range cfg.Tools {
+		if filterTool != "" && !isToolKeyMatch(name, filterTool, targetCanonical, cfg) {
+			continue
+		}
 		toolNames = append(toolNames, name)
 	}
 	sort.Strings(toolNames)
@@ -134,6 +161,16 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 				}
 			}
 			if inst == nil {
+				if allInsts, lErr := installRepo.List(ctx); lErr == nil {
+					for _, candidate := range allInsts {
+						if isInstallationMatch(candidate, toolName, targetCanonical, cfg) {
+							inst = candidate
+							break
+						}
+					}
+				}
+			}
+			if inst == nil {
 				continue // Not installed, skip
 			}
 		}
@@ -154,6 +191,30 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 				if _, statErr := os.Stat(bp); statErr == nil {
 					paths = append(paths, bp)
 					seen[bp] = true
+				}
+			}
+		}
+	}
+
+	// If filterTool was specified and nothing was found in config, check DB installations directly
+	if filterTool != "" && len(paths) == 0 {
+		if allInsts, lErr := installRepo.List(ctx); lErr == nil {
+			for _, inst := range allInsts {
+				if isInstallationMatch(inst, filterTool, targetCanonical, cfg) {
+					p := provider.DefaultRegistry.GetWithBackend(inst.Tool, inst.Backend)
+					if p == nil {
+						continue
+					}
+					if binPaths, err := p.GetBinPaths(inst.Tool, inst.InstallPath, inst.Version); err == nil {
+						for _, bp := range binPaths {
+							if !seen[bp] {
+								if _, statErr := os.Stat(bp); statErr == nil {
+									paths = append(paths, bp)
+									seen[bp] = true
+								}
+							}
+						}
+					}
 				}
 			}
 		}

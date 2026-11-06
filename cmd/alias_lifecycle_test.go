@@ -58,11 +58,14 @@ func TestE2E_AliasResolutionLifecycle(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	// 5. Test bin-paths (all active tools)
+	// 5. Test bin-paths (all active tools and with alias)
 	t.Run("bin-paths", func(t *testing.T) {
 		stdout, _, err := h.Run("bin-paths")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, stdout)
+
+		_, _, err = h.Run("bin-paths", "shfmt")
+		assert.NoError(t, err)
 	})
 
 	// 6. Test unuse with alias
