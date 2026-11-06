@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -192,6 +193,25 @@ func quoteTOMLKey(key string) string {
 	return key
 }
 
+var inlineVersionRegex = regexp.MustCompile(`(\bversion\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s,}]+)`)
+
+func updateInlineTableVersion(line string, newVersion string) (string, bool) {
+	if inlineVersionRegex.MatchString(line) {
+		updated := inlineVersionRegex.ReplaceAllString(line, fmt.Sprintf("${1}%s", quoteTOMLValue(newVersion)))
+		return updated, true
+	}
+	idx := strings.Index(line, "{")
+	if idx != -1 {
+		prefix := line[:idx+1]
+		rest := strings.TrimLeft(line[idx+1:], " \t")
+		if strings.HasPrefix(rest, "}") {
+			return prefix + " " + fmt.Sprintf("version = %s", quoteTOMLValue(newVersion)) + " " + rest, true
+		}
+		return prefix + " " + fmt.Sprintf("version = %s, ", quoteTOMLValue(newVersion)) + rest, true
+	}
+	return "", false
+}
+
 // UpsertToolVersion updates or inserts a tool version in the [tools] section of a TOML file.
 func UpsertToolVersion(content string, tool string, version string) string {
 	lines := strings.Split(content, "\n")
@@ -245,7 +265,18 @@ func UpsertToolVersion(content string, tool string, version string) string {
 	}
 
 	if toolLineIdx != -1 {
-		// Update existing line
+		// Update existing line. If it was an inline table, update the version in-place to preserve alias and other attributes.
+		existingLine := lines[toolLineIdx]
+		parts := strings.SplitN(existingLine, "=", 2)
+		if len(parts) == 2 {
+			valPart := strings.TrimSpace(parts[1])
+			if strings.HasPrefix(valPart, "{") {
+				if updated, ok := updateInlineTableVersion(existingLine, version); ok {
+					lines[toolLineIdx] = updated
+					return strings.Join(lines, "\n")
+				}
+			}
+		}
 		lines[toolLineIdx] = newEntry
 		return strings.Join(lines, "\n")
 	}

@@ -68,9 +68,10 @@ func runWhere(cmd *cobra.Command, args []string) error {
 	}
 
 	// 2. Resolve the version and backend
-	if version == "" || version == "latest" {
-		if cfg != nil {
-			if toolSpec, ok := cfg.Tools[toolName]; ok {
+	if cfg != nil {
+		if canonicalKey, toolSpec, ok := cfg.FindToolConfig(toolName); ok {
+			toolName = canonicalKey
+			if version == "" || version == "latest" {
 				version = toolSpec.Version
 				backendName = toolSpec.Backend
 			}

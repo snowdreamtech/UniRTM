@@ -949,15 +949,39 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 				_ = copyInstallFile(primaryPath, dstPath)
 			}
 		}
+		baseToolName := filepath.Base(tool)
+		if idx := strings.Index(baseToolName, ":"); idx >= 0 {
+			baseToolName = baseToolName[idx+1:]
+		}
+		var filteredExecs []string
 		found := false
 		for _, e := range execs {
-			if filepath.Base(e) == aliasName {
+			baseExe := filepath.Base(e)
+			if env.RuntimeGOOS == "windows" {
+				baseExe = strings.TrimSuffix(baseExe, ".exe")
+			}
+			cleanAlias := strings.TrimSuffix(aliasName, ".exe")
+			if strings.EqualFold(baseExe, cleanAlias) {
+				filteredExecs = append(filteredExecs, aliasName)
 				found = true
-				break
+			} else if strings.EqualFold(baseExe, baseToolName) {
+				// The unaliased repo/binary name is replaced by the explicit alias
+				if !found {
+					filteredExecs = append(filteredExecs, aliasName)
+					found = true
+				}
+			} else {
+				filteredExecs = append(filteredExecs, e)
 			}
 		}
 		if !found {
-			execs = append(execs, aliasName)
+			filteredExecs = append(filteredExecs, aliasName)
+		}
+		execs = filteredExecs
+
+		// Clean up any stale unaliased shim (e.g. "sh") if it was previously created
+		if baseToolName != "" && !strings.EqualFold(baseToolName, tc.Alias) {
+			_ = im.shimGenerator.RemoveShim(ctx, baseToolName)
 		}
 	}
 	if err := im.shimGenerator.GenerateShim(ctx, tool, execs...); err != nil {
@@ -1868,6 +1892,25 @@ func (im *InstallationManager) resolveExecutableWithVisited(ctx context.Context,
 		if im.toolConfigs != nil {
 			if tc, ok := im.toolConfigs[c.inst.Tool]; ok && tc.Alias != "" {
 				aliasMatch = strings.EqualFold(tc.Alias, exeName) || (isWindows && strings.EqualFold(tc.Alias, queryClean))
+			} else {
+				for k, tc := range im.toolConfigs {
+					if tc.Alias != "" {
+						kNoPrefix := k
+						if idx := strings.Index(kNoPrefix, ":"); idx >= 0 {
+							kNoPrefix = kNoPrefix[idx+1:]
+						}
+						cToolNoPrefix := c.inst.Tool
+						if idx := strings.Index(cToolNoPrefix, ":"); idx >= 0 {
+							cToolNoPrefix = cToolNoPrefix[idx+1:]
+						}
+						if k == c.inst.Tool || kNoPrefix == cToolNoPrefix {
+							if strings.EqualFold(tc.Alias, exeName) || (isWindows && strings.EqualFold(tc.Alias, queryClean)) {
+								aliasMatch = true
+								break
+							}
+						}
+					}
+				}
 			}
 		}
 		toolMatch := c.inst.Tool == exeName || toolBase == exeName || aliasMatch || (isWindows && (strings.EqualFold(c.inst.Tool, queryClean) || strings.EqualFold(toolBase, queryClean)))

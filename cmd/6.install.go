@@ -195,7 +195,8 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 				// If version is not explicit, try to resolve from configuration file first
 				if !explicitVersion && cfg != nil {
-					if tc, ok := cfg.Tools[tool]; ok && tc.Version != "" {
+					if canonicalKey, tc, ok := cfg.FindToolConfig(tool); ok && tc.Version != "" {
+						tool = canonicalKey
 						version = tc.Version
 						explicitVersion = true
 						if tc.Backend != "" {

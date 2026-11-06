@@ -13,6 +13,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -162,6 +163,7 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 	var targets []uninstallTarget
 
 	// Determine if we should treat it as a single tool + version (backward compatibility)
+	cfg, _ := config.LoadFull()
 	isLegacySingleTool := false
 	if len(args) == 2 {
 		firstArg := args[0]
@@ -173,7 +175,13 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 	}
 
 	if isLegacySingleTool {
-		_, tool, _, _ := installManager.ParseToolSpec(args[0])
+		toolArg := args[0]
+		if cfg != nil {
+			if canonicalKey, _, ok := cfg.FindToolConfig(toolArg); ok {
+				toolArg = canonicalKey
+			}
+		}
+		_, tool, _, _ := installManager.ParseToolSpec(toolArg)
 		version := args[1]
 
 		if tool == "" {
@@ -197,7 +205,13 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 		})
 	} else {
 		for _, arg := range args {
-			backendName, tool, version, explicitVersion := installManager.ParseToolSpec(arg)
+			argToParse := arg
+			if cfg != nil {
+				if canonicalKey, _, ok := cfg.FindToolConfig(arg); ok {
+					argToParse = canonicalKey
+				}
+			}
+			backendName, tool, version, explicitVersion := installManager.ParseToolSpec(argToParse)
 
 			if tool == "" {
 				return fmt.Errorf("tool name is required")

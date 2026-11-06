@@ -107,6 +107,23 @@ func TestUpsertToolVersion(t *testing.T) {
 	if !strings.Contains(res, "node = \"18\"") || strings.Contains(res, "node = \"16\"") {
 		t.Errorf("UpsertToolVersion failed to update existing tool: %s", res)
 	}
+
+	// 4. Update existing inline table tool preserving alias and metadata
+	content = "[tools]\n\"github:mvdan/sh\" = { version = \"3.14.0\", alias = \"shfmt\" }\n"
+	res = UpsertToolVersion(content, "github:mvdan/sh", "3.14.1")
+	if !strings.Contains(res, "version = \"3.14.1\"") {
+		t.Errorf("UpsertToolVersion failed to update version in inline table: %s", res)
+	}
+	if !strings.Contains(res, "alias = \"shfmt\"") {
+		t.Errorf("UpsertToolVersion lost alias in inline table: %s", res)
+	}
+
+	// 5. Update existing inline table tool where alias is before version
+	content = "[tools]\n\"github:mvdan/sh\" = { alias = \"shfmt\", version = \"3.14.0\" }\n"
+	res = UpsertToolVersion(content, "github:mvdan/sh", "3.14.1")
+	if !strings.Contains(res, "version = \"3.14.1\"") || !strings.Contains(res, "alias = \"shfmt\"") {
+		t.Errorf("UpsertToolVersion failed to update inline table with reversed keys: %s", res)
+	}
 }
 
 func TestLoadRawTOML(t *testing.T) {

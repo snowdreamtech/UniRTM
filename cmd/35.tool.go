@@ -119,6 +119,15 @@ func runTool(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Load Config to resolve tool alias and get requested versions, tool options
+	cfgMgr := config.NewConfigManager()
+	cfg, _ := cfgMgr.LoadHierarchy(ctx)
+	if cfg != nil {
+		if canonicalKey, _, found := cfg.FindToolConfig(toolName); found {
+			toolName = canonicalKey
+		}
+	}
+
 	// Load all installations for this tool.
 	all, err := installRepo.List(ctx)
 	if err != nil {
@@ -163,10 +172,7 @@ func runTool(cmd *cobra.Command, args []string) error {
 		detectedBackend = getBackendName()
 	}
 
-	// Load Config to get requested versions, tool options
-	cfgMgr := config.NewConfigManager()
-	cfg, _ := cfgMgr.LoadHierarchy(ctx)
-
+	// Tool options
 	var requestedVersions []string
 	configSources := findToolConfigSources(ctx, toolName)
 	configSourceStr := ""

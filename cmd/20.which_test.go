@@ -186,3 +186,52 @@ func TestRunWhich_AliasPython(t *testing.T) {
 	err = runWhich(cmd, []string{"python3"})
 	assert.NoError(t, err)
 }
+
+func TestRunWhich_CustomToolAlias(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+
+	dbPath := env.GetDatabasePath()
+	os.MkdirAll(filepath.Dir(dbPath), 0755)
+
+	db, err := database.Open(context.Background(), database.Config{Path: dbPath, WALMode: true})
+	require.NoError(t, err)
+
+	repo, err := sqlite.NewInstallationRepository(db.Conn())
+	require.NoError(t, err)
+
+	installPath := filepath.Join(tmpDir, "installs", "github-mvdan-sh", "3.14.1")
+	binDir := filepath.Join(installPath, "bin")
+	require.NoError(t, os.MkdirAll(binDir, 0755))
+
+	p := filepath.Join(binDir, "shfmt")
+	require.NoError(t, os.WriteFile(p, []byte("#!/bin/sh\n"), 0755))
+
+	inst := &repository.Installation{
+		Tool:        "github:mvdan/sh",
+		Version:     "3.14.1",
+		Backend:     "github",
+		InstallPath: installPath,
+		InstalledAt: time.Now(),
+	}
+	require.NoError(t, repo.Create(context.Background(), inst))
+	db.Close()
+
+	// Create .unirtm.toml with alias
+	cfgPath := filepath.Join(tmpDir, ".unirtm.toml")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(`
+[tools]
+"github:mvdan/sh" = { version = "3.14.1", alias = "shfmt" }
+`), 0644))
+
+	origWd, _ := os.Getwd()
+	require.NoError(t, os.Chdir(tmpDir))
+	defer os.Chdir(origWd)
+
+	cmd := whichCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	err = runWhich(cmd, []string{"shfmt"})
+	assert.NoError(t, err)
+}

@@ -225,6 +225,13 @@ func runWhich(cmd *cobra.Command, args []string) error {
 			toolInstallations = cleanInstalls
 		}
 	}
+	if len(toolInstallations) == 0 && cfg != nil {
+		if canonicalKey, _, ok := cfg.FindToolConfig(targetClean); ok && canonicalKey != targetClean {
+			if keyInstalls, kErr := installRepo.ListByTool(ctx, canonicalKey); kErr == nil && len(keyInstalls) > 0 {
+				toolInstallations = keyInstalls
+			}
+		}
+	}
 	if len(toolInstallations) == 0 {
 		for _, alias := range service.GetExecutableAliases(targetClean) {
 			if aliasInstalls, aliasErr := installRepo.ListByTool(ctx, alias); aliasErr == nil && len(aliasInstalls) > 0 {

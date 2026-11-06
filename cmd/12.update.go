@@ -228,6 +228,11 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		if len(args) == 2 {
 			targetVersion = args[1]
 		}
+		if cfg != nil {
+			if canonicalKey, _, found := cfg.FindToolConfig(tool); found {
+				tool = canonicalKey
+			}
+		}
 
 		if !updateForce && !quiet {
 			confirmed, err := promptConfirmation(fmt.Sprintf("Update %s to %s?", tool, targetVersion))
@@ -418,6 +423,8 @@ func updateConfigAndLockfile(ctx context.Context, cfg *config.Config, backendReg
 						keyToUpdate := ""
 						if _, ok := cfg.ToolsRaw[r.Tool]; ok {
 							keyToUpdate = r.Tool
+						} else if canonicalKey, _, found := cfg.FindToolConfig(r.Tool); found {
+							keyToUpdate = canonicalKey
 						} else {
 							for k := range cfg.ToolsRaw {
 								if strings.HasSuffix(k, ":"+r.Tool) || strings.HasSuffix(k, "/"+r.Tool) {

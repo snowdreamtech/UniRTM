@@ -93,6 +93,10 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 	}
 	for _, toolNameKey := range toolNames {
 		toolCfg := cfg.Tools[toolNameKey]
+		if canonicalKey, tc, ok := cfg.FindToolConfig(toolNameKey); ok {
+			toolNameKey = canonicalKey
+			toolCfg = tc
+		}
 		_, toolName, version, _ := im.ParseToolSpec(toolNameKey)
 		if toolCfg.Backend != "" {
 			// Backend in config is ignored if we already have it in DB,

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -192,7 +193,7 @@ func parseToolConfig(v interface{}) ToolConfig {
 func (tm ToolMap) MarshalTOML() (interface{}, error) {
 	raw := make(map[string]interface{})
 	for k, tc := range tm {
-		if tc.Backend == "" && tc.Provider == "" && len(tc.PreInstall) == 0 && len(tc.PostInstall) == 0 && len(tc.GPGKeys) == 0 && tc.MinimumReleaseAge == "" {
+		if tc.Alias == "" && tc.Backend == "" && tc.Provider == "" && len(tc.PreInstall) == 0 && len(tc.PostInstall) == 0 && len(tc.GPGKeys) == 0 && tc.MinimumReleaseAge == "" && !tc.Pinned && tc.PinReason == "" && len(tc.AssetPatterns) == 0 {
 			raw[k] = tc.Version
 		} else {
 			raw[k] = tc
@@ -675,6 +676,51 @@ func (c *Config) GetEnv(key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// FindToolConfig resolves a tool configuration by exact key, custom tool alias, or normalized repository name.
+// Returns the matched canonical key, the ToolConfig, and true if found; otherwise false.
+func (c *Config) FindToolConfig(query string) (string, ToolConfig, bool) {
+	if c == nil || c.Tools == nil {
+		return "", ToolConfig{}, false
+	}
+	cleanQuery := strings.TrimSpace(query)
+	if cleanQuery == "" {
+		return "", ToolConfig{}, false
+	}
+
+	// 1. Direct match on full key
+	if tc, ok := c.Tools[cleanQuery]; ok {
+		return cleanQuery, tc, true
+	}
+
+	queryNoPrefix := cleanQuery
+	if idx := strings.Index(queryNoPrefix, ":"); idx >= 0 {
+		queryNoPrefix = queryNoPrefix[idx+1:]
+	}
+
+	// 2. Match by explicit tool Alias (e.g. "shfmt" for "github:mvdan/sh")
+	for k, tc := range c.Tools {
+		if tc.Alias != "" && (strings.EqualFold(tc.Alias, cleanQuery) || strings.EqualFold(tc.Alias, queryNoPrefix)) {
+			return k, tc, true
+		}
+	}
+
+	// 3. Match by normalized key (without backend prefix, or base repo name)
+	for k, tc := range c.Tools {
+		kNoPrefix := k
+		if idx := strings.Index(kNoPrefix, ":"); idx >= 0 {
+			kNoPrefix = kNoPrefix[idx+1:]
+		}
+		if kNoPrefix == cleanQuery || kNoPrefix == queryNoPrefix {
+			return k, tc, true
+		}
+		if filepath.Base(kNoPrefix) == cleanQuery || filepath.Base(kNoPrefix) == queryNoPrefix {
+			return k, tc, true
+		}
+	}
+
+	return "", ToolConfig{}, false
 }
 
 func (c *Config) validateTaskDependencies() error {

@@ -15,6 +15,7 @@ import (
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
@@ -113,6 +114,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 	dataDir := env.GetDataDir()
 	generator := service.NewGenerator(shimsDir, dataDir+"/installs")
 	providerRegistry := provider.NewRegistry()
+	cfg, _ := config.LoadFull()
 
 	// ── Phase 1: Clean up dead shims ──────────────────────────────────────────
 	deadRemoved := 0
@@ -125,6 +127,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				executables = []string{inst.Tool}
 			}
+			executables = resolveExecutablesForReshim(inst.Tool, executables, cfg)
 			for _, exe := range executables {
 				baseExe := filepath.Base(exe)
 				if runtime.GOOS == "windows" {
@@ -244,6 +247,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 				if err != nil {
 					executables = []string{item.tool}
 				}
+				executables = resolveExecutablesForReshim(item.tool, executables, cfg)
 
 				if err := generator.GenerateShim(ctx, item.tool, executables...); err != nil {
 					mu.Lock()
@@ -294,4 +298,43 @@ func runReshim(cmd *cobra.Command, args []string) error {
 	})
 
 	return nil
+}
+
+func resolveExecutablesForReshim(instTool string, rawExecs []string, cfg *config.Config) []string {
+	if cfg == nil {
+		return rawExecs
+	}
+	_, tc, found := cfg.FindToolConfig(instTool)
+	if !found || tc.Alias == "" {
+		return rawExecs
+	}
+	aliasName := tc.Alias
+	baseToolName := filepath.Base(instTool)
+	if idx := strings.Index(baseToolName, ":"); idx >= 0 {
+		baseToolName = baseToolName[idx+1:]
+	}
+	var filtered []string
+	hasAlias := false
+	for _, e := range rawExecs {
+		b := filepath.Base(e)
+		if runtime.GOOS == "windows" {
+			b = strings.TrimSuffix(b, ".exe")
+		}
+		cleanAlias := strings.TrimSuffix(aliasName, ".exe")
+		if strings.EqualFold(b, cleanAlias) {
+			filtered = append(filtered, aliasName)
+			hasAlias = true
+		} else if strings.EqualFold(b, baseToolName) {
+			if !hasAlias {
+				filtered = append(filtered, aliasName)
+				hasAlias = true
+			}
+		} else {
+			filtered = append(filtered, e)
+		}
+	}
+	if !hasAlias {
+		filtered = append(filtered, aliasName)
+	}
+	return filtered
 }

@@ -261,6 +261,63 @@ func TestToolConfig_ParseAlias(t *testing.T) {
 	assert.Equal(t, "shfmt", tc.Alias)
 }
 
+func TestConfig_FindToolConfig(t *testing.T) {
+	cfg := &Config{
+		Tools: ToolMap{
+			"node": ToolConfig{Version: "20.0.0"},
+			"github:mvdan/sh": ToolConfig{
+				Version: "3.14.1",
+				Alias:   "shfmt",
+			},
+		},
+	}
+
+	// 1. Exact key match
+	key, tc, ok := cfg.FindToolConfig("github:mvdan/sh")
+	assert.True(t, ok)
+	assert.Equal(t, "github:mvdan/sh", key)
+	assert.Equal(t, "3.14.1", tc.Version)
+
+	// 2. Custom tool alias match
+	key, tc, ok = cfg.FindToolConfig("shfmt")
+	assert.True(t, ok)
+	assert.Equal(t, "github:mvdan/sh", key)
+	assert.Equal(t, "shfmt", tc.Alias)
+
+	// 3. Normalized repo match
+	key, tc, ok = cfg.FindToolConfig("mvdan/sh")
+	assert.True(t, ok)
+	assert.Equal(t, "github:mvdan/sh", key)
+
+	// 4. Base repo name match
+	key, tc, ok = cfg.FindToolConfig("sh")
+	assert.True(t, ok)
+	assert.Equal(t, "github:mvdan/sh", key)
+
+	// 5. Not found
+	_, _, ok = cfg.FindToolConfig("nonexistent")
+	assert.False(t, ok)
+}
+
+func TestToolMap_MarshalTOML_PreservesAlias(t *testing.T) {
+	tm := ToolMap{
+		"node":            ToolConfig{Version: "20.0.0"},
+		"github:mvdan/sh": ToolConfig{Version: "3.14.1", Alias: "shfmt"},
+	}
+	raw, err := tm.MarshalTOML()
+	require.NoError(t, err)
+	m := raw.(map[string]interface{})
+
+	// node should be flattened to string
+	assert.Equal(t, "20.0.0", m["node"])
+
+	// tool with alias must remain ToolConfig structure so alias is not lost
+	tc, ok := m["github:mvdan/sh"].(ToolConfig)
+	assert.True(t, ok, "expected github:mvdan/sh to remain ToolConfig struct")
+	assert.Equal(t, "shfmt", tc.Alias)
+	assert.Equal(t, "3.14.1", tc.Version)
+}
+
 func TestSettings_Validate(t *testing.T) {
 	tests := []struct {
 		name    string
