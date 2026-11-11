@@ -208,14 +208,27 @@ type raceResult struct {
 }
 
 func (t *AdaptiveTransport) race(req *http.Request, host string) (*http.Response, RouteStrategy, error) {
-	ctx, cancel := context.WithCancel(req.Context())
-	defer cancel()
+	directCtx, directCancel := context.WithCancel(req.Context())
+	proxyCtx, proxyCancel := context.WithCancel(req.Context())
+
+	var (
+		hasWinner      bool
+		winnerStrategy RouteStrategy
+	)
+	defer func() {
+		if !hasWinner || winnerStrategy != RouteDirect {
+			directCancel()
+		}
+		if !hasWinner || winnerStrategy != RouteProxy {
+			proxyCancel()
+		}
+	}()
 
 	resultCh := make(chan raceResult, 2)
 
 	// Helper to launch a pathway
-	launch := func(trans http.RoundTripper, strat RouteStrategy) {
-		clonedReq := req.Clone(ctx)
+	launch := func(trans http.RoundTripper, strat RouteStrategy, c context.Context) {
+		clonedReq := req.Clone(c)
 		if req.GetBody != nil {
 			rc, err := req.GetBody()
 			if err == nil {
@@ -227,7 +240,7 @@ func (t *AdaptiveTransport) race(req *http.Request, host string) (*http.Response
 	}
 
 	// 1. Launch Direct channel
-	go launch(t.directTransport, RouteDirect)
+	go launch(t.directTransport, RouteDirect, directCtx)
 
 	// 2. Wait up to staggerDelay before launching Proxy channel
 	timer := time.NewTimer(t.staggerDelay)
@@ -250,8 +263,20 @@ func (t *AdaptiveTransport) race(req *http.Request, host string) (*http.Response
 			if !failed {
 				// We have a winner! Cache the winning route.
 				t.routeCache.Set(host, res.strategy)
-				cancel() // Cancel the slower or pending channel
+				hasWinner = true
+				winnerStrategy = res.strategy
+				if res.strategy == RouteProxy {
+					directCancel()
+				} else {
+					proxyCancel()
+				}
 				return res.resp, res.strategy, nil
+			}
+
+			if res.strategy == RouteDirect {
+				directCancel()
+			} else {
+				proxyCancel()
 			}
 
 			if res.resp != nil && res.resp.Body != nil {
@@ -264,14 +289,14 @@ func (t *AdaptiveTransport) race(req *http.Request, host string) (*http.Response
 			// If the first failed and proxy hasn't been launched yet, launch it immediately!
 			if !proxyLaunched {
 				proxyLaunched = true
-				go launch(t.proxyTransport, RouteProxy)
+				go launch(t.proxyTransport, RouteProxy, proxyCtx)
 			}
 
 		case <-timer.C:
 			// Direct is taking too long (> 200ms), wake up Proxy channel concurrently!
 			if !proxyLaunched {
 				proxyLaunched = true
-				go launch(t.proxyTransport, RouteProxy)
+				go launch(t.proxyTransport, RouteProxy, proxyCtx)
 			}
 		}
 	}

@@ -137,6 +137,17 @@ func TestAdaptiveTransport_StaggeredRacing_DirectWins(t *testing.T) {
 	if !ok || strat != RouteDirect {
 		t.Errorf("expected RouteDirect cached, got %v (ok=%v)", strat, ok)
 	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read winner response body: %v", err)
+	}
+	if string(body) != "fast-direct" {
+		t.Errorf("expected fast-direct, got %s", string(body))
+	}
+	if resp.Request.Context().Err() != nil {
+		t.Errorf("expected winner request context to remain active, got: %v", resp.Request.Context().Err())
+	}
 }
 
 func TestAdaptiveTransport_StaggeredRacing_ProxyWinsWhenDirectBlocked(t *testing.T) {
@@ -175,6 +186,17 @@ func TestAdaptiveTransport_StaggeredRacing_ProxyWinsWhenDirectBlocked(t *testing
 	strat, ok := cache.Get("objects.githubusercontent.com")
 	if !ok || strat != RouteProxy {
 		t.Errorf("expected RouteProxy cached, got %v (ok=%v)", strat, ok)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read proxy winner response body: %v", err)
+	}
+	if string(body) != "proxy-success" {
+		t.Errorf("expected proxy-success, got %s", string(body))
+	}
+	if resp.Request.Context().Err() != nil {
+		t.Errorf("expected winner request context to remain active, got: %v", resp.Request.Context().Err())
 	}
 
 	// Subdomain sharing apex domain should also hit cache
