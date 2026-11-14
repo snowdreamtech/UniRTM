@@ -69,7 +69,9 @@ management, supports multiple backends and providers, and offers comprehensive
 audit and logging capabilities.`,
 		PersistentPreRun: setupGlobalOptions,
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			updater.PromptIfAvailable(env.GitTag, cmd.Name())
+			if !jsonOutput {
+				updater.PromptIfAvailable(env.GitTag, cmd.Name())
+			}
 		},
 		SilenceUsage:               true,
 		SilenceErrors:              true,
@@ -135,7 +137,13 @@ func setupGlobalOptions(cmd *cobra.Command, args []string) {
 	checkTaskShadowing(cmd)
 
 	// Trigger async update check
-	updater.CheckUpdateAsync(env.GitTag)
+	cmdName := ""
+	if cmd != nil {
+		cmdName = cmd.Name()
+	}
+	if !jsonOutput {
+		updater.CheckUpdateAsync(env.GitTag, cmdName)
+	}
 }
 
 // syncEnv synchronizes prefixed environment variables (UNIRTM_ and MISE_) to native ones

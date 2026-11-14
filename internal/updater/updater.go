@@ -49,11 +49,28 @@ var (
 		"version":     true,
 		"self-update": true,
 		"__complete":  true, // Cobra completion
+		"activate":    true, // Shell activation script
+		"deactivate":  true, // Shell deactivation script
+		"hook-env":    true, // Shell directory navigation hook
+		"shell":       true, // Shell configuration generator
+		"which":       true, // Script path resolver
+		"where":       true, // Script path resolver
+		"bin-paths":   true, // Script bin-paths resolver
+		"shim":        true, // Tool transparent proxy shim
+		"hook-exec":   true, // Hook transparent proxy
+		"tool-stub":   true, // Tool stub transparent proxy
+		"exec":        true, // Command execution proxy
+		"generate":    true, // Configuration file/script generator
 	}
 	cacheMutex    sync.Mutex
 	updaterFlight singleflight.Group
 	updaterClient = pkgHttp.NewClientWithTimeout(3 * time.Second)
 )
+
+// IsBlacklisted returns true if the command should skip update checking and prompting.
+func IsBlacklisted(cmdName string) bool {
+	return commandBlacklist[cmdName]
+}
 
 // getCachePath returns the path to the update cache file.
 func getCachePath() string {
@@ -174,8 +191,12 @@ func fetchLatestRelease() (string, error) {
 }
 
 // CheckUpdateAsync asynchronously checks for an update if 24 hours have passed since the last check.
-func CheckUpdateAsync(currentVersion string) {
+func CheckUpdateAsync(currentVersion string, cmdName string) {
 	if env.Silent || env.Quiet {
+		return
+	}
+
+	if commandBlacklist[cmdName] {
 		return
 	}
 
@@ -231,8 +252,10 @@ func PromptIfAvailable(currentVersion string, cmdName string) {
 		return
 	}
 
-	// Only prompt if we are in an interactive terminal to prevent breaking scripts/pipes.
-	if !isatty.IsTerminal(os.Stderr.Fd()) {
+	// Only prompt if BOTH stdout and stderr are interactive terminals.
+	// This prevents breaking shell integration, scripts, pipes, or command substitutions
+	// (e.g. `eval "$(unirtm ...)"`).
+	if !isatty.IsTerminal(os.Stdout.Fd()) || !isatty.IsTerminal(os.Stderr.Fd()) {
 		return
 	}
 
@@ -245,7 +268,7 @@ func PromptIfAvailable(currentVersion string, cmdName string) {
 	curVer := strings.TrimPrefix(currentVersion, "v")
 	latestVer := strings.TrimPrefix(cache.LatestVersion, "v")
 
-	// Avoid prompting if it's not a valid released version or current > latest
+	// Avoid prompting if it's not a valid released version or current >= latest
 	if version.CompareVersions(latestVer, curVer) <= 0 {
 		return
 	}
@@ -255,9 +278,10 @@ func PromptIfAvailable(currentVersion string, cmdName string) {
 		return
 	}
 
-	// Print prompt to Stderr
-	pterm.Warning.Printf("unirtm version %s available\n", cache.LatestVersion)
-	pterm.Warning.Printf("To update, run `unirtm self-update`\n")
+	// Print prompt to Stderr using WithWriter(os.Stderr).
+	// Use single quotes instead of backticks to prevent shell command substitution if accidentally evaluated.
+	pterm.Warning.WithWriter(os.Stderr).Printf("unirtm version %s available\n", cache.LatestVersion)
+	pterm.Warning.WithWriter(os.Stderr).Printf("To update, run 'unirtm self-update'\n")
 
 	// Update prompt time
 	cache.LastPrompted = time.Now()

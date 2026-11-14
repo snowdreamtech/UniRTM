@@ -85,6 +85,20 @@ func TestPromptIfAvailable_Blacklist(t *testing.T) {
 	PromptIfAvailable("0.5.0", "env")
 	PromptIfAvailable("0.5.0", "version")
 	PromptIfAvailable("0.5.0", "completion")
+	PromptIfAvailable("0.5.0", "activate")
+	PromptIfAvailable("0.5.0", "hook-env")
+	PromptIfAvailable("0.5.0", "deactivate")
+	PromptIfAvailable("0.5.0", "shim")
+	PromptIfAvailable("0.5.0", "which")
+
+	assert.True(t, IsBlacklisted("activate"))
+	assert.True(t, IsBlacklisted("hook-env"))
+	assert.True(t, IsBlacklisted("deactivate"))
+	assert.True(t, IsBlacklisted("which"))
+	assert.False(t, IsBlacklisted("install"))
+
+	// CheckUpdateAsync should return early on blacklisted command
+	CheckUpdateAsync("0.5.0", "hook-env")
 }
 
 func TestFetchLatestRelease_Mock(t *testing.T) {
