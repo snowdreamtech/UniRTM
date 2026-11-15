@@ -61,7 +61,7 @@ func StartPTYSession(shellPath, cwd string, cols, rows uint16) (PTYSession, erro
 
 	// Launch as interactive login shell to load prompt and environment
 	cmd := exec.Command(shellPath, "-l")
-	cmd.Env = BuildTerminalEnv()
+	cmd.Env = BuildTerminalEnv(shellPath)
 
 	if cwd != "" {
 		if fi, err := os.Stat(cwd); err == nil && fi.IsDir() {
@@ -88,7 +88,7 @@ func StartPTYSession(shellPath, cwd string, cols, rows uint16) (PTYSession, erro
 	if err != nil {
 		// Fallback without -l if login flag fails on certain constrained environments
 		cmd = exec.Command(shellPath)
-		cmd.Env = BuildTerminalEnv()
+		cmd.Env = BuildTerminalEnv(shellPath)
 		cmd.Dir = cwd
 		ptmx, err = pty.StartWithSize(cmd, &pty.Winsize{
 			Rows: rows,

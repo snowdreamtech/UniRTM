@@ -27,7 +27,8 @@ type TerminalControlMessage struct {
 // BuildTerminalEnv prepares a complete, enriched environment for the PTY session.
 // It ensures that UniRTM's shims and binary directories take precedence in PATH,
 // and instructs tools to output rich 256/truecolor ANSI sequences.
-func BuildTerminalEnv() []string {
+// An optional shellPath parameter can be provided to explicitly align $SHELL with the invoked interpreter.
+func BuildTerminalEnv(shellPath ...string) []string {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		home = os.Getenv("HOME")
@@ -51,11 +52,14 @@ func BuildTerminalEnv() []string {
 	envMap["TERM"] = "xterm-256color"
 	envMap["COLORTERM"] = "truecolor"
 	envMap["UNIRTM_TERMINAL"] = "1"
+	if len(shellPath) > 0 && shellPath[0] != "" {
+		envMap["SHELL"] = shellPath[0]
+	}
 	if _, ok := envMap["LANG"]; !ok {
 		envMap["LANG"] = "en_US.UTF-8"
 	}
 
-	var envList []string
+	envList := make([]string, 0, len(envMap))
 	for k, v := range envMap {
 		envList = append(envList, fmt.Sprintf("%s=%s", k, v))
 	}

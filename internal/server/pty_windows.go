@@ -57,7 +57,7 @@ func StartPTYSession(shellPath, cwd string, cols, rows uint16) (PTYSession, erro
 	}
 
 	cmd := exec.Command(shellPath)
-	cmd.Env = BuildTerminalEnv()
+	cmd.Env = BuildTerminalEnv(shellPath)
 
 	if cwd != "" {
 		if fi, err := os.Stat(cwd); err == nil && fi.IsDir() {
