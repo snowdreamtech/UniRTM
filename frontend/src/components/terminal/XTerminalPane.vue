@@ -90,12 +90,12 @@ async function handleCopy() {
 }
 
 async function handlePaste() {
-  if (!term || !ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!term) return;
   if (typeof navigator !== "undefined" && navigator.clipboard) {
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
-        ws.send(JSON.stringify({ type: "input", data: text }));
+        term.paste(text);
       }
     } catch (err) {
       console.error("[XTerminalPane] Failed to paste text:", err);
