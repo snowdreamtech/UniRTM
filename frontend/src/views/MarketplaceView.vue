@@ -122,9 +122,7 @@
                 <span class="active-dot"></span>
                 <span>{{ t("marketplace.theme_already_active") || "Theme is active" }}</span>
               </span>
-              <button v-else class="btn-apply-detail-primary" @click="onApplyDetailTheme(activeDetail)">
-                {{ t("marketplace.apply_this_theme") || "Apply Theme" }}
-              </button>
+              <span v-else class="badge-installed"> ✓ {{ t("settings.installed") || "Installed" }} </span>
               <button class="btn-uninstall-danger" :disabled="isUninstalling" @click="onUninstallDetail(activeDetail)">
                 {{
                   isUninstalling
@@ -697,52 +695,13 @@
                     }}
                   </span>
                   <button
-                    v-if="!isExtensionActive(item)"
-                    class="btn-apply-theme"
-                    :title="t('settings.apply_theme') || 'Apply Theme'"
-                    @click="onApplyTheme(item)"
+                    v-if="!item.is_builtin"
+                    class="btn btn-capsule btn-uninstall-item"
+                    :title="t('common.uninstall') || 'Uninstall'"
+                    @click.stop="onUninstallThemeCard(item)"
                   >
-                    {{ t("settings.apply") || "Apply" }}
+                    {{ t("common.uninstall") || "Uninstall" }}
                   </button>
-                  <button
-                    v-else
-                    class="btn-applied-current"
-                    disabled
-                    :title="t('marketplace.current_active') || 'Currently active theme'"
-                  >
-                    {{ t("marketplace.currently_applied") || "Applied" }}
-                  </button>
-                  <!-- More Menu for Installed Themes (Uninstall) -->
-                  <div
-                    v-if="activeThemeTypeTab === 'installed' && !item.is_builtin"
-                    class="theme-more-menu-wrap"
-                    @click.stop
-                  >
-                    <button
-                      class="btn-theme-more"
-                      :class="{ 'is-active': activeMenuThemePkgId === (item.package_id || item.name) }"
-                      @click.stop="toggleThemeMenu(item.package_id || item.name)"
-                      :title="t('common.more_actions') || 'More Actions'"
-                    >
-                      <TechIcon id="workbench:more" :size="14" />
-                    </button>
-                    <transition name="dropdown-fade">
-                      <div
-                        v-if="activeMenuThemePkgId === (item.package_id || item.name)"
-                        class="theme-dropdown-menu"
-                        @click.stop
-                      >
-                        <button
-                          class="dropdown-item danger"
-                          @click.stop="handleUninstallFromMenu(item)"
-                          :title="t('common.delete') || 'Delete'"
-                        >
-                          <TechIcon id="workbench:delete" :size="13" />
-                          <span>{{ t("common.delete") || "Delete" }}</span>
-                        </button>
-                      </div>
-                    </transition>
-                  </div>
                 </div>
                 <button v-else class="btn-install-theme" :disabled="mpIsInstalling(item)" @click="onInstallTheme(item)">
                   <span v-if="mpIsInstalling(item)" class="spinner-small"></span>
@@ -876,53 +835,22 @@
                 <td class="td-actions" @click.stop>
                   <div class="table-actions-cell">
                     <div v-if="isItemInstalled(item)" class="installed-group">
+                      <span :class="isExtensionActive(item) ? 'badge-active-applied' : 'badge-installed'">
+                        ✓
+                        {{
+                          isExtensionActive(item)
+                            ? t("marketplace.in_use") || "In Use"
+                            : t("settings.installed") || "Installed"
+                        }}
+                      </span>
                       <button
-                        v-if="!isExtensionActive(item)"
-                        class="btn btn-capsule btn-apply-theme"
-                        :title="t('settings.apply_theme') || 'Apply Theme'"
-                        @click="onApplyTheme(item)"
+                        v-if="!item.is_builtin"
+                        class="btn btn-capsule btn-uninstall-item"
+                        :title="t('common.uninstall') || 'Uninstall'"
+                        @click.stop="onUninstallThemeCard(item)"
                       >
-                        {{ t("settings.apply") || "Apply" }}
+                        {{ t("common.uninstall") || "Uninstall" }}
                       </button>
-                      <button
-                        v-else
-                        class="btn btn-capsule applied btn-applied-current"
-                        disabled
-                        :title="t('marketplace.current_active') || 'Currently active theme'"
-                      >
-                        {{ t("marketplace.currently_applied") || "Applied" }}
-                      </button>
-                      <!-- More Menu for Installed Themes (Uninstall) -->
-                      <div
-                        v-if="activeThemeTypeTab === 'installed' && !item.is_builtin"
-                        class="theme-more-menu-wrap"
-                        @click.stop
-                      >
-                        <button
-                          class="btn-theme-more table-more-btn"
-                          :class="{ 'is-active': activeMenuThemePkgId === (item.package_id || item.name) }"
-                          @click.stop="toggleThemeMenu(item.package_id || item.name)"
-                          :title="t('common.more_actions') || 'More Actions'"
-                        >
-                          <TechIcon id="workbench:more" :size="13" />
-                        </button>
-                        <transition name="dropdown-fade">
-                          <div
-                            v-if="activeMenuThemePkgId === (item.package_id || item.name)"
-                            class="theme-dropdown-menu table-menu"
-                            @click.stop
-                          >
-                            <button
-                              class="dropdown-item danger"
-                              @click.stop="handleUninstallFromMenu(item)"
-                              :title="t('common.delete') || 'Delete'"
-                            >
-                              <TechIcon id="workbench:delete" :size="13" />
-                              <span>{{ t("common.delete") || "Delete" }}</span>
-                            </button>
-                          </div>
-                        </transition>
-                      </div>
                     </div>
                     <button
                       v-else
@@ -3619,6 +3547,23 @@ function cleanGitUrl(url: string): string {
 .btn-apply-theme:hover {
   background: rgba(0, 229, 255, 0.25);
   border-color: var(--accent-cyan);
+}
+
+.btn-uninstall-item {
+  padding: 3px 8px;
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  color: #f43f5e;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-uninstall-item:hover {
+  background: rgba(244, 63, 94, 0.2);
+  border-color: rgba(244, 63, 94, 0.45);
 }
 
 .btn-install-theme {
