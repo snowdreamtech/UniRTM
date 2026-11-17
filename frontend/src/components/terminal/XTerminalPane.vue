@@ -81,7 +81,11 @@ async function handleCopy() {
       await navigator.clipboard.writeText(selection);
     } catch (err) {
       console.error("[XTerminalPane] Failed to copy selection:", err);
+    } finally {
+      term.focus();
     }
+  } else {
+    term.focus();
   }
 }
 
@@ -95,7 +99,11 @@ async function handlePaste() {
       }
     } catch (err) {
       console.error("[XTerminalPane] Failed to paste text:", err);
+    } finally {
+      term.focus();
     }
+  } else {
+    term.focus();
   }
 }
 
@@ -105,19 +113,28 @@ const { startTracking, feedOutput } = useTerminalNotifier();
 
 function handleSelectAll() {
   term?.selectAll();
+  term?.focus();
 }
 
 function handleClear() {
   term?.clear();
+  term?.focus();
 }
 
 function handleClearHistory() {
   clearBuffer(props.paneId);
   term?.clear();
+  term?.focus();
 }
 
 function handleExportLog() {
   exportLog(props.paneId, props.shellName || "terminal");
+  term?.focus();
+}
+
+function handleContextMenuClose() {
+  contextMenuVisible.value = false;
+  term?.focus();
 }
 
 let term: Terminal | null = null;
@@ -529,7 +546,7 @@ onBeforeUnmount(() => {
       :x="contextMenuX"
       :y="contextMenuY"
       :has-selection="hasSelection"
-      @close="contextMenuVisible = false"
+      @close="handleContextMenuClose"
       @copy="handleCopy"
       @paste="handlePaste"
       @select-all="handleSelectAll"
