@@ -285,6 +285,22 @@ func handleThemeAssets(w http.ResponseWriter, r *http.Request, themeMgr *theme.M
 		http.NotFound(w, r)
 		return
 	}
+	w.Header().Del("Content-Type")
+	ext := strings.ToLower(filepath.Ext(absPath))
+	switch ext {
+	case ".woff2":
+		w.Header().Set("Content-Type", "font/woff2")
+	case ".woff":
+		w.Header().Set("Content-Type", "font/woff")
+	case ".ttf":
+		w.Header().Set("Content-Type", "font/ttf")
+	case ".svg":
+		w.Header().Set("Content-Type", "image/svg+xml")
+	case ".png":
+		w.Header().Set("Content-Type", "image/png")
+	case ".json":
+		w.Header().Set("Content-Type", "application/json")
+	}
 	http.ServeFile(w, r, absPath)
 }
 
