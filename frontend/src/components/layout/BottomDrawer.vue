@@ -266,66 +266,18 @@
       :class="{ 'is-resizing': isTermSidebarDragging || isDrawerHeightDragging }"
       :style="{ height: `${effectiveBodyHeight}px` }"
     >
-      <!-- Main: Terminal Panes Work Area -->
+      <!-- Main: Terminal Panes Work Area with Binary Split Tree -->
       <div class="terminal-panes-area" :class="['split-' + (activeSession?.splitDirection || 'none')]">
-        <div
-          v-for="pane in activeSession?.panes"
-          :key="pane.id"
-          class="terminal-pane"
-          :class="{ active: pane.id === activeSession?.activePaneId }"
-          @click="setActivePane(pane.id)"
-        >
-          <!-- Pane Top Header / Status Banner -->
-          <div class="terminal-pane-banner">
-            <div class="pane-banner-left">
-              <span class="term-status-dot"></span>
-              <span
-                v-if="getActiveProcess(pane.id)"
-                class="term-process-badge"
-                :style="{
-                  backgroundColor: `${getActiveProcess(pane.id)?.color}25`,
-                  color: getActiveProcess(pane.id)?.color,
-                  borderColor: `${getActiveProcess(pane.id)?.color}60`,
-                }"
-                :title="`Running: ${getActiveProcess(pane.id)?.name}`"
-              >
-                {{ getActiveProcess(pane.id)?.name }}
-              </span>
-              <span class="term-shell-info font-mono">{{ pane.shellName }}</span>
-              <span class="term-shell-path font-mono">({{ pane.shellPath }})</span>
-              <span v-if="activeSession?.splitDirection !== 'none'" class="term-split-pill">
-                {{
-                  activeSession?.splitDirection === "vertical"
-                    ? t("drawer.split_vertical") || "Split Vertical"
-                    : t("drawer.split_horizontal") || "Split Horizontal"
-                }}
-              </span>
-            </div>
-            <div class="pane-banner-right">
-              <button
-                v-if="(activeSession?.panes.length || 0) > 1"
-                class="pane-close-btn"
-                :title="t('terminal.kill_terminal') || 'Kill Terminal'"
-                @click.stop="closePane(pane.id)"
-              >
-                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Pane Screen Output and Interactive xterm.js PTY Canvas -->
-          <div class="terminal-screen">
-            <XTerminalPane
-              :pane-id="pane.id"
-              :shell-name="pane.shellName"
-              :shell-path="pane.shellPath"
-              :is-active="pane.id === activeSession?.activePaneId"
-              @focus="setActivePane(pane.id)"
-            />
-          </div>
-        </div>
+        <TerminalSplitNode
+          v-if="activeSession && activeSessionLayoutTree"
+          :node="activeSessionLayoutTree"
+          :session="activeSession"
+          :active-pane-id="activeSession.activePaneId"
+          :get-active-process="getActiveProcess"
+          @set-active-pane="setActivePane"
+          @split-pane="handleSplitPane"
+          @close-pane="closePane"
+        />
       </div>
 
       <!-- Resizer Sash between terminal panes and terminal tabs sidebar -->
@@ -621,9 +573,10 @@ import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useToast } from "../../composables/useToast";
 import { useTerminal, TerminalItem } from "../../composables/useTerminal";
-import { useTerminalSessions } from "../../composables/useTerminalSessions";
+import { useTerminalSessions, TerminalLayoutNode } from "../../composables/useTerminalSessions";
 
 const XTerminalPane = defineAsyncComponent(() => import("../terminal/XTerminalPane.vue"));
+const TerminalSplitNode = defineAsyncComponent(() => import("../terminal/TerminalSplitNode.vue"));
 const PortsPanelView = defineAsyncComponent(() => import("../ports/PortsPanelView.vue"));
 
 import { usePorts } from "../../composables/usePorts";
@@ -1329,6 +1282,31 @@ function handleCreateSessionWithShell(term: TerminalItem) {
   showToast(`${t("terminal.new_terminal") || "New Terminal"}: ${s.title}`, "info");
 }
 
+const activeSessionLayoutTree = computed<TerminalLayoutNode | null>(() => {
+  if (!activeSession.value) return null;
+  if (activeSession.value.layoutTree) {
+    return activeSession.value.layoutTree;
+  }
+  if (activeSession.value.panes.length === 0) return null;
+  if (activeSession.value.panes.length === 1) {
+    return { type: "pane", paneId: activeSession.value.panes[0].id };
+  }
+  let tree: TerminalLayoutNode = { type: "pane", paneId: activeSession.value.panes[0].id };
+  for (let i = 1; i < activeSession.value.panes.length; i++) {
+    tree = {
+      id: `split-fallback-${i}`,
+      type: "split",
+      direction: activeSession.value.splitDirection === "none" ? "vertical" : activeSession.value.splitDirection,
+      children: [tree, { type: "pane", paneId: activeSession.value.panes[i].id }],
+    };
+  }
+  return tree;
+});
+
+function handleSplitPane(direction: "vertical" | "horizontal", paneId?: string) {
+  splitActiveSession(direction, undefined, paneId);
+}
+
 function handleSplitVertical() {
   splitActiveSession("vertical");
   showToast(t("terminal.split_vertical") || "Split Terminal Vertically", "info");
@@ -1961,6 +1939,41 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
+.terminal-split-container {
+  display: flex;
+  flex: 1 1 0%;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.terminal-split-container.split-vertical {
+  flex-direction: row;
+}
+
+.terminal-split-container.split-horizontal {
+  flex-direction: column;
+}
+
+.terminal-split-child {
+  flex: 1 1 0%;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.terminal-split-container.split-vertical > .terminal-split-child:not(:first-child) {
+  border-left: 1px solid var(--card-border);
+}
+
+.terminal-split-container.split-horizontal > .terminal-split-child:not(:first-child) {
+  border-top: 1px solid var(--card-border);
+}
+
 .terminal-panes-area.split-vertical {
   flex-direction: row;
 }
@@ -1974,7 +1987,9 @@ onUnmounted(() => {
 }
 
 .terminal-pane {
-  flex: 1 1 50%;
+  flex: 1 1 0%;
+  width: 100%;
+  height: 100%;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -1996,6 +2011,7 @@ onUnmounted(() => {
   outline: none;
 }
 
+.terminal-pane.active.is-split,
 .terminal-panes-area:not(.split-none) .terminal-pane.active {
   outline: 1.5px solid rgba(0, 229, 255, 0.6);
   outline-offset: -1px;
@@ -2022,6 +2038,30 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pane-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pane-banner-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.pane-banner-btn:hover {
+  color: var(--accent-cyan, #00e5ff);
+  background: rgba(0, 229, 255, 0.15);
 }
 
 .term-shell-path {
@@ -2487,8 +2527,14 @@ onUnmounted(() => {
   outline: none;
 }
 
+[data-theme="light"] .terminal-pane.active.is-split,
 [data-theme="light"] .terminal-panes-area:not(.split-none) .terminal-pane.active {
   outline: 1.5px solid #0284c7;
+}
+
+[data-theme="light"] .pane-banner-btn:hover {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.12);
 }
 
 [data-theme="light"] .terminal-pane-banner {

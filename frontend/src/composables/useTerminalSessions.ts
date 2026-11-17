@@ -21,12 +21,68 @@ export interface TerminalPane {
   historyIndex: number;
 }
 
+export type TerminalLayoutNode = TerminalLayoutSplitNode | TerminalLayoutPaneNode;
+
+export interface TerminalLayoutSplitNode {
+  id: string;
+  type: "split";
+  direction: "vertical" | "horizontal";
+  children: [TerminalLayoutNode, TerminalLayoutNode];
+}
+
+export interface TerminalLayoutPaneNode {
+  type: "pane";
+  paneId: string;
+}
+
 export interface TerminalSession {
   id: string;
   title: string;
   splitDirection: SplitDirection;
   panes: TerminalPane[];
   activePaneId: string;
+  layoutTree?: TerminalLayoutNode;
+}
+
+export function findNodeAndParent(
+  root: TerminalLayoutNode,
+  targetPaneId: string,
+  parent: TerminalLayoutSplitNode | null = null
+): { node: TerminalLayoutPaneNode; parent: TerminalLayoutSplitNode | null; indexInParent: number } | null {
+  if (root.type === "pane") {
+    if (root.paneId === targetPaneId) {
+      return { node: root, parent, indexInParent: -1 };
+    }
+    return null;
+  }
+  for (let i = 0; i < root.children.length; i++) {
+    const child = root.children[i];
+    if (child.type === "pane" && child.paneId === targetPaneId) {
+      return { node: child, parent: root, indexInParent: i };
+    }
+    if (child.type === "split") {
+      const found = findNodeAndParent(child, targetPaneId, root);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+export function findParentOf(
+  root: TerminalLayoutNode,
+  targetNode: TerminalLayoutNode
+): { parent: TerminalLayoutSplitNode; indexInParent: number } | null {
+  if (root.type !== "split") return null;
+  for (let i = 0; i < root.children.length; i++) {
+    if (root.children[i] === targetNode) {
+      return { parent: root, indexInParent: i };
+    }
+    if (root.children[i].type === "split") {
+      const found = findParentOf(root.children[i], targetNode);
+      if (found) return found;
+    }
+  }
+  return null;
 }
 
 const sessions = ref<TerminalSession[]>([]);
@@ -107,6 +163,10 @@ export function useTerminalSessions() {
       splitDirection: "none",
       panes: [pane],
       activePaneId: pane.id,
+      layoutTree: {
+        type: "pane",
+        paneId: pane.id,
+      },
     };
 
     sessions.value.push(session);
@@ -129,7 +189,8 @@ export function useTerminalSessions() {
 
   function splitActiveSession(
     direction: "vertical" | "horizontal",
-    shell?: { name: string; path: string }
+    shell?: { name: string; path: string },
+    targetPaneId?: string
   ): TerminalPane | null {
     if (sessions.value.length === 0) {
       createSession(shell);
@@ -137,13 +198,47 @@ export function useTerminalSessions() {
     const session = activeSession.value;
     if (!session) return null;
 
-    if (session.panes.length >= 2) {
-      session.splitDirection = direction;
-      return activePane.value;
-    }
+    const targetId = targetPaneId || session.activePaneId || (session.panes.length > 0 ? session.panes[0].id : "");
 
     const newPane = createPane(shell);
     session.panes.push(newPane);
+
+    if (!session.layoutTree) {
+      session.layoutTree = {
+        type: "pane",
+        paneId: targetId || newPane.id,
+      };
+    }
+
+    const found = findNodeAndParent(session.layoutTree, targetId);
+    const splitNode: TerminalLayoutSplitNode = {
+      id: `split-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      type: "split",
+      direction,
+      children: [
+        { type: "pane", paneId: targetId },
+        { type: "pane", paneId: newPane.id },
+      ],
+    };
+
+    if (found) {
+      if (!found.parent) {
+        // Target was root node
+        session.layoutTree = splitNode;
+      } else {
+        // Target was child of a split node
+        found.parent.children[found.indexInParent] = splitNode;
+      }
+    } else {
+      // Fallback: wrap whole tree with new pane
+      session.layoutTree = {
+        id: `split-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        type: "split",
+        direction,
+        children: [session.layoutTree, { type: "pane", paneId: newPane.id }],
+      };
+    }
+
     session.splitDirection = direction;
     session.activePaneId = newPane.id;
     return newPane;
@@ -194,8 +289,36 @@ export function useTerminalSessions() {
 
     if (targetSession.panes.length > 1) {
       targetSession.panes = targetSession.panes.filter((p) => p.id !== paneId);
-      targetSession.splitDirection = "none";
-      targetSession.activePaneId = targetSession.panes[0]?.id || "";
+
+      if (targetSession.layoutTree) {
+        const found = findNodeAndParent(targetSession.layoutTree, paneId);
+        if (found && found.parent) {
+          const siblingIndex = found.indexInParent === 0 ? 1 : 0;
+          const siblingNode = found.parent.children[siblingIndex];
+
+          const parentFound = findParentOf(targetSession.layoutTree, found.parent);
+          if (!parentFound) {
+            // found.parent was the root node
+            targetSession.layoutTree = siblingNode;
+          } else {
+            parentFound.parent.children[parentFound.indexInParent] = siblingNode;
+          }
+        }
+      }
+
+      if (targetSession.panes.length === 1) {
+        targetSession.splitDirection = "none";
+        targetSession.layoutTree = {
+          type: "pane",
+          paneId: targetSession.panes[0].id,
+        };
+      } else if (targetSession.layoutTree && targetSession.layoutTree.type === "split") {
+        targetSession.splitDirection = targetSession.layoutTree.direction;
+      }
+
+      if (targetSession.activePaneId === paneId) {
+        targetSession.activePaneId = targetSession.panes[0]?.id || "";
+      }
     } else {
       closeSession(targetSession.id);
     }

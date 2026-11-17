@@ -35,22 +35,50 @@ describe("useTerminalSessions composable", () => {
     expect(activeSession.value?.id).toBe(s1.id);
   });
 
-  it("supports splitting terminal vertically (1 into 2) and horizontally", () => {
-    const { activeSession, createSession, splitActiveSession } = useTerminalSessions();
+  it("supports binary split tree (vertical, horizontal nested splits) matching VSCode and tmux", () => {
+    const { activeSession, createSession, splitActiveSession, closePane } = useTerminalSessions();
 
     createSession({ name: "bash", path: "/bin/bash" });
     expect(activeSession.value?.panes.length).toBe(1);
+    expect(activeSession.value?.layoutTree?.type).toBe("pane");
 
-    // Split vertically
-    splitActiveSession("vertical", { name: "zsh", path: "/bin/zsh" });
+    // Split vertically (1 into 2)
+    const pane2 = splitActiveSession("vertical", { name: "zsh", path: "/bin/zsh" });
     expect(activeSession.value?.panes.length).toBe(2);
     expect(activeSession.value?.splitDirection).toBe("vertical");
     expect(activeSession.value?.panes[1].shellName).toBe("zsh");
+    expect(activeSession.value?.layoutTree?.type).toBe("split");
 
-    // Switching split direction to horizontal
-    splitActiveSession("horizontal");
+    // Nested split horizontally on active pane (pane2) -> 3 panes in T-shape layout
+    const pane3 = splitActiveSession("horizontal", { name: "sh", path: "/bin/sh" });
+    expect(activeSession.value?.panes.length).toBe(3);
     expect(activeSession.value?.splitDirection).toBe("horizontal");
+    expect(activeSession.value?.panes[2].shellName).toBe("sh");
+
+    // Verify binary split tree structure
+    const tree = activeSession.value?.layoutTree;
+    expect(tree?.type).toBe("split");
+    if (tree?.type === "split") {
+      expect(tree.direction).toBe("vertical");
+      expect(tree.children[0].type).toBe("pane");
+      expect(tree.children[1].type).toBe("split");
+      if (tree.children[1].type === "split") {
+        expect(tree.children[1].direction).toBe("horizontal");
+        expect(tree.children[1].children[0].type).toBe("pane");
+        expect(tree.children[1].children[1].type).toBe("pane");
+      }
+    }
+
+    // Close pane 3: collapses nested split, leaves 2 panes
+    closePane(pane3!.id);
     expect(activeSession.value?.panes.length).toBe(2);
+    expect(activeSession.value?.layoutTree?.type).toBe("split");
+
+    // Close pane 2: collapses root split, leaves 1 pane and restores splitDirection none
+    closePane(pane2!.id);
+    expect(activeSession.value?.panes.length).toBe(1);
+    expect(activeSession.value?.splitDirection).toBe("none");
+    expect(activeSession.value?.layoutTree?.type).toBe("pane");
   });
 
   it("closes split pane and restores single pane", () => {
