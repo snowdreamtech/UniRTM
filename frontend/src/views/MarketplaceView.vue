@@ -447,39 +447,15 @@
 
       <!-- CHANNEL 1: Themes & Icons from Open VSX -->
       <div v-show="currentChannel === 'themes'" class="market-channel-content">
-        <!-- Structural Type Dimension Switcher Tabs -->
+        <!-- Structural Type Dimension Switcher Tabs (Plan A) -->
         <div class="market-type-tabs glass-card">
           <button
             class="type-tab-btn"
-            :class="{ active: activeThemeTypeTab === 'all' }"
-            @click="switchThemeTypeTab('all')"
+            :class="{ active: activeThemeTypeTab === 'market' }"
+            @click="switchThemeTypeTab('market')"
           >
             <TechIcon id="workbench:marketplace" :size="15" />
-            <span>{{ t("marketplace.filter_all") || "All" }}</span>
-          </button>
-          <button
-            class="type-tab-btn"
-            :class="{ active: activeThemeTypeTab === 'color' }"
-            @click="switchThemeTypeTab('color')"
-          >
-            <span>🎨</span>
-            <span>{{ t("marketplace.filter_themes") || "Color Themes" }}</span>
-          </button>
-          <button
-            class="type-tab-btn"
-            :class="{ active: activeThemeTypeTab === 'icon' }"
-            @click="switchThemeTypeTab('icon')"
-          >
-            <span>📁</span>
-            <span>{{ t("marketplace.filter_icons") || "File Icons" }}</span>
-          </button>
-          <button
-            class="type-tab-btn"
-            :class="{ active: activeThemeTypeTab === 'product_icon' }"
-            @click="switchThemeTypeTab('product_icon')"
-          >
-            <span>⚡</span>
-            <span>{{ t("marketplace.filter_product_icons") || "Product Icons" }}</span>
+            <span>{{ t("marketplace.filter_all") || "Explore Marketplace" }}</span>
           </button>
           <button
             class="type-tab-btn type-tab-installed"
@@ -573,13 +549,9 @@
           </span>
           <span v-else class="results-count-label">
             {{
-              activeThemeTypeTab !== "all"
-                ? t("marketplace.filtered_count", { count: displayedExtensions.length }) ||
-                  `Showing ${displayedExtensions.length} items after filtering`
-                : mpTotalSize > 0
-                  ? t("marketplace.total_count", { count: mpTotalSize }) ||
-                    `${mpTotalSize} themes & icon packs in total`
-                  : ""
+              mpTotalSize > 0
+                ? t("marketplace.total_count", { count: mpTotalSize }) || `${mpTotalSize} themes & icon packs in total`
+                : ""
             }}
           </span>
         </div>
@@ -674,23 +646,28 @@
                   <span
                     class="card-type-tag"
                     :class="{
+                      'type-hybrid': getCardDisplayType(item) === 'hybrid',
                       'type-product-icon': getCardDisplayType(item) === 'product_icon',
                       'type-icon': getCardDisplayType(item) === 'icon',
                       'type-color': getCardDisplayType(item) === 'theme',
                     }"
                     style="display: inline-flex; align-items: center; gap: 4px"
                   >
+                    <span v-if="getCardDisplayType(item) === 'hybrid'" style="font-size: 11px">🎨+📁</span>
                     <TechIcon
+                      v-else
                       :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : 'workbench:tools'"
                       :size="12"
                       :colored="false"
                     />
                     {{
-                      getCardDisplayType(item) === "product_icon"
-                        ? t("marketplace.filter_product_icons") || "Product Icons"
-                        : getCardDisplayType(item) === "icon"
-                          ? t("marketplace.filter_icons") || "File Icons"
-                          : t("marketplace.filter_themes") || "Color Themes"
+                      getCardDisplayType(item) === "hybrid"
+                        ? t("marketplace.tab_themes_icons") || "Themes & Icons"
+                        : getCardDisplayType(item) === "product_icon"
+                          ? t("marketplace.filter_product_icons") || "Product Icons"
+                          : getCardDisplayType(item) === "icon"
+                            ? t("marketplace.filter_icons") || "File Icons"
+                            : t("marketplace.filter_themes") || "Color Themes"
                     }}
                   </span>
                 </div>
@@ -851,23 +828,28 @@
                     <span
                       class="card-type-tag"
                       :class="{
+                        'type-hybrid': getCardDisplayType(item) === 'hybrid',
                         'type-product-icon': getCardDisplayType(item) === 'product_icon',
                         'type-icon': getCardDisplayType(item) === 'icon',
                         'type-color': getCardDisplayType(item) === 'theme',
                       }"
                       style="display: inline-flex; align-items: center; gap: 4px"
                     >
+                      <span v-if="getCardDisplayType(item) === 'hybrid'" style="font-size: 11px">🎨+📁</span>
                       <TechIcon
+                        v-else
                         :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : 'workbench:tools'"
                         :size="11"
                         :colored="false"
                       />
                       {{
-                        getCardDisplayType(item) === "product_icon"
-                          ? t("marketplace.filter_product_icons") || "Product Icons"
-                          : getCardDisplayType(item) === "icon"
-                            ? t("marketplace.filter_icons") || "File Icons"
-                            : t("marketplace.filter_themes") || "Color Themes"
+                        getCardDisplayType(item) === "hybrid"
+                          ? t("marketplace.tab_themes_icons") || "Themes & Icons"
+                          : getCardDisplayType(item) === "product_icon"
+                            ? t("marketplace.filter_product_icons") || "Product Icons"
+                            : getCardDisplayType(item) === "icon"
+                              ? t("marketplace.filter_icons") || "File Icons"
+                              : t("marketplace.filter_themes") || "Color Themes"
                       }}
                     </span>
                   </div>
@@ -1392,8 +1374,8 @@ const {
   deleteTheme,
 } = useThemeManager();
 
-type ThemeTypeTab = "all" | "color" | "icon" | "product_icon" | "installed";
-const activeThemeTypeTab = ref<ThemeTypeTab>("all");
+type ThemeTypeTab = "market" | "installed";
+const activeThemeTypeTab = ref<ThemeTypeTab>("market");
 const selectedInstalledSubFilter = ref<"all" | "color" | "icon" | "product_icon">("all");
 const selectedFilter = ref<string>("all");
 
@@ -1408,7 +1390,7 @@ interface ThemeChipItem {
 const contextualChips = computed<ThemeChipItem[]>(() => {
   if (activeThemeTypeTab.value === "installed") {
     return [
-      { id: "installed-all", name: t("marketplace.filter_all") || "All", query: "", isInstalled: true },
+      { id: "installed-all", name: t("marketplace.filter_all") || "All Installed", query: "", isInstalled: true },
       {
         id: "installed-color",
         name: "🎨 " + (t("marketplace.filter_themes") || "Color Themes"),
@@ -1430,72 +1412,29 @@ const contextualChips = computed<ThemeChipItem[]>(() => {
     ];
   }
 
-  if (activeThemeTypeTab.value === "color") {
-    return [
-      { id: "color-all", name: t("marketplace.filter_all") || "All", query: "" },
-      { id: "dracula", name: "Dracula", query: "Dracula" },
-      { id: "one-dark", name: "One Dark", query: "One Dark" },
-      { id: "catppuccin", name: "Catppuccin", query: "Catppuccin" },
-      { id: "tokyo-night", name: "Tokyo Night", query: "Tokyo Night" },
-      { id: "github", name: "GitHub", query: "GitHub" },
-      { id: "nord", name: "Nord", query: "Nord" },
-      { id: "monokai", name: "Monokai", query: "Monokai" },
-    ];
-  }
-
-  if (activeThemeTypeTab.value === "icon") {
-    return [
-      { id: "icon-all", name: t("marketplace.filter_all") || "All", query: "icon" },
-      { id: "material-icons", name: "Material Icon", query: "Material Icon Theme" },
-      { id: "vscode-icons", name: "VSCode Icons", query: "vscode-icons" },
-      { id: "seti", name: "Seti Icons", query: "seti-icons" },
-      { id: "catppuccin-icons", name: "Catppuccin Icons", query: "catppuccin icons" },
-      { id: "symbols", name: "Symbols", query: "symbols" },
-      { id: "ayu-icons", name: "Ayu Icons", query: "ayu icon" },
-    ];
-  }
-
-  if (activeThemeTypeTab.value === "product_icon") {
-    return [
-      { id: "product-all", name: t("marketplace.filter_all") || "All", query: "product icon" },
-      { id: "fluent-icons", name: "Fluent Icons", query: "fluent-icons" },
-      { id: "carbon-icons", name: "Carbon Product Icons", query: "carbon product icons" },
-      { id: "codicons", name: "Codicons", query: "codicons" },
-    ];
-  }
-
-  // "all"
   return [
-    { id: "all", labelKey: "marketplace.filter_all", query: "" },
-    { id: "fluent", name: t("marketplace.category_fluent") || "Fluent Icons (UI)", query: "fluent-icons" },
-    { id: "material", name: t("marketplace.category_material") || "Material (Files)", query: "Material Icon" },
-    { id: "dracula", name: t("marketplace.category_dracula") || "Dracula (Colors)", query: "Dracula" },
+    { id: "all", name: t("marketplace.filter_all") || "All Recommended", query: "" },
+    { id: "preset-theme", name: "🎨 " + (t("marketplace.filter_themes") || "Color Themes"), query: "theme" },
+    { id: "preset-icon", name: "📁 " + (t("marketplace.filter_icons") || "File Icons"), query: "icon" },
+    {
+      id: "preset-product",
+      name: "⚡ " + (t("marketplace.filter_product_icons") || "Product Icons"),
+      query: "product icon",
+    },
+    { id: "dracula", name: "Dracula", query: "Dracula" },
     { id: "one-dark", name: "One Dark", query: "One Dark" },
     { id: "catppuccin", name: "Catppuccin", query: "Catppuccin" },
+    { id: "material", name: "Material", query: "Material Icon" },
     { id: "tokyo-night", name: "Tokyo Night", query: "Tokyo Night" },
     { id: "github", name: "GitHub", query: "GitHub" },
+    { id: "nord", name: "Nord", query: "Nord" },
+    { id: "monokai", name: "Monokai", query: "Monokai" },
   ];
 });
 
 const searchPlaceholder = computed(() => {
   if (activeThemeTypeTab.value === "installed") {
     return t("marketplace.search_installed_ph") || "Search installed color themes, file icons, or product icons...";
-  }
-  if (activeThemeTypeTab.value === "color") {
-    return (
-      t("marketplace.search_themes_ph") || "Search color themes on Open VSX (e.g. Dracula, One Dark, Catppuccin)..."
-    );
-  }
-  if (activeThemeTypeTab.value === "icon") {
-    return (
-      t("marketplace.search_icons_ph") || "Search file icon themes on Open VSX (e.g. Material Icon, VSCode Icons)..."
-    );
-  }
-  if (activeThemeTypeTab.value === "product_icon") {
-    return (
-      t("marketplace.search_product_icons_ph") ||
-      "Search product icon themes on Open VSX (e.g. Fluent Icons, Codicons)..."
-    );
   }
   return (
     t("settings.marketplace_search_placeholder") || "Search themes or icon sets (e.g. Dracula, Material, Catppuccin)..."
@@ -1505,15 +1444,6 @@ const searchPlaceholder = computed(() => {
 const emptyStateMessage = computed(() => {
   if (activeThemeTypeTab.value === "installed") {
     return t("marketplace.empty_installed") || "No third-party themes or icon packs installed yet";
-  }
-  if (activeThemeTypeTab.value === "color") {
-    return t("marketplace.empty_color_themes") || "No matching color themes found";
-  }
-  if (activeThemeTypeTab.value === "icon") {
-    return t("marketplace.empty_file_icons") || "No matching file icon themes found";
-  }
-  if (activeThemeTypeTab.value === "product_icon") {
-    return t("marketplace.empty_product_icons") || "No matching product icon themes found";
   }
   return t("marketplace.empty_results") || "No matching themes or icon packs found";
 });
@@ -1644,14 +1574,16 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
 });
 
 const displayedExtensions = computed<MarketplaceExtension[]>(() => {
-  let list: MarketplaceExtension[] = [];
-
   if (activeThemeTypeTab.value === "installed") {
-    list = [...installedExtensions.value];
+    let list = [...installedExtensions.value];
     if (selectedInstalledSubFilter.value === "color") {
-      list = list.filter((item) => hasInstalledColorTheme(item) || getExtensionType(item) === "theme");
+      list = list.filter(
+        (item) => hasInstalledColorTheme(item) || getExtensionType(item) === "theme" || isHybridType(item)
+      );
     } else if (selectedInstalledSubFilter.value === "icon") {
-      list = list.filter((item) => hasInstalledIconTheme(item) || getExtensionType(item) === "icon");
+      list = list.filter(
+        (item) => hasInstalledIconTheme(item) || getExtensionType(item) === "icon" || isHybridType(item)
+      );
     } else if (selectedInstalledSubFilter.value === "product_icon") {
       list = list.filter((item) => hasInstalledProductIconTheme(item) || getExtensionType(item) === "product_icon");
     }
@@ -1668,18 +1600,8 @@ const displayedExtensions = computed<MarketplaceExtension[]>(() => {
     return list;
   }
 
-  list = [...mpSearchResults.value];
-
-  // Strict Category Type filtering across upstream results
-  if (activeThemeTypeTab.value === "color") {
-    list = list.filter((item) => hasInstalledColorTheme(item) || getExtensionType(item) === "theme");
-  } else if (activeThemeTypeTab.value === "icon") {
-    list = list.filter((item) => hasInstalledIconTheme(item) || getExtensionType(item) === "icon");
-  } else if (activeThemeTypeTab.value === "product_icon") {
-    list = list.filter((item) => hasInstalledProductIconTheme(item) || getExtensionType(item) === "product_icon");
-  }
-
-  return list;
+  // Under market tab: return the full stream without client-side dropping
+  return mpSearchResults.value;
 });
 
 const feedbackMsg = ref("");
@@ -1874,10 +1796,21 @@ function hasInstalledProductIconTheme(item: { package_id?: string; name: string;
   );
 }
 
-function getCardDisplayType(item: MarketplaceExtension): "product_icon" | "icon" | "theme" {
-  if (activeThemeTypeTab.value === "product_icon") return "product_icon";
-  if (activeThemeTypeTab.value === "icon") return "icon";
-  if (activeThemeTypeTab.value === "color") return "theme";
+function isHybridType(item: MarketplaceExtension | MarketplaceExtensionDetail): boolean {
+  const pkg = (item.package_id || item.name || "").toLowerCase();
+  const dName = (item.displayName || "").toLowerCase();
+  return (
+    pkg.includes("catppuccin") ||
+    dName.includes("catppuccin") ||
+    pkg.includes("monokai-pro") ||
+    dName.includes("monokai pro") ||
+    pkg === "ayu" ||
+    dName.includes("ayu")
+  );
+}
+
+function getCardDisplayType(item: MarketplaceExtension): "hybrid" | "product_icon" | "icon" | "theme" {
+  if (isHybridType(item)) return "hybrid";
   if (activeThemeTypeTab.value === "installed") {
     if (selectedInstalledSubFilter.value === "product_icon") return "product_icon";
     if (selectedInstalledSubFilter.value === "icon") return "icon";
@@ -2200,23 +2133,10 @@ function isExtensionActive(
   if (explicitType === "icon") return isFileIconActive(item);
   if (explicitType === "theme") return isColorThemeActive(item);
 
-  if (
-    activeThemeTypeTab.value === "product_icon" ||
-    (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "product_icon")
-  ) {
-    return isProductIconActive(item);
-  }
-  if (
-    activeThemeTypeTab.value === "icon" ||
-    (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "icon")
-  ) {
-    return isFileIconActive(item);
-  }
-  if (
-    activeThemeTypeTab.value === "color" ||
-    (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "color")
-  ) {
-    return isColorThemeActive(item);
+  if (activeThemeTypeTab.value === "installed") {
+    if (selectedInstalledSubFilter.value === "product_icon") return isProductIconActive(item);
+    if (selectedInstalledSubFilter.value === "icon") return isFileIconActive(item);
+    if (selectedInstalledSubFilter.value === "color") return isColorThemeActive(item);
   }
 
   return isColorThemeActive(item) || isFileIconActive(item) || isProductIconActive(item);
@@ -2296,48 +2216,18 @@ function switchThemeTypeTab(tab: ThemeTypeTab) {
     return;
   }
 
-  if (tab === "color") {
-    selectedFilter.value = "color-all";
-    if (
-      mpSearchQuery.value === "icon" ||
-      mpSearchQuery.value === "product icon" ||
-      mpSearchQuery.value === "fluent-icons"
-    ) {
-      mpSearchQuery.value = "";
-    }
-    mpSearchThemes(mpSearchQuery.value);
-  } else if (tab === "icon") {
-    selectedFilter.value = "icon-all";
-    if (!mpSearchQuery.value || mpSearchQuery.value === "product icon") {
-      mpSearchQuery.value = "icon";
-    }
-    mpSearchThemes(mpSearchQuery.value);
-  } else if (tab === "product_icon") {
-    selectedFilter.value = "product-all";
-    if (!mpSearchQuery.value || mpSearchQuery.value === "icon") {
-      mpSearchQuery.value = "product icon";
-    }
-    mpSearchThemes(mpSearchQuery.value);
-  } else {
-    selectedFilter.value = "all";
-    mpSearchThemes(mpSearchQuery.value);
-  }
+  selectedFilter.value = "all";
+  mpSearchThemes(mpSearchQuery.value);
 }
 
 function onClearSearch() {
   mpSearchQuery.value = "";
   if (activeThemeTypeTab.value === "installed") return;
-  if (activeThemeTypeTab.value === "icon") {
-    mpSearchThemes("icon");
-  } else if (activeThemeTypeTab.value === "product_icon") {
-    mpSearchThemes("product icon");
-  } else {
-    mpSearchThemes("");
-  }
+  mpSearchThemes("");
 }
 
 function onResetToPopular() {
-  switchThemeTypeTab("all");
+  switchThemeTypeTab("market");
 }
 
 function navigateToDetail(namespace: string, name: string) {
@@ -3361,6 +3251,12 @@ function cleanGitUrl(url: string): string {
   border-radius: 4px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+.card-type-tag.type-hybrid {
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.25);
 }
 
 .card-type-tag.type-color {

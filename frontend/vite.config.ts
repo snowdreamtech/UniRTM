@@ -8046,7 +8046,7 @@ print(json.dumps({
             const parsedUrl = new URL(req.url, "http://localhost");
             const scope = parsedUrl.searchParams.get("scope") === "user" ? "user" : "workspace";
             const userPath = path.join(os.homedir(), ".config", "unirtm", "keybindings.json");
-            const workspacePath = path.resolve(__dirname, "..", ".unirtm", "keybindings.json");
+            const workspacePath = path.resolve(import.meta.dirname, "..", ".unirtm", "keybindings.json");
             const kbPath = scope === "user" ? userPath : workspacePath;
 
             res.setHeader("Content-Type", "application/json");
